@@ -450,22 +450,22 @@ findings; do not paste entire files.
 
 **Note:** A1 and A2 are documented as verified in the project's ARCHITECTURE.md research, citing official Claude Code docs at code.claude.com. However, the plugin-dev authoritative plugin (which is the implementation reference) does not document these fields for agents. The project research may have verified them from a different documentation source. The planner should include explicit verification steps after file creation.
 
-## Open Questions
+## Open Questions (RESOLVED)
 
 1. **maxTurns and effort as agent frontmatter fields**
    - What we know: ARCHITECTURE.md claims these are verified from official Claude Code docs (code.claude.com/docs/en/sub-agents). The plugin-dev agent-development skill documents only name, description, model, color, tools.
    - What is unclear: Whether these fields are parsed from agent definition frontmatter or only set per-invocation via the Agent tool call.
-   - Recommendation: Include them in the agent frontmatter as specified in locked decisions (D-02, ADVR-04, ADVR-05). Add a verification step: after creating the agent, test with `claude --debug` to confirm the fields are recognized. If they are ignored, the system prompt conciseness instruction and Read/Glob tool restriction provide adequate fallback enforcement.
+   - RESOLVED: Include in frontmatter per locked decisions D-02, ADVR-04, ADVR-05. Plan 01 Task 2 includes `claude --debug` verification. If fields are silently ignored, the system prompt conciseness instruction and Read/Glob tool restriction provide adequate fallback enforcement -- the advisor will still produce concise single-turn responses. Risk accepted with fallback.
 
 2. **Reference file location under plan skill vs. shared location**
    - What we know: D-12 specifies `references/advisor-timing.md`. STACK.md places it under `skills/lz-advisor-plan/references/`. Other skills in Phase 2+ load it via `@references/advisor-timing.md`.
    - What is unclear: Whether skills from different directories can reference another skill's references/ files using relative paths or `${CLAUDE_PLUGIN_ROOT}`.
-   - Recommendation: Place the file at `skills/lz-advisor-plan/references/advisor-timing.md` as specified. If cross-skill reference loading doesn't work (which would be discovered in Phase 2), the file can be duplicated or moved to a shared location. The content is the important part, not the exact path.
+   - RESOLVED: Deferred to Phase 2. Phase 1 scope is file creation only. Cross-skill reference loading is first tested when Phase 2 creates the plan skill's SKILL.md with `@references/advisor-timing.md`. If it fails, the file can be duplicated or moved -- content is the deliverable, not the path.
 
 3. **plugin.json field validation strictness**
    - What we know: Pitfall #5 warns about unrecognized fields causing silent rejection. GitHub issues #30366, #31384 confirm this. manifest-reference.md documents the valid fields.
    - What is unclear: Whether `repository` (as a string URL rather than an object) is accepted without issue, and whether `keywords` is recognized by the client validator (it may only be used by the marketplace).
-   - Recommendation: Start with the full D-14 field set. If plugin fails to load with `claude --debug`, strip to minimal (name-only) and add fields back one at a time. The manifest-reference.md documents all these fields as valid, so they should work.
+   - RESOLVED: Proceed with full D-14 field set per manifest-reference.md (all fields documented as valid). Plan 01 Task 1 includes automated JSON validation and `claude --debug` verification. If any field causes rejection, the executor strips to minimal and adds back incrementally -- this is documented in the task action.
 
 ## Validation Architecture
 
