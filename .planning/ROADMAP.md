@@ -30,11 +30,11 @@ Decimal phases appear between their surrounding integers in numeric order.
   3. Advisor responses are concise (under 100 words, enumerated steps) and strategic, not verbose explanations
   4. Advisor reads project files when needed but never writes or modifies anything
   5. Reference file for advisor timing guidance exists and stays under the 5,000-token compaction limit
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 01-01: TBD
-- [ ] 01-02: TBD
+- [ ] 01-01-PLAN.md -- Plugin manifest, directory structure, and Opus advisor agent definition
+- [ ] 01-02-PLAN.md -- Advisor timing reference file and plugin README
 
 ### Phase 2: Plan Skill
 **Goal**: Users can invoke `/lz-advisor.plan` to get an Opus-informed strategic plan for any coding task
@@ -100,7 +100,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Plugin Scaffold and Advisor Agent | 0/2 | Not started | - |
+| 1. Plugin Scaffold and Advisor Agent | 0/2 | Planning complete | - |
 | 2. Plan Skill | 0/1 | Not started | - |
 | 3. Execute Skill | 0/2 | Not started | - |
 | 4. Review Skills | 0/2 | Not started | - |
