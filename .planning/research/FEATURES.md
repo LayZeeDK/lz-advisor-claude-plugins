@@ -11,11 +11,11 @@ Features users expect. Missing = plugin feels incomplete or not worth installing
 |---------|--------------|------------|-------|
 | Opus advisor agent with concise output | Core value proposition -- the advisor IS the plugin | Low | Under 100 words, enumerated steps, not explanations. Anthropic's trimming instruction cuts output 35-45% without quality loss |
 | Plan skill (`/lz-advisor.plan`) | Every competing plugin has planning (compound-engineering, deep-plan). Without it, no reason to install | Medium | Sonnet orients (reads files, gathers context), then consults Opus for strategic plan, then Sonnet produces actionable output |
-| Implement skill (`/lz-advisor.implement`) | The full executor-advisor loop is the core workflow. Without execution support, the plugin is just a planning toy | High | Must implement Anthropic's full timing pattern: consult after orientation, when stuck, when changing approach, before declaring done |
+| Execute skill (`/lz-advisor.execute`) | The full executor-advisor loop is the core workflow. Without execution support, the plugin is just a planning toy | High | Must implement Anthropic's full timing pattern: consult after orientation, when stuck, when changing approach, before declaring done |
 | Review skill (`/lz-advisor.review`) | Code review is table stakes for coding plugins per 2026 ecosystem norms. Compound Engineering has 12-agent review; deep-implement has built-in review | Medium | Opus reviews completed work for correctness, patterns, edge cases. Single focused Opus pass, not multi-agent parallelism |
 | Advisor consultation at Anthropic-recommended timing points | Without disciplined timing, the plugin is just "ask Opus" -- no different from switching models manually | Low | Timing is prompt engineering, not orchestration. Encode in skill prompts |
 | Advisor output trimming (conciseness enforcement) | Cost control is critical -- untrimmed advisor output wastes Opus tokens. Anthropic proved trimming works without quality loss | Low | Single system prompt line: "respond in under 100 words and use enumerated steps, not explanations" |
-| Accept external plans in implement skill | Users may plan with other tools (compound-engineering, deep-plan, manual specs). Rejecting external plans kills adoption | Low | Optional parameter: path to plan file. If absent, implement skill handles orientation + advisor consultation for planning inline |
+| Accept external plans in execute skill | Users may plan with other tools (compound-engineering, deep-plan, manual specs). Rejecting external plans kills adoption | Low | Optional parameter: path to plan file. If absent, execute skill handles orientation + advisor consultation for planning inline |
 
 ## Differentiators
 
@@ -26,7 +26,7 @@ Features that set this plugin apart from `opusplan` mode, compound-engineering, 
 | Security review skill (`/lz-advisor.security-review`) | Dedicated security lens from Opus is rare in the plugin ecosystem. Most plugins bundle security into general review (compound-engineering has it as one of 12 review agents). A standalone security skill lets users invoke it explicitly for security-critical work | Medium | Threat modeling, injection vectors, auth/authz gaps, secret exposure, dependency risks. Opus's deeper reasoning matters most here |
 | Reconciliation pattern for advisor-executor disagreement | No competing plugin handles the case where empirical evidence contradicts advisor guidance. Anthropic's suggested prompt explicitly addresses this with a "reconcile call" pattern | Medium | When executor finds evidence contradicting advisor, surface the conflict in one more advisor call: "I found X, you suggest Y, which constraint breaks the tie?" |
 | Strategic advisor consultation (2-3 calls per task, not per-tool-call) | `opusplan` uses Opus for ALL plan-mode reasoning. Compound-engineering spawns 12+ subagents. This plugin's value is surgical Opus usage at high-leverage moments only | Low | Prompt discipline, not code. Key insight from Anthropic: advisor adds most value on first call (before approach crystallizes) and final check (after work done) |
-| Durable deliverable before final advisor check | Anthropic's prompt explicitly says: "BEFORE this call, make your deliverable durable: write the file, save the result, commit the change. The advisor call takes time; if the session ends during it, a durable result persists." No competing plugin enforces this | Low | Encoded in implement skill prompt. Protects user work from session timeouts during Opus inference |
+| Durable deliverable before final advisor check | Anthropic's prompt explicitly says: "BEFORE this call, make your deliverable durable: write the file, save the result, commit the change. The advisor call takes time; if the session ends during it, a durable result persists." No competing plugin enforces this | Low | Encoded in execute skill prompt. Protects user work from session timeouts during Opus inference |
 | Zero external dependencies | Compound-engineering optionally uses Gemini/OpenAI for review. deep-plan supports external LLM review. oh-my-claude requires an HTTP proxy. This plugin uses ONLY Claude Code's Agent tool -- nothing to configure, no API keys, no proxies | Low | Major UX advantage. One install, zero config. Works on any Claude Code plan (Team, individual) |
 | Inherits session model for executor | Unlike `opusplan` which forces Sonnet in execution mode, this plugin respects whatever model the user chose for their session. Optimized for Sonnet 4.6 but works with any model | Low | If a user is already on Opus, the advisor still adds value (Opus-advising-Opus is a valid pair per Anthropic's compatibility table) |
 | Advisor-guided stuck detection | When the executor hits recurring errors or approach isn't converging, the skill prompts trigger advisor consultation automatically. This is more nuanced than compound-engineering's "review after completion" pattern | Low | Prompt-level feature. Anthropic's timing: "When stuck -- errors recurring, approach not converging, results that don't fit" |
@@ -42,7 +42,7 @@ Features to explicitly NOT build. These are tempting but wrong for this plugin.
 | Multi-agent parallel review (like compound-engineering's 12-agent approach) | Spawning 12 Sonnet agents for parallel review is compound-engineering's approach. This plugin's value proposition is Opus-level intelligence through a single focused advisor, not breadth through parallelism | Single Opus advisor review pass. Opus sees everything compound-engineering splits across 12 agents, but reasons about it holistically |
 | External LLM integration (Gemini, OpenAI, etc.) | deep-plan supports external LLM review. oh-my-claude routes to DeepSeek/ZhiPu. Adding external model support adds API key management, configuration complexity, and failure modes -- contradicting the zero-dependency value proposition | Claude-only. Opus as advisor, session model as executor. Zero external dependencies |
 | Claude API / `advisor_20260301` tool dependency | The API advisor tool requires the Messages API and beta headers. This plugin targets Claude Code users who don't write API code. Depending on the API tool would require an Anthropic SDK dependency and API key management | Replicate the advisor pattern using Claude Code's Agent tool with `model: "opus"`. Same pattern, native to the plugin system |
-| Plan storage/management system | deep-plan writes section files to disk and tracks completion via commit hashes. Compound-engineering stores brainstorms in docs/brainstorms/. Adding a plan storage system adds complexity for marginal value | Plans are conversation artifacts. If the user wants to persist a plan, they can save the output. The implement skill accepts a plan file path but doesn't manage plan lifecycle |
+| Plan storage/management system | deep-plan writes section files to disk and tracks completion via commit hashes. Compound-engineering stores brainstorms in docs/brainstorms/. Adding a plan storage system adds complexity for marginal value | Plans are conversation artifacts. If the user wants to persist a plan, they can save the output. The execute skill accepts a plan file path but doesn't manage plan lifecycle |
 | Automatic model detection/fallback | Detecting whether the user has Opus access, falling back to Sonnet-advising-Sonnet, etc. adds complexity and masks the core value proposition. If Opus isn't available, the plugin shouldn't pretend to work | Fail clearly if Opus is unavailable. Document the requirement. Don't degrade silently |
 | Per-tool-call advisor consultation | Anthropic's benchmarks show advisor adds most value at 2-3 strategic calls per task. Consulting on every tool call would be expensive and noisy, negating the cost advantage | Strategic consultation only: after orientation, when stuck, when changing approach, before declaring done |
 | Agent that writes code or calls tools | The advisor's role is guidance, not action. Giving it tool access turns it into a second executor, defeating the cost model | Restrict advisor agent to read-only tools at most (Read, Glob). Advisor returns plans and corrections, executor acts on them |
@@ -53,9 +53,9 @@ Features to explicitly NOT build. These are tempting but wrong for this plugin.
 Opus advisor agent (lz-advisor) --> all skills depend on this
   |
   |-- Plan skill (/lz-advisor.plan)
-  |     '-- Implement skill can consume plan output (optional dependency)
+  |     '-- Execute skill can consume plan output (optional dependency)
   |
-  |-- Implement skill (/lz-advisor.implement)
+  |-- Execute skill (/lz-advisor.execute)
   |     |-- Uses advisor timing pattern (after orientation, when stuck, when changing approach, before done)
   |     |-- Reconciliation pattern (when executor evidence contradicts advisor)
   |     '-- Durable deliverable enforcement (before final advisor check)
@@ -96,7 +96,7 @@ Opus advisor agent (lz-advisor) --> all skills depend on this
 **What makes a good plan output from an advisor-assisted flow:**
 - Advisor provides the strategic skeleton (high-level approach, ordering, key decisions)
 - Executor fills in tactical details (specific files, function signatures, test cases)
-- Plan is immediately actionable by implement skill or human developer
+- Plan is immediately actionable by execute skill or human developer
 - Dependencies between steps are explicit
 - Risk areas flagged for deeper attention during implementation
 
@@ -105,7 +105,7 @@ Opus advisor agent (lz-advisor) --> all skills depend on this
 - deep-plan runs research + interview + external LLM review (slow, multi-phase, external dependencies)
 - This plugin: one Opus consultation produces the strategic skeleton, executor expands it (fast, cheap, focused)
 
-### Implement Skill (`/lz-advisor.implement`)
+### Execute Skill (`/lz-advisor.execute`)
 
 **Full executor-advisor loop step by step:**
 
@@ -211,8 +211,8 @@ The cost argument: 2-3 Opus calls at 400-700 output tokens each is dramatically 
 Prioritize (in build order):
 
 1. **Opus advisor agent** (`lz-advisor`) -- foundation for everything else
-2. **Implement skill** (`/lz-advisor.implement`) -- the core workflow, demonstrates full value proposition
-3. **Plan skill** (`/lz-advisor.plan`) -- standalone planning, also feeds implement skill
+2. **Execute skill** (`/lz-advisor.execute`) -- the core workflow, demonstrates full value proposition
+3. **Plan skill** (`/lz-advisor.plan`) -- standalone planning, also feeds execute skill
 4. **Review skill** (`/lz-advisor.review`) -- completes the development lifecycle
 
 Defer:
@@ -225,7 +225,7 @@ Defer:
 | Advisor timing pattern | HIGH | Directly from Anthropic's official suggested system prompt for coding tasks |
 | Advisor output format | HIGH | Directly from Anthropic's docs -- under 100 words, enumerated steps |
 | Reconciliation pattern | HIGH | Directly from Anthropic's suggested system prompt -- explicit "reconcile call" instruction |
-| Implement skill workflow | HIGH | Derived step-by-step from Anthropic's timing guidance and advice-treatment prompt |
+| Execute skill workflow | HIGH | Derived step-by-step from Anthropic's timing guidance and advice-treatment prompt |
 | Competitive landscape | MEDIUM | Based on WebSearch findings; plugin ecosystem moves fast. Verified compound-engineering and deep-plan exist as described |
 | Security review scope | MEDIUM | Based on industry standards (OWASP, common security review practices). No competing plugin specializes here, so no direct comparison |
 | Cost advantage claims | HIGH | Anthropic's benchmarks: Sonnet + Opus advisor = +2.7pp at 11.9% lower cost than Sonnet alone |

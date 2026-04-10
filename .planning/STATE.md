@@ -46,6 +46,7 @@ Recent decisions affecting current work:
 - Single advisor agent, multiple skills (skills define workflow, agent defines persona)
 - Review skills use `context: fork` with `model: opus` -- no advisor agent loop
 - INFRA-04 (description optimization) deferred to Phase 5 (requires working skills to evaluate)
+- Renamed `/lz-advisor.implement` to `/lz-advisor.execute` (clearer intent: execute tasks, not just implement code)
 
 ### Pending Todos
 

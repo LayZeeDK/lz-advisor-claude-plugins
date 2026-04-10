@@ -2,7 +2,7 @@
 
 ## Overview
 
-This roadmap delivers a Claude Code marketplace plugin implementing the advisor strategy -- pairing an Opus advisor agent with Sonnet executor skills. All four skills use the same pattern: Sonnet executor scans/orients, packages context, and consults an Opus advisor agent for strategic guidance. The build order follows hard dependencies: the advisor agent must exist before any skill can reference it, the plan skill validates the consultation mechanism before the more complex implement skill builds on it, review skills reuse the proven pattern for code analysis, and polish addresses cross-cutting description optimization that requires working skills.
+This roadmap delivers a Claude Code marketplace plugin implementing the advisor strategy -- pairing an Opus advisor agent with Sonnet executor skills. All four skills use the same pattern: Sonnet executor scans/orients, packages context, and consults an Opus advisor agent for strategic guidance. The build order follows hard dependencies: the advisor agent must exist before any skill can reference it, the plan skill validates the consultation mechanism before the more complex execute skill builds on it, review skills reuse the proven pattern for code analysis, and polish addresses cross-cutting description optimization that requires working skills.
 
 ## Phases
 
@@ -14,7 +14,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 - [ ] **Phase 1: Plugin Scaffold and Advisor Agent** - Working plugin with Opus advisor agent discoverable and invocable
 - [ ] **Phase 2: Plan Skill** - Users can get Opus-guided strategic plans before writing code
-- [ ] **Phase 3: Implement Skill** - Users can execute tasks with full executor-advisor loop
+- [ ] **Phase 3: Execute Skill** - Users can execute tasks with full executor-advisor loop
 - [ ] **Phase 4: Review Skills** - Users can get Opus-powered code and security reviews of completed work
 - [ ] **Phase 5: Polish and Marketplace Readiness** - Plugin is discoverable, documented, and ready for marketplace
 
@@ -50,8 +50,8 @@ Plans:
 Plans:
 - [ ] 02-01: TBD
 
-### Phase 3: Implement Skill
-**Goal**: Users can invoke `/lz-advisor.implement` to execute coding tasks with strategic Opus consultation at high-leverage moments
+### Phase 3: Execute Skill
+**Goal**: Users can invoke `/lz-advisor.execute` to execute coding tasks with strategic Opus consultation at high-leverage moments
 **Depends on**: Phase 2
 **Requirements**: IMPL-01, IMPL-02, IMPL-03, IMPL-04, IMPL-05, IMPL-06, IMPL-07, IMPL-08, IMPL-09, IMPL-10
 **Success Criteria** (what must be TRUE):
@@ -102,6 +102,6 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5
 |-------|----------------|--------|-----------|
 | 1. Plugin Scaffold and Advisor Agent | 0/2 | Not started | - |
 | 2. Plan Skill | 0/1 | Not started | - |
-| 3. Implement Skill | 0/2 | Not started | - |
+| 3. Execute Skill | 0/2 | Not started | - |
 | 4. Review Skills | 0/2 | Not started | - |
 | 5. Polish and Marketplace Readiness | 0/1 | Not started | - |

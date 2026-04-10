@@ -32,7 +32,7 @@ Requirements for initial release. Each maps to roadmap phases.
 - [ ] **PLAN-05**: Skill outputs a durable plan artifact (written to file or displayed for user)
 - [ ] **PLAN-06**: Skill inherits session model for executor (no model override)
 
-### Implement Skill
+### Execute Skill
 
 - [ ] **IMPL-01**: Skill instructs executor to consult advisor before substantive work (after orientation)
 - [ ] **IMPL-02**: Skill instructs executor to consult advisor when stuck (errors recurring, approach not converging)

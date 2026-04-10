@@ -28,8 +28,8 @@ lz-advisor plugin
     |   '-- references/
     |       '-- advisor-timing.md     # Anthropic's timing guidance
     |
-    |-- lz-advisor-implement/
-    |   '-- SKILL.md                  # Implement skill (full advisor loop)
+    |-- lz-advisor-execute/
+    |   '-- SKILL.md                  # Execute skill (full advisor loop)
     |
     |-- lz-advisor-review/
     |   '-- SKILL.md                  # Review skill (Opus direct)
@@ -44,7 +44,7 @@ lz-advisor plugin
 |-----------|------|-------|----------------|-------------------|
 | `lz-advisor` agent | Agent definition | `opus` (effort: high) | Concise strategic guidance (<100 words, enumerated) | Skills invoke via Agent tool |
 | `lz-advisor-plan` skill | Skill (inline) | Inherits session | Orient, consult advisor, produce plan | `lz-advisor` agent |
-| `lz-advisor-implement` skill | Skill (inline) | Inherits session | Full build loop with advisor consultations | `lz-advisor` agent |
+| `lz-advisor-execute` skill | Skill (inline) | Inherits session | Full build loop with advisor consultations | `lz-advisor` agent |
 | `lz-advisor-review` skill | Skill (`context: fork`) | `opus` | Post-work quality review (Opus direct) | None (runs as Opus) |
 | `lz-advisor-security-review` skill | Skill (`context: fork`) | `opus` | Security-focused review (Opus direct) | None (runs as Opus) |
 | `references/advisor-timing.md` | Reference file | N/A | Anthropic's suggested advisor timing patterns | Loaded by skills when needed |
@@ -53,7 +53,7 @@ lz-advisor plugin
 
 Two skill execution modes serve different purposes in the advisor pattern:
 
-**Inline skills** (`lz-advisor-plan`, `lz-advisor-implement`): The skill content loads
+**Inline skills** (`lz-advisor-plan`, `lz-advisor-execute`): The skill content loads
 into the executor's (Sonnet's) conversation context. The executor follows the skill's
 instructions and uses the Agent tool to spawn the `lz-advisor` subagent when the
 instructions say to consult the advisor. The executor retains full conversation history
@@ -323,7 +323,7 @@ effort: medium
 Options: `low`, `medium`, `high`, `max` (Opus 4.6 only for `max`).
 This overrides the session effort level while the skill is active.
 
-**Recommendation:** Do NOT set effort in plan/implement skills. Let the user's session
+**Recommendation:** Do NOT set effort in plan/execute skills. Let the user's session
 effort drive the executor. Setting it would override the user's choice.
 
 DO set `effort: high` on review skills since they run as Opus via `context: fork`.
@@ -367,13 +367,13 @@ Executor receives instructions for orient -> consult -> produce workflow
   |           Writes plan to file or presents to user
   |           Plan format: numbered steps with rationale
   v
-Done -- plan available for /lz-advisor-implement
+Done -- plan available for /lz-advisor-execute
 ```
 
-### Implement Skill Flow
+### Execute Skill Flow
 
 ```
-User invokes /lz-advisor-implement <task> [optional plan reference]
+User invokes /lz-advisor-execute <task> [optional plan reference]
   |
   v
 Skill content loads into executor context (Sonnet 4.6 / session model)
@@ -468,7 +468,7 @@ SKILL.md content so the executor knows WHEN to consult the advisor.
 **Rationale:** Anthropic's internal coding evaluations found this timing pattern
 produced "the highest intelligence at near-Sonnet cost."
 
-**Example (lz-advisor-implement SKILL.md excerpt):**
+**Example (lz-advisor-execute SKILL.md excerpt):**
 
 ```markdown
 You have access to a `lz-advisor` agent backed by a stronger reviewer model (Opus).
@@ -610,18 +610,18 @@ keep calling -- the advisor adds most of its value on the first call, before the
 approach crystallizes."
 **Instead:** 2-3 strategic consultations per task.
 
-### Anti-Pattern 3: Using `context: fork` for Plan/Implement Skills
+### Anti-Pattern 3: Using `context: fork` for Plan/Execute Skills
 
-**What:** Running the plan or implement skill in a forked subagent context.
+**What:** Running the plan or execute skill in a forked subagent context.
 **Why bad:** The skill loses access to the main conversation history. The executor
 can't use prior context, @-mentioned files, or conversation state. The skill becomes
 a one-shot prompt rather than an interactive workflow.
-**Instead:** Run plan/implement inline (no `context: fork`). The skill content guides
+**Instead:** Run plan/execute inline (no `context: fork`). The skill content guides
 the executor's behavior within the existing conversation.
 
 ### Anti-Pattern 4: Overriding Executor Effort in Skill
 
-**What:** Setting `effort: medium` or any explicit effort in the plan/implement skill.
+**What:** Setting `effort: medium` or any explicit effort in the plan/execute skill.
 **Why bad:** Overrides the user's session effort choice without their knowledge.
 Users set effort intentionally via `/effort` command. The skill should work well at
 any effort level.
@@ -701,11 +701,11 @@ Key configuration rationale:
 - `disable-model-invocation: true` -- user-triggered only (cost control)
 - `allowed-tools` includes `Agent(lz-advisor)` -- pre-approves advisor spawning
 
-### Skill Definition: `skills/lz-advisor-implement/SKILL.md`
+### Skill Definition: `skills/lz-advisor-execute/SKILL.md`
 
 ```yaml
 ---
-name: lz-advisor-implement
+name: lz-advisor-execute
 description: >
   Implement a task with Opus advisor guidance. Sonnet orients, consults Opus before
   substantive work, executes the implementation, then consults Opus for final review.
@@ -766,7 +766,7 @@ Key configuration rationale:
    - Simplest orchestration pattern (orient -> consult -> produce)
    - Good testbed for tuning advisor prompt and context packaging
 
-3. **Implement skill third** (`skills/lz-advisor-implement/`)
+3. **Execute skill third** (`skills/lz-advisor-execute/`)
    - Depends on: agent definition, learnings from plan skill
    - Most complex orchestration (multi-phase with conditional consultations)
    - May reference plans produced by the plan skill

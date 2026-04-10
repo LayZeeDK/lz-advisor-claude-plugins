@@ -49,8 +49,8 @@ A Claude Code marketplace plugin that implements the advisor strategy -- pairing
 |   |   |-- SKILL.md             # Plan skill: orient -> advise -> plan
 |   |   '-- references/
 |   |       '-- advisor-timing.md  # Anthropic's suggested timing patterns
-|   |-- lz-advisor-implement/
-|   |   '-- SKILL.md             # Implement skill: full executor-advisor loop
+|   |-- lz-advisor-execute/
+|   |   '-- SKILL.md             # Execute skill: full executor-advisor loop
 |   |-- lz-advisor-review/
 |   |   '-- SKILL.md             # Review skill: Opus reviews completed work
 |   '-- lz-advisor-security-review/

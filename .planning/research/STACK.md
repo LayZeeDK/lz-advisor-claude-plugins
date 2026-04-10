@@ -48,8 +48,8 @@ lz-advisor/
 |   |   |-- SKILL.md             # Plan skill: orient -> advise -> plan
 |   |   '-- references/
 |   |       '-- advisor-timing.md  # Anthropic's suggested timing patterns
-|   |-- lz-advisor-implement/
-|   |   '-- SKILL.md             # Implement skill: full executor-advisor loop
+|   |-- lz-advisor-execute/
+|   |   '-- SKILL.md             # Execute skill: full executor-advisor loop
 |   |-- lz-advisor-review/
 |   |   '-- SKILL.md             # Review skill: Opus reviews completed work
 |   '-- lz-advisor-security-review/
@@ -215,7 +215,7 @@ Skills use three-level loading (per skill-creator and plugin-dev):
 2. **SKILL.md body** (<5,000 words, ideal 1,500-2,000) -- Loaded when skill triggers
 3. **Bundled resources** (unlimited) -- Loaded on demand via references/, scripts/, assets/
 
-**For the advisor skills:** Keep each SKILL.md body under 2,000 words. Move Anthropic's full advisor timing guidance to `references/advisor-timing.md` and reference it from the plan skill. The implement skill references the timing guidance too but its core loop is self-contained.
+**For the advisor skills:** Keep each SKILL.md body under 2,000 words. Move Anthropic's full advisor timing guidance to `references/advisor-timing.md` and reference it from the plan skill. The execute skill references the timing guidance too but its core loop is self-contained.
 
 ### Writing Style (Imperative Form)
 

@@ -48,7 +48,7 @@ Mistakes that cause rewrites, cost explosions, or fundamental architectural fail
 **Prevention:**
 - Include Anthropic's suggested timing block verbatim in skill prompts: "Call advisor BEFORE substantive work -- before writing, before committing to an interpretation, before building on an assumption."
 - Explicitly distinguish orientation from substantive work: "Orientation is not substantive work. Writing, editing, and declaring an answer are."
-- Structure the implement skill to enforce advisor-first: orientation phase -> advisor call -> execution phase
+- Structure the execute skill to enforce advisor-first: orientation phase -> advisor call -> execution phase
 - On short reactive tasks where the next action is dictated by tool output, skip the advisor -- it adds most value before the approach crystallizes
 
 **Detection:** Review conversation transcripts. If the advisor is first called after file writes or code generation, timing is wrong.
@@ -78,7 +78,7 @@ Mistakes that cause rewrites, cost explosions, or fundamental architectural fail
 
 **Detection:** Test cases where the advisor gives plausible but wrong advice (e.g., suggests a pattern that doesn't match the project's actual dependency structure). Does the executor catch it?
 
-**Phase relevance:** Phase 1 (implement skill prompt). This is prompt language, not architecture.
+**Phase relevance:** Phase 1 (execute skill prompt). This is prompt language, not architecture.
 
 **Confidence:** HIGH (Anthropic advisor tool docs, "How the executor should treat the advice" section)
 
@@ -149,12 +149,12 @@ Mistakes that cause rewrites, cost explosions, or fundamental architectural fail
 
 **Prevention:**
 - Include Anthropic's explicit durability instruction: "BEFORE this call, make your deliverable durable: write the file, save the result, commit the change. The advisor call takes time; if the session ends during it, a durable result persists and an unwritten one doesn't."
-- Structure the implement skill with an explicit "persist work" step before "final advisor review" step
+- Structure the execute skill with an explicit "persist work" step before "final advisor review" step
 - This is verbatim from Anthropic's suggested system prompt -- don't paraphrase it
 
 **Detection:** In testing, simulate a session interruption during the final advisor call. Was work saved?
 
-**Phase relevance:** Phase 1 (implement skill prompt). This is a prompt instruction, not an architectural concern.
+**Phase relevance:** Phase 1 (execute skill prompt). This is a prompt instruction, not an architectural concern.
 
 **Confidence:** HIGH (Anthropic advisor tool docs, suggested system prompt: "make your deliverable durable")
 
@@ -306,7 +306,7 @@ Mistakes that cause rewrites, cost explosions, or fundamental architectural fail
 
 **Prevention:**
 - Use the `lz-advisor` prefix consistently on all components (already decided per PROJECT.md)
-- Plugin skills automatically namespace as `lz-advisor:plan`, `lz-advisor:implement`, etc.
+- Plugin skills automatically namespace as `lz-advisor:plan`, `lz-advisor:execute`, etc.
 - Avoid generic names like `advisor`, `plan`, `review` -- always prefix
 - Test with other popular plugins installed to verify no conflicts
 - Document that if the user has a `lz-advisor` agent in their project, it will override the plugin's
@@ -465,7 +465,7 @@ Mistakes that cause rewrites, cost explosions, or fundamental architectural fail
 | Plugin scaffold | Silent manifest failures (#5) | Minimal plugin.json, test with `--debug`, no custom fields |
 | Advisor agent definition | Verbose output (#4), overthinking (#10), write tools (#13) | Conciseness instruction + effort level + read-only tools |
 | Skill prompt writing | Aggressive language (#1), late advisor call (#2) | Use calm natural language; use Anthropic's suggested timing block |
-| Implement skill | Missing durability (#6), blind following (#3) | Include both timing and advice-handling blocks from Anthropic |
+| Execute skill | Missing durability (#6), blind following (#3) | Include both timing and advice-handling blocks from Anthropic |
 | Context architecture | Fork loses history (#9), no nested agents (#8) | Executor drives tools, advisor provides text only, no fork for advisor |
 | Description tuning | Truncation (#7), skill similarity (#20) | Front-load keywords, stay under 250 chars, differentiate descriptions |
 | Skill lifecycle | Content loaded once (#14), ultrathink trigger (#17) | Standing instructions, careful word choice |

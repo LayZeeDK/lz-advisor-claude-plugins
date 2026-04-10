@@ -18,8 +18,8 @@ Near-Opus intelligence at Sonnet cost for coding tasks, achieved through strateg
 
 - [ ] Opus advisor agent (`lz-advisor`) provides concise guidance (under 100 words, enumerated steps)
 - [ ] Plan skill (`/lz-advisor.plan`) -- Sonnet orients, Opus advises, Sonnet produces actionable plan
-- [ ] Implement skill (`/lz-advisor.implement`) -- full executor-advisor loop with advisor consulted before substantive work, when stuck, and before declaring done
-- [ ] Implement skill accepts optional plan from `/lz-advisor.plan` or other sources
+- [ ] Execute skill (`/lz-advisor.execute`) -- full executor-advisor loop with advisor consulted before substantive work, when stuck, and before declaring done
+- [ ] Execute skill accepts optional plan from `/lz-advisor.plan` or other sources
 - [ ] Review skill (`/lz-advisor.review`) -- Sonnet scans code, Opus advisor provides deep quality analysis
 - [ ] Security review skill (`/lz-advisor.security-review`) -- Sonnet scans for attack surfaces, Opus advisor provides threat analysis
 - [ ] Skills inherit session model for executor (optimized for Sonnet 4.6)

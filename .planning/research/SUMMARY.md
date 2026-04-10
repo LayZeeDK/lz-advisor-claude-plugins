@@ -21,7 +21,7 @@ This plugin has zero external dependencies -- no npm packages, no build steps, n
 
 **Core technologies:**
 - Agent definition (`agents/lz-advisor.md`): Opus advisor persona -- the `model: opus` frontmatter field is the sole mechanism for spawning Opus from a Sonnet session; `effort: high` ensures deep strategic reasoning
-- Inline skills (`skills/lz-advisor-plan/`, `skills/lz-advisor-implement/`): Orchestrate executor-advisor workflows; run in the session model's context with full conversation history
+- Inline skills (`skills/lz-advisor-plan/`, `skills/lz-advisor-execute/`): Orchestrate executor-advisor workflows; run in the session model's context with full conversation history
 - Forked skills (`skills/lz-advisor-review/`, `skills/lz-advisor-security-review/`): Run Opus directly via `context: fork` + `model: opus`; no executor-advisor loop needed for reviews
 - Plugin manifest (`.claude-plugin/plugin.json`): Must be kept minimal; any unrecognized field causes silent loading failure
 - Reference files (`references/advisor-timing.md`): Detailed Anthropic timing guidance offloaded from SKILL.md to stay under the 5,000-token compaction limit
@@ -31,11 +31,11 @@ This plugin has zero external dependencies -- no npm packages, no build steps, n
 **Must have (table stakes):**
 - Opus advisor agent with concise output (under 100 words, enumerated steps) -- the plugin's core mechanism; without it, there is no product
 - Plan skill: orient -> Opus consult -> produce actionable plan; faster and simpler than compound-engineering's 3-agent research pipeline
-- Implement skill: full Anthropic timing pattern (consult before work, when stuck, when changing approach, before declaring done); the plugin's highest-value feature
+- Execute skill: full Anthropic timing pattern (consult before work, when stuck, when changing approach, before declaring done); the plugin's highest-value feature
 - Review skill: Opus direct review of completed work via `context: fork`; table stakes for coding plugins in 2026
 - Advisor consultation at Anthropic-recommended timing points -- wrong timing means the advisor adds no value regardless of model quality
 - Conciseness enforcement in advisor system prompt -- without it, the cost advantage disappears
-- Accept external plan files in implement skill -- rejecting external plans blocks adoption from users of compound-engineering, deep-plan, or manual specs
+- Accept external plan files in execute skill -- rejecting external plans blocks adoption from users of compound-engineering, deep-plan, or manual specs
 
 **Should have (competitive):**
 - Security review skill: dedicated threat-modeling lens from Opus, rare in the ecosystem; prompt variation of review skill, not a new orchestration pattern
@@ -47,16 +47,16 @@ This plugin has zero external dependencies -- no npm packages, no build steps, n
 - Hooks-based automatic advisor triggering: hooks are global, lack conversation context, add cost with no user intent signal
 - Task-type-specific skills (refactor, test, infra): advisor timing pattern is identical regardless of task type; user's prompt provides context; would duplicate skill logic with minor prompt variations
 - Multi-agent parallel review: compound-engineering's approach; contradicts this plugin's single-focused-Opus value proposition
-- Plan storage and lifecycle management: unnecessary complexity; plans are conversation artifacts; implement skill accepts a plan file path but does not manage plan lifecycle
+- Plan storage and lifecycle management: unnecessary complexity; plans are conversation artifacts; execute skill accepts a plan file path but does not manage plan lifecycle
 
 ### Architecture Approach
 
-The architecture splits into two execution patterns determined by whether the skill needs iterative tool use. Plan and implement skills run inline (no `context: fork`) so the Sonnet executor retains full conversation history and drives all tool calls; the skill instructs the executor when to spawn the `lz-advisor` agent via the Agent tool. Review and security-review skills run as forked Opus contexts (`context: fork` + `model: opus`): Opus runs the review directly with no executor-advisor loop, because reviews need deep analysis of completed work with no file editing. The critical constraint throughout: subagents cannot spawn other subagents, the advisor agent must be text-only (read-only tools at most), and the executor must package all needed context into the agent invocation prompt since subagents do not inherit parent conversation history.
+The architecture splits into two execution patterns determined by whether the skill needs iterative tool use. Plan and execute skills run inline (no `context: fork`) so the Sonnet executor retains full conversation history and drives all tool calls; the skill instructs the executor when to spawn the `lz-advisor` agent via the Agent tool. Review and security-review skills run as forked Opus contexts (`context: fork` + `model: opus`): Opus runs the review directly with no executor-advisor loop, because reviews need deep analysis of completed work with no file editing. The critical constraint throughout: subagents cannot spawn other subagents, the advisor agent must be text-only (read-only tools at most), and the executor must package all needed context into the agent invocation prompt since subagents do not inherit parent conversation history.
 
 **Major components:**
 1. `lz-advisor` agent (`agents/lz-advisor.md`) -- Opus 4.6, effort: high, tools: Read/Glob, maxTurns: 1; strategic consultant only, never takes action
 2. `lz-advisor-plan` skill -- inline, session model, no effort override; orient -> consult -> produce plan; testbed for advisor prompt calibration
-3. `lz-advisor-implement` skill -- inline, session model, no effort override; full Anthropic timing loop with stuck detection, reconciliation, and durable deliverable enforcement
+3. `lz-advisor-execute` skill -- inline, session model, no effort override; full Anthropic timing loop with stuck detection, reconciliation, and durable deliverable enforcement
 4. `lz-advisor-review` skill -- forked, model: opus, effort: high, read-only git tools; Opus runs review directly; no advisor loop
 5. `lz-advisor-security-review` skill -- same fork pattern as review, OWASP-focused prompt with threat modeling lens
 6. `references/advisor-timing.md` -- Anthropic's timing guidance loaded on demand; keeps SKILL.md lean for compaction resilience
@@ -86,16 +86,16 @@ Based on research, the build order is determined by hard dependencies and learni
 
 ### Phase 2: Plan Skill
 
-**Rationale:** Simplest orchestration pattern (orient -> consult -> produce). Serves as the testbed for tuning context packaging instructions and validating that advisor timing works correctly before tackling the more complex implement skill. Learnings from this phase -- description optimization, context packaging prompt wording, advisor call frequency calibration -- directly improve the implement skill design.
+**Rationale:** Simplest orchestration pattern (orient -> consult -> produce). Serves as the testbed for tuning context packaging instructions and validating that advisor timing works correctly before tackling the more complex execute skill. Learnings from this phase -- description optimization, context packaging prompt wording, advisor call frequency calibration -- directly improve the execute skill design.
 **Delivers:** Working `/lz-advisor.plan` skill; user can get Opus-guided strategic plans before writing code; validated context packaging pattern
 **Addresses:** Plan skill (table stakes #2), advisor timing (table stakes #5)
 **Avoids:** Late advisor call (Pitfall 2), subagent context isolation requiring explicit context packaging (Pitfall 5 architectural), skill description truncation (Pitfall 7)
 
-### Phase 3: Implement Skill
+### Phase 3: Execute Skill
 
 **Rationale:** The core workflow and highest-value feature. More complex than plan because it requires multi-phase conditional advisor calls (before work, when stuck, when changing approach, before done), stuck detection heuristics, reconciliation pattern, and durable deliverable enforcement. Builds on plan skill learnings about context packaging and advisor prompt tone.
-**Delivers:** Working `/lz-advisor.implement` skill; full executor-advisor loop covering the complete development cycle; accepts optional external plan file
-**Addresses:** Implement skill (table stakes #3), advisor timing (table stakes #5), external plan acceptance (table stakes #7), reconciliation (differentiator), durable deliverable enforcement (differentiator)
+**Delivers:** Working `/lz-advisor.execute` skill; full executor-advisor loop covering the complete development cycle; accepts optional external plan file
+**Addresses:** Execute skill (table stakes #3), advisor timing (table stakes #5), external plan acceptance (table stakes #7), reconciliation (differentiator), durable deliverable enforcement (differentiator)
 **Avoids:** Late advisor call (Pitfall 2), blind advice following without empirical check (Pitfall 3), missing durable deliverable before final advisor call (Pitfall 6), overtriggering from aggressive prompting (Pitfall 1)
 
 ### Phase 4: Review Skills
@@ -103,7 +103,7 @@ Based on research, the build order is determined by hard dependencies and learni
 **Rationale:** Review and security review share the same forked-Opus architectural pattern and can be built in parallel with each other. They have no dependency on the advisor agent (they run Opus directly via `context: fork`). Placed after implement because implement is the higher priority feature and because review skill descriptions benefit from description optimization lessons learned in phases 2-3. Security review is a prompt variation of the review skill, not a new orchestration pattern -- build them together.
 **Delivers:** Working `/lz-advisor.review` and `/lz-advisor.security-review` skills; completes the development lifecycle (plan -> implement -> review); Opus holistic review vs. compound-engineering's 12-parallel-Sonnet approach
 **Addresses:** Review skill (table stakes #4), security review (differentiator #1)
-**Avoids:** Using `context: fork` for plan/implement (Anti-Pattern 3); `context: fork` correctly scoped to review only; review skill similarity confusion requiring differentiated descriptions (Pitfall 20)
+**Avoids:** Using `context: fork` for plan/execute (Anti-Pattern 3); `context: fork` correctly scoped to review only; review skill similarity confusion requiring differentiated descriptions (Pitfall 20)
 
 ### Phase 5: Polish, Docs, and Marketplace Publication
 
@@ -124,7 +124,7 @@ Based on research, the build order is determined by hard dependencies and learni
 
 Phases likely needing deeper research during planning:
 - **Phase 2 (Plan skill):** Skill description optimization is empirical -- requires running skill-creator eval loops with realistic trigger queries after the skill is drafted. The right keyword placement and description length can only be confirmed by testing with multiple plugins installed simultaneously.
-- **Phase 3 (Implement skill):** Stuck detection thresholds (when exactly to trigger a mid-work advisor call) require testing to calibrate. "Errors recurring after 2-3 attempts" is Anthropic's guidance, not a hard rule. The prompt wording for stuck detection will need iteration based on real task behavior.
+- **Phase 3 (Execute skill):** Stuck detection thresholds (when exactly to trigger a mid-work advisor call) require testing to calibrate. "Errors recurring after 2-3 attempts" is Anthropic's guidance, not a hard rule. The prompt wording for stuck detection will need iteration based on real task behavior.
 - **Phase 4 (Review skills):** The `disable-model-invocation: true` + slash command interaction bug (Pitfall 18, GitHub #26251) may affect review skill invocation. Verify current status at implementation time; have a documented workaround ready (remove the flag, rely on descriptive naming).
 
 Phases with standard patterns (skip research-phase):
