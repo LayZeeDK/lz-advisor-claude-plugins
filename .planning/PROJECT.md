@@ -20,8 +20,8 @@ Near-Opus intelligence at Sonnet cost for coding tasks, achieved through strateg
 - [ ] Plan skill (`/lz-advisor.plan`) -- Sonnet orients, Opus advises, Sonnet produces actionable plan
 - [ ] Implement skill (`/lz-advisor.implement`) -- full executor-advisor loop with advisor consulted before substantive work, when stuck, and before declaring done
 - [ ] Implement skill accepts optional plan from `/lz-advisor.plan` or other sources
-- [ ] Review skill (`/lz-advisor.review`) -- Opus reviews completed work for quality
-- [ ] Security review skill (`/lz-advisor.security-review`) -- Opus reviews with security/threat focus
+- [ ] Review skill (`/lz-advisor.review`) -- Sonnet scans code, Opus advisor provides deep quality analysis
+- [ ] Security review skill (`/lz-advisor.security-review`) -- Sonnet scans for attack surfaces, Opus advisor provides threat analysis
 - [ ] Skills inherit session model for executor (optimized for Sonnet 4.6)
 - [ ] Advisor agent uses Opus 4.6
 - [ ] Advisor consultation timing follows Anthropic's suggested system prompt patterns
@@ -64,6 +64,7 @@ Near-Opus intelligence at Sonnet cost for coding tasks, achieved through strateg
 | Single advisor agent, multiple skills | Skills define the workflow; agent defines the advisor persona. Review variants differ by prompt, not orchestration | -- Pending |
 | Inherit session model for executor | Users choose their session model; plugin shouldn't override. Skills optimized for Sonnet 4.6 but work with any model | -- Pending |
 | Agent named `lz-advisor` not `lz-advisor-advisor` | Cleaner naming, the agent's role is clear from context | -- Pending |
+| All skills use advisor pattern (no `context: fork`) | Review skills with `context: fork` + `model: opus` would be indistinguishable from `/review` + `/model opus`. Advisor pattern (Sonnet scans, packages context, Opus advises) genuinely differentiates. Consistent architecture across all skills. | -- Pending |
 
 ## Evolution
 

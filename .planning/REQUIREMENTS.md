@@ -47,20 +47,22 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Review Skill
 
-- [ ] **REVW-01**: Skill runs Opus directly via `context: fork` with `model: opus`
-- [ ] **REVW-02**: Skill uses `effort: high` for thorough analysis
-- [ ] **REVW-03**: Skill reviews code quality, correctness, edge cases, and maintainability
-- [ ] **REVW-04**: Skill provides structured output with actionable findings
+- [ ] **REVW-01**: Skill instructs executor to scan code first (read files, identify areas of concern)
+- [ ] **REVW-02**: Skill instructs executor to package scan findings and relevant code sections into advisor invocation
+- [ ] **REVW-03**: Advisor provides deep analysis of quality, correctness, edge cases, and maintainability
+- [ ] **REVW-04**: Skill provides structured output with actionable, severity-classified findings
 - [ ] **REVW-05**: Skill can review specific files, directories, or recent changes
+- [ ] **REVW-06**: Skill inherits session model for executor (no model override)
 
 ### Security Review Skill
 
-- [ ] **SECR-01**: Skill runs Opus directly via `context: fork` with `model: opus`
-- [ ] **SECR-02**: Skill uses `effort: high` for thorough security analysis
-- [ ] **SECR-03**: Skill applies OWASP Top 10 lens to reviewed code
-- [ ] **SECR-04**: Skill performs threat modeling for reviewed code paths
-- [ ] **SECR-05**: Skill provides severity-classified security findings
+- [ ] **SECR-01**: Skill instructs executor to scan code first with security focus (read files, identify attack surfaces)
+- [ ] **SECR-02**: Skill instructs executor to package security-relevant findings and code sections into advisor invocation
+- [ ] **SECR-03**: Advisor applies OWASP Top 10 lens to packaged findings
+- [ ] **SECR-04**: Advisor performs threat modeling for reviewed code paths
+- [ ] **SECR-05**: Skill provides severity-classified security findings with remediation guidance
 - [ ] **SECR-06**: Skill can review specific files, directories, or recent changes
+- [ ] **SECR-07**: Skill inherits session model for executor (no model override)
 
 ## v2 Requirements
 
@@ -126,18 +128,20 @@ Which phases cover which requirements. Updated during roadmap creation.
 | REVW-03 | Phase 4 | Pending |
 | REVW-04 | Phase 4 | Pending |
 | REVW-05 | Phase 4 | Pending |
+| REVW-06 | Phase 4 | Pending |
 | SECR-01 | Phase 4 | Pending |
 | SECR-02 | Phase 4 | Pending |
 | SECR-03 | Phase 4 | Pending |
 | SECR-04 | Phase 4 | Pending |
 | SECR-05 | Phase 4 | Pending |
 | SECR-06 | Phase 4 | Pending |
+| SECR-07 | Phase 4 | Pending |
 
 **Coverage:**
-- v1 requirements: 32 total
-- Mapped to phases: 32
+- v1 requirements: 39 total
+- Mapped to phases: 39
 - Unmapped: 0
 
 ---
 *Requirements defined: 2026-04-10*
-*Last updated: 2026-04-10 after initial definition*
+*Last updated: 2026-04-10 after roadmap creation*
