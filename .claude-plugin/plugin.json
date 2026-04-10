@@ -1,0 +1,20 @@
+{
+  "name": "lz-advisor",
+  "version": "0.1.0",
+  "description": "Advisor strategy: pair Opus advisor with session model for near-Opus intelligence at Sonnet cost",
+  "author": {
+    "name": "Lars Gyrup Brink Nielsen",
+    "url": "https://github.com/LayZeeDK"
+  },
+  "repository": "https://github.com/LayZeeDK/lz-advisor-claude-plugins",
+  "license": "MIT",
+  "keywords": [
+    "advisor",
+    "opus",
+    "sonnet",
+    "intelligence",
+    "cost-optimization",
+    "code-review",
+    "planning"
+  ]
+}
