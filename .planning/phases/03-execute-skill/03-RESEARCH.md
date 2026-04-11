@@ -335,17 +335,16 @@ Source: D-05 from CONTEXT.md + plugin-dev command-development SKILL.md. [VERIFIE
 
 **If this table is empty:** All claims in this research were verified or cited -- no user confirmation needed.
 
-## Open Questions
+## Open Questions (RESOLVED)
 
-1. **`@${CLAUDE_PLUGIN_ROOT}` in skill bodies**
+1. **`@${CLAUDE_PLUGIN_ROOT}` in skill bodies** -- RESOLVED
    - What we know: Plugin-dev documents this syntax for commands. Commands and skills share the same Markdown loading mechanism. The plan skill successfully uses `@references/advisor-timing.md` (relative to skill directory).
    - What's unclear: Whether `${CLAUDE_PLUGIN_ROOT}` is expanded when the `@` include appears in a SKILL.md body (as opposed to a command .md body).
-   - Recommendation: Implement with `@${CLAUDE_PLUGIN_ROOT}/references/advisor-timing.md` first. If it doesn't resolve, fall back to instructing the executor to read the file via Read tool. Test during Phase 3 execution.
+   - Resolution: Implement with `@${CLAUDE_PLUGIN_ROOT}/references/advisor-timing.md` first. If it does not resolve during execution, fall back to instructing the executor to read the file via Read tool. Both approaches are documented in Plan 01 Task 2 and Plan 02 Task 1. Risk is low -- commands and skills share the same Markdown loader.
 
-2. **Execute skill word count budget**
+2. **Execute skill word count budget** -- RESOLVED
    - What we know: SKILL.md must stay under 5,000 tokens (~2,000 words) for compaction resilience. The execute skill has 6 phases (vs plan's 3).
-   - What's unclear: Whether all 6 phases plus context packaging templates fit within the budget.
-   - Recommendation: Keep phase descriptions terse (3-5 bullet points each). Rely on advisor-timing.md for timing/weight/packaging details. Defer description optimization to Phase 5 (INFRA-04).
+   - Resolution: Keep phase descriptions terse (3-5 bullet points each). Rely on advisor-timing.md for timing/weight/packaging details. Plan 02 Task 1 specifies the word count target (<2,000 words) and Plan 02 Task 2 includes a word count verification check. Defer description optimization to Phase 5 (INFRA-04).
 
 ## Validation Architecture
 
