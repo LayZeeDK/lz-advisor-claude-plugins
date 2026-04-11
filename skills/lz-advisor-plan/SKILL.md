@@ -1,0 +1,108 @@
+---
+name: lz-advisor-plan
+description: >
+  This skill should be used when the user asks to "plan a task",
+  "create an implementation plan", "think through the approach",
+  "plan before coding", "lz-advisor plan", or needs strategic
+  planning guidance before starting substantive coding work.
+  Provides Opus-level strategic direction at Sonnet cost by
+  consulting the advisor agent for high-leverage guidance.
+version: 0.1.0
+allowed-tools: Agent(lz-advisor:advisor)
+---
+
+The lz-advisor:advisor agent is backed by a stronger model (Opus). Invoke it
+via the Agent tool at the strategic moment described below. For detailed
+guidance on timing, advice weight, and context packaging, see:
+
+@references/advisor-timing.md
+
+This skill follows a three-phase workflow: orient, consult, then produce a plan.
+
+<orient>
+## Phase 1: Orient
+
+Explore the codebase to understand the task scope and current state.
+
+- Read files relevant to the user's request
+- Examine directory structure and dependencies
+- Identify constraints, existing patterns, and integration points
+- Note what exists and what needs to change
+
+Do not write code or make changes during orientation. Do not consult
+the advisor yet -- orientation is preparation, not substantive work.
+</orient>
+
+<consult>
+## Phase 2: Consult the Advisor
+
+Invoke the lz-advisor:advisor agent via the Agent tool with a focused
+prompt containing:
+
+1. The user's original task (quote their request)
+2. Key findings from orientation (files examined, patterns found,
+   constraints discovered)
+3. A specific question: "Given these findings, what approach and
+   sequence of steps would you recommend?"
+
+Keep the prompt summarized -- do not paste entire files. The advisor
+starts with a fresh context and cannot see the conversation. All
+relevant context goes in the prompt.
+
+One advisor consultation per plan invocation. The advisor returns
+concise strategic direction (enumerated steps). This becomes the
+foundation of the plan.
+</consult>
+
+<produce>
+## Phase 3: Produce the Plan
+
+Expand the advisor's enumerated guidance into a detailed, actionable
+plan. Write the plan to a markdown file.
+
+### Plan File Location
+
+Write to: `plan-<task-slug>.md` in the project root directory.
+Use a short kebab-case slug derived from the task description.
+Example: for "add user authentication", write `plan-add-user-auth.md`.
+
+### Plan File Format
+
+The plan file contains these sections:
+
+```markdown
+# Plan: <Task Title>
+
+## Strategic Direction
+
+<The advisor's guidance, attributed and quoted. Present the advisor's
+enumerated steps as the strategic foundation for this plan.>
+
+## Steps
+
+1. **<Step title>**
+   - File: `<path/to/file>`
+   - Change: <specific description of what to create or modify>
+   - Rationale: <why this step, connecting to advisor guidance>
+
+2. ...
+
+(Continue for all steps. Each step includes file paths and specific
+changes -- matching the granularity of a detailed implementation plan.)
+
+## Key Decisions
+
+- **<Decision>**: <rationale from advisor guidance and executor analysis>
+- **<Risk>**: <what could go wrong and how to mitigate>
+
+## Dependencies
+
+<Order constraints between steps, if any. Note which steps can be
+done in parallel and which are sequential.>
+```
+
+Present the plan file path to the user after writing it.
+</produce>
+
+After writing the plan file, let the user know where it is. The plan can be
+reviewed, edited, and then passed to `/lz-advisor.execute` for implementation.
