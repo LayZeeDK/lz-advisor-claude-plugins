@@ -12,7 +12,10 @@ Near-Opus intelligence at Sonnet cost for coding tasks, achieved through strateg
 
 ### Validated
 
-(None yet -- ship to validate)
+- [x] Plugin manifest and directory structure (INFRA-01, INFRA-02) -- Validated in Phase 1
+- [x] Opus advisor agent discoverable and invocable (ADVR-01, ADVR-02, ADVR-03, ADVR-04, ADVR-05) -- Validated in Phase 1
+- [x] Advisor timing reference file (INFRA-03) -- Validated in Phase 1
+- [x] Agent namespaced as `lz-advisor:lz-advisor` when loaded via `--plugin-dir` -- discovered in Phase 1 UAT
 
 ### Active
 
@@ -65,6 +68,8 @@ Near-Opus intelligence at Sonnet cost for coding tasks, achieved through strateg
 | Inherit session model for executor | Users choose their session model; plugin shouldn't override. Skills optimized for Sonnet 4.6 but work with any model | -- Pending |
 | Agent named `lz-advisor` not `lz-advisor-advisor` | Cleaner naming, the agent's role is clear from context | -- Pending |
 | All skills use advisor pattern (no `context: fork`) | Review skills with `context: fork` + `model: opus` would be indistinguishable from `/review` + `/model opus`. Advisor pattern (Sonnet scans, packages context, Opus advises) genuinely differentiates. Consistent architecture across all skills. | -- Pending |
+| Agent namespaced as `lz-advisor:lz-advisor` | Claude Code namespaces plugin agents as `{plugin-name}:{agent-name}`. Skills must use `lz-advisor:lz-advisor` as `subagent_type`, not just `lz-advisor`. | Discovered in Phase 1 UAT |
+| Conciseness calibration deferred to Phase 2 | Under 100 words constraint not respected with broad open-ended questions. Scoped skill prompts may suffice; measure with real invocations before tuning agent system prompt. | Phase 1 UAT finding |
 
 ## Evolution
 
@@ -84,4 +89,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-04-10 after initialization*
+*Last updated: 2026-04-11 after Phase 1 completion*
