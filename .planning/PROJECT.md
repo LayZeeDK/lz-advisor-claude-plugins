@@ -16,11 +16,11 @@ Near-Opus intelligence at Sonnet cost for coding tasks, achieved through strateg
 - [x] Opus advisor agent discoverable and invocable (ADVR-01, ADVR-02, ADVR-03, ADVR-04, ADVR-05) -- Validated in Phase 1
 - [x] Advisor timing reference file (INFRA-03) -- Validated in Phase 1
 - [x] Agent namespaced as `lz-advisor:lz-advisor` when loaded via `--plugin-dir` -- discovered in Phase 1 UAT
+- [x] Plan skill (`/lz-advisor.plan`) -- Sonnet orients, Opus advises, Sonnet produces actionable plan -- Validated in Phase 2
 
 ### Active
 
 - [ ] Opus advisor agent (`lz-advisor`) provides concise guidance (under 100 words, enumerated steps)
-- [ ] Plan skill (`/lz-advisor.plan`) -- Sonnet orients, Opus advises, Sonnet produces actionable plan
 - [ ] Execute skill (`/lz-advisor.execute`) -- full executor-advisor loop with advisor consulted before substantive work, when stuck, and before declaring done
 - [ ] Execute skill accepts optional plan from `/lz-advisor.plan` or other sources
 - [ ] Review skill (`/lz-advisor.review`) -- Sonnet scans code, Opus advisor provides deep quality analysis
@@ -88,4 +88,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-04-11 after Phase 1 completion*
+*Last updated: 2026-04-11 after Phase 2 completion*
