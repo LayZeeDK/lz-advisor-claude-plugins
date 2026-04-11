@@ -33,8 +33,8 @@ Decimal phases appear between their surrounding integers in numeric order.
 **Plans**: 2 plans
 
 Plans:
-- [ ] 01-01-PLAN.md -- Plugin manifest, directory structure, and Opus advisor agent definition
-- [ ] 01-02-PLAN.md -- Advisor timing reference file and plugin README
+- [x] 01-01-PLAN.md -- Plugin manifest, directory structure, and Opus advisor agent definition
+- [x] 01-02-PLAN.md -- Advisor timing reference file and plugin README
 
 ### Phase 2: Plan Skill
 **Goal**: Users can invoke `/lz-advisor.plan` to get an Opus-informed strategic plan for any coding task
@@ -45,6 +45,7 @@ Plans:
   2. Advisor receives packaged orientation findings (not raw conversation history) and returns concise strategic direction
   3. Executor expands advisor guidance into a detailed, actionable plan artifact (written to file or displayed)
   4. Skill runs on the session model (Sonnet) for execution while consulting Opus only for strategic direction
+**Note from Phase 1 UAT**: Advisor conciseness constraint (under 100 words) was not respected when invoked with broad open-ended questions. Calibrate during Phase 2 -- the executor's scoped prompts may suffice, or the agent system prompt may need strengthening. Measure with real skill-driven invocations before tuning.
 **Plans**: TBD
 
 Plans:
