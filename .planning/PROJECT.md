@@ -66,9 +66,8 @@ Near-Opus intelligence at Sonnet cost for coding tasks, achieved through strateg
 | No hooks for v1 | Hooks are global (can't scope to skill execution), lack conversation context, and would add cost/noise without clear value | -- Pending |
 | Single advisor agent, multiple skills | Skills define the workflow; agent defines the advisor persona. Review variants differ by prompt, not orchestration | -- Pending |
 | Inherit session model for executor | Users choose their session model; plugin shouldn't override. Skills optimized for Sonnet 4.6 but work with any model | -- Pending |
-| Agent named `lz-advisor` not `lz-advisor-advisor` | Cleaner naming, the agent's role is clear from context | -- Pending |
+| Agent file renamed to `advisor.md` (qualified: `lz-advisor:advisor`) | Original `lz-advisor.md` produced redundant `lz-advisor:lz-advisor`. Renamed to `advisor.md` so qualified name is `lz-advisor:advisor`. Skills use `lz-advisor:advisor` as `subagent_type`. | Phase 1 UAT rename |
 | All skills use advisor pattern (no `context: fork`) | Review skills with `context: fork` + `model: opus` would be indistinguishable from `/review` + `/model opus`. Advisor pattern (Sonnet scans, packages context, Opus advises) genuinely differentiates. Consistent architecture across all skills. | -- Pending |
-| Agent namespaced as `lz-advisor:lz-advisor` | Claude Code namespaces plugin agents as `{plugin-name}:{agent-name}`. Skills must use `lz-advisor:lz-advisor` as `subagent_type`, not just `lz-advisor`. | Discovered in Phase 1 UAT |
 | Conciseness calibration deferred to Phase 2 | Under 100 words constraint not respected with broad open-ended questions. Scoped skill prompts may suffice; measure with real invocations before tuning agent system prompt. | Phase 1 UAT finding |
 
 ## Evolution

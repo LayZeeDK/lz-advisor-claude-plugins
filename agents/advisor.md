@@ -1,5 +1,5 @@
 ---
-name: lz-advisor
+name: advisor
 description: |
   Use this agent when a skill needs strategic advisor consultation from
   a stronger model. Requires structured context packaging from the

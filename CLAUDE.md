@@ -43,7 +43,7 @@ A Claude Code marketplace plugin that implements the advisor strategy -- pairing
 |-- .claude-plugin/
 |   '-- plugin.json              # Required: plugin manifest
 |-- agents/
-|   '-- lz-advisor.md            # Opus advisor agent
+|   '-- advisor.md               # Opus advisor agent (qualified: lz-advisor:advisor)
 |-- skills/
 |   |-- lz-advisor-plan/
 |   |   |-- SKILL.md             # Plan skill: orient -> advise -> plan
@@ -63,10 +63,10 @@ A Claude Code marketplace plugin that implements the advisor strategy -- pairing
 - **`lz-advisor` prefix**: Namespace all components to avoid collision with other plugins.
 ## Plugin Manifest (plugin.json)
 ## Agent File Format
-### lz-advisor.md -- The Opus Advisor Agent
+### advisor.md -- The Opus Advisor Agent (qualified: lz-advisor:advisor)
 | Field | Value | Notes |
 |-------|-------|-------|
-| `name` | `lz-advisor` | 3-50 chars, lowercase + hyphens, must start/end alphanumeric |
+| `name` | `advisor` | 3-50 chars, lowercase + hyphens; qualified as `lz-advisor:advisor` |
 | `description` | Triggering conditions + examples | Most critical field; determines when agent triggers |
 | `model` | `opus` | Overrides session model; spawns on Opus 4.6 |
 | `color` | `magenta` | Visual identifier; magenta = creative/strategic |
@@ -135,7 +135,7 @@ A Claude Code marketplace plugin that implements the advisor strategy -- pairing
 - `.mcp.json` -- MCP server definitions
 ### Naming Conventions
 - Plugin name: kebab-case (`lz-advisor`)
-- Agent files: kebab-case `.md` (`lz-advisor.md`)
+- Agent files: kebab-case `.md` (`advisor.md`)
 - Skill directories: kebab-case (`lz-advisor-plan/`)
 - SKILL.md files: Exactly `SKILL.md` (not `skill.md` or `README.md`)
 ### Component Lifecycle
