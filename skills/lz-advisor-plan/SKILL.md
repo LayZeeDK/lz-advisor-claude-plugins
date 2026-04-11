@@ -15,7 +15,7 @@ The lz-advisor:advisor agent is backed by a stronger model (Opus). Invoke it
 via the Agent tool at the strategic moment described below. For detailed
 guidance on timing, advice weight, and context packaging, see:
 
-@references/advisor-timing.md
+@${CLAUDE_PLUGIN_ROOT}/references/advisor-timing.md
 
 This skill follows a three-phase workflow: orient, consult, then produce a plan.
 
@@ -62,9 +62,10 @@ plan. Write the plan to a markdown file.
 
 ### Plan File Location
 
-Write to: `plan-<task-slug>.md` in the project root directory.
+Write to: `plans/<task-slug>.plan.md`
 Use a short kebab-case slug derived from the task description.
-Example: for "add user authentication", write `plan-add-user-auth.md`.
+Create the `plans/` directory if it does not exist.
+Example: for "add user authentication", write `plans/add-user-auth.plan.md`.
 
 ### Plan File Format
 
