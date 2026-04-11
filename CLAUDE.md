@@ -172,7 +172,24 @@ A Claude Code marketplace plugin that implements the advisor strategy -- pairing
 <!-- GSD:conventions-start source:CONVENTIONS.md -->
 ## Conventions
 
-Conventions not yet established. Will populate as patterns emerge during development.
+### Skill Verification with `claude -p`
+
+When phase verification produces `human_needed` items for skill testing, verify them automatically using a non-interactive CLI invocation instead of deferring to manual testing:
+
+```bash
+claude --model sonnet --effort medium --plugin-dir . -p "/lz-advisor.<skill-name> <realistic task prompt>" --verbose
+```
+
+- Use `/lz-advisor.<skill-name>` syntax (not natural-language triggers) for reliable skill activation
+- Choose a realistic task prompt that exercises the skill's full workflow
+- After the command completes, verify:
+  1. **Orientation**: output references specific codebase files (proves executor explored before consulting)
+  2. **Advisor conciseness**: Strategic Direction section is under 100 words, enumerated
+  3. **Artifact output**: expected file was written with all required sections
+- Clean up any test artifacts (plan files, etc.) after verification
+- Update the UAT file status from `partial` to `resolved` and VERIFICATION.md status from `human_needed` to `passed`
+
+This approach was validated in Phase 2: all 3 UAT items passed via `claude -p "/lz-advisor.plan ..."` without requiring an interactive session.
 <!-- GSD:conventions-end -->
 
 <!-- GSD:architecture-start source:ARCHITECTURE.md -->
