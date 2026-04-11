@@ -46,10 +46,10 @@ Plans:
   3. Executor expands advisor guidance into a detailed, actionable plan artifact (written to file or displayed)
   4. Skill runs on the session model (Sonnet) for execution while consulting Opus only for strategic direction
 **Note from Phase 1 UAT**: Advisor conciseness constraint (under 100 words) was not respected when invoked with broad open-ended questions. Calibrate during Phase 2 -- the executor's scoped prompts may suffice, or the agent system prompt may need strengthening. Measure with real skill-driven invocations before tuning.
-**Plans**: TBD
+**Plans**: 1 plan
 
 Plans:
-- [ ] 02-01: TBD
+- [ ] 02-01-PLAN.md -- SKILL.md with orient-consult-produce workflow and .gitkeep cleanup
 
 ### Phase 3: Execute Skill
 **Goal**: Users can invoke `/lz-advisor.execute` to execute coding tasks with strategic Opus consultation at high-leverage moments
@@ -102,7 +102,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Plugin Scaffold and Advisor Agent | 0/2 | Planning complete | - |
-| 2. Plan Skill | 0/1 | Not started | - |
+| 2. Plan Skill | 0/1 | Planning complete | - |
 | 3. Execute Skill | 0/2 | Not started | - |
 | 4. Review Skills | 0/2 | Not started | - |
 | 5. Polish and Marketplace Readiness | 0/1 | Not started | - |
