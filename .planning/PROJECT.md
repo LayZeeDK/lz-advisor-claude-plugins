@@ -17,12 +17,13 @@ Near-Opus intelligence at Sonnet cost for coding tasks, achieved through strateg
 - [x] Advisor timing reference file (INFRA-03) -- Validated in Phase 1
 - [x] Agent namespaced as `lz-advisor:lz-advisor` when loaded via `--plugin-dir` -- discovered in Phase 1 UAT
 - [x] Plan skill (`/lz-advisor.plan`) -- Sonnet orients, Opus advises, Sonnet produces actionable plan -- Validated in Phase 2
+- [x] Execute skill (`/lz-advisor.execute`) -- full executor-advisor loop with 6 phases (orient, consult, execute, durable, final, complete) -- Validated in Phase 3
+- [x] Execute skill accepts optional plan from `/lz-advisor.plan` via @ file mention -- Validated in Phase 3
+- [x] Shared advisor-timing reference at plugin-root `references/` -- Validated in Phase 3
 
 ### Active
 
 - [ ] Opus advisor agent (`lz-advisor`) provides concise guidance (under 100 words, enumerated steps)
-- [ ] Execute skill (`/lz-advisor.execute`) -- full executor-advisor loop with advisor consulted before substantive work, when stuck, and before declaring done
-- [ ] Execute skill accepts optional plan from `/lz-advisor.plan` or other sources
 - [ ] Review skill (`/lz-advisor.review`) -- Sonnet scans code, Opus advisor provides deep quality analysis
 - [ ] Security review skill (`/lz-advisor.security-review`) -- Sonnet scans for attack surfaces, Opus advisor provides threat analysis
 - [ ] Skills inherit session model for executor (optimized for Sonnet 4.6)
@@ -88,4 +89,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-04-11 after Phase 2 completion*
+*Last updated: 2026-04-11 after Phase 3 completion*
