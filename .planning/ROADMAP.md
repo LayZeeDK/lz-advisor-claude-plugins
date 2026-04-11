@@ -61,11 +61,11 @@ Plans:
   3. Executor makes deliverable durable (writes files, commits) before final advisor review, then consults advisor before declaring done
   4. When executor findings conflict with advisor guidance, the reconciliation pattern surfaces the conflict in one more advisor call rather than silently ignoring advice
   5. Skill accepts an optional plan file (from `/lz-advisor.plan` or other sources) and uses it to inform the implementation
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 03-01: TBD
-- [ ] 03-02: TBD
+- [x] 03-01-PLAN.md -- Move advisor-timing.md to shared references/ and update plan skill output path
+- [x] 03-02-PLAN.md -- Execute skill SKILL.md with 6-phase executor-advisor loop
 
 ### Phase 4: Review Skills
 **Goal**: Users can get thorough Opus-advised code quality reviews and security-focused threat analysis of completed work
@@ -103,6 +103,6 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5
 |-------|----------------|--------|-----------|
 | 1. Plugin Scaffold and Advisor Agent | 0/2 | Planning complete | - |
 | 2. Plan Skill | 0/1 | Planning complete | - |
-| 3. Execute Skill | 0/2 | Not started | - |
+| 3. Execute Skill | 0/2 | Planning complete | - |
 | 4. Review Skills | 0/2 | Not started | - |
 | 5. Polish and Marketplace Readiness | 0/1 | Not started | - |
