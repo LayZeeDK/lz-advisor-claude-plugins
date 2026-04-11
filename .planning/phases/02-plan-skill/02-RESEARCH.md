@@ -382,22 +382,19 @@ Source: CONTEXT.md D-04; Sonnet literal instruction following [VERIFIED: codebas
 | A2 | Omitting `disable-model-invocation: true` is safer than including it given GitHub #26251 | Architecture Patterns, Pattern 5 | Auto-triggering could cause unwanted Opus costs. Medium risk: specific description should mitigate false triggers, but untested. |
 | A3 | `allowed-tools: Agent(lz-advisor:advisor)` syntax with colon-separated qualified name works correctly | Architecture Patterns, Pattern 5 | If wrong, advisor invocation would require user permission. Medium risk: ARCHITECTURE.md examples show unqualified `Agent(lz-advisor)` but those predate the rename. Need to verify at implementation. |
 
-## Open Questions
+## Open Questions (RESOLVED)
 
 1. **Agent qualified name syntax in `allowed-tools`**
    - What we know: Agent file is `agents/advisor.md` with `name: advisor`. Plugin is `lz-advisor`. ARCHITECTURE.md examples (pre-rename) use `Agent(lz-advisor)`.
-   - What's unclear: Whether `allowed-tools` uses the qualified name `Agent(lz-advisor:advisor)` or unqualified `Agent(advisor)`. The CONTEXT.md says `Agent(lz-advisor:advisor)` but this has not been verified against Claude Code's actual resolution logic for plugin agents.
-   - Recommendation: Try `Agent(lz-advisor:advisor)` first. If it fails, fall back to `Agent(advisor)`. Test by invoking the skill and checking whether the agent spawns without a permission prompt.
+   - RESOLVED: Use `Agent(lz-advisor:advisor)` (qualified name) with `Agent(advisor)` as runtime fallback. The plan skill frontmatter uses `allowed-tools: Agent(lz-advisor:advisor)`. If the qualified syntax fails at runtime, the executor falls back to `Agent(advisor)`. This is documented in the plan's action instructions.
 
 2. **`disable-model-invocation` inclusion**
    - What we know: ARCHITECTURE.md examples include it. GitHub #26251 documents a bug where it blocks slash commands.
-   - What's unclear: Whether the bug is fixed in current Claude Code.
-   - Recommendation: Start without it (A2). Add it later if auto-triggering becomes a problem. The description should be specific enough to prevent false triggers.
+   - RESOLVED: Omit `disable-model-invocation` from skill frontmatter. The GitHub #26251 bug risk outweighs the auto-triggering risk. The skill description is specific enough to prevent false triggers (references "plan a task", "implementation plan", "lz-advisor plan" etc.).
 
 3. **Plan file location convention**
    - What we know: D-01 says durable file, discoverable by execute skill. IMPL-05 says execute skill accepts optional plan file input.
-   - What's unclear: Whether project root is the right location, or a `.plans/` subdirectory, or current working directory.
-   - Recommendation: Project root with `plan-*.md` naming. Simple, visible to the user, easy for execute skill to glob for. If users dislike root clutter, Phase 3 can adjust.
+   - RESOLVED: `plan-<task-slug>.md` in the project root directory. Simple, visible to the user, easy for execute skill to glob for. If users dislike root clutter, Phase 3 can adjust the convention since both skills are authored by the same project.
 
 ## Validation Architecture
 
