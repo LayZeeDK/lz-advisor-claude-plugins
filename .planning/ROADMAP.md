@@ -76,11 +76,11 @@ Plans:
   2. User invokes `/lz-advisor.security-review` and Sonnet scans for attack surfaces, packages findings, then Opus advisor performs threat modeling with OWASP Top 10 lens
   3. Both review skills produce structured output with actionable, severity-classified findings
   4. Both review skills use the same executor-advisor pattern as plan and implement (consistent architecture)
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 04-01: TBD
-- [ ] 04-02: TBD
+- [ ] 04-01-PLAN.md -- Validation script, reviewer agent, and code quality review skill
+- [ ] 04-02-PLAN.md -- Security-reviewer agent and security review skill
 
 ### Phase 5: Polish and Marketplace Readiness
 **Goal**: All skill descriptions are optimized for discoverability and the plugin is ready for marketplace publication
@@ -104,5 +104,5 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5
 | 1. Plugin Scaffold and Advisor Agent | 0/2 | Planning complete | - |
 | 2. Plan Skill | 0/1 | Planning complete | - |
 | 3. Execute Skill | 0/2 | Planning complete | - |
-| 4. Review Skills | 0/2 | Not started | - |
+| 4. Review Skills | 0/2 | Planning complete | - |
 | 5. Polish and Marketplace Readiness | 0/1 | Not started | - |
