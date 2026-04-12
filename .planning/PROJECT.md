@@ -20,12 +20,14 @@ Near-Opus intelligence at Sonnet cost for coding tasks, achieved through strateg
 - [x] Execute skill (`/lz-advisor.execute`) -- full executor-advisor loop with 6 phases (orient, consult, execute, durable, final, complete) -- Validated in Phase 3
 - [x] Execute skill accepts optional plan from `/lz-advisor.plan` via @ file mention -- Validated in Phase 3
 - [x] Shared advisor-timing reference at plugin-root `references/` -- Validated in Phase 3
+- [x] Review skill (`/lz-advisor.review`) -- Sonnet scans code, packages findings, Opus reviewer provides deep quality analysis with cross-cutting patterns -- Validated in Phase 4
+- [x] Security review skill (`/lz-advisor.security-review`) -- Sonnet scans for attack surfaces, packages findings, Opus security-reviewer provides OWASP-informed threat analysis -- Validated in Phase 4
+- [x] Both review skills produce structured severity-classified output (Critical/Important/Suggestion for review, Critical/High/Medium for security) -- Validated in Phase 4
+- [x] Both review skills use scan-consult-output pattern consistent with plan and execute skills -- Validated in Phase 4
 
 ### Active
 
 - [ ] Opus advisor agent (`lz-advisor`) provides concise guidance (under 100 words, enumerated steps)
-- [ ] Review skill (`/lz-advisor.review`) -- Sonnet scans code, Opus advisor provides deep quality analysis
-- [ ] Security review skill (`/lz-advisor.security-review`) -- Sonnet scans for attack surfaces, Opus advisor provides threat analysis
 - [ ] Skills inherit session model for executor (optimized for Sonnet 4.6)
 - [ ] Advisor agent uses Opus 4.6
 - [ ] Advisor consultation timing follows Anthropic's suggested system prompt patterns
@@ -89,4 +91,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-04-11 after Phase 3 completion*
+*Last updated: 2026-04-12 after Phase 4 completion*
