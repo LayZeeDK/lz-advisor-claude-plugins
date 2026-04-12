@@ -79,8 +79,8 @@ Plans:
 **Plans**: 2 plans
 
 Plans:
-- [ ] 04-01-PLAN.md -- Validation script, reviewer agent, and code quality review skill
-- [ ] 04-02-PLAN.md -- Security-reviewer agent and security review skill
+- [x] 04-01-PLAN.md -- Validation script, reviewer agent, and code quality review skill
+- [x] 04-02-PLAN.md -- Security-reviewer agent and security review skill
 
 ### Phase 5: Polish and Marketplace Readiness
 **Goal**: All skill descriptions are optimized for discoverability and the plugin is ready for marketplace publication
