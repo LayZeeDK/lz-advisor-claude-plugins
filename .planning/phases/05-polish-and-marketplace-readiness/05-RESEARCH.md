@@ -337,19 +337,19 @@ The validator agent reads the plugin root, finds `.claude-plugin/plugin.json`, a
 
 **If this table is empty:** N/A -- 3 assumptions identified above.
 
-## Open Questions
+## Open Questions (RESOLVED)
 
-1. **Marketplace name format**
+1. **Marketplace name format** -- RESOLVED: Use repo name `lz-advisor-claude-plugins` for consistency (Plan 01 Task 1 hardcodes this in marketplace.json)
    - What we know: The marketplace `name` field becomes the install suffix (e.g., `lz-advisor@lz-advisor-claude-plugins`)
    - What's unclear: Whether the marketplace name must match the GitHub repo name, or can be shorter (e.g., `lz-advisor-plugins`)
    - Recommendation: Use the repo name `lz-advisor-claude-plugins` for consistency. Users type it once when adding the marketplace.
 
-2. **Eval query count per cross-skill category**
+2. **Eval query count per cross-skill category** -- RESOLVED: 4 cross-skill negatives per eval set (Plan 03 Task 1 specifies this)
    - What we know: D-01 requires 20 queries per skill (8-10 positive, 8-10 negative). D-02 requires cross-skill negatives.
    - What's unclear: How many of the 8-10 negatives should be cross-skill vs. completely unrelated?
    - Recommendation: At least 3-4 cross-skill negatives per eval set (sibling skill queries). The rest can be near-miss from other domains. This provides strong disambiguation testing without making the eval set too narrow.
 
-3. **ANTHROPIC_API_KEY requirement for run_loop.py**
+3. **ANTHROPIC_API_KEY requirement for run_loop.py** -- RESOLVED: Plan 03 adds explicit env check and user_setup frontmatter
    - What we know: `improve_description.py` uses `anthropic.Anthropic()` client which reads `ANTHROPIC_API_KEY` from environment
    - What's unclear: Whether the environment already has this key set
    - Recommendation: Verify `ANTHROPIC_API_KEY` is set before running `run_loop.py`. If not, the script will fail immediately on first improvement iteration with a clear error.
