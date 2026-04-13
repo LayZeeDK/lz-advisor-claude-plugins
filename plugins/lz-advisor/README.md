@@ -21,8 +21,17 @@ This plugin uses Claude Code's native Agent tool to implement the pattern -- no 
 
 ## Installation
 
+Add the marketplace and install the plugin:
+
 ```
-claude plugin install LayZeeDK/lz-advisor-claude-plugins
+/plugin marketplace add LayZeeDK/lz-advisor-claude-plugins
+/plugin install lz-advisor@lz-advisor-claude-plugins
+```
+
+For local development or testing from a cloned repo:
+
+```
+claude --plugin-dir plugins/lz-advisor
 ```
 
 After installation, verify the plugin loads correctly:
@@ -31,9 +40,7 @@ After installation, verify the plugin loads correctly:
 claude --debug
 ```
 
-Look for `lz-advisor` in the loaded plugins output to confirm the agent is discovered.
-
-If skills do not trigger after installation, verify that `lz-advisor` appears in `enabledPlugins` in your Claude Code settings. This is a known issue where plugins install correctly but are not automatically enabled.
+Look for `lz-advisor` in the loaded plugins output. If skills do not trigger, verify that `lz-advisor` appears in `enabledPlugins` in your Claude Code settings.
 
 ## How it works
 
@@ -47,16 +54,6 @@ The advisor is consulted at the moments where a stronger model adds the most val
 1. **Before substantive work** -- after orientation (reading files, understanding the codebase), the executor consults the advisor before writing any code or committing to an approach.
 2. **When stuck** -- if errors recur, the approach is not converging, or results do not fit expectations.
 3. **Before declaring done** -- a final check to verify the approach is sound and catch anything the executor may have missed.
-
-## Cost expectations
-
-The advisor is consulted 2-3 times per typical task, keeping Opus usage focused on high-leverage moments rather than running end-to-end.
-
-- Each consultation uses approximately 400-700 Opus output tokens.
-- Total advisor cost per task: approximately $0.05-0.15 at current Opus rates.
-- The cost savings come from Sonnet handling the bulk of token generation (reading, writing, tool calls) while Opus provides only strategic guidance.
-
-The plugin does not add any costs beyond the Opus advisor consultations -- no external API calls, no third-party services.
 
 ## Requirements
 

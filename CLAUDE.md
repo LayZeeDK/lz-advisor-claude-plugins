@@ -40,22 +40,26 @@ A Claude Code marketplace plugin that implements the advisor strategy -- pairing
 | Testing | skill-creator plugin | Eval framework for testing skills; already installed |
 | Validation | plugin-dev plugin | Validation scripts for agents and plugin structure; already installed |
 ## Plugin Directory Structure
+plugins/lz-advisor/
 |-- .claude-plugin/
 |   '-- plugin.json              # Required: plugin manifest
 |-- agents/
-|   '-- advisor.md               # Opus advisor agent (qualified: lz-advisor:advisor)
+|   |-- advisor.md               # Opus advisor agent (qualified: lz-advisor:advisor)
+|   |-- reviewer.md              # Opus code quality reviewer agent
+|   '-- security-reviewer.md     # Opus security reviewer agent
 |-- skills/
 |   |-- lz-advisor-plan/
-|   |   |-- SKILL.md             # Plan skill: orient -> advise -> plan
-|   |   '-- references/
-|   |       '-- advisor-timing.md  # Anthropic's suggested timing patterns
+|   |   '-- SKILL.md             # Plan skill: orient -> advise -> plan
 |   |-- lz-advisor-execute/
 |   |   '-- SKILL.md             # Execute skill: full executor-advisor loop
 |   |-- lz-advisor-review/
 |   |   '-- SKILL.md             # Review skill: Opus reviews completed work
 |   '-- lz-advisor-security-review/
 |       '-- SKILL.md             # Security review skill: Opus reviews with threat focus
-|-- LICENSE
+|-- references/
+|   '-- advisor-timing.md        # Anthropic's suggested timing patterns
+|-- README.md
+'-- LICENSE
 - **No `commands/` directory**: Skills (not commands) are the right component type. Skills auto-trigger on context match and support progressive disclosure. Commands are legacy format (per plugin-dev docs: "The `.claude/commands/` directory is a legacy format. For new skills, use the `.claude/skills/<name>/SKILL.md` directory format").
 - **No `hooks/` directory**: Hooks are out of scope for v1 (cost control, no noise, can't scope to skill execution).
 - **No `.mcp.json`**: No external services; the Agent tool is the sole mechanism.
@@ -177,7 +181,7 @@ A Claude Code marketplace plugin that implements the advisor strategy -- pairing
 When phase verification produces `human_needed` items for skill testing, verify them automatically using a non-interactive CLI invocation instead of deferring to manual testing:
 
 ```bash
-claude --model sonnet --effort medium --plugin-dir . -p "/lz-advisor.<skill-name> <realistic task prompt>" --verbose
+claude --model sonnet --effort medium --plugin-dir plugins/lz-advisor -p "/lz-advisor.<skill-name> <realistic task prompt>" --verbose
 ```
 
 - Use `/lz-advisor.<skill-name>` syntax (not natural-language triggers) for reliable skill activation
