@@ -1,2 +1,5 @@
 /.claude/*.local.json
 /.claude/*.local.md
+
+# Eval pipeline outputs (regenerated on re-run)
+evals/**/outputs/
