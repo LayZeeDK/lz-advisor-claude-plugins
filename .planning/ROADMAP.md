@@ -94,11 +94,11 @@ Plans:
 **Plans**: 5 plans
 
 Plans:
-- [ ] 05-01-PLAN.md -- Restructure plugin to plugins/lz-advisor/ and marketplace setup
-- [ ] 05-02-PLAN.md -- Agent verification and fixes against plugin-dev guidelines
-- [ ] 05-03-PLAN.md -- Generate eval queries with cross-skill negatives
-- [ ] 05-04-PLAN.md -- Run description optimization pipeline and measure conciseness
-- [ ] 05-05-PLAN.md -- Final validation, README updates, and marketplace install test
+- [x] 05-01-PLAN.md -- Restructure plugin to plugins/lz-advisor/ and marketplace setup
+- [x] 05-02-PLAN.md -- Agent verification and fixes against plugin-dev guidelines
+- [x] 05-03-PLAN.md -- Generate eval queries with cross-skill negatives
+- [x] 05-04-PLAN.md -- Run description optimization pipeline and measure conciseness
+- [x] 05-05-PLAN.md -- Final validation, README updates, and marketplace install test
 
 ## Progress
 
