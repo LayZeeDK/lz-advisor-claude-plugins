@@ -1,0 +1,13 @@
+{
+  "name": "lz-advisor-claude-plugins",
+  "owner": {
+    "name": "Lars Gyrup Brink Nielsen"
+  },
+  "plugins": [
+    {
+      "name": "lz-advisor",
+      "source": "./plugins/lz-advisor",
+      "description": "Advisor strategy: pair Opus advisor with session model for near-Opus intelligence at Sonnet cost"
+    }
+  ]
+}
