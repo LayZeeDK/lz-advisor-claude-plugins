@@ -1,0 +1,8 @@
+BEFORE DESCRIPTION (lz-advisor-execute):
+
+  This skill should be used when the user asks to "implement this task",
+  "execute this plan", "build this feature", "code this up",
+  "lz-advisor execute", or needs to implement a coding task with
+  strategic Opus advisor guidance at high-leverage moments.
+  Pairs Sonnet execution with Opus strategic consultation for
+  near-Opus intelligence at Sonnet cost.

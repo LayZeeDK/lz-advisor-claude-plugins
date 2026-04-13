@@ -1,0 +1,9 @@
+BEFORE DESCRIPTION (lz-advisor-review):
+
+  This skill should be used when the user asks to "review this code",
+  "check my changes", "review these files", "look for issues",
+  "lz-advisor review", "check this module for bugs", or needs
+  code quality analysis of completed work. Provides Opus-level
+  code quality review at Sonnet cost by consulting the reviewer
+  agent for deep analysis of correctness, edge cases, and
+  maintainability.

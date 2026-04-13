@@ -1,12 +1,21 @@
 ---
 name: lz-advisor-execute
 description: >
-  This skill should be used when the user asks to "implement this task",
-  "execute this plan", "build this feature", "code this up",
-  "lz-advisor execute", or needs to implement a coding task with
-  strategic Opus advisor guidance at high-leverage moments.
-  Pairs Sonnet execution with Opus strategic consultation for
-  near-Opus intelligence at Sonnet cost.
+  This skill should be used when the user wants to implement,
+  build, or execute a coding task with strategic advisor guidance.
+  Trigger phrases include "implement this task", "execute this
+  plan", "build this feature", "code this up", "lz-advisor
+  execute", "start building", "implement with guidance", "build
+  this with advisor help", "execute the plan", and "code this
+  feature". This skill pairs Sonnet execution with Opus strategic
+  consultation for near-Opus intelligence at Sonnet cost. It
+  follows a six-phase workflow: orient, consult, execute, make
+  durable, final review, and complete. Optionally accepts a plan
+  file from lz-advisor-plan via @ file mention. This skill should
+  NOT be used when the user wants to plan before coding, review
+  completed code, or run security audits -- those are handled by
+  sibling skills lz-advisor-plan, lz-advisor-review, and
+  lz-advisor-security-review respectively.
 version: 0.1.0
 allowed-tools: Agent(lz-advisor:advisor)
 ---

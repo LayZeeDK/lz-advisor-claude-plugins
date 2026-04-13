@@ -1,0 +1,9 @@
+BEFORE DESCRIPTION (lz-advisor-security-review):
+
+  This skill should be used when the user asks to "security review
+  this code", "check for vulnerabilities", "audit security",
+  "lz-advisor security-review", "check for security issues",
+  "threat model this code", "review for injection risks", or
+  needs security-focused analysis of code. Provides Opus-level
+  security review at Sonnet cost by consulting the security-reviewer
+  agent for OWASP-informed threat analysis.

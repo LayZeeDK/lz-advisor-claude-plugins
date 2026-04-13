@@ -1,13 +1,21 @@
 ---
 name: lz-advisor-security-review
 description: >
-  This skill should be used when the user asks to "security review
-  this code", "check for vulnerabilities", "audit security",
+  This skill should be used when the user wants a security-focused
+  review of code, looking for vulnerabilities, attack surfaces, and
+  threat patterns. Trigger phrases include "security review this
+  code", "check for vulnerabilities", "audit security",
   "lz-advisor security-review", "check for security issues",
-  "threat model this code", "review for injection risks", or
-  needs security-focused analysis of code. Provides Opus-level
-  security review at Sonnet cost by consulting the security-reviewer
-  agent for OWASP-informed threat analysis.
+  "threat model this code", "review for injection risks", "find
+  vulnerabilities in", "security scan", "check for SQL injection",
+  and "audit for security". This skill provides Opus-level security
+  review at Sonnet cost by consulting the security-reviewer agent
+  for OWASP Top 10-informed threat analysis. Findings are
+  classified as Critical, High, or Medium with OWASP category
+  tags. This skill should NOT be used for general code quality
+  reviews, bug finding, or style issues -- use lz-advisor-review
+  instead. It should also NOT be used for planning or implementing
+  tasks -- use lz-advisor-plan or lz-advisor-execute instead.
 version: 0.1.0
 allowed-tools: Agent(lz-advisor:security-reviewer)
 ---

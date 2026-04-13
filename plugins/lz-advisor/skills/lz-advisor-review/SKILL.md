@@ -1,13 +1,21 @@
 ---
 name: lz-advisor-review
 description: >
-  This skill should be used when the user asks to "review this code",
-  "check my changes", "review these files", "look for issues",
-  "lz-advisor review", "check this module for bugs", or needs
-  code quality analysis of completed work. Provides Opus-level
-  code quality review at Sonnet cost by consulting the reviewer
-  agent for deep analysis of correctness, edge cases, and
-  maintainability.
+  This skill should be used when the user wants a code quality
+  review of completed work, looking for bugs, logic errors, and
+  edge cases. Trigger phrases include "review this code", "check
+  my changes", "review these files", "look for issues",
+  "lz-advisor review", "check this module for bugs", "look over
+  my code", "find bugs in", "review my recent commits", and
+  "check for correctness". This skill provides Opus-level code
+  quality review at Sonnet cost by consulting the reviewer agent
+  for deep analysis of correctness, edge cases, and
+  maintainability. Findings are classified as Critical, Important,
+  or Suggestion. This skill should NOT be used for security-focused
+  reviews, vulnerability audits, or threat modeling -- use
+  lz-advisor-security-review instead. It should also NOT be used
+  for planning or implementing tasks -- use lz-advisor-plan or
+  lz-advisor-execute instead.
 version: 0.1.0
 allowed-tools: Agent(lz-advisor:reviewer)
 ---

@@ -1,12 +1,20 @@
 ---
 name: lz-advisor-plan
 description: >
-  This skill should be used when the user asks to "plan a task",
-  "create an implementation plan", "think through the approach",
-  "plan before coding", "lz-advisor plan", or needs strategic
-  planning guidance before starting substantive coding work.
-  Provides Opus-level strategic direction at Sonnet cost by
-  consulting the advisor agent for high-leverage guidance.
+  This skill should be used when the user wants to plan a coding
+  task before starting implementation. Trigger phrases include
+  "plan a task", "create an implementation plan", "think through
+  the approach", "plan before coding", "lz-advisor plan", "help me
+  think through", "what's the best approach for", "before I start
+  coding", "plan out the architecture", and "how should I approach
+  this". This skill provides Opus-level strategic direction at
+  Sonnet cost by consulting the advisor agent for high-leverage
+  planning guidance. It produces a written plan file the user can
+  review and later pass to lz-advisor-execute. This skill should
+  NOT be used when the user wants to implement, build, review code,
+  fix bugs, or run security audits -- those are handled by sibling
+  skills lz-advisor-execute, lz-advisor-review, and
+  lz-advisor-security-review respectively.
 version: 0.1.0
 allowed-tools: Agent(lz-advisor:advisor)
 ---
