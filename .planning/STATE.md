@@ -78,6 +78,10 @@ None yet.
 - `disable-model-invocation: true` bug (GitHub #26251) may affect review skills in Phase 4 -- verify at implementation time
 - Advisor effort level may need calibration (`effort: high` -> `effort: medium`) if latency exceeds 15s in Phase 2 testing
 
+### Roadmap Evolution
+
+- Phase 5.1 inserted after Phase 5: Advisor consultation refinements (URGENT) -- closes three empirical gaps discovered during live marketplace testing on 2026-04-14: (A) agent preamble pattern wastes one tool_use round trip per consultation and creates misleading terminal display; (B) executor compresses user-pasted source material before passing to advisor, losing fidelity; (E) no re-consultation triggers during execute phase when approach-changing evidence surfaces
+
 ## Session Continuity
 
 Last session: 2026-04-13T12:16:26.195Z

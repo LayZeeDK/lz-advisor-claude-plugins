@@ -112,3 +112,13 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5
 | 3. Execute Skill | 0/2 | Planning complete | - |
 | 4. Review Skills | 0/2 | Planning complete | - |
 | 5. Polish and Marketplace Readiness | 0/5 | Planning complete | - |
+
+### Phase 05.1: Advisor consultation refinements (INSERTED)
+
+**Goal:** [Urgent work - to be planned]
+**Requirements**: TBD
+**Depends on:** Phase 5
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd-plan-phase 05.1 to break down)
