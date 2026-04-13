@@ -83,16 +83,22 @@ Plans:
 - [x] 04-02-PLAN.md -- Security-reviewer agent and security review skill
 
 ### Phase 5: Polish and Marketplace Readiness
-**Goal**: All skill descriptions are optimized for discoverability and the plugin is ready for marketplace publication
+**Goal**: Plugin restructured for marketplace distribution, agents verified, skill descriptions optimized for discoverability, and plugin ready for publication
 **Depends on**: Phase 4
 **Requirements**: INFRA-04
 **Success Criteria** (what must be TRUE):
-  1. Every skill description includes 5+ trigger phrases and surfaces the skill reliably when users describe related tasks
-  2. Plugin installs cleanly from GitHub (not just `--plugin-dir`) and all skills appear in the user's skill list
-**Plans**: TBD
+  1. Plugin lives at plugins/lz-advisor/ following marketplace conventions
+  2. All agents pass plugin-dev validation with expanded system prompts (500+ words)
+  3. Every skill description optimized via run_loop.py with improved eval scores
+  4. Plugin installs from GitHub marketplace and all skills appear in user's skill list
+**Plans**: 5 plans
 
 Plans:
-- [ ] 05-01: TBD
+- [ ] 05-01-PLAN.md -- Restructure plugin to plugins/lz-advisor/ and marketplace setup
+- [ ] 05-02-PLAN.md -- Agent verification and fixes against plugin-dev guidelines
+- [ ] 05-03-PLAN.md -- Generate eval queries with cross-skill negatives
+- [ ] 05-04-PLAN.md -- Run description optimization pipeline and measure conciseness
+- [ ] 05-05-PLAN.md -- Final validation, README updates, and marketplace install test
 
 ## Progress
 
@@ -105,4 +111,4 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5
 | 2. Plan Skill | 0/1 | Planning complete | - |
 | 3. Execute Skill | 0/2 | Planning complete | - |
 | 4. Review Skills | 0/2 | Planning complete | - |
-| 5. Polish and Marketplace Readiness | 0/1 | Not started | - |
+| 5. Polish and Marketplace Readiness | 0/5 | Planning complete | - |
