@@ -1,5 +1,5 @@
 ---
-name: lz-advisor-plan
+name: plan
 description: >
   This skill should be used when the user wants to plan a coding
   task before starting implementation. Trigger phrases include
@@ -10,11 +10,11 @@ description: >
   this". This skill provides Opus-level strategic direction at
   Sonnet cost by consulting the advisor agent for high-leverage
   planning guidance. It produces a written plan file the user can
-  review and later pass to lz-advisor-execute. This skill should
+  review and later pass to lz-advisor:execute. This skill should
   NOT be used when the user wants to implement, build, review code,
   fix bugs, or run security audits -- those are handled by sibling
-  skills lz-advisor-execute, lz-advisor-review, and
-  lz-advisor-security-review respectively.
+  skills lz-advisor:execute, lz-advisor:review, and
+  lz-advisor:security-review respectively.
 version: 0.1.0
 allowed-tools: Agent(lz-advisor:advisor)
 ---

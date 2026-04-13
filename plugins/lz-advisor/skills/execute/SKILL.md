@@ -1,5 +1,5 @@
 ---
-name: lz-advisor-execute
+name: execute
 description: >
   This skill should be used when the user wants to implement,
   build, or execute a coding task with strategic advisor guidance.
@@ -11,11 +11,11 @@ description: >
   consultation for near-Opus intelligence at Sonnet cost. It
   follows a six-phase workflow: orient, consult, execute, make
   durable, final review, and complete. Optionally accepts a plan
-  file from lz-advisor-plan via @ file mention. This skill should
+  file from lz-advisor:plan via @ file mention. This skill should
   NOT be used when the user wants to plan before coding, review
   completed code, or run security audits -- those are handled by
-  sibling skills lz-advisor-plan, lz-advisor-review, and
-  lz-advisor-security-review respectively.
+  sibling skills lz-advisor:plan, lz-advisor:review, and
+  lz-advisor:security-review respectively.
 version: 0.1.0
 allowed-tools: Agent(lz-advisor:advisor)
 ---

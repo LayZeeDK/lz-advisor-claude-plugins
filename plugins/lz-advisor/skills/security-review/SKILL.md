@@ -1,5 +1,5 @@
 ---
-name: lz-advisor-security-review
+name: security-review
 description: >
   This skill should be used when the user wants a security-focused
   review of code, looking for vulnerabilities, attack surfaces, and
@@ -13,9 +13,9 @@ description: >
   for OWASP Top 10-informed threat analysis. Findings are
   classified as Critical, High, or Medium with OWASP category
   tags. This skill should NOT be used for general code quality
-  reviews, bug finding, or style issues -- use lz-advisor-review
+  reviews, bug finding, or style issues -- use lz-advisor:review
   instead. It should also NOT be used for planning or implementing
-  tasks -- use lz-advisor-plan or lz-advisor-execute instead.
+  tasks -- use lz-advisor:plan or lz-advisor:execute instead.
 version: 0.1.0
 allowed-tools: Agent(lz-advisor:security-reviewer)
 ---
