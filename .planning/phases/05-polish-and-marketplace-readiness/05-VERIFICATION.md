@@ -61,6 +61,8 @@ The spirit of the criterion (optimized descriptions, measurable improvement) was
 
 **Status:** SATISFIED (empirically verified)
 
+**Test configuration:** Sonnet 4.6 executor at `--effort medium` (the marketplace default), with Opus 4.6 advisor/reviewer/security-reviewer agents per frontmatter `model: opus` override. Matches the configuration the advisor-strategy blog identifies as the efficient target ("Sonnet executor at medium effort with Opus advisor achieves intelligence comparable to Sonnet at default effort, at lower cost").
+
 **Evidence:** Live marketplace installation tested via `/plugin marketplace add LayZeeDK/lz-advisor-claude-plugins` followed by `/plugin install lz-advisor@lz-advisor-claude-plugins`. All 4 skills confirmed discoverable in fresh Claude Code sessions:
 - `/lz-advisor.plan` -- tested with Nx/Storybook/Compodoc planning task; produced strategic plan file
 - `/lz-advisor.execute` -- tested with plan execution; produced working compodoc integration across 2 commits
