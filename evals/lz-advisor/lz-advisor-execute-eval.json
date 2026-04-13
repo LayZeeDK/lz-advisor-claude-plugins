@@ -1,0 +1,82 @@
+[
+  {
+    "query": "implement the caching layer -- I have a plan in plans/caching.plan.md that outlines the approach with Redis for sessions and in-memory for hot data",
+    "should_trigger": true
+  },
+  {
+    "query": "build the new user profile API endpoint. It needs GET /api/users/:id, PUT /api/users/:id, and DELETE /api/users/:id with proper validation",
+    "should_trigger": true
+  },
+  {
+    "query": "lz-advisor execute the database migration task -- we need to add the new columns to the users table and backfill existing records",
+    "should_trigger": true
+  },
+  {
+    "query": "code up the webhook handler for Stripe events. It needs to handle checkout.session.completed, invoice.payment_failed, and customer.subscription.updated",
+    "should_trigger": true
+  },
+  {
+    "query": "execute this plan for adding rate limiting to our API -- the plan file is at plans/rate-limiting.plan.md",
+    "should_trigger": true
+  },
+  {
+    "query": "ok I need to actually build this feature now -- implement the file upload system with S3 storage, presigned URLs, and a progress indicator",
+    "should_trigger": true
+  },
+  {
+    "query": "implement the search functionality using the Elasticsearch approach we decided on. The index mapping is already defined in config/elasticsearch.json",
+    "should_trigger": true
+  },
+  {
+    "query": "build the notification system -- it needs email via SendGrid, push via FCM, and in-app via WebSocket. Start with the email provider",
+    "should_trigger": true
+  },
+  {
+    "query": "code this up: a middleware that checks API rate limits against Redis and returns 429 with retry-after header when exceeded",
+    "should_trigger": true
+  },
+  {
+    "query": "I have this feature spec and I want to implement it with advisor guidance -- it's a multi-step form wizard with validation, draft saving, and progress tracking",
+    "should_trigger": true
+  },
+  {
+    "query": "help me plan the approach for implementing the new dashboard before I start coding",
+    "should_trigger": false
+  },
+  {
+    "query": "think through the architecture for our new microservice before we build it",
+    "should_trigger": false
+  },
+  {
+    "query": "review the changes I just pushed to the feature branch",
+    "should_trigger": false
+  },
+  {
+    "query": "audit the authentication module for security vulnerabilities",
+    "should_trigger": false
+  },
+  {
+    "query": "execute this SQL query: SELECT * FROM users WHERE active = true",
+    "should_trigger": false
+  },
+  {
+    "query": "run the test suite",
+    "should_trigger": false
+  },
+  {
+    "query": "what's the best way to structure a React component?",
+    "should_trigger": false
+  },
+  {
+    "query": "explain the difference between REST and GraphQL",
+    "should_trigger": false
+  },
+  {
+    "query": "generate documentation for the API endpoints",
+    "should_trigger": false
+  },
+  {
+    "query": "build the Docker image and push to registry",
+    "should_trigger": false
+  }
+]

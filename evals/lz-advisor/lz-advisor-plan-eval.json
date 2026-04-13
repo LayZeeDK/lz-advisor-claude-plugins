@@ -1,0 +1,82 @@
+[
+  {
+    "query": "ok so I have this big refactoring task for our auth module -- I need to migrate from session-based auth to JWT tokens. Can you help me think through the approach before I start coding? The main files are in src/auth/ and there are about 15 endpoints that need updating",
+    "should_trigger": true
+  },
+  {
+    "query": "plan the implementation for adding real-time notifications to our dashboard",
+    "should_trigger": true
+  },
+  {
+    "query": "I need to implement a new caching layer but I'm not sure about the architecture. Can you help me plan this out before I start writing code?",
+    "should_trigger": true
+  },
+  {
+    "query": "lz-advisor plan how to restructure our database schema for the new multi-tenant feature",
+    "should_trigger": true
+  },
+  {
+    "query": "think through the approach for migrating our REST API to GraphQL -- we have about 30 endpoints in src/api/",
+    "should_trigger": true
+  },
+  {
+    "query": "help me create an implementation plan for the payment integration. We're using Stripe and need to handle subscriptions, invoices, and webhooks",
+    "should_trigger": true
+  },
+  {
+    "query": "before I start coding this, I want to plan out the approach for adding role-based access control to our app",
+    "should_trigger": true
+  },
+  {
+    "query": "can you help me think through how to implement the search feature? I'm considering Elasticsearch vs Algolia and need to figure out the indexing strategy",
+    "should_trigger": true
+  },
+  {
+    "query": "I need a strategic plan for breaking this monolith into microservices. The main service handles auth, billing, and notifications all in one Express app",
+    "should_trigger": true
+  },
+  {
+    "query": "plan how we should approach adding offline support to our React Native app -- need to figure out sync strategy, local storage, and conflict resolution",
+    "should_trigger": true
+  },
+  {
+    "query": "implement the caching layer I planned yesterday -- the plan is in plans/caching.plan.md",
+    "should_trigger": false
+  },
+  {
+    "query": "build the new API endpoint for user profiles, here's what I need it to do...",
+    "should_trigger": false
+  },
+  {
+    "query": "review the authentication changes I just made to src/auth/middleware.ts",
+    "should_trigger": false
+  },
+  {
+    "query": "check our API routes for SQL injection vulnerabilities",
+    "should_trigger": false
+  },
+  {
+    "query": "what's a good project management tool for planning sprints?",
+    "should_trigger": false
+  },
+  {
+    "query": "plan my weekly schedule for next week",
+    "should_trigger": false
+  },
+  {
+    "query": "write unit tests for the UserService class",
+    "should_trigger": false
+  },
+  {
+    "query": "fix the bug where the login form doesn't validate email format",
+    "should_trigger": false
+  },
+  {
+    "query": "deploy this to production",
+    "should_trigger": false
+  },
+  {
+    "query": "explain how JWT authentication works",
+    "should_trigger": false
+  }
+]

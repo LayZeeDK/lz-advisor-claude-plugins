@@ -1,0 +1,82 @@
+[
+  {
+    "query": "security review the API routes in src/api/ -- we're about to go to production and I want to make sure there are no vulnerabilities",
+    "should_trigger": true
+  },
+  {
+    "query": "check for SQL injection risks in src/db/query-builder.ts -- it constructs queries from user input",
+    "should_trigger": true
+  },
+  {
+    "query": "lz-advisor security-review the authentication module at src/auth/",
+    "should_trigger": true
+  },
+  {
+    "query": "audit the file upload handler in src/api/upload.ts for security issues -- it accepts user-uploaded files and stores them on S3",
+    "should_trigger": true
+  },
+  {
+    "query": "check for security issues in our JWT implementation -- the token generation is in src/auth/tokens.ts and validation in src/middleware/auth.ts",
+    "should_trigger": true
+  },
+  {
+    "query": "threat model the payment processing code in src/billing/ -- it handles credit card tokens and interacts with Stripe's API",
+    "should_trigger": true
+  },
+  {
+    "query": "review for injection risks in the search endpoint -- it takes user query strings and passes them to Elasticsearch",
+    "should_trigger": true
+  },
+  {
+    "query": "I need a security review of our new admin panel routes in src/api/admin/ -- they have elevated privileges",
+    "should_trigger": true
+  },
+  {
+    "query": "check our dependencies for known vulnerabilities -- we haven't audited package.json in a while",
+    "should_trigger": true
+  },
+  {
+    "query": "scan the WebSocket handler in src/ws/handler.ts for security issues -- it accepts messages from authenticated and unauthenticated clients",
+    "should_trigger": true
+  },
+  {
+    "query": "review this code for bugs and edge cases",
+    "should_trigger": false
+  },
+  {
+    "query": "check my changes for code quality issues",
+    "should_trigger": false
+  },
+  {
+    "query": "plan the approach for implementing the new security features",
+    "should_trigger": false
+  },
+  {
+    "query": "implement the input validation middleware",
+    "should_trigger": false
+  },
+  {
+    "query": "explain how OWASP Top 10 works",
+    "should_trigger": false
+  },
+  {
+    "query": "what security best practices should I follow for a Node.js app?",
+    "should_trigger": false
+  },
+  {
+    "query": "fix the flaky test in test/integration/api.test.ts",
+    "should_trigger": false
+  },
+  {
+    "query": "deploy the staging environment",
+    "should_trigger": false
+  },
+  {
+    "query": "generate API documentation for the REST endpoints",
+    "should_trigger": false
+  },
+  {
+    "query": "set up HTTPS certificates for the development environment",
+    "should_trigger": false
+  }
+]

@@ -1,0 +1,82 @@
+[
+  {
+    "query": "review the authentication changes I just made to src/auth/middleware.ts and src/auth/session.ts -- I refactored the token validation logic",
+    "should_trigger": true
+  },
+  {
+    "query": "check my changes for issues -- I modified the database query builder in src/db/query.ts to support pagination",
+    "should_trigger": true
+  },
+  {
+    "query": "lz-advisor review the new utility functions I added to src/utils/string-helpers.ts",
+    "should_trigger": true
+  },
+  {
+    "query": "look for bugs in the order processing module -- I just finished a major refactor of src/orders/processor.ts and src/orders/validator.ts",
+    "should_trigger": true
+  },
+  {
+    "query": "review these files for code quality: src/api/routes/users.ts, src/api/routes/products.ts, src/api/middleware/auth.ts",
+    "should_trigger": true
+  },
+  {
+    "query": "I just finished implementing the caching layer, can you review it for correctness and edge cases? Main files are in src/cache/",
+    "should_trigger": true
+  },
+  {
+    "query": "check this module for bugs -- the payment processing in src/billing/stripe.ts has been causing intermittent failures",
+    "should_trigger": true
+  },
+  {
+    "query": "review my recent commits on this branch for any issues I might have missed",
+    "should_trigger": true
+  },
+  {
+    "query": "I refactored the error handling across the API -- review src/api/error-handler.ts and the changes in src/api/routes/ to make sure I didn't break anything",
+    "should_trigger": true
+  },
+  {
+    "query": "take a look at the new React components I added in src/components/dashboard/ -- I want to make sure the state management is correct",
+    "should_trigger": true
+  },
+  {
+    "query": "help me plan the approach before I start coding the new feature",
+    "should_trigger": false
+  },
+  {
+    "query": "implement the new user profile API endpoint",
+    "should_trigger": false
+  },
+  {
+    "query": "check for SQL injection in the query builder",
+    "should_trigger": false
+  },
+  {
+    "query": "audit this code for security vulnerabilities and potential attack vectors",
+    "should_trigger": false
+  },
+  {
+    "query": "review this restaurant -- looking for good Italian food nearby",
+    "should_trigger": false
+  },
+  {
+    "query": "review the project requirements document and summarize the key points",
+    "should_trigger": false
+  },
+  {
+    "query": "write unit tests for the OrderService class",
+    "should_trigger": false
+  },
+  {
+    "query": "fix the CSS layout issue in the header component",
+    "should_trigger": false
+  },
+  {
+    "query": "explain how the observer pattern works",
+    "should_trigger": false
+  },
+  {
+    "query": "review this pull request description and suggest improvements to the wording",
+    "should_trigger": false
+  }
+]
