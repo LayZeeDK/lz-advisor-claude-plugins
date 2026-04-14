@@ -67,16 +67,15 @@ plugins/lz-advisor/
 - **`lz-advisor` prefix**: Namespace all components to avoid collision with other plugins.
 ## Plugin Manifest (plugin.json)
 ## Agent File Format
-### advisor.md -- The Opus Advisor Agent (qualified: lz-advisor:advisor)
-| Field | Value | Notes |
-|-------|-------|-------|
-| `name` | `advisor` | 3-50 chars, lowercase + hyphens; qualified as `lz-advisor:advisor` |
+### Agent Configuration
+All agents use `model: opus`, `effort: high`, `tools: ["Read", "Glob"]`, and `maxTurns: 3` (2 tool-use turns + 1 synthesis turn). Agent-specific fields:
+| Field | advisor.md | reviewer.md | security-reviewer.md |
+|-------|-----------|-------------|---------------------|
+| `name` | `advisor` | `reviewer` | `security-reviewer` |
+| `color` | `magenta` | `cyan` | `yellow` |
+| Word budget | 100 words | 300 words | 300 words |
+| Used by skill | lz-advisor.plan, lz-advisor.execute | lz-advisor.review | lz-advisor.security-review |
 | `description` | Triggering conditions + examples | Most critical field; determines when agent triggers |
-| `model` | `opus` | Overrides session model; spawns on Opus 4.6 |
-| `color` | `magenta` | Visual identifier; magenta = creative/strategic |
-| `tools` | `["Read", "Glob"]` | Read-only; advisor reads context but never writes |
-| `effort` | `high` | Deep strategic reasoning; reviewer and security-reviewer also use `high` |
-| `maxTurns` | `3` | 2 tool-use turns + free synthesis turn; prevents preamble-as-response from maxTurns: 1 |
 ### Key Design Constraint: Advisor Output Trimming
 ## Skill File Format
 ### SKILL.md Structure
