@@ -8,6 +8,8 @@
 
 **Note**: This guide documents **Claude Opus 4.6** - the most capable Claude model for complex reasoning and state-of-the-art software engineering.
 
+**Note**: Opus 4.6 benchmark scores are pending; comparative claims marked "TBD" use Opus 4.5 data as proxy.
+
 ---
 
 ## Model Characteristics for Implementation
