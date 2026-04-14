@@ -27,11 +27,11 @@ Near-Opus intelligence at Sonnet cost for coding tasks, achieved through strateg
 
 ### Active
 
-- [ ] Opus advisor agent (`lz-advisor`) provides concise guidance (under 100 words, enumerated steps)
-- [ ] Skills inherit session model for executor (optimized for Sonnet 4.6)
-- [ ] Advisor agent uses Opus 4.6
-- [ ] Advisor consultation timing follows Anthropic's suggested system prompt patterns
-- [ ] Advisor output is trimmed: under 100 words, enumerated steps, not explanations
+- [x] Opus advisor agent (`lz-advisor:advisor`) provides concise guidance (under 100 words, enumerated steps) -- Validated in Phase 5.2 (maxTurns: 3 structural fix + behavioral confirmation)
+- [x] Skills inherit session model for executor (optimized for Sonnet 4.6) -- Validated in Phase 5
+- [x] Advisor agent uses Opus 4.6 -- Validated in Phase 1
+- [x] Advisor consultation timing follows Anthropic's suggested system prompt patterns -- Validated in Phase 5
+- [x] Advisor output is trimmed: under 100 words, enumerated steps, not explanations -- Validated in Phase 5.2 (Visibility Model + effort: high)
 - [x] Plugin components use `lz-advisor` prefix -- Validated in Phase 5.2 (skills renamed to `lz-advisor.*` dotted pattern)
 
 ### Out of Scope
@@ -91,4 +91,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-04-14 after Phase 5.2 completion*
+*Last updated: 2026-04-14 after Phase 5.2 completion (all v1.0 phases complete)*
