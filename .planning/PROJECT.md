@@ -32,7 +32,7 @@ Near-Opus intelligence at Sonnet cost for coding tasks, achieved through strateg
 - [ ] Advisor agent uses Opus 4.6
 - [ ] Advisor consultation timing follows Anthropic's suggested system prompt patterns
 - [ ] Advisor output is trimmed: under 100 words, enumerated steps, not explanations
-- [ ] Plugin components use `lz-advisor` prefix
+- [x] Plugin components use `lz-advisor` prefix -- Validated in Phase 5.2 (skills renamed to `lz-advisor.*` dotted pattern)
 
 ### Out of Scope
 
@@ -91,4 +91,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-04-14 after Phase 5.1 completion*
+*Last updated: 2026-04-14 after Phase 5.2 completion*
