@@ -40,7 +40,7 @@ description: |
 
 model: opus
 color: magenta
-effort: high
+effort: medium
 tools: ["Read", "Glob"]
 maxTurns: 1
 ---
