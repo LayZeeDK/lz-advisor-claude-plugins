@@ -75,6 +75,8 @@ plugins/lz-advisor/
 | `model` | `opus` | Overrides session model; spawns on Opus 4.6 |
 | `color` | `magenta` | Visual identifier; magenta = creative/strategic |
 | `tools` | `["Read", "Glob"]` | Read-only; advisor reads context but never writes |
+| `effort` | `high` | Deep strategic reasoning; reviewer and security-reviewer also use `high` |
+| `maxTurns` | `3` | 2 tool-use turns + free synthesis turn; prevents preamble-as-response from maxTurns: 1 |
 ### Key Design Constraint: Advisor Output Trimming
 ## Skill File Format
 ### SKILL.md Structure
