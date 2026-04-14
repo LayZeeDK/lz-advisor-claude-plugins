@@ -67,6 +67,22 @@ Agent tool. Package a focused prompt containing:
 Keep the prompt summarized -- do not paste entire files. The advisor starts
 with a fresh context and cannot see the conversation. All relevant context
 goes in the prompt.
+
+### What to Include Verbatim
+
+When packaging the advisor prompt, distinguish between source material and
+your own findings:
+
+- Preserve verbatim: user-pasted documentation excerpts, API specs, error
+  messages, configuration blobs, code snippets from third-party sources,
+  and tool output the user surfaced as evidence
+- Summarize: your own orientation findings (files read, patterns observed,
+  architectural relationships)
+
+If user-pasted material exceeds roughly 2,000 words, quote the sections
+relevant to the decision verbatim rather than paraphrasing the whole
+document. The advisor has no network access and cannot retrieve content
+you omit.
 </consult>
 
 <execute>

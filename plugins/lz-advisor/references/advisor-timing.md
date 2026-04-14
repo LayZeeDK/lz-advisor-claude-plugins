@@ -57,3 +57,8 @@ Include in the advisor prompt:
 Keep the prompt focused and summarized. The advisor works best with clear,
 organized context -- not raw file dumps or verbose tool output. Summarize
 findings; do not paste entire files.
+
+Web content the executor pre-fetches during orientation (documentation pages,
+API references, release notes) should be included in the advisor prompt
+verbatim. The advisor has no network access; treat it as a judge of evidence
+already gathered, not a fetcher of new information.
