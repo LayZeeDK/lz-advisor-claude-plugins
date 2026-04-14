@@ -62,3 +62,39 @@ Web content the executor pre-fetches during orientation (documentation pages,
 API references, release notes) should be included in the advisor prompt
 verbatim. The advisor has no network access; treat it as a judge of evidence
 already gathered, not a fetcher of new information.
+
+## How the Advisor Responds
+
+The advisor has Read and Glob tools to verify claims against the actual
+codebase. When invoked, the advisor may read files internally before
+responding. Only the advisor's final text-only response reaches you --
+intermediate tool calls, reasoning, and any narration alongside tool use
+are internal to the advisor and invisible.
+
+This means:
+- The advisor's response is the synthesized output after any verification
+- You will not see the advisor's tool calls or intermediate reasoning
+- The response is always a numbered list of actionable steps, under 100 words
+
+The advisor has up to 3 tool-use turns to verify before synthesizing. On
+most consultations it responds immediately or after a single file read.
+Richer context packaging in your prompt reduces the advisor's need to
+read files, producing faster responses.
+
+## Context Packaging for Faster Responses
+
+The more relevant context you include in the advisor prompt, the fewer files
+the advisor needs to read internally. This reduces latency and produces
+higher-quality guidance because the advisor spends its reasoning on strategy,
+not orientation.
+
+When packaging context:
+- Include specific file contents (key functions, type definitions, config
+  blocks) rather than just file paths -- the advisor can verify but should
+  not need to orient from scratch
+- Quote error messages, test output, and tool results verbatim
+- Summarize architectural relationships and constraints you discovered
+  during orientation
+
+If the advisor consistently takes multiple seconds before responding, that
+usually means it is reading files you could have included in the prompt.
