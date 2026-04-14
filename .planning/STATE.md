@@ -82,6 +82,7 @@ None yet.
 ### Roadmap Evolution
 
 - Phase 5.1 inserted after Phase 5: Advisor consultation refinements (URGENT) -- closes three empirical gaps discovered during live marketplace testing on 2026-04-14: (A) agent preamble pattern wastes one tool_use round trip per consultation and creates misleading terminal display; (B) executor compresses user-pasted source material before passing to advisor, losing fidelity; (E) no re-consultation triggers during execute phase when approach-changing evidence surfaces
+- Phase 5.2 inserted after Phase 5: Rename skills and resolve preamble waste for advisor agent (URGENT) -- live marketplace testing on 2026-04-14 revealed: (1) skill names `plan`, `execute`, `review`, `security-review` clash with other plugins; need `lz-advisor.*` prefix for unique shorthands; (2) Final Response Discipline added in 5.1 did not prevent Opus preamble waste -- advisor still opens with "Let me verify..." narration under maxTurns: 1
 
 ## Session Continuity
 

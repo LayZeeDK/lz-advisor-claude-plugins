@@ -113,6 +113,16 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5
 | 4. Review Skills | 0/2 | Planning complete | - |
 | 5. Polish and Marketplace Readiness | 0/5 | Planning complete | - |
 
+### Phase 05.2: Rename skills and resolve preamble waste for advisor agent (INSERTED)
+
+**Goal:** [Urgent work - to be planned]
+**Requirements**: TBD
+**Depends on:** Phase 5
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd-plan-phase 05.2 to break down)
+
 ### Phase 05.1: Advisor consultation refinements (INSERTED)
 
 **Goal:** Eliminate advisor preamble waste, preserve user-pasted source material fidelity, and add specific re-consultation triggers -- refining ADVR-02, IMPL-02, IMPL-03 through surgical edits to agent and skill files
