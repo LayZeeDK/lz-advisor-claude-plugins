@@ -102,7 +102,7 @@
 
 #### Implementation Pattern
 
-```markdown
+````markdown
 <effort_parameter_strategy>
 
 ## For Implementation Workflows
@@ -128,7 +128,7 @@
 **Note**: No beta header required on Opus 4.6. The `effort` parameter is generally available.
 
 </effort_parameter_strategy>
-```
+````
 
 **Optimization Impact**: Medium effort provides significant token savings vs high/max effort while maintaining quality
 
@@ -219,7 +219,7 @@ This sensitivity carries forward to Opus 4.6, with the model being even more dir
 
 #### Implementation Pattern
 
-```markdown
+````markdown
 <system_prompt_calibration>
 
 ## Tone Down Aggressive Language
@@ -259,7 +259,7 @@ This means effort: medium combined with Opus 4.6's natural terseness provides
 strong preamble suppression without aggressive prompt instructions.
 
 </system_prompt_calibration>
-```
+````
 
 ---
 
@@ -284,7 +284,7 @@ These keywords work as expected on Opus 4.6 and should NOT be replaced with alte
 
 #### Implementation Pattern
 
-```markdown
+````markdown
 <think_keyword_usage>
 
 ## On Opus 4.6: "Think" is a Valid Control Mechanism
@@ -316,7 +316,7 @@ Use "think" keywords to control reasoning depth:
 - "Ultrathink about the architecture" -- maximum depth
 
 </think_keyword_usage>
-```
+````
 
 ---
 
@@ -342,7 +342,7 @@ Opus 4.6 inherits enhanced parallel tool call capabilities.
 
 **Implementation Pattern**: Same as Sonnet optimization
 
-```markdown
+````markdown
 <parallel_context_loading>
 
 ## Load Multiple Files Simultaneously
@@ -359,7 +359,7 @@ Read('guidelines.md');
 **Speedup**: ~10-20x faster than sequential reads
 
 </parallel_context_loading>
-```
+````
 
 ---
 
@@ -464,7 +464,7 @@ Same as Sonnet 4.6 - be direct and explicit. Opus 4.6 naturally communicates mor
 
 ### Complex Feature Implementation (~500K tokens, 1M context)
 
-```markdown
+````markdown
 ## Configuration
 
 **Model**: Claude Opus 4.6
@@ -555,7 +555,7 @@ export class StatefulComponent {
 **Thinking**: Adaptive (Claude managed)
 **Quality**: State-of-the-art
 **First-try success**: Higher than Sonnet 4.6
-```
+````
 
 ---
 
