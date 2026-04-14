@@ -48,14 +48,14 @@ plugins/lz-advisor/
 |   |-- reviewer.md              # Opus code quality reviewer agent
 |   '-- security-reviewer.md     # Opus security reviewer agent
 |-- skills/
-|   |-- plan/
-|   |   '-- SKILL.md             # Plan skill: orient -> advise -> plan (qualified: lz-advisor:plan)
-|   |-- execute/
-|   |   '-- SKILL.md             # Execute skill: full executor-advisor loop (qualified: lz-advisor:execute)
-|   |-- review/
-|   |   '-- SKILL.md             # Review skill: Opus reviews completed work (qualified: lz-advisor:review)
-|   '-- security-review/
-|       '-- SKILL.md             # Security review skill: Opus reviews with threat focus (qualified: lz-advisor:security-review)
+|   |-- lz-advisor.plan/
+|   |   '-- SKILL.md             # Plan skill: orient -> advise -> plan (qualified: lz-advisor:lz-advisor.plan)
+|   |-- lz-advisor.execute/
+|   |   '-- SKILL.md             # Execute skill: full executor-advisor loop (qualified: lz-advisor:lz-advisor.execute)
+|   |-- lz-advisor.review/
+|   |   '-- SKILL.md             # Review skill: Opus reviews completed work (qualified: lz-advisor:lz-advisor.review)
+|   '-- lz-advisor.security-review/
+|       '-- SKILL.md             # Security review skill: Opus reviews with threat focus (qualified: lz-advisor:lz-advisor.security-review)
 |-- references/
 |   '-- advisor-timing.md        # Anthropic's suggested timing patterns
 |-- README.md
@@ -140,7 +140,7 @@ plugins/lz-advisor/
 ### Naming Conventions
 - Plugin name: kebab-case (`lz-advisor`)
 - Agent files: kebab-case `.md` (`advisor.md`)
-- Skill directories: kebab-case (`plan/`, `execute/`, `review/`, `security-review/` — unprefixed; plugin namespace is implicit)
+- Skill directories: dotted-prefix (`lz-advisor.plan/`, `lz-advisor.execute/`, `lz-advisor.review/`, `lz-advisor.security-review/` -- explicit namespace for unique user-facing shorthands)
 - SKILL.md files: Exactly `SKILL.md` (not `skill.md` or `README.md`)
 ### Component Lifecycle
 ### Validation Checklist (from plugin-dev)
