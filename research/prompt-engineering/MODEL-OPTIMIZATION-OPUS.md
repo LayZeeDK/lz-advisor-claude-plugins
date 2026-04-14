@@ -1,225 +1,236 @@
-# Claude Opus 4.5 Implementation Optimization Guide
+# Claude Opus 4.6 Implementation Optimization Guide
 
-**Model**: Claude Opus 4.5 (200K context, extended thinking, effort parameter, hybrid reasoning)
+**Model**: Claude Opus 4.6 (1M context, adaptive thinking, effort parameter (GA), max output 128K)
 
-**Purpose**: Optimize implementation workflows for Claude Opus 4.5's strengths
+**Purpose**: Optimize implementation workflows for Claude Opus 4.6's strengths
 
 **Related**: [MODEL-OPTIMIZATION-SONNET.md](./MODEL-OPTIMIZATION-SONNET.md), [MODEL-OPTIMIZATION-HAIKU.md](./MODEL-OPTIMIZATION-HAIKU.md)
 
-**Note**: This guide documents **Claude Opus 4.5** - the most capable Claude model for complex reasoning and state-of-the-art software engineering.
+**Note**: This guide documents **Claude Opus 4.6** - the most capable Claude model for complex reasoning and state-of-the-art software engineering.
 
 ---
 
 ## Model Characteristics for Implementation
 
-### Claude Opus 4.5 Implementation Strengths
+### Claude Opus 4.6 Implementation Strengths
 
-1. **State-of-the-Art Coding** - 80.9% on SWE-bench Verified (vs Sonnet 4.5's 77.2%)
+1. **State-of-the-Art Coding** - Frontier performance on SWE-bench Verified (Opus 4.6 scores TBD; Opus 4.5 scored 80.9%)
 2. **Hybrid Reasoning Model** - Pushes frontier for coding, agents, computer use
-3. **Effort Parameter (BETA)** - Unique to Opus 4.5: control token usage (low/medium/high)
-4. **Token Efficiency** - 76% fewer output tokens at medium effort (matches Sonnet best performance) ⚠️ **BETA FEATURE**
-5. **Extended Thinking** - Up to 64K token budgets for deep reasoning
+3. **Effort Parameter (GA)** - Control token usage with four levels: low, medium, high, max
+4. **Token Efficiency** - Lower effort levels "proceed directly to action without preamble" and use terse confirmations
+5. **Adaptive Thinking** - Claude decides when and how much to think; no manual budget_tokens required
 6. **Long-Horizon Excellence** - Best for complex, multi-step autonomous tasks
 7. **Strongest Tool Use** - One of the best tool-using models available
+8. **1M Context Window** - Full 1M token context available on both Claude Code and API
+9. **128K Max Output** - Up to 128K output tokens per response
+10. **More Direct Communication** - Naturally less verbose, more grounded, may skip verbal summaries for efficiency
 
 **Sources**:
 
-- [Introducing Claude Opus 4.5](https://www.anthropic.com/news/claude-opus-4-5)
-- [Claude Opus 4.5](https://www.anthropic.com/claude/opus)
-- [What's new in Claude 4.5 - Claude Docs](https://platform.claude.com/docs/en/about-claude/models/whats-new-claude-4-5)
+- [What's new in Claude 4.6](https://platform.claude.com/docs/en/about-claude/models/whats-new-claude-4-6)
+- [Claude Opus 4.5 Announcement](https://www.anthropic.com/news/claude-opus-4-5) (historical baseline)
+- [Claude 4.6 Migration Guide](https://platform.claude.com/docs/en/docs/about-claude/models/migration-guide)
 
 ### Context Window Strategy
 
 **Context Availability by Platform**:
 
-| Platform         | 200K Context | 1M Context           | Recommendation                                |
-| ---------------- | ------------ | -------------------- | --------------------------------------------- |
-| **Claude Code**  | ✅ Available | ❌ **Not Available** | Opus limited to 200K (use Sonnet for 1M)      |
-| **API Standard** | ✅ Available | ❌ Not Available     | Use progressive disclosure for large features |
+| Platform         | 1M Context     | Recommendation                                      |
+| ---------------- | -------------- | --------------------------------------------------- |
+| **Claude Code**  | Available      | Full 1M context for both Opus 4.6 and Sonnet 4.6    |
+| **API Standard** | Available      | Full 1M context for both Opus 4.6 and Sonnet 4.6    |
 
-**⚠️ IMPORTANT**: Opus 4.5 is limited to **200K context only**. The 1M context window is exclusive to Sonnet 4.5.
+**Note**: On Opus 4.5, the 1M context window was exclusive to Sonnet. As of Opus 4.6, both models support 1M context on all platforms.
 
 **For Claude Code Users**:
 
-- **<200K tokens**: Use 200K context with Opus (standard)
-- **200K-1M tokens**: ❌ Switch to Sonnet 4.5 (Opus cannot handle this, 1M is Sonnet-only)
+- **<1M tokens**: Use full 1M context with Opus (standard)
 - **>1M tokens**: Use progressive disclosure (chunk into phases)
 
 **For API Users**:
 
-- **<200K tokens**: Use 200K context (standard)
-- **>200K tokens**: Use progressive disclosure (REQUIRED - 1M not available)
+- **<1M tokens**: Use full 1M context (standard)
+- **>1M tokens**: Use progressive disclosure (REQUIRED)
 
-**Pricing**: $5/M input, $25/M output (67% cheaper than previous Opus pricing)
+**Pricing**: $5/M input, $25/M output
 
 **Sources**:
 
-- [Introducing Claude Opus 4.5 - Anthropic](https://www.anthropic.com/news/claude-opus-4-5) - 200K context
-- [1M Context for Sonnet - Anthropic](https://www.anthropic.com/news/1m-context) - 1M is Sonnet-exclusive
+- [What's new in Claude 4.6](https://platform.claude.com/docs/en/about-claude/models/whats-new-claude-4-6) - 1M context for Opus
+- [Claude 4.6 Migration Guide](https://platform.claude.com/docs/en/docs/about-claude/models/migration-guide)
 
 ---
 
-## Opus 4.5-Specific Optimizations
+## Opus 4.6-Specific Optimizations
 
-### Optimization 1: Effort Parameter for Token Control (Opus 4.5 ONLY)
+### Optimization 1: Effort Parameter for Token Control (GA)
 
-**What it is**: Opus 4.5 is the **ONLY** Claude model with an effort parameter
+**What it is**: The effort parameter controls how many tokens Claude uses when responding, trading off between thoroughness and efficiency. It is **generally available** (GA) on Opus 4.6 -- no beta header required.
 
-**Research Finding**:
+**Key behavioral difference from Opus 4.5**: The effort parameter was in beta on Opus 4.5, requiring the `effort-2025-11-24` header. On Opus 4.6, it is GA with no header needed and adds a fourth level: `max`.
 
-> "Claude Opus 4.5 is the only model that supports the effort parameter, allowing you to control how many tokens Claude uses when responding and trade off between response thoroughness and token efficiency."
-
-**Source**: [Effort - Claude Docs](https://platform.claude.com/docs/en/build-with-claude/effort)
+**Source**: [Effort - Claude Docs](https://platform.claude.com/docs/en/docs/build-with-claude/effort)
 
 #### Effort Settings
 
-| Effort     | Token Usage | Performance             | Use Case                             |
-| ---------- | ----------- | ----------------------- | ------------------------------------ |
-| **High**   | Maximum     | Best (default)          | Complex reasoning, difficult coding  |
-| **Medium** | 76% fewer   | Matches Sonnet 4.5 best | Balanced speed/quality, daily work   |
-| **Low**    | Minimal     | Fast, simple            | Classification, lookups, high-volume |
+| Effort     | Behavior                                        | Use Case                             |
+| ---------- | ----------------------------------------------- | ------------------------------------ |
+| **max**    | Deepest reasoning, most tool calls              | Hardest problems, research-grade     |
+| **high**   | Explains plan before acting, detailed summaries | Complex reasoning, difficult coding  |
+| **medium** | Proceeds directly to action without preamble    | Balanced speed/quality, daily work   |
+| **low**    | Fewest tool calls, terse confirmations          | Classification, lookups, high-volume |
 
-**Key Performance Data**:
+**Lower effort levels** (from official docs):
 
-> "At medium effort, Opus 4.5 matches Sonnet 4.5's best SWE-bench score while using 76% fewer output tokens. At highest effort, Opus 4.5 exceeds Sonnet 4.5 by 4.3 percentage points while using 48% fewer tokens."
+- Combine multiple operations into fewer tool calls
+- Make fewer tool calls
+- Proceed directly to action without preamble
+- Use terse confirmation messages after completion
+
+**Higher effort levels** (from official docs):
+
+- Make more tool calls
+- Explain the plan before taking action
+- Provide detailed summaries of changes
+- Include more comprehensive code comments
 
 **Sources**:
 
-- [Effort - Claude Docs](https://platform.claude.com/docs/en/build-with-claude/effort)
-- [Claude Opus 4.5 vs Sonnet 4.5 - DataStudios](https://www.datastudios.org/post/claude-opus-4-5-vs-claude-sonnet-4-5-full-report-and-comparison-of-features-performance-pricing-a)
+- [Effort - Claude Docs](https://platform.claude.com/docs/en/docs/build-with-claude/effort)
 
 #### Implementation Pattern
 
-````markdown
+```markdown
 <effort_parameter_strategy>
 
 ## For Implementation Workflows
 
 **Default**: Medium effort
-**Reasoning**: Matches Sonnet 4.5's best performance with 76% fewer tokens
+**Reasoning**: Proceeds directly to action without preamble; balanced cost/quality
 
 **When to Override**:
 
 - **High effort**: User explicitly requests "maximum quality" OR task marked "critical"
+- **Max effort**: Deepest possible reasoning (new on 4.6); hardest problems only
 - **Low effort**: Simple boilerplate tasks (not recommended for implementation)
 
-## Effort Configuration (Beta Feature)
-
-**⚠️ IMPORTANT**: Effort parameter requires beta header:
+## Effort Configuration (GA -- no header needed)
 
 ```json
 {
-  "model": "claude-opus-4.5",
-  "anthropic_beta": "effort-2025-11-24",
+  "model": "claude-opus-4-6-20260214",
   "effort": "medium"
 }
 ```
-````
 
-**Note**: Beta features should be used cautiously - verify availability before relying on effort parameter
-
-## ⚠️ BETA Feature Stability Warning
-
-The **effort parameter** is currently in BETA (as of 2026-01-15). This means:
-
-- API may change without notice
-- Parameter may be removed or redesigned
-- Performance characteristics may shift
-- Not recommended for production-critical workflows
-
-**Recommendation**: Test thoroughly before depending on effort-based optimizations.
+**Note**: No beta header required on Opus 4.6. The `effort` parameter is generally available.
 
 </effort_parameter_strategy>
+```
 
-````
-
-**Optimization Impact**: 76% token reduction at medium effort (huge cost savings)
+**Optimization Impact**: Medium effort provides significant token savings vs high/max effort while maintaining quality
 
 ---
 
-### Optimization 2: Extended Thinking Budget Configuration
+### Optimization 2: Adaptive Thinking (Replaces Manual budget_tokens)
 
-**Research Finding**:
+**What it is**: On Opus 4.6, adaptive thinking replaces manual `budget_tokens` configuration. Claude automatically decides when and how much to think based on query complexity.
 
-> "Extended thinking is available in Opus 4.5 and is recommended for complex problem-solving, coding work, and multi-step reasoning. The system supports up to 64,000 tokens of pure reasoning before delivering an answer."
+**Key change from Opus 4.5**: On Opus 4.5, extended thinking required manual `budget_tokens` configuration (1K-64K). On Opus 4.6, `budget_tokens` is deprecated (still functional but should be migrated). The recommended approach is adaptive thinking.
 
 **Sources**:
-- [Building with extended thinking - Claude Docs](https://platform.claude.com/docs/en/build-with-claude/extended-thinking)
-- [How to use thinking mode in claude 4.5 - CometAPI](https://www.cometapi.com/how-to-use-thinking-mode-in-claude-4-5/)
 
-#### Extended Thinking Budget Guidelines (Opus 4.5)
+- [Adaptive Thinking - Claude Docs](https://platform.claude.com/docs/en/build-with-claude/adaptive-thinking)
+- [What's new in Claude 4.6](https://platform.claude.com/docs/en/about-claude/models/whats-new-claude-4-6)
 
-| Task Complexity      | Budget      | Use Case                                    |
-| -------------------- | ----------- | ------------------------------------------- |
-| **Simple**           | None (0)    | Rename variable, fix typo                   |
-| **Moderate**         | 4K-8K       | Add method, simple component                |
-| **Complex**          | 16K-32K     | State management, error handling, a11y      |
-| **Very Complex**     | 32K-64K     | Multi-component refactor, complex algorithms|
+#### Adaptive Thinking Configuration
 
-**Recommendation**: Start at **16K** for implementation tasks, increase to 32K+ for very complex
+```json
+{
+  "thinking": {
+    "type": "adaptive"
+  }
+}
+```
 
-**Budget Management**:
+**Interaction with effort parameter**:
 
-> "Start at the minimum (1,024 tokens) and increase incrementally. Pick budget_tokens proportionally to the complexity of the task (start small for experiments; raise budget only if you observe material quality improvements)."
+| Effort | Thinking Behavior                                              |
+| ------ | -------------------------------------------------------------- |
+| **max**    | Almost always thinks, deepest reasoning                    |
+| **high**   | Almost always thinks                                       |
+| **medium** | Moderate thinking; may skip for simple queries             |
+| **low**    | Minimizes thinking                                         |
 
-**Source**: [Building with extended thinking - Claude Docs](https://platform.claude.com/docs/en/build-with-claude/extended-thinking)
+The `effort` parameter controls thinking depth automatically. No manual budget management needed.
+
+**Interleaved thinking**: On Opus 4.6, interleaved thinking (thinking between tool calls) is automatic with adaptive thinking. No beta header required (unlike Opus 4.5).
+
+**Deprecated approach (Opus 4.5)**:
+
+```json
+// DEPRECATED -- still functional but should migrate to adaptive thinking
+{
+  "thinking": {
+    "type": "enabled",
+    "budget_tokens": 16384
+  }
+}
+```
 
 #### Implementation Pattern
 
 ```markdown
-<extended_thinking_opus>
+<adaptive_thinking_opus>
 
-## Opus 4.5 Extended Thinking Strategy
+## Opus 4.6 Adaptive Thinking Strategy
 
 **Combine with Effort Parameter**:
 
-- **Medium effort** + **16K thinking** = Balanced implementation
-- **High effort** + **32K thinking** = Maximum quality implementation
+- **Medium effort** + adaptive thinking = Balanced implementation (Claude thinks when needed)
+- **High effort** + adaptive thinking = Thorough implementation (Claude almost always thinks)
+- **Max effort** + adaptive thinking = Maximum quality (deepest reasoning available)
 
 **For implementation workflows**:
 
-1. **Phase 1 (Context)**: 8K budget - understand architecture
-2. **Phase 3 (Implementation)**: 16K-32K budget - complex tasks only
-3. **Phase 4 (Verification)**: 8K budget - integration check
+1. **Phase 1 (Context)**: Medium effort -- Claude decides thinking depth
+2. **Phase 3 (Implementation)**: High or max effort for complex tasks
+3. **Phase 4 (Verification)**: Medium effort -- quick integration check
 
-**Opus-Specific Advantage**:
+**Opus 4.6 Advantage**: No need to guess budget_tokens. Claude allocates thinking
+resources proportionally to actual task complexity.
 
-> "Claude Opus 4.5 automatically preserves all previous thinking blocks throughout conversations, maintaining reasoning continuity across extended multi-turn interactions"
-
-**Source**: [How to use thinking mode in claude 4.5 - CometAPI](https://www.cometapi.com/how-to-use-thinking-mode-in-claude-4-5/)
-
-**Benefit**: Thinking accumulates across tasks, improving later decisions
-
-</extended_thinking_opus>
-````
+</adaptive_thinking_opus>
+```
 
 ---
 
-### Optimization 3: System Prompt Sensitivity (Opus 4.5 Specific)
+### Optimization 3: System Prompt Sensitivity (Opus 4.6 Specific)
 
 **Research Finding**:
 
 > "Claude Opus 4.5 is more responsive to the system prompt than previous models, and if your prompts were designed to reduce undertriggering on tools or skills, Claude Opus 4.5 may now overtrigger, with the fix being to dial back any aggressive language."
 
-**Source**: [Prompting best practices - Claude Docs](https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/claude-4-best-practices)
+This sensitivity carries forward to Opus 4.6, with the model being even more direct and grounded in its communication style.
+
+**Source**: [Prompting best practices - Claude Docs](https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/claude-prompting-best-practices)
 
 #### Implementation Pattern
 
-````markdown
+```markdown
 <system_prompt_calibration>
 
 ## Tone Down Aggressive Language
 
-**❌ Opus 4.5 May Overtrigger**:
+**BAD -- Opus may overtrigger**:
 
 ```markdown
 CRITICAL: You MUST use the Read tool when examining files!
 REQUIRED: You MUST mark tasks complete immediately!
 MANDATORY: You MUST run tests after each implementation!
 ```
-````
 
-**✅ Calibrated for Opus 4.5**:
+**GOOD -- Calibrated for Opus 4.6**:
 
 ```markdown
 Use the Read tool to examine files.
@@ -229,97 +240,105 @@ Run tests after each implementation.
 
 ## Why This Matters
 
-Opus 4.5's increased sensitivity means:
+Opus 4.6's increased sensitivity means:
 
 - **Old prompts** with "MUST" / "CRITICAL" may cause over-triggering
-- **Opus 4.5** responds to normal language without emphasis
+- **Opus 4.6** responds to normal language without emphasis
 - **Benefit**: Cleaner, more natural prompting style
 
-</system_prompt_calibration>
+## Communication Style (New in 4.6)
 
-````
+Opus 4.6 is naturally more direct and grounded:
+- More concise and natural communication
+- May skip verbal summaries for efficiency unless prompted otherwise
+- Less verbose than 4.5
+
+This means effort: medium combined with Opus 4.6's natural terseness provides
+strong preamble suppression without aggressive prompt instructions.
+
+</system_prompt_calibration>
+```
 
 ---
 
-### Optimization 4: Word Choice for Extended Thinking Modes
+### Optimization 4: "Think" Keyword as Control Mechanism (Opus 4.6)
 
-**Practical Observation**:
+**Important change from Opus 4.5**: On Opus 4.5, the word "think" and its variants were problematic when extended thinking was disabled. On Opus 4.6, "Think" keywords are **intentional control mechanisms** that trigger progressively deeper extended thinking.
 
-When extended thinking is disabled, using alternative wording to "think" can improve response quality. Consider using words like "evaluate," "consider," or "analyze" instead of "think" and its variants.
+**Valid control keywords on Opus 4.6**:
 
-**Research Context**:
+- "Think" -- standard depth
+- "Think hard" -- deeper reasoning
+- "Think harder" -- even deeper reasoning
+- "Ultrathink" -- maximum reasoning depth
 
-Extended thinking is optional in Opus 4.5 and can impact performance differently based on task type:
-- For pattern matching and simple tasks, extended thinking may hurt performance
-- For complex reasoning, extended thinking enables deeper analysis
-- Opus 4.5 is a strong reasoner even without extended thinking enabled
+These keywords work as expected on Opus 4.6 and should NOT be replaced with alternatives.
 
 **Sources**:
-- [How to use thinking mode in claude 4.5 - CometAPI](https://www.cometapi.com/how-to-use-thinking-mode-in-claude-4-5/)
-- [Thinking mode in Claude 4.5 - Medium](https://medium.com/@mkteam/thinking-mode-in-claude-4-5-all-you-need-to-know-353235942182)
 
-**Note**: This is based on practical experience and community observations, not official Anthropic documentation.
+- [Prompting best practices - Claude Docs](https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/claude-prompting-best-practices)
+
+**Opus 4.5 historical note**: On Opus 4.5, the guidance was to replace "think" with alternatives like "consider," "evaluate," or "reason through" when extended thinking was disabled. This guidance is specific to Opus 4.5 only and does not apply to Opus 4.6.
 
 #### Implementation Pattern
 
 ```markdown
-<think_word_replacement>
+<think_keyword_usage>
 
-## When Extended Thinking is ENABLED
+## On Opus 4.6: "Think" is a Valid Control Mechanism
 
-**✅ Safe to use "think"**:
-
-```markdown
-Think deeply about edge cases before implementing.
-````
-
-**Reason**: Extended thinking mode handles "think" correctly
-
-## When Extended Thinking is DISABLED
-
-**⚠️ Consider alternative wording** (based on practical observations):
+**Safe to use "think" keywords**:
 
 ```markdown
-Think about the architecture...
-Think through the edge cases...
-What do you think about...
+Think about the edge cases before implementing.
+Think hard about the architecture.
+Think harder about the race conditions.
+Ultrathink about the overall design.
 ```
 
-**✅ Use alternatives**:
+These trigger progressively deeper extended thinking on Opus 4.6.
 
-```markdown
-Consider the architecture...
-Evaluate the edge cases...
-What's your analysis of...
-```
+## Alternative Words Still Work
 
-**Alternative Words**:
+For variety or clarity, alternatives are fine but NOT required:
 
-- "think" → "consider", "evaluate", "analyze"
-- "think about" → "consider", "assess", "examine"
-- "think through" → "work through", "analyze", "reason about"
+- "consider", "evaluate", "analyze" -- all work
+- "think" -- also works correctly on 4.6
 
 ## For implementation workflows
 
-**We use extended thinking** → Safe to use "think"
+Use "think" keywords to control reasoning depth:
 
-**But for clarity**, prefer alternatives anyway:
+- "Think about the dependencies" -- standard reasoning
+- "Think hard about the edge cases" -- deeper analysis
+- "Ultrathink about the architecture" -- maximum depth
 
-- "Evaluate edge cases"
-- "Consider dependencies"
-- "Analyze integration points"
-
-</think_word_replacement>
-
-````
+</think_keyword_usage>
+```
 
 ---
 
-### Optimization 5: Parallel Tool Use (Same as Sonnet 4.5)
+### Optimization 5: Prefilling Removed (Opus 4.6 Breaking Change)
 
-Opus 4.5 inherits Sonnet 4.5's enhanced parallel tool call capabilities.
+**Breaking change**: Assistant message prefilling is **removed** on Opus 4.6. Attempting to use prefilling returns a **400 error**.
 
-**Implementation Pattern**: Same as Sonnet 4.5 optimization
+This was a common technique on Opus 4.5 for controlling output format (e.g., prefilling `{` to force JSON output, or prefilling a function name to skip preamble).
+
+**Alternative strategies for preamble elimination**:
+
+1. **Effort parameter**: Use `effort: medium` to "proceed directly to action without preamble"
+2. **System prompt**: Direct instructions like "Respond with the answer only, no preamble"
+3. **Structured output**: Use tool_use or JSON mode instead of prefilling `{`
+
+**Source**: [Claude 4.6 Migration Guide](https://platform.claude.com/docs/en/docs/about-claude/models/migration-guide)
+
+---
+
+### Optimization 6: Parallel Tool Use (Same as Sonnet)
+
+Opus 4.6 inherits enhanced parallel tool call capabilities.
+
+**Implementation Pattern**: Same as Sonnet optimization
 
 ```markdown
 <parallel_context_loading>
@@ -333,25 +352,23 @@ Read(FEATURE_DIR + '/design.md');
 Read(FEATURE_DIR + '/tasks.md');
 Read(FEATURE_DIR + '/data-model.md');
 Read('guidelines.md');
-````
+```
 
 **Speedup**: ~10-20x faster than sequential reads
 
 </parallel_context_loading>
-
-````
-
-**Source**: Based on Sonnet 4.5 capabilities (Opus 4.5 inherits these)
+```
 
 ---
 
-### Optimization 6: First-Try Correctness & Deep Debugging
+### Optimization 7: First-Try Correctness & Deep Debugging
 
 **Research Finding**:
 
 > "Opus is tuned to be an 'expert coder,' and in tricky programming challenges, Opus has a higher chance of producing a correct and optimized solution on the first try. It also handles deep debugging better. Opus's stronger logical planning means it can keep track of intricate conditions and long code execution flows with less oversight."
 
 **Sources**:
+
 - [Claude Opus 4.5 vs Sonnet 4.5 - DataStudios](https://www.datastudios.org/post/claude-opus-4-5-vs-claude-sonnet-4-5-full-report-and-comparison-of-features-performance-pricing-a)
 - [Claude Sonnet 4.5 vs Opus 4.5 - Cosmic](https://www.cosmicjs.com/blog/claude-sonnet-45-vs-opus-45-a-real-world-comparison)
 
@@ -360,132 +377,98 @@ Read('guidelines.md');
 ```markdown
 <first_try_correctness>
 
-## Leverage Opus 4.5's Expert Coding
+## Leverage Opus 4.6's Expert Coding
 
 **For complex tasks**:
 
-1. **Enable extended thinking** (16K-32K budget)
-2. **Use medium/high effort** (let Opus reason deeply)
-3. **Minimal constraints** (trust expert judgment)
+1. **Use adaptive thinking** (effort: high or max)
+2. **Minimal constraints** (trust expert judgment)
+3. **1M context** available for full codebase awareness
 
-**Opus 4.5 will**:
+**Opus 4.6 will**:
 
-- ✅ Produce correct solution on first try (higher success rate than Sonnet)
-- ✅ Handle edge cases proactively
-- ✅ Optimize code structure
-- ✅ Track intricate conditions across long flows
+- Produce correct solution on first try (higher success rate than Sonnet)
+- Handle edge cases proactively
+- Optimize code structure
+- Track intricate conditions across long flows
 
-**Example**:
+**When to Use Opus 4.6 Over Sonnet 4.6**:
 
-```markdown
-Task: Implement multi-panel component with state coordination
-
-Opus 4.5 approach (medium effort + 16K thinking):
-- Analyzes all edge cases (disabled panels, animations, SSR)
-- Designs optimal state structure
-- Implements with correct logic on first try
-- Includes edge case handling without being asked
-
-Sonnet 4.5 approach (extended thinking):
-- May require iteration to cover all edge cases
-- Needs explicit guidance on edge cases
-````
-
-**When to Use Opus 4.5 Over Sonnet 4.5**:
-
-- ✅ Complex algorithms requiring intricate logic
-- ✅ Deep debugging of subtle bugs (race conditions, timing issues)
-- ✅ First-time correctness critical (production code, risky refactors)
-- ✅ Long code execution flows with many conditions
+- Complex algorithms requiring intricate logic
+- Deep debugging of subtle bugs (race conditions, timing issues)
+- First-time correctness critical (production code, risky refactors)
+- Long code execution flows with many conditions
 
 </first_try_correctness>
-
-````
+```
 
 ---
 
-### Optimization 7: Vision & Image Processing
+### Optimization 8: Vision & Image Processing
 
 **Research Finding**:
 
 > "Claude Opus 4.5 has improved vision capabilities compared to previous Claude models and performs better on image processing and data extraction tasks, particularly when there are multiple images present in context."
 
-**Source**: [Prompting best practices - Claude Docs](https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/claude-4-best-practices)
+These capabilities carry forward and are further enhanced in Opus 4.6.
+
+**Source**: [Prompting best practices - Claude Docs](https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/claude-prompting-best-practices)
 
 #### Implementation Pattern (For UI Development)
 
 ```markdown
 <vision_for_ui_implementation>
 
-## Leverage Opus 4.5's Vision Capabilities
+## Leverage Opus 4.6's Vision Capabilities
 
 **When implementing UI components**:
 
 1. Take screenshot of reference design
 2. Take screenshot of current implementation
-3. Compare side-by-side with Opus 4.5
-
-**Example Workflow**:
-
-```markdown
-Task: Implement component matching design spec
-
-1. Screenshot: Reference design (from design tool)
-2. Screenshot: Current implementation
-3. Ask Opus 4.5: "Analyze these screenshots. What CSS classes or styling differences exist?"
-
-Opus 4.5 output:
-- Reference uses padding: 1rem on content area
-- Our implementation missing content wrapper
-- Reference has .is-active class on expanded items
-- Our implementation uses [class.is-active] correctly ✓
-````
+3. Compare side-by-side with Opus 4.6
 
 **Crop Tool Technique**:
 
-> "One technique found effective is to give Claude Opus 4.5 a crop tool or skill, with consistent uplift on image evaluations when Claude is able to 'zoom' in on relevant regions of an image."
+> "One technique found effective is to give Claude a crop tool or skill, with consistent uplift on image evaluations when Claude is able to 'zoom' in on relevant regions of an image."
 
-**Source**: [Prompting best practices - Claude Docs](https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/claude-4-best-practices)
-
-**For visual testing**: Use Playwright MCP to take screenshots, then ask Opus to analyze
+**Source**: [Prompting best practices - Claude Docs](https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/claude-prompting-best-practices)
 
 </vision_for_ui_implementation>
-
-````
+```
 
 ---
 
-## Implementation-Specific Optimizations (Shared with Sonnet 4.5)
+## Implementation-Specific Optimizations (Shared with Sonnet 4.6)
 
-### Optimization 8: Structured Prompting with XML Tags
+### Optimization 9: Structured Prompting with XML Tags
 
-Same as Sonnet 4.5 - use `<role>`, `<task>`, `<constraints>`, `<output_format>`
+Same as Sonnet 4.6 - use `<role>`, `<task>`, `<constraints>`, `<output_format>`
 
-**Source**: [Prompting best practices - Claude Docs](https://docs.claude.com/en/docs/build-with-claude/prompt-engineering/claude-4-best-practices)
+**Source**: [Prompting best practices - Claude Docs](https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/claude-prompting-best-practices)
 
-### Optimization 9: Literal Instruction Following
+### Optimization 10: Literal Instruction Following
 
-Same as Sonnet 4.5 - Claude 4.x takes instructions literally
+Same as Sonnet 4.6 - Claude 4.x takes instructions literally
 
-**Source**: [Prompting best practices - Claude Docs](https://docs.claude.com/en/docs/build-with-claude/prompt-engineering/claude-4-best-practices)
+**Source**: [Prompting best practices - Claude Docs](https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/claude-prompting-best-practices)
 
-### Optimization 10: Direct Communication (Skip Preamble)
+### Optimization 11: Direct Communication (Skip Preamble)
 
-Same as Sonnet 4.5 - be direct and explicit
+Same as Sonnet 4.6 - be direct and explicit. Opus 4.6 naturally communicates more directly and may skip verbal summaries for efficiency.
 
 ---
 
 ## Complete Implementation Workflow Example
 
-### Complex Feature Implementation (~200K tokens, 200K context)
+### Complex Feature Implementation (~500K tokens, 1M context)
 
 ```markdown
 ## Configuration
 
-**Model**: Claude Opus 4.5
-**Effort**: Medium (76% token savings, matches Sonnet best)
-**Extended Thinking**: 16K budget for complex tasks
-**Context**: 200K (standard)
+**Model**: Claude Opus 4.6
+**Effort**: Medium (balanced cost/quality, no preamble)
+**Thinking**: Adaptive (Claude decides when and how much)
+**Context**: 1M available
 
 ---
 
@@ -496,12 +479,12 @@ Same as Sonnet 4.5 - be direct and explicit
 - Glob for implementation files
 - Read guidelines
 
-**Extended thinking** (8K budget, 1 minute):
+**Adaptive thinking** (Claude decides depth, ~1 minute):
 - Understand architecture
 - Identify critical dependencies
 - Evaluate complexity level
 
-**Opus 4.5 advantage**: Superior logical planning → better architecture understanding
+**Opus 4.6 advantage**: Superior logical planning + 1M context = full codebase awareness
 
 ---
 
@@ -509,10 +492,10 @@ Same as Sonnet 4.5 - be direct and explicit
 
 ### Task T1.1: Complex State Management (5 min)
 
-**Effort**: Medium
-**Extended thinking**: 32K budget (complex logic)
+**Effort**: Medium (or high for critical tasks)
+**Thinking**: Adaptive (Claude allocates as needed)
 
-**Opus 4.5's approach**:
+**Opus 4.6's approach**:
 
 ```typescript
 // First try is correct - handles all edge cases
@@ -541,131 +524,164 @@ export class StatefulComponent {
     }
   }
 }
-````
+```
 
 **Quality check**:
 
-- ✅ Handles exclusive mode correctly (first try)
-- ✅ Handles disabled state proactively
-- ✅ Handles SSR edge case (without being asked)
-- ✅ Clean, maintainable code
-
-**Sonnet 4.5 comparison**: Might need iteration to catch SSR edge case
+- Handles exclusive mode correctly (first try)
+- Handles disabled state proactively
+- Handles SSR edge case (without being asked)
+- Clean, maintainable code
 
 ---
 
 ## Phase 3: Verification
 
-**Extended thinking** (8K budget):
+**Adaptive thinking** (Claude decides depth):
 
 - Evaluate integration between tasks
 - Consider edge cases across full implementation
 - Assess test coverage completeness
 
-**Opus advantage**: Stronger logical planning → better integration analysis
+**Opus advantage**: Stronger logical planning + full context awareness
 
 ---
 
 **Total time**: ~30 minutes
-**Context used**: ~200K tokens
-**Effort**: Medium (76% token savings vs high effort)
-**Extended thinking**: 48K total (8K + 32K + 8K)
-**Quality**: State-of-the-art (80.9% SWE-bench)
-**First-try success**: Higher than Sonnet 4.5
-
-````
+**Context used**: ~500K tokens (1M available)
+**Effort**: Medium (balanced cost/quality)
+**Thinking**: Adaptive (Claude managed)
+**Quality**: State-of-the-art
+**First-try success**: Higher than Sonnet 4.6
+```
 
 ---
 
 ## Model Selection Matrix
 
-### Opus 4.5 vs. Sonnet 4.5 vs. Others
+### Opus 4.6 vs. Sonnet 4.6
 
 | Scenario                       | Best Choice         | Why                                       |
 | ------------------------------ | ------------------- | ----------------------------------------- |
-| **Complex reasoning required** | Opus 4.5            | 80.9% SWE-bench (vs Sonnet's 77.2%)       |
-| **First-try correctness critical** | Opus 4.5        | Expert coder, higher success rate         |
-| **Deep debugging**             | Opus 4.5            | Superior logical planning                 |
-| **Daily development**          | Sonnet 4.5          | Faster, cheaper, 77.2% SWE-bench          |
-| **Simple tasks**               | Haiku 4.5           | 90% of Sonnet, 3x cheaper, 2x faster      |
-| **Cost-sensitive**             | Sonnet 4.5 / Haiku  | Opus is premium ($5/$25 vs $3/$15)        |
-| **Large context (>200K)**      | Sonnet 4.5 (1M only) | ⚠️ Opus limited to 200K, use Sonnet for 1M |
+| **Complex reasoning required** | Opus 4.6            | Frontier SWE-bench performance             |
+| **First-try correctness critical** | Opus 4.6        | Expert coder, higher success rate         |
+| **Deep debugging**             | Opus 4.6            | Superior logical planning                 |
+| **Daily development**          | Sonnet 4.6          | Faster, cheaper                            |
+| **Simple tasks**               | Haiku               | Cheapest, fastest                          |
+| **Cost-sensitive**             | Sonnet 4.6 / Haiku  | Opus is premium ($5/$25 vs $3/$15)        |
+| **Large context (>200K)**      | Either              | Both Opus 4.6 and Sonnet 4.6 support 1M   |
+
+**Note**: On Opus 4.5, large context (>200K) required switching to Sonnet. On Opus 4.6, both models support 1M context.
 
 **Recommendation**:
 
-- **Use Opus 4.5**: Complex implementations, first-try correctness critical, deep debugging
-- **Use Sonnet 4.5**: Daily work, good balance of speed/quality/cost
-- **Use Haiku 4.5**: Simple tasks, high-volume, rapid iteration
+- **Use Opus 4.6**: Complex implementations, first-try correctness critical, deep debugging
+- **Use Sonnet 4.6**: Daily work, good balance of speed/quality/cost
+- **Use Haiku**: Simple tasks, high-volume, rapid iteration
 
 ---
 
-## Effort + Extended Thinking Combinations
+## Effort + Adaptive Thinking Combinations
 
 ### For Different Task Complexities
 
-| Task Type              | Effort | Extended Thinking | Total Token Usage | Use Case               |
-| ---------------------- | ------ | ----------------- | ----------------- | ---------------------- |
-| **Simple**             | Medium | None              | Low               | Quick refactors        |
-| **Moderate**           | Medium | 8K                | Moderate          | Standard features      |
-| **Complex**            | Medium | 16K               | Balanced          | **Default for Opus**   |
-| **Very Complex**       | Medium | 32K               | Higher            | Multi-component logic  |
-| **Critical/Production**| High   | 32K-64K           | Highest           | Maximum quality needed |
+| Task Type              | Effort | Thinking   | Use Case               |
+| ---------------------- | ------ | ---------- | ---------------------- |
+| **Simple**             | Medium | Adaptive   | Quick refactors        |
+| **Moderate**           | Medium | Adaptive   | Standard features      |
+| **Complex**            | High   | Adaptive   | **Default for Opus**   |
+| **Very Complex**       | High   | Adaptive   | Multi-component logic  |
+| **Critical/Production**| Max    | Adaptive   | Maximum quality needed |
 
 **Cost Optimization**:
 
-- **Medium effort** saves 76% tokens vs high effort
-- Still matches Sonnet 4.5's best performance
-- For most implementations: Medium + 16K thinking is optimal
+- **Medium effort** provides significant savings vs high effort
+- **Adaptive thinking** eliminates manual budget_tokens guesswork
+- For most implementations: Medium effort + adaptive thinking is optimal
 
 ---
 
 ## Common Pitfalls & Solutions
 
-### ❌ Pitfall 1: Using High Effort by Default
+### Pitfall 1: Using High/Max Effort by Default
 
 ```markdown
-❌ BAD: Always use high effort (wastes tokens)
+BAD: Always use high or max effort (wastes tokens)
 
-✅ GOOD: Use medium effort (76% savings, same quality as Sonnet best)
-Only override to high for critical tasks
-````
+GOOD: Use medium effort (balanced, no preamble)
+Only override to high/max for critical tasks
+```
 
 **Solution**: Default to medium effort
 
 ---
 
-### ❌ Pitfall 2: Aggressive System Prompts
+### Pitfall 2: Aggressive System Prompts
 
 ```markdown
-❌ BAD: "CRITICAL: You MUST use tools!"
+BAD: "CRITICAL: You MUST use tools!"
 
-✅ GOOD: "Use tools for file operations."
+GOOD: "Use tools for file operations."
 ```
 
-**Solution**: Opus 4.5 is more sensitive - use normal language
+**Solution**: Opus 4.6 is more sensitive - use normal language
 
 ---
 
-### ❌ Pitfall 3: Using "Think" Without Extended Thinking
+### Pitfall 3: Manual budget_tokens Instead of Adaptive Thinking
 
 ```markdown
-❌ BAD (extended thinking disabled):
-"Think about the edge cases..."
+BAD (deprecated approach):
+{
+  "thinking": {"type": "enabled", "budget_tokens": 16384}
+}
 
-✅ GOOD:
-"Consider the edge cases..." OR enable extended thinking
+GOOD (Opus 4.6 approach):
+{
+  "thinking": {"type": "adaptive"}
+}
 ```
 
-**Solution**: Replace "think" with alternatives OR use extended thinking
+**Solution**: Use adaptive thinking; let Claude decide thinking depth
 
 ---
 
-### ❌ Pitfall 4: Not Leveraging First-Try Correctness
+### Pitfall 4: Avoiding "Think" Keywords
 
 ```markdown
-❌ BAD: Use same TDD approach as Sonnet (error-first)
+BAD (Opus 4.5 guidance, no longer applies):
+"Consider the edge cases..." (avoiding "think")
 
-✅ GOOD: Let Opus implement complete solution first try
+GOOD (Opus 4.6):
+"Think about the edge cases..." (valid control mechanism)
+"Think hard about the architecture..." (deeper reasoning)
+```
+
+**Solution**: On Opus 4.6, "think" keywords are valid control mechanisms that trigger progressively deeper reasoning. The Opus 4.5 guidance to avoid "think" does not apply.
+
+---
+
+### Pitfall 5: Using Assistant Message Prefilling
+
+```markdown
+BAD (returns 400 error on Opus 4.6):
+Prefilling assistant message with "{" to force JSON
+
+GOOD:
+Use tool_use or JSON mode for structured output
+Use effort: medium for preamble elimination
+```
+
+**Solution**: Prefilling is removed on Opus 4.6. Use effort parameter and system prompt instructions instead.
+
+---
+
+### Pitfall 6: Not Leveraging First-Try Correctness
+
+```markdown
+BAD: Use same TDD approach as Sonnet (error-first)
+
+GOOD: Let Opus implement complete solution first try
 
 - Opus proactively handles edge cases
 - Error-first TDD may be redundant for Opus
@@ -679,29 +695,29 @@ Only override to high for critical tasks
 
 After optimization, expect:
 
-**Quality** (vs. Sonnet 4.5):
+**Quality**:
 
-- SWE-bench: 80.9% vs 77.2% (+3.7 points)
-- First-try correctness: Higher
+- SWE-bench: Opus 4.6 scores TBD (Opus 4.5 scored 80.9% vs Sonnet 4.5's 77.2%)
+- First-try correctness: Higher than Sonnet
 - Deep debugging: Superior
 - Edge case handling: More proactive
 
 **Cost** (with medium effort):
 
-- 76% fewer output tokens vs high effort
-- Matches Sonnet 4.5's best performance
+- Significant token savings vs high/max effort
 - $5/$25 per million tokens
 
 **Speed**:
 
-- Slower than Sonnet 4.5 (more thorough reasoning)
+- Slower than Sonnet 4.6 (more thorough reasoning)
 - But higher success rate reduces iteration cycles
 
-**When Opus 4.5 Wins**:
+**When Opus 4.6 Wins**:
 
-- Complex implementations: 15% improvement over Sonnet (fewer iterations)
-- Deep debugging: 20% improvement (finds root cause faster)
+- Complex implementations: Fewer iterations than Sonnet
+- Deep debugging: Finds root cause faster
 - Long-horizon tasks: Better state tracking, fewer dead-ends
+- Large codebase: Full 1M context (no longer Sonnet-exclusive)
 
 ---
 
@@ -709,13 +725,14 @@ After optimization, expect:
 
 **Same task, different effort levels**:
 
-| Configuration                  | Tokens Used | SWE-bench Score       | Cost Efficiency |
-| ------------------------------ | ----------- | --------------------- | --------------- |
-| Opus 4.5 (high effort)         | 100K output | 80.9%                 | Baseline        |
-| Opus 4.5 (medium effort)       | 24K output  | 77.2% (Sonnet's best) | 76% cheaper     |
-| Sonnet 4.5 (extended thinking) | 50K output  | 77.2%                 | 2x Opus medium  |
+| Configuration                  | Behavior                           | Cost Efficiency |
+| ------------------------------ | ---------------------------------- | --------------- |
+| Opus 4.6 (max effort)          | Deepest reasoning, most tokens     | Highest cost    |
+| Opus 4.6 (high effort)         | Thorough, explains before acting   | High cost       |
+| Opus 4.6 (medium effort)       | Direct to action, no preamble      | Balanced        |
+| Opus 4.6 (low effort)          | Terse, minimal reasoning           | Lowest cost     |
 
-**Key insight**: Opus 4.5 at medium effort = Sonnet 4.5's best, with 52% fewer tokens
+**Key insight**: Opus 4.6 at medium effort provides the best balance of quality and cost for most tasks
 
 ---
 
@@ -723,54 +740,49 @@ After optimization, expect:
 
 ### Anthropic Official
 
-- [Introducing Claude Opus 4.5](https://www.anthropic.com/news/claude-opus-4-5) - Model announcement, capabilities
-- [Claude Opus 4.5](https://www.anthropic.com/claude/opus) - Product page
-- [What's new in Claude 4.5 - Claude Docs](https://platform.claude.com/docs/en/about-claude/models/whats-new-claude-4-5) - Feature overview
-- [Prompting best practices - Claude Docs](https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/claude-4-best-practices) - System prompt sensitivity
-- [Effort - Claude Docs](https://platform.claude.com/docs/en/build-with-claude/effort) - Effort parameter (beta)
-- [Building with extended thinking - Claude Docs](https://platform.claude.com/docs/en/build-with-claude/extended-thinking) - Thinking budgets
+- [What's new in Claude 4.6](https://platform.claude.com/docs/en/about-claude/models/whats-new-claude-4-6) - Model announcement, 1M context, adaptive thinking
+- [Effort - Claude Docs](https://platform.claude.com/docs/en/docs/build-with-claude/effort) - Effort parameter (GA), four levels, behavioral differences
+- [Adaptive Thinking - Claude Docs](https://platform.claude.com/docs/en/build-with-claude/adaptive-thinking) - Replaces manual budget_tokens
+- [Claude 4.6 Migration Guide](https://platform.claude.com/docs/en/docs/about-claude/models/migration-guide) - Breaking changes, prefill removal, budget_tokens deprecation
+- [Prompting best practices - Claude Docs](https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/claude-prompting-best-practices) - System prompt sensitivity, think keywords, communication style
 
-### Extended Thinking & Word Choice
+### Opus 4.5 Historical (for comparison context)
 
-- [How to use thinking mode in claude 4.5 - CometAPI](https://www.cometapi.com/how-to-use-thinking-mode-in-claude-4-5/) - Extended thinking guidance, practical patterns
-- [Thinking mode in Claude 4.5 - Medium](https://medium.com/@mkteam/thinking-mode-in-claude-4-5-all-you-need-to-know-353235942182) - Extended thinking control, when to avoid
+- [Introducing Claude Opus 4.5](https://www.anthropic.com/news/claude-opus-4-5) - Original model announcement (200K context, beta effort)
+- [What's new in Claude 4.5](https://platform.claude.com/docs/en/about-claude/models/whats-new-claude-4-5) - Opus 4.5 feature overview
 
 ### Performance Analysis
 
-- [Claude Opus 4.5 vs Sonnet 4.5 - DataStudios](https://www.datastudios.org/post/claude-opus-4-5-vs-claude-sonnet-4-5-full-report-and-comparison-of-features-performance-pricing-a) - Performance comparison, token efficiency
-- [Claude Sonnet 4.5 vs Opus 4.5 - Cosmic](https://www.cosmicjs.com/blog/claude-sonnet-45-vs-opus-45-a-real-world-comparison) - Real-world comparison
-- [Claude Opus 4.5 Guide - Claude Fast](https://claudefa.st/blog/guide/performance/claude-opus-4-5-guide) - Performance guide
-- [Claude Opus 4.5: Benchmarks, Agents, Tools - DataCamp](https://www.datacamp.com/blog/claude-opus-4-5) - Benchmark analysis
-
-### Third-Party Analysis
-
-- [How to use thinking mode in claude 4.5 - CometAPI](https://www.cometapi.com/how-to-use-thinking-mode-in-claude-4-5/) - Extended thinking, budget management
-- [Claude Opus 4.5 vs GPT-5.2 Codex - Vertu](https://vertu.com/lifestyle/claude-opus-4-5-vs-gpt-5-2-codex-head-to-head-coding-benchmark-comparison/) - Model comparison
+- [Claude Opus 4.5 vs Sonnet 4.5 - DataStudios](https://www.datastudios.org/post/claude-opus-4-5-vs-claude-sonnet-4-5-full-report-and-comparison-of-features-performance-pricing-a) - Opus 4.5 performance data
+- [Claude Sonnet 4.5 vs Opus 4.5 - Cosmic](https://www.cosmicjs.com/blog/claude-sonnet-45-vs-opus-45-a-real-world-comparison) - Real-world comparison (Opus 4.5)
 
 ---
 
 ## Quick Reference Card
 
-### Claude Opus 4.5 Optimization Checklist
+### Claude Opus 4.6 Optimization Checklist
 
 ```
-✅ Medium effort (default) - 76% token savings, matches Sonnet best
-✅ High effort (critical tasks) - Maximum quality, first-try correctness
-✅ Extended thinking (16K-32K) - Complex reasoning, deep debugging
-✅ Avoid aggressive language - "Use X" not "MUST use X"
-✅ Replace "think" (if no extended thinking) - Use "consider", "evaluate"
-✅ Parallel tool use - Load files simultaneously
-✅ Trust first-try correctness - Less iteration needed than Sonnet
-✅ Vision for UI tasks - Compare screenshots, crop for detail
-✅ XML structure - Same as Sonnet 4.5
-✅ Direct communication - Same as Sonnet 4.5
+[OK] Medium effort (default) -- balanced cost/quality, no preamble
+[OK] High/Max effort (critical tasks) -- maximum quality, first-try correctness
+[OK] Adaptive thinking -- Claude decides when/how much to think (replaces budget_tokens)
+[OK] Avoid aggressive language -- "Use X" not "MUST use X"
+[OK] "Think" keywords work -- "Think", "Think hard", "Ultrathink" trigger deeper reasoning
+[OK] Parallel tool use -- load files simultaneously
+[OK] Trust first-try correctness -- less iteration needed than Sonnet
+[OK] Vision for UI tasks -- compare screenshots, crop for detail
+[OK] XML structure -- same as Sonnet 4.6
+[OK] Direct communication -- same as Sonnet 4.6; Opus 4.6 naturally more direct
+[OK] 1M context -- full codebase awareness (no longer Sonnet-exclusive)
+[OK] 128K max output -- large responses supported
+[OK] No prefilling -- removed on 4.6 (400 error); use effort parameter instead
 ```
 
-**Result**: State-of-the-art coding (80.9% SWE-bench) with token efficiency
+**Result**: State-of-the-art coding with adaptive thinking and full context awareness
 
 ---
 
-## When to Use Opus 4.5 vs. Sonnet 4.5
+## When to Use Opus 4.6 vs. Sonnet 4.6
 
 ### Decision Tree
 
@@ -778,78 +790,89 @@ After optimization, expect:
 Task complexity assessment:
 
 IF task is simple (boilerplate, standard patterns):
-  → Use Haiku 4.5 or Sonnet 4.5 (Opus overkill)
+  -> Use Haiku or Sonnet 4.6 (Opus overkill)
 
 ELSE IF task is moderate (standard implementation):
-  → Use Sonnet 4.5 (faster, cheaper, 77.2% SWE-bench)
+  -> Use Sonnet 4.6 (faster, cheaper)
 
 ELSE IF task is complex AND first-try correctness critical:
-  → ✅ Use Opus 4.5 (medium effort + extended thinking)
-  → 80.9% SWE-bench, better first-try rate
+  -> Use Opus 4.6 (medium effort + adaptive thinking)
+  -> Frontier SWE-bench, better first-try rate
 
 ELSE IF deep debugging OR intricate logic:
-  → ✅ Use Opus 4.5 (high effort + extended thinking)
-  → Superior logical planning, root cause analysis
+  -> Use Opus 4.6 (high effort + adaptive thinking)
+  -> Superior logical planning, root cause analysis
 
 ELSE IF cost is primary concern:
-  → Use Sonnet 4.5 or Haiku 4.5
+  -> Use Sonnet 4.6 or Haiku
 ```
 
 ### Cost-Benefit Analysis
 
-| Model      | Cost (Input/Output) | SWE-bench | First-Try Rate | Best For              |
-| ---------- | ------------------- | --------- | -------------- | --------------------- |
-| Haiku 4.5  | $0.80/$4.00         | ~70%      | Moderate       | Simple tasks          |
-| Sonnet 4.5 | $3.00/$15.00        | 77.2%     | Good           | Daily development     |
-| Opus 4.5   | $5.00/$25.00        | **80.9%** | **Excellent**  | **Complex reasoning** |
+| Model      | Cost (Input/Output) | SWE-bench      | First-Try Rate | Best For              |
+| ---------- | ------------------- | -------------- | -------------- | --------------------- |
+| Haiku      | $0.80/$4.00         | ~70%           | Moderate       | Simple tasks          |
+| Sonnet 4.6 | $3.00/$15.00        | ~77%           | Good           | Daily development     |
+| Opus 4.6   | $5.00/$25.00        | **Frontier**   | **Excellent**  | **Complex reasoning** |
 
-**Opus 4.5 ROI**: Worth premium cost when:
+**Note**: Opus 4.6 benchmark scores are TBD. Opus 4.5 scored 80.9% on SWE-bench Verified. Sonnet 4.5 scored 77.2%. The relative ranking (Opus > Sonnet > Haiku) is expected to hold.
+
+**Opus 4.6 ROI**: Worth premium cost when:
 
 - Reducing iteration cycles (first-try correctness)
 - Critical production code (quality > cost)
 - Complex debugging (faster root cause identification)
 - Multi-component coordination (superior logical planning)
+- Large codebase context needed (1M tokens available)
 
 ---
 
-## Opus 4.5-Specific Best Practices
+## Opus 4.6-Specific Best Practices
 
 ### 1. Leverage Effort Parameter for Cost Control
 
 ```markdown
 **For most implementation tasks**:
 
-- Use medium effort (76% token savings)
-- Quality matches Sonnet 4.5's best
+- Use medium effort (balanced, no preamble)
 - Optimal cost/performance balance
 
 **For critical/complex tasks**:
 
-- Use high effort
-- Maximum quality, first-try correctness
+- Use high effort (thorough reasoning, explains plan before acting)
+- Use max effort for hardest problems (new on 4.6)
 - Worth the token cost
 ```
 
-### 2. Trust First-Try Implementations
+### 2. Trust Adaptive Thinking
 
 ```markdown
-**Opus 4.5 approach**:
+**Opus 4.6 approach**:
+
+- Let Claude decide thinking depth (adaptive)
+- No manual budget_tokens tuning
+- Effort parameter controls thinking automatically
+
+**vs. Opus 4.5 approach** (manual budget management):
+
+- Set budget_tokens per task complexity
+- Risk of under/over-allocating
+- More configuration overhead
+```
+
+### 3. Trust First-Try Implementations
+
+```markdown
+**Opus 4.6 approach**:
 
 - Implement complete solution
 - Run tests once
 - High probability of passing first try
 
-**vs. Sonnet 4.5 approach** (error-first TDD):
-
-- Write test
-- Get error
-- Fix error
-- Repeat
-
 **Insight**: Opus's higher first-try rate makes error-first TDD less necessary
 ```
 
-### 3. Use Vision for UI Components
+### 4. Use Vision for UI Components
 
 ```markdown
 **When implementing UI**:
@@ -860,25 +883,39 @@ ELSE IF cost is primary concern:
 - Consider crop tool for detailed regions
 ```
 
-### 4. Calibrate System Prompt Language
+### 5. Calibrate System Prompt Language
 
 ```markdown
-**Opus 4.5 is more sensitive**:
+**Opus 4.6 is more sensitive**:
 
 - Use normal language, not aggressive
 - "Use X when..." not "CRITICAL: MUST use X"
 - Cleaner, more natural prompts
+- The model naturally communicates more directly
+```
+
+### 6. Use "Think" Keywords for Depth Control
+
+```markdown
+**On Opus 4.6**:
+
+- "Think" -- standard reasoning
+- "Think hard" -- deeper reasoning
+- "Think harder" -- even deeper
+- "Ultrathink" -- maximum depth
+
+These are intentional control mechanisms, not problems to work around.
 ```
 
 ---
 
 **Related Documents:**
 
-- [MODEL-OPTIMIZATION-SONNET.md](./MODEL-OPTIMIZATION-SONNET.md) - Sonnet 4.5 patterns
-- [MODEL-OPTIMIZATION-HAIKU.md](./MODEL-OPTIMIZATION-HAIKU.md) - Haiku 4.5 patterns
+- [MODEL-OPTIMIZATION-SONNET.md](./MODEL-OPTIMIZATION-SONNET.md) - Sonnet 4.6 patterns
+- [MODEL-OPTIMIZATION-HAIKU.md](./MODEL-OPTIMIZATION-HAIKU.md) - Haiku patterns
 - [TASK-SPAWNING-GUIDE.md](./TASK-SPAWNING-GUIDE.md) - Multi-agent orchestration
 
 ---
 
-**Version**: 1.0.0
-**Last Updated**: 2026-01-20
+**Version**: 2.0.0
+**Last Updated**: 2026-04-14
