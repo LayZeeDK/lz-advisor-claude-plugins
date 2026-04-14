@@ -115,10 +115,10 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5
 
 ### Phase 05.1: Advisor consultation refinements (INSERTED)
 
-**Goal:** [Urgent work - to be planned]
-**Requirements**: TBD
+**Goal:** Eliminate advisor preamble waste, preserve user-pasted source material fidelity, and add specific re-consultation triggers -- refining ADVR-02, IMPL-02, IMPL-03 through surgical edits to agent and skill files
+**Requirements**: ADVR-02, IMPL-02, IMPL-03 (refinements, no new requirements)
 **Depends on:** Phase 5
-**Plans:** 0 plans
+**Plans:** 1 plan
 
 Plans:
-- [ ] TBD (run /gsd-plan-phase 05.1 to break down)
+- [ ] 05.1-01-PLAN.md -- Final Response Discipline, verbatim-vs-summary rules, re-consultation triggers, version bump
