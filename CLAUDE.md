@@ -63,7 +63,7 @@ plugins/lz-advisor/
 - **No `commands/` directory**: Skills (not commands) are the right component type. Skills auto-trigger on context match and support progressive disclosure. Commands are legacy format (per plugin-dev docs: "The `.claude/commands/` directory is a legacy format. For new skills, use the `.claude/skills/<name>/SKILL.md` directory format").
 - **No `hooks/` directory**: Hooks are out of scope for v1 (cost control, no noise, can't scope to skill execution).
 - **No `.mcp.json`**: No external services; the Agent tool is the sole mechanism.
-- **Single agent, multiple skills**: The advisor persona is constant; skills define different workflows that invoke it.
+- **Three agents, four skills**: A general-purpose advisor for plan and execute workflows, plus specialized reviewer and security-reviewer agents for review and security-review skills.
 - **`lz-advisor` prefix**: Namespace all components to avoid collision with other plugins.
 ## Plugin Manifest (plugin.json)
 ## Agent File Format
@@ -158,7 +158,7 @@ plugins/lz-advisor/
 |----------|-------------|-------------|---------|
 | Entry point | Skills | Commands | Skills auto-trigger on context; commands require `/invoke`. Commands are legacy format per plugin-dev. |
 | Advisor mechanism | Agent with `model: opus` | API advisor tool | Project constraint: no API dependency, plugin-only |
-| Multiple agents | Single `lz-advisor` agent | Per-skill agents (plan-advisor, review-advisor) | The advisor persona is constant; skills define different workflows. One agent, many skills. |
+| Multiple agents | Three role-specialized agents (advisor, reviewer, security-reviewer) | Single shared agent for all skills | Review and security-review workflows need different personas, severity classifications, and word budgets than general advisory. |
 | Agent tools | `["Read", "Glob"]` | Full tool access | Principle of least privilege. Advisor reads context but never writes. Reduces cost and prevents advisor from taking action. |
 | Hooks | None for v1 | PreToolUse for auto-advising | Hooks are global (can't scope to skill), lack conversation context, add cost/noise without clear value |
 ## Sources
