@@ -118,12 +118,12 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5
 **Goal:** Rename all four skill directories and name fields to `lz-advisor.<skill>` pattern for unique user-facing shorthands, change advisor agent effort from high to medium to eliminate preamble waste, update all cross-references, bump to 0.3.0, and update Opus research doc for 4.6
 **Requirements**: RENAME-01, RENAME-02, RENAME-03, PREAMBLE-01, PREAMBLE-02, DOC-01
 **Depends on:** Phase 5
-**Plans:** 3 plans
+**Plans:** 3/3 plans complete
 
 Plans:
-- [ ] 05.2-01-PLAN.md -- Git mv directories, update skill frontmatter/body, advisor effort, plugin version
-- [ ] 05.2-02-PLAN.md -- Update CLAUDE.md, README.md, and eval JSON query strings
-- [ ] 05.2-03-PLAN.md -- Rewrite MODEL-OPTIMIZATION-OPUS.md from Opus 4.5 to 4.6
+- [x] 05.2-01-PLAN.md -- Git mv directories, update skill frontmatter/body, advisor effort, plugin version
+- [x] 05.2-02-PLAN.md -- Update CLAUDE.md, README.md, and eval JSON query strings
+- [x] 05.2-03-PLAN.md -- Rewrite MODEL-OPTIMIZATION-OPUS.md from Opus 4.5 to 4.6
 
 ### Phase 05.1: Advisor consultation refinements (INSERTED)
 
