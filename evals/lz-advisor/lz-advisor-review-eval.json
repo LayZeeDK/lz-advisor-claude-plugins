@@ -8,7 +8,7 @@
     "should_trigger": true
   },
   {
-    "query": "lz-advisor review the new utility functions I added to src/utils/string-helpers.ts",
+    "query": "lz-advisor.review the new utility functions I added to src/utils/string-helpers.ts",
     "should_trigger": true
   },
   {

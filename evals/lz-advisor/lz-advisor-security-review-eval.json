@@ -8,7 +8,7 @@
     "should_trigger": true
   },
   {
-    "query": "lz-advisor security-review the authentication module at src/auth/",
+    "query": "lz-advisor.security-review the authentication module at src/auth/",
     "should_trigger": true
   },
   {

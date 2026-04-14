@@ -8,7 +8,7 @@
     "should_trigger": true
   },
   {
-    "query": "lz-advisor execute the database migration task -- we need to add the new columns to the users table and backfill existing records",
+    "query": "lz-advisor.execute the database migration task -- we need to add the new columns to the users table and backfill existing records",
     "should_trigger": true
   },
   {

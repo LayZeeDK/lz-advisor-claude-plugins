@@ -12,7 +12,7 @@
     "should_trigger": true
   },
   {
-    "query": "lz-advisor plan how to restructure our database schema for the new multi-tenant feature",
+    "query": "lz-advisor.plan how to restructure our database schema for the new multi-tenant feature",
     "should_trigger": true
   },
   {
