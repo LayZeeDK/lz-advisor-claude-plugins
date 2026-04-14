@@ -98,18 +98,27 @@ what the advice checks.
 
 ### When to Consult Again
 
-During execution, consult the advisor again if:
+During execution, consult the advisor again when:
 
-- **Stuck**: Errors keep recurring, the approach is not converging, or results
-  do not fit. Package what was tried, what failed, and the error details.
-- **Changing approach**: The current approach is not working and a different
-  direction seems better. Package the current approach, why it is failing, and
-  the proposed alternative.
+- **Empirical contradiction**: Evidence contradicts the plan or pre-execute
+  guidance -- a type error, failing test, or tool output that invalidates
+  an assumption the approach depends on
+- **Non-trivial approach change**: The planned step does not work and the
+  substitute requires strategic judgment, not just a surface fix
+- **Silent failure**: A tool exits successfully but the expected artifact is
+  missing, empty, or wrong -- the cause is unclear
+- **Strategic shape change**: A deviation from the plan changes its overall
+  structure -- moving configuration between files, swapping integration
+  patterns, or adding a workaround with ongoing maintenance cost
 
-These are judgment calls -- not every error warrants an advisor call. Consult
-when the situation is genuinely ambiguous or when two reasonable paths diverge.
-On short reactive tasks where the next action follows directly from tool
-output, additional calls are unnecessary.
+Do not re-consult for:
+- Trivial fixes: typos, import paths, obvious refactors -- proceed solo
+- Format or style corrections -- proceed solo
+
+Keep re-consultation prompts brief (2-3 sentences): what changed, what
+options are being considered, what decision is needed. These calls reuse
+the pre-execute consultation context implicitly; a full orient repackage
+is unnecessary.
 
 ### Reconciliation
 
