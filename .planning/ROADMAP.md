@@ -115,13 +115,17 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5
 
 ### Phase 05.3: Resolve issues identified in field test and take the quick-260417-lhe task into account (INSERTED)
 
-**Goal:** [Urgent work - to be planned]
-**Requirements**: TBD
+**Goal:** Close Phase 5.2 field-test findings F1-F5 and the 6 open Opus 4.7 UAT items from quick task 260417-lhe in one coordinated phase: harden all three Opus agent prompts with a Context Trust Contract (positive-framing, batching directive, per-role calibration), consolidate executor context packaging into a new shared `references/context-packaging.md` reference loaded by all four SKILL.md files, add an orientation-budget instruction to plan/execute skills, and empirically validate the fixes via an 8-subagent A/B UAT on the Compodoc+Storybook scenario with a D-04 dual acceptance gate (>=80% first-try success AND <=4 advisor tool calls per consultation). Bump plugin to 0.5.0.
+**Requirements**: D-01..D-16 (CONTEXT.md locked decisions; REQUIREMENTS.md IDs not assigned for this phase)
 **Depends on:** Phase 5
-**Plans:** 0 plans
+**Plans:** 5 plans
 
 Plans:
-- [ ] TBD (run /gsd-plan-phase 05.3 to break down)
+- [ ] 05.3-01-PLAN.md -- Agent prompt edits: Context Trust Contract on advisor + reviewer + security-reviewer, trim overlap in Verification/Review Process (D-06, D-07, D-08, D-09)
+- [ ] 05.3-02-PLAN.md -- New shared reference `references/context-packaging.md`, 4 SKILL.md @-load swaps, D-13 orientation-budget in plan + execute (D-10, D-11, D-12, D-13)
+- [ ] 05.3-03-PLAN.md -- UAT harness scaffolding (subagent prompt, grader prompt, Compodoc scenario, parse-trace.mjs) + single-UAT validation run confirming A1/A2/A3 (D-03, D-14, D-16 scaffolding)
+- [ ] 05.3-04-PLAN.md -- Full 8-subagent UAT (baseline + post-fix) + grader + D-04 dual-gate verdict + VERIFICATION.md with UAT 5 human_needed (D-01, D-02, D-04, D-05, D-14, D-15, D-16 execution)
+- [ ] 05.3-05-PLAN.md -- Version bump 0.4.0 -> 0.5.0 in plugin.json + 4 SKILL.md frontmatter; README.md What's New + References entries
 
 ### Phase 05.2: Rename skills and resolve preamble waste for advisor agent (INSERTED)
 
