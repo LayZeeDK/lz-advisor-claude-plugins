@@ -90,6 +90,7 @@ None yet.
 
 - Phase 5.1 inserted after Phase 5: Advisor consultation refinements (URGENT) -- closes three empirical gaps discovered during live marketplace testing on 2026-04-14: (A) agent preamble pattern wastes one tool_use round trip per consultation and creates misleading terminal display; (B) executor compresses user-pasted source material before passing to advisor, losing fidelity; (E) no re-consultation triggers during execute phase when approach-changing evidence surfaces
 - Phase 5.2 inserted after Phase 5: Rename skills and resolve preamble waste for advisor agent (URGENT) -- live marketplace testing on 2026-04-14 revealed: (1) skill names `plan`, `execute`, `review`, `security-review` clash with other plugins; need `lz-advisor.*` prefix for unique shorthands; (2) Final Response Discipline added in 5.1 did not prevent Opus preamble waste -- advisor still opens with "Let me verify..." narration under maxTurns: 1
+- Phase 5.3 inserted after Phase 5: Resolve issues identified in field test and take the quick-260417-lhe task into account (URGENT) -- Phase 5.2 field test (05.2-FIELD-TEST.md) found 57% first-try success rate across 7 advisor invocations; failures cluster in review/verification consultations where advisor makes sequential 1-tool-per-turn calls instead of batching; quick task 260417-lhe upgraded reviewer/security-reviewer to effort: xhigh for Opus 4.7 and documented 6 open UAT items that overlap with the field test findings; 5.3 addresses both
 
 ## Session Continuity
 

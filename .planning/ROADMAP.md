@@ -113,6 +113,16 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5
 | 4. Review Skills | 0/2 | Planning complete | - |
 | 5. Polish and Marketplace Readiness | 0/5 | Planning complete | - |
 
+### Phase 05.3: Resolve issues identified in field test and take the quick-260417-lhe task into account (INSERTED)
+
+**Goal:** [Urgent work - to be planned]
+**Requirements**: TBD
+**Depends on:** Phase 5
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd-plan-phase 05.3 to break down)
+
 ### Phase 05.2: Rename skills and resolve preamble waste for advisor agent (INSERTED)
 
 **Goal:** Rename all four skill directories and name fields to `lz-advisor.<skill>` pattern for unique user-facing shorthands, change advisor agent effort from high to medium to eliminate preamble waste, update all cross-references, bump to 0.3.0, and update Opus research doc for 4.6
