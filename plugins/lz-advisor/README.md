@@ -45,7 +45,7 @@ Look for `lz-advisor` in the loaded plugins output. If skills do not trigger, ve
 ## How it works
 
 - Skills run on your session model (typically Sonnet 4.6) as the executor.
-- At strategic moments, the executor consults the `lz-advisor` agent, which runs on Opus (currently Opus 4.7, auto-selected via the `opus` alias).
+- At strategic moments, the executor consults the `lz-advisor` agent, which runs on Opus.
 - The advisor provides concise guidance -- under 100 words, enumerated steps focused on what to do.
 - The executor continues with the task, informed by the advice.
 
