@@ -57,8 +57,8 @@ Near-Opus intelligence at Sonnet cost for coding tasks, achieved through strateg
 
 - **Platform**: Claude Code marketplace plugin only -- no standalone API usage
 - **Dependencies**: Zero external dependencies -- Claude Code Agent tool is the only mechanism
-- **Model availability**: Requires user has access to both Sonnet 4.6 and Opus 4.6
-- **Prompt optimization**: Executor prompts optimized for Sonnet 4.6, advisor prompts optimized for Opus 4.6
+- **Model availability**: Requires user has access to Sonnet 4.6 (or later) and Opus 4.7 (or later). The `model: opus` alias auto-resolves to the current Opus generation.
+- **Prompt optimization**: Executor prompts optimized for Sonnet 4.6; advisor prompts optimized for Opus 4.7 (literal instruction following, lower baseline tool usage, task-calibrated response length).
 - **Cost**: Advisor consultations should be strategic (2-3 per task), not per-tool-call
 
 ## Key Decisions
@@ -91,4 +91,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-04-14 after Phase 5.2 completion (all v1.0 phases complete)*
+*Last updated: 2026-04-17 -- Opus 4.7 adoption via opus alias (260417-lhe quick task)*

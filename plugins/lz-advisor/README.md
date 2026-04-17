@@ -4,9 +4,9 @@ Claude Code plugin implementing the advisor strategy -- pair an Opus advisor wit
 
 ## Overview
 
-The advisor strategy pairs a stronger model (Opus 4.6) with a faster model (typically Sonnet 4.6) to get the best of both worlds. The faster model handles the bulk of token generation -- reading files, writing code, running tools -- while the stronger model provides strategic guidance at high-leverage moments: before committing to an approach, when stuck, and before declaring done.
+The advisor strategy pairs a stronger model (Opus 4.7, auto-selected via the `opus` alias) with a faster model (typically Sonnet 4.6) to get the best of both worlds. The faster model handles the bulk of token generation -- reading files, writing code, running tools -- while the stronger model provides strategic guidance at high-leverage moments: before committing to an approach, when stuck, and before declaring done.
 
-Anthropic's internal benchmarks show that Sonnet 4.6 paired with an Opus advisor achieved +2.7 percentage points on SWE-bench Multilingual coding benchmarks at 11.9% lower cost compared to Sonnet solo. The advisor adds most value on the first call, before the approach crystallizes, and on the final check after work is complete.
+Anthropic's internal benchmarks (measured on Opus 4.6) show that Sonnet 4.6 paired with an Opus advisor achieved +2.7 percentage points on SWE-bench Multilingual coding benchmarks at 11.9% lower cost compared to Sonnet solo. The advisor adds most value on the first call, before the approach crystallizes, and on the final check after work is complete.
 
 This plugin uses Claude Code's native Agent tool to implement the pattern -- no API keys, no external dependencies, no additional setup beyond installation. Skills orchestrate the executor-advisor loop, consulting the `lz-advisor` agent at strategic moments during task execution.
 
@@ -45,7 +45,7 @@ Look for `lz-advisor` in the loaded plugins output. If skills do not trigger, ve
 ## How it works
 
 - Skills run on your session model (typically Sonnet 4.6) as the executor.
-- At strategic moments, the executor consults the `lz-advisor` agent, which runs on Opus 4.6.
+- At strategic moments, the executor consults the `lz-advisor` agent, which runs on Opus (currently Opus 4.7, auto-selected via the `opus` alias).
 - The advisor provides concise guidance -- under 100 words, enumerated steps focused on what to do.
 - The executor continues with the task, informed by the advice.
 
@@ -57,8 +57,10 @@ The advisor is consulted at the moments where a stronger model adds the most val
 
 ## Requirements
 
-- Claude Code with access to both Sonnet 4.6 and Opus 4.6
+- Claude Code with access to Sonnet 4.6 or later and Opus 4.7 or later (the `opus` alias auto-resolves to the current Opus generation)
 - No API keys or external dependencies required
+
+Opus 4.7 (released 2026-04-16) is auto-selected via the `opus` alias; no user action is required to adopt it.
 
 ## License
 
