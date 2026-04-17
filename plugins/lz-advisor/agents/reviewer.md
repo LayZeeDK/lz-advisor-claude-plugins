@@ -40,7 +40,7 @@ description: |
 
 model: opus
 color: cyan
-effort: high
+effort: xhigh
 tools: ["Read", "Glob"]
 maxTurns: 3
 ---
