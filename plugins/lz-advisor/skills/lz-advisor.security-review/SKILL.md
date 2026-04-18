@@ -27,6 +27,8 @@ packaging, see:
 
 @${CLAUDE_PLUGIN_ROOT}/references/advisor-timing.md
 
+@${CLAUDE_PLUGIN_ROOT}/references/context-packaging.md
+
 This skill follows a three-phase workflow: scan, consult, then output.
 
 <scan>
@@ -78,22 +80,14 @@ preparation.
 <consult>
 ## Phase 2: Consult the Security Reviewer
 
-Package the scan results and invoke the lz-advisor:security-reviewer agent
-via the Agent tool with a self-contained prompt containing:
-
-1. Review scope description (what files, directories, or changes were
-   reviewed and what the code does)
-2. Top 3-5 security findings, each with:
-   - Description of the vulnerability or risk
-   - File path and line number
-   - Relevant code snippet (keep concise -- do not paste entire files)
-   - Initial severity assessment (Critical / High / Medium)
-   - Suspected OWASP Top 10 category (if identifiable)
-3. Brief description of the application's threat model context (what the
-   code protects, who might attack it)
-4. Request: "Validate these findings against OWASP Top 10, assess
-   exploitability and impact, and identify any attack chains across
-   findings."
+Package the scan results and invoke the lz-advisor:security-reviewer
+agent via the Agent tool. Package the consultation prompt per the
+Verification template in
+`@${CLAUDE_PLUGIN_ROOT}/references/context-packaging.md`. This is a
+security-review consultation; the Threat Model Context block (assets the
+code protects, who might attack it, blast radius) is REQUIRED, not
+optional. The executor's 3-5 curated security findings become the
+Findings section of the template (with OWASP category tags).
 
 One security-reviewer consultation per review invocation. The
 security-reviewer starts with fresh context and cannot see the

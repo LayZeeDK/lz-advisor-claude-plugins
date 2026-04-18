@@ -26,6 +26,8 @@ guidance on timing, advice weight, and context packaging, see:
 
 @${CLAUDE_PLUGIN_ROOT}/references/advisor-timing.md
 
+@${CLAUDE_PLUGIN_ROOT}/references/context-packaging.md
+
 This skill follows a six-phase workflow: orient, consult before work, execute
 with conditional advisor calls, make deliverable durable, consult before done,
 then complete.
@@ -47,6 +49,7 @@ If no plan file was mentioned, orient from scratch:
 - Examine directory structure and dependencies
 - Identify constraints, existing patterns, and integration points
 - Note what exists and what needs to change
+- Stop exploring when you have enough context to formulate a specific question for the advisor. Do not read bundled, minified, or files under `node_modules/*/dist/`.
 
 Do not write code or make changes during orientation. Do not consult the
 advisor yet -- orientation is preparation, not substantive work.
@@ -55,34 +58,10 @@ advisor yet -- orientation is preparation, not substantive work.
 <consult>
 ## Phase 2: Consult the Advisor
 
-Before starting substantive work, invoke the lz-advisor:advisor agent via the
-Agent tool. Package a focused prompt containing:
-
-1. The user's original task (quote their request)
-2. Key findings from orientation (files examined, patterns found, constraints
-   discovered, plan context if a plan file was provided)
-3. A specific question: "Given these findings, what approach and sequence of
-   steps would you recommend? What should I watch out for?"
-
-Keep the prompt summarized -- do not paste entire files. The advisor starts
-with a fresh context and cannot see the conversation. All relevant context
-goes in the prompt.
-
-### What to Include Verbatim
-
-When packaging the advisor prompt, distinguish between source material and
-your own findings:
-
-- Preserve verbatim: user-pasted documentation excerpts, API specs, error
-  messages, configuration blobs, code snippets from third-party sources,
-  and tool output the user surfaced as evidence
-- Summarize: your own orientation findings (files read, patterns observed,
-  architectural relationships)
-
-If user-pasted material exceeds roughly 2,000 words, quote the sections
-relevant to the decision verbatim rather than paraphrasing the whole
-document. The advisor has no network access and cannot retrieve content
-you omit.
+Before starting substantive work, invoke the lz-advisor:advisor agent via
+the Agent tool. Package the pre-execute consultation prompt per the
+Proposal template in
+`@${CLAUDE_PLUGIN_ROOT}/references/context-packaging.md`.
 </consult>
 
 <execute>
@@ -130,12 +109,11 @@ committing to the wrong branch.
 
 ### Context Packaging for Mid-Execution Consultations
 
-Each advisor call must be self-contained. Include:
-
-1. The original task (quote the user's request)
-2. What has been done so far (files changed, approach taken)
-3. The current problem or decision (error details, approach tradeoffs)
-4. A specific question requesting guidance
+Use the Proposal (short form) variant in
+`@${CLAUDE_PLUGIN_ROOT}/references/context-packaging.md`. Two to three
+sentences covering what changed, what options are being considered, and
+what decision is needed. The pre-execute consultation context carries
+implicitly; a full repackage is unnecessary.
 </execute>
 
 <durable>
@@ -155,17 +133,14 @@ call. An unwritten or uncommitted result does not persist.
 <final>
 ## Phase 5: Final Advisor Consultation
 
-After committing, invoke the lz-advisor:advisor agent one more time. Package:
+After committing, invoke the lz-advisor:advisor agent one more time.
+Package the final review consultation prompt per the Verification template
+in `@${CLAUDE_PLUGIN_ROOT}/references/context-packaging.md`. Include a
+summary of changes made, test results if applicable, and the commit
+reference.
 
-1. The user's original task
-2. Summary of changes made (files created or modified, key decisions)
-3. Test results if applicable
-4. Commit reference (hash or message)
-5. A specific question: "Review the approach taken. Are there concerns, missed
-   edge cases, or improvements to flag before declaring done?"
-
-This is a final check, not a request for approval. The advisor verifies the
-approach is sound and flags concerns the executor may have missed.
+This is a final check, not a request for approval. The advisor verifies
+the approach is sound and flags concerns the executor may have missed.
 </final>
 
 <complete>
