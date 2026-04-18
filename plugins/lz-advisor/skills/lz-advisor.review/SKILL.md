@@ -26,6 +26,8 @@ context packaging, see:
 
 @${CLAUDE_PLUGIN_ROOT}/references/advisor-timing.md
 
+@${CLAUDE_PLUGIN_ROOT}/references/context-packaging.md
+
 This skill follows a three-phase workflow: scan, consult, then output.
 
 <scan>
@@ -69,24 +71,15 @@ preparation.
 <consult>
 ## Phase 2: Consult the Reviewer
 
-Package the scan results and invoke the lz-advisor:reviewer agent via
-the Agent tool with a self-contained prompt containing:
+Package the scan results and invoke the lz-advisor:reviewer agent via the
+Agent tool. Package the consultation prompt per the Verification template
+in `@${CLAUDE_PLUGIN_ROOT}/references/context-packaging.md`. The
+executor's 3-5 curated findings from Phase 1 become the Findings section
+of the template.
 
-1. Review scope description (what files, directories, or changes were
-   reviewed)
-2. Top 3-5 findings, each with:
-   - Description of the issue
-   - File path and line number
-   - Relevant code snippet (keep concise -- do not paste entire files)
-   - Initial severity assessment (Critical / Important / Suggestion)
-3. Any CLAUDE.md guidelines relevant to the findings
-4. Request: "Validate these findings and provide cross-cutting analysis.
-   Which findings should be confirmed, which rejected, and what patterns
-   connect them?"
-
-One reviewer consultation per review invocation. The reviewer starts
-with fresh context and cannot see the conversation -- all relevant
-context goes in the prompt.
+One reviewer consultation per review invocation. The reviewer starts with
+fresh context and cannot see the conversation -- all relevant context
+goes in the prompt.
 </consult>
 
 <output>

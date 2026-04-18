@@ -25,6 +25,8 @@ guidance on timing, advice weight, and context packaging, see:
 
 @${CLAUDE_PLUGIN_ROOT}/references/advisor-timing.md
 
+@${CLAUDE_PLUGIN_ROOT}/references/context-packaging.md
+
 This skill follows a three-phase workflow: orient, consult, then produce a plan.
 
 <orient>
@@ -36,6 +38,7 @@ Explore the codebase to understand the task scope and current state.
 - Examine directory structure and dependencies
 - Identify constraints, existing patterns, and integration points
 - Note what exists and what needs to change
+- Stop exploring when you have enough context to formulate a specific question for the advisor. Do not read bundled, minified, or files under `node_modules/*/dist/`.
 
 Do not write code or make changes during orientation. Do not consult
 the advisor yet -- orientation is preparation, not substantive work.
@@ -44,38 +47,13 @@ the advisor yet -- orientation is preparation, not substantive work.
 <consult>
 ## Phase 2: Consult the Advisor
 
-Invoke the lz-advisor:advisor agent via the Agent tool with a focused
-prompt containing:
+Invoke the lz-advisor:advisor agent via the Agent tool. Package the
+consultation prompt per the Proposal template in
+`@${CLAUDE_PLUGIN_ROOT}/references/context-packaging.md`.
 
-1. The user's original task (quote their request)
-2. Key findings from orientation (files examined, patterns found,
-   constraints discovered)
-3. A specific question: "Given these findings, what approach and
-   sequence of steps would you recommend?"
-
-Keep the prompt summarized -- do not paste entire files. The advisor
-starts with a fresh context and cannot see the conversation. All
-relevant context goes in the prompt.
-
-### What to Include Verbatim
-
-When packaging the advisor prompt, distinguish between source material and
-your own findings:
-
-- Preserve verbatim: user-pasted documentation excerpts, API specs, error
-  messages, configuration blobs, code snippets from third-party sources,
-  and tool output the user surfaced as evidence
-- Summarize: your own orientation findings (files read, patterns observed,
-  architectural relationships)
-
-If user-pasted material exceeds roughly 2,000 words, quote the sections
-relevant to the decision verbatim rather than paraphrasing the whole
-document. The advisor has no network access and cannot retrieve content
-you omit.
-
-One advisor consultation per plan invocation. The advisor returns
-concise strategic direction (enumerated steps). This becomes the
-foundation of the plan.
+One advisor consultation per plan invocation. The advisor returns concise
+strategic direction (enumerated steps). This becomes the foundation of the
+plan.
 </consult>
 
 <produce>
