@@ -62,6 +62,41 @@ The advisor is consulted at the moments where a stronger model adds the most val
 
 Opus 4.7 (released 2026-04-16) is auto-selected via the `opus` alias; no user action is required to adopt it.
 
+## References
+
+- `references/advisor-timing.md` -- Anthropic's suggested timing patterns
+  for advisor consultation: when to consult, how much weight to give the
+  advice, and how to package context for a fresh-context advisor call.
+- `references/context-packaging.md` -- Shared packaging contract and
+  templates (Proposal, Verification) used by all four skills. Defines
+  the Common Contract (4 packaging rules), the Proposal template for
+  strategic direction calls, the Verification template for review calls,
+  a short-form Proposal variant for mid-execute re-consultations, and a
+  decision table mapping skill + call site to template.
+
+## What's New
+
+### 0.5.0
+
+- Added `## Context Trust Contract` section to all three Opus agents
+  (advisor, reviewer, security-reviewer). Calibrated per role:
+  advisor emphasizes compression, reviewer and security-reviewer
+  emphasize efficient batched verification. Closes Phase 5.2 field
+  findings F1 (advisor maxTurns exhaustion) and F2 (agents ignoring
+  soft anti-re-read instructions).
+- Added new shared reference file `references/context-packaging.md`
+  consolidating packaging rules (Common Contract, Proposal template,
+  Verification template, short-form variant, decision table) that
+  were previously inline in each SKILL.md. All four skills now
+  `@`-load this reference. Closes field finding F3 (executor context
+  packaging quality).
+- Added orientation-budget instruction to `lz-advisor.plan` and
+  `lz-advisor.execute` skills to stop executor over-investigation of
+  bundled, minified, or `node_modules/*/dist/` files. Closes field
+  finding F5.
+- No agent frontmatter, allowed-tools, or workflow shape changes. All
+  edits are prompt-level.
+
 ## License
 
 MIT
