@@ -1,0 +1,15 @@
+{
+  "skill": "plan",
+  "pass": "post-fix",
+  "commit": "ab154b8",
+  "advisor_tool_calls": 0,
+  "advisor_turns_used": 1,
+  "maxturns_exhausted": false,
+  "first_try_success": true,
+  "advisor_word_count": 109,
+  "advisor_final_response": "1. Add `setCompodocJson` wiring to `packages/ngx-smart-components/.storybook/preview.ts`:\n```ts\nimport { setCompodocJson } from '@storybook/addon-docs/angular';\nimport docJson from '../documentation.json';\nsetCompodocJson(docJson);\n\nexport const parameters = {};\n```\n2. Import path is `@storybook/addon-docs/angular` in Storybook 10 (the legacy `@storybook/addon-docs/angular` subpath is retained; do not use `@storybook/angular`).\n3. Skip the `docs: { autodocs: true }` block in `main.ts`. Per-story `tags: ['autodocs']` already opts in; global flag is redundant and the `autodocs` key was removed/renamed in SB 8+.\n4. Ensure `.storybook/tsconfig.json` has `\"resolveJsonModule\": true` so the `documentation.json` import compiles.\n5. No `package.json` script changes needed; the executor's `compodoc: true` already generates `documentation.json` before serve/build.\nagentId: a70ebc0555a36c11d (use SendMessage with to: 'a70ebc0555a36c11d' to continue this agent)",
+  "advisor_model_id": "claude-opus-4-7[1m]",
+  "executor_tool_calls": 30,
+  "executor_completed": true,
+  "failure_mode": "none"
+}
