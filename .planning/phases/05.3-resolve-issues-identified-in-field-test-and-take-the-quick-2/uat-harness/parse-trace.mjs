@@ -7,17 +7,82 @@
  *
  * Emits JSON to stdout. Non-zero exit on parse error.
  *
- * Assumptions (per 05.3-RESEARCH.md Assumption A1):
- * - stream-json emits one JSON object per line
- * - content_block_start events with type == "tool_use" and non-null
- *   parent_tool_use_id represent agent-internal tool calls
- * - agent_name field (if present) identifies the agent; otherwise
- *   we attribute by parent_tool_use_id chaining to Agent-tool spawns
- * - final advisor response is the last "text" content block in the
- *   agent's message stream before the containing Agent tool_use_result
+ * Stream-json schema (CLI session format, empirically confirmed in Plan 03
+ * validation run on 2026-04-18 -- see VALIDATION-RUN.md):
+ * - One JSON object per line.
+ * - Top-level event shape: `{type: "assistant"|"user"|"system"|"result",
+ *   message: {...}, parent_tool_use_id: string|null, session_id, uuid}`.
+ * - Assistant events: `message.content[]` contains `{type: "text"|"thinking"
+ *   |"tool_use", ...}` blocks. A `tool_use` with `name: "Agent"` is an
+ *   advisor/reviewer/security-reviewer spawn; `input.subagent_type` is
+ *   e.g. `"lz-advisor:advisor"`.
+ * - The Agent tool's RESULT is delivered in a subsequent top-level `user`
+ *   event whose `message.content[]` contains a `tool_result` block with
+ *   `tool_use_id` matching the Agent spawn's id. That `tool_result.content`
+ *   (usually a string or array-of-text-blocks) is the advisor's final
+ *   response to the executor -- i.e., the trimmed output after
+ *   maxTurns/Visibility Model discipline.
+ * - Agent-internal tool calls and turns manifest as events whose
+ *   `parent_tool_use_id` equals the Agent spawn id. In CLI session format,
+ *   the CLI appears to summarize the agent's internal activity rather than
+ *   emit every internal turn individually; the tool_result's trailing
+ *   `<usage>tool_uses: N</usage>` block is the authoritative tool-call count.
+ *
+ * Metrics emitted (per 05.3-PLAN.md interfaces):
+ * - advisor_tool_calls: count parsed from the tool_result's `<usage>` block
+ *   if present, else fallback to events with matching parent_tool_use_id.
+ * - advisor_turns_used: events with matching parent_tool_use_id, or 1 if
+ *   the tool_result exists but no nested turns were emitted (single-turn
+ *   synthesis).
+ * - advisor_final_response: the tool_result content text.
+ * - advisor_model_id: extracted from the assistant event containing the
+ *   Agent spawn (the session's outer assistant model is the executor; we
+ *   do not get a separate advisor model line in CLI session format, but
+ *   the final `result` event's `modelUsage` object lists `claude-opus-4-7`
+ *   when Opus was invoked). We use modelUsage to identify the advisor
+ *   model.
  */
 
 import { readFileSync } from 'node:fs';
+
+function extractToolResultText(block) {
+  if (!block) {
+    return '';
+  }
+
+  if (typeof block.content === 'string') {
+    return block.content;
+  }
+
+  if (Array.isArray(block.content)) {
+    return block.content.map((c) => c.text || (typeof c === 'string' ? c : JSON.stringify(c))).join('\n');
+  }
+
+  return '';
+}
+
+function parseUsageFromToolResult(text) {
+  // Parse the trailing `<usage>tool_uses: N\nduration_ms: M</usage>` block
+  // that the Agent tool appends to its returned text.
+  const match = text.match(/<usage>([\s\S]*?)<\/usage>/);
+
+  if (!match) {
+    return { tool_uses: null, duration_ms: null };
+  }
+
+  const body = match[1];
+  const toolMatch = body.match(/tool_uses:\s*(\d+)/);
+  const durMatch = body.match(/duration_ms:\s*(\d+)/);
+
+  return {
+    tool_uses: toolMatch ? Number(toolMatch[1]) : null,
+    duration_ms: durMatch ? Number(durMatch[1]) : null,
+  };
+}
+
+function stripUsageBlock(text) {
+  return text.replace(/\n?<usage>[\s\S]*?<\/usage>\s*$/, '').trim();
+}
 
 function parseTrace(path) {
   const lines = readFileSync(path, 'utf8').split(/\r?\n/).filter(Boolean);
@@ -31,65 +96,90 @@ function parseTrace(path) {
     }
   }
 
-  // Find Agent-tool spawns targeting lz-advisor agents.
-  const agentSpawns = events.filter((evt) => {
-    if (evt.type !== 'content_block_start') {
+  // Find Agent spawn tool_use events (spawned by executor, nested inside
+  // a top-level assistant event's message.content[]).
+  const agentSpawns = [];
+
+  for (const evt of events) {
+    if (evt.type !== 'assistant') {
+      continue;
+    }
+
+    if (!evt.message || !Array.isArray(evt.message.content)) {
+      continue;
+    }
+
+    for (const block of evt.message.content) {
+      if (block.type !== 'tool_use') {
+        continue;
+      }
+
+      if (block.name !== 'Agent' && block.name !== 'Task') {
+        continue;
+      }
+
+      const subagent = (block.input && block.input.subagent_type) || '';
+
+      if (!subagent.startsWith('lz-advisor:')) {
+        continue;
+      }
+
+      agentSpawns.push({ id: block.id, subagent, prompt: block.input && block.input.prompt });
+    }
+  }
+
+  // Find tool_result events that correspond to those Agent spawns.
+  const agentResults = [];
+
+  for (const evt of events) {
+    if (evt.type !== 'user') {
+      continue;
+    }
+
+    if (!evt.message || !Array.isArray(evt.message.content)) {
+      continue;
+    }
+
+    for (const block of evt.message.content) {
+      if (block.type !== 'tool_result') {
+        continue;
+      }
+
+      const matchingSpawn = agentSpawns.find((s) => s.id === block.tool_use_id);
+
+      if (!matchingSpawn) {
+        continue;
+      }
+
+      const text = extractToolResultText(block);
+      const usage = parseUsageFromToolResult(text);
+
+      agentResults.push({
+        spawn: matchingSpawn,
+        rawText: text,
+        cleanText: stripUsageBlock(text),
+        usage,
+      });
+    }
+  }
+
+  // Advisor/reviewer/security-reviewer internal turns: assistant events with
+  // parent_tool_use_id matching a spawn id (rare in CLI session format, but
+  // captured if present).
+  const agentInternalTurns = events.filter((evt) => {
+    if (evt.type !== 'assistant') {
       return false;
     }
 
-    const block = evt.content_block;
-
-    if (!block || block.type !== 'tool_use') {
+    if (!evt.parent_tool_use_id) {
       return false;
     }
 
-    const name = block.name || '';
-
-    return name === 'Agent'
-      || name.startsWith('lz-advisor:')
-      || (block.input && typeof block.input.agent === 'string' && block.input.agent.startsWith('lz-advisor:'));
+    return agentSpawns.some((s) => s.id === evt.parent_tool_use_id);
   });
 
-  // Collect tool_use events attributed to an advisor/reviewer/security-reviewer spawn.
-  const agentToolUses = events.filter((evt) => {
-    if (evt.type !== 'content_block_start') {
-      return false;
-    }
-
-    const block = evt.content_block;
-
-    if (!block || block.type !== 'tool_use') {
-      return false;
-    }
-
-    // Nested under an agent spawn: parent_tool_use_id matches a spawn's block id.
-    if (evt.parent_tool_use_id) {
-      return agentSpawns.some((spawn) => spawn.content_block && spawn.content_block.id === evt.parent_tool_use_id);
-    }
-
-    // Alternative attribution via agent_name (if the field exists).
-    if (evt.agent_name && String(evt.agent_name).startsWith('lz-advisor:')) {
-      return true;
-    }
-
-    return false;
-  });
-
-  // Collect message_start events nested under an agent spawn (turn count).
-  const agentTurnStarts = events.filter((evt) => {
-    if (evt.type !== 'message_start') {
-      return false;
-    }
-
-    if (evt.parent_tool_use_id) {
-      return agentSpawns.some((spawn) => spawn.content_block && spawn.content_block.id === evt.parent_tool_use_id);
-    }
-
-    return false;
-  });
-
-  // Detect maxturns exhaustion: agent stream ends with tool_use blocks rather than a text block,
-  // or an explicit system event with max_turns_reached.
+  // Detect maxturns exhaustion: any system event containing max_turns markers,
+  // or agent spawn whose tool_result is empty/preamble-only.
   const maxTurnsEvents = events.filter((evt) => {
     if (evt.type !== 'system') {
       return false;
@@ -98,42 +188,46 @@ function parseTrace(path) {
     return /max_turns|maxturns/i.test(JSON.stringify(evt));
   });
 
-  // Extract advisor final text response.
-  const agentTextBlocks = events.filter((evt) => {
-    if (evt.type !== 'content_block_start' && evt.type !== 'content_block_delta') {
-      return false;
-    }
-
-    const block = evt.content_block || evt.delta;
-
-    if (!block || block.type !== 'text') {
-      return false;
-    }
-
-    if (evt.parent_tool_use_id) {
-      return agentSpawns.some((spawn) => spawn.content_block && spawn.content_block.id === evt.parent_tool_use_id);
-    }
-
-    return false;
-  });
-
-  // Concatenate agent final text.
-  let advisorFinal = '';
-
-  for (const blk of agentTextBlocks) {
-    const text = (blk.content_block && blk.content_block.text) || (blk.delta && blk.delta.text) || '';
-    advisorFinal += text;
-  }
-
+  // Take the FIRST advisor result as the primary one (most plan/execute skills
+  // issue one consultation). If there are multiple, concatenate for the
+  // word-count heuristic but keep the first as the final-response text.
+  const primary = agentResults[0] || null;
+  const advisorFinal = primary ? primary.cleanText : '';
   const wordCount = advisorFinal.trim().split(/\s+/).filter(Boolean).length;
 
-  // First-try success heuristic per 05.2 field test: final response starts with "1." AND has > 50 tokens.
+  // First-try success heuristic per 05.2 field test: final response starts
+  // with "1." AND has > 50 words. Matches the Phase 5.2 success criterion.
   const firstTrySuccess = /^\s*1\./.test(advisorFinal) && wordCount > 50;
 
-  // Detect preamble-only failure: text exists but is short (<= 50 words) or does not start with "1."
+  // advisor_tool_calls: prefer the <usage> block tool_uses count (authoritative).
+  let advisorToolCalls = 0;
+
+  if (primary && primary.usage && primary.usage.tool_uses !== null) {
+    advisorToolCalls = primary.usage.tool_uses;
+  } else {
+    advisorToolCalls = agentInternalTurns.reduce((sum, turn) => {
+      const toolUses = (turn.message && Array.isArray(turn.message.content))
+        ? turn.message.content.filter((c) => c.type === 'tool_use').length
+        : 0;
+
+      return sum + toolUses;
+    }, 0);
+  }
+
+  // advisor_turns_used: nested assistant events, or 1 if we have a result but
+  // no nested turns (single-turn synthesis, the best case).
+  let advisorTurns = agentInternalTurns.length;
+
+  if (advisorTurns === 0 && primary) {
+    advisorTurns = 1;
+  }
+
+  // Determine failure mode.
   let failureMode = 'none';
 
-  if (maxTurnsEvents.length > 0 || (agentSpawns.length > 0 && advisorFinal.trim().length === 0)) {
+  if (!primary) {
+    failureMode = 'no_advisor_spawn';
+  } else if (maxTurnsEvents.length > 0 || advisorFinal.trim().length === 0) {
     failureMode = 'maxturns';
   } else if (!firstTrySuccess && wordCount > 0 && wordCount <= 50) {
     failureMode = 'preamble_only';
@@ -141,60 +235,81 @@ function parseTrace(path) {
     failureMode = 'other';
   }
 
-  // Extract model_id from agent message_start events (per Risk 2 mitigation).
+  // Extract model_id from the final `result` event's modelUsage object (per
+  // CLI session format). This identifies whether Opus 4.7 was invoked.
   let modelId = '';
 
-  for (const turn of agentTurnStarts) {
-    if (turn.message && turn.message.model) {
-      modelId = String(turn.message.model);
+  for (const evt of events) {
+    if (evt.type !== 'result') {
+      continue;
+    }
+
+    if (!evt.modelUsage) {
+      continue;
+    }
+
+    // modelUsage is keyed by model id, e.g. "claude-opus-4-7[1m]".
+    const opusKey = Object.keys(evt.modelUsage).find((k) => k.startsWith('claude-opus'));
+
+    if (opusKey) {
+      modelId = opusKey;
       break;
     }
   }
 
-  // Count executor tool calls (everything NOT attributed to an agent spawn).
-  const executorToolUses = events.filter((evt) => {
-    if (evt.type !== 'content_block_start') {
-      return false;
+  // Count executor tool calls: tool_use blocks in assistant events with
+  // parent_tool_use_id == null, excluding Agent/Task spawns (those are
+  // agent launches, not regular executor tool calls from a UAT perspective,
+  // though some harnesses might want to count them -- we exclude here).
+  let executorToolCalls = 0;
+
+  for (const evt of events) {
+    if (evt.type !== 'assistant') {
+      continue;
     }
 
-    const block = evt.content_block;
-
-    if (!block || block.type !== 'tool_use') {
-      return false;
-    }
-
-    // Exclude anything attributed to an agent spawn.
     if (evt.parent_tool_use_id) {
-      return false;
+      continue;
     }
 
-    if (evt.agent_name && String(evt.agent_name).startsWith('lz-advisor:')) {
-      return false;
+    if (!evt.message || !Array.isArray(evt.message.content)) {
+      continue;
     }
 
-    return true;
-  });
+    for (const block of evt.message.content) {
+      if (block.type !== 'tool_use') {
+        continue;
+      }
 
+      if (block.name === 'Agent' || block.name === 'Task') {
+        continue;
+      }
+
+      executorToolCalls++;
+    }
+  }
+
+  // Executor completion: presence of a final `result` event with subtype "success".
   const executorCompleted = events.some((evt) => {
-    if (evt.type !== 'message_stop') {
+    if (evt.type !== 'result') {
       return false;
     }
 
-    return !evt.parent_tool_use_id;
+    return evt.subtype === 'success';
   });
 
   return {
     skill: process.env.UAT_SKILL || '',
     pass: process.env.UAT_PASS || '',
     commit: process.env.UAT_COMMIT || '',
-    advisor_tool_calls: agentToolUses.length,
-    advisor_turns_used: agentTurnStarts.length,
+    advisor_tool_calls: advisorToolCalls,
+    advisor_turns_used: advisorTurns,
     maxturns_exhausted: failureMode === 'maxturns',
     first_try_success: firstTrySuccess,
     advisor_word_count: wordCount,
     advisor_final_response: advisorFinal.slice(0, 4000),
     advisor_model_id: modelId,
-    executor_tool_calls: executorToolUses.length,
+    executor_tool_calls: executorToolCalls,
     executor_completed: executorCompleted,
     failure_mode: failureMode,
   };
