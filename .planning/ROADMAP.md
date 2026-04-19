@@ -113,6 +113,16 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5
 | 4. Review Skills | 0/2 | Planning complete | - |
 | 5. Polish and Marketplace Readiness | 0/5 | Planning complete | - |
 
+### Phase 05.4: Address UAT findings A-K (INSERTED)
+
+**Goal:** [Urgent work - to be planned]
+**Requirements**: TBD
+**Depends on:** Phase 5
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd-plan-phase 05.4 to break down)
+
 ### Phase 05.3: Resolve issues identified in field test and take the quick-260417-lhe task into account (INSERTED)
 
 **Goal:** Close Phase 5.2 field-test findings F1-F5 and the 6 open Opus 4.7 UAT items from quick task 260417-lhe in one coordinated phase: harden all three Opus agent prompts with a Context Trust Contract (positive-framing, batching directive, per-role calibration), consolidate executor context packaging into a new shared `references/context-packaging.md` reference loaded by all four SKILL.md files, add an orientation-budget instruction to plan/execute skills, and empirically validate the fixes via an 8-subagent A/B UAT on the Compodoc+Storybook scenario with a D-04 dual acceptance gate (>=80% first-try success AND <=4 advisor tool calls per consultation). Bump plugin to 0.5.0.
