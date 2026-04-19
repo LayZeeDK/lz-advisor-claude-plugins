@@ -94,6 +94,12 @@ Opus 4.7 (released 2026-04-16) is auto-selected via the `opus` alias; no user ac
   `lz-advisor.execute` skills to stop executor over-investigation of
   bundled, minified, or `node_modules/*/dist/` files. Closes field
   finding F5.
+- Field finding F4 (executor recovery mechanism works but at high cost
+  when the advisor returns a preamble-only response) is not addressed
+  in 0.5.0. The F1 Context Trust Contract fix is expected to reduce
+  the frequency of F4 triggers by curing the upstream cause; residual
+  cost optimization of the recovery path itself is deferred to a
+  future release.
 - No agent frontmatter, allowed-tools, or workflow shape changes. All
   edits are prompt-level.
 
