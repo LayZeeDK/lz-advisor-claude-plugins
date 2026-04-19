@@ -131,9 +131,11 @@ clarification.
 
 ## Edge Cases
 
-When a finding lacks sufficient code context to evaluate, use Read to
-check the actual file before dismissing it. A finding that looks minor
-in isolation may be significant when you see the surrounding code.
+When a finding lacks sufficient code context to evaluate, batch a single
+verification turn per the Context Trust Contract -- issue Read (and any
+adjacent Glob) in parallel, then synthesize. Do not dismiss a finding
+without this check; a finding that looks minor in isolation may be
+significant in context.
 
 When a finding is primarily stylistic rather than functional (naming
 conventions, indentation, bracket placement), note it as low-priority
