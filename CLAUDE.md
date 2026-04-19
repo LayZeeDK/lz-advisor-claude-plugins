@@ -68,11 +68,12 @@ plugins/lz-advisor/
 ## Plugin Manifest (plugin.json)
 ## Agent File Format
 ### Agent Configuration
-All agents use `model: opus`, `effort: high`, `tools: ["Read", "Glob"]`, and `maxTurns: 3` (2 tool-use turns + 1 synthesis turn). Agent-specific fields:
+All agents use `model: opus`, `tools: ["Read", "Glob"]`, and `maxTurns: 3` (2 tool-use turns + 1 synthesis turn). `effort` varies by role: advisor uses `effort: high`, while reviewer and security-reviewer use `effort: xhigh` (the Context Trust Contract in the reviewer agents explicitly builds on the xhigh budget to permit batched verification tool use). Agent-specific fields:
 | Field | advisor.md | reviewer.md | security-reviewer.md |
 |-------|-----------|-------------|---------------------|
 | `name` | `advisor` | `reviewer` | `security-reviewer` |
 | `color` | `magenta` | `cyan` | `yellow` |
+| `effort` | `high` | `xhigh` | `xhigh` |
 | Word budget | 100 words | 300 words | 300 words |
 | Used by skill | lz-advisor.plan, lz-advisor.execute | lz-advisor.review | lz-advisor.security-review |
 | `description` | Triggering conditions + examples | Most critical field; determines when agent triggers |
