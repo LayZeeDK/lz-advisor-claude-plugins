@@ -54,9 +54,11 @@ Include in the advisor prompt:
 3. Current state of work (what has been done, what remains)
 4. The specific decision or question that needs guidance
 
-Keep the prompt focused and summarized. The advisor works best with clear,
-organized context -- not raw file dumps or verbose tool output. Summarize
-findings; do not paste entire files.
+For the full packaging contract and templates, see
+`references/context-packaging.md`. Summarize your own orientation findings;
+preserve source material and relevant file contents verbatim per rule 1 of
+the Common Contract. The advisor works best with clear, organized context,
+not paraphrased source material that forces it to Read the originals.
 
 Web content the executor pre-fetches during orientation (documentation pages,
 API references, release notes) should be included in the advisor prompt
