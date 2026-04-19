@@ -22,7 +22,7 @@ allowed-tools: Agent(lz-advisor:reviewer)
 
 The lz-advisor:reviewer agent is backed by a stronger model (Opus). Invoke it
 via the Agent tool at the strategic moment described below. For guidance on
-context packaging, see:
+timing and context packaging, see:
 
 @${CLAUDE_PLUGIN_ROOT}/references/advisor-timing.md
 

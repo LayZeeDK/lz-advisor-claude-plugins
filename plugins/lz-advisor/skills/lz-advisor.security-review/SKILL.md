@@ -22,8 +22,8 @@ allowed-tools: Agent(lz-advisor:security-reviewer)
 
 The lz-advisor:security-reviewer agent is backed by a stronger model (Opus)
 with OWASP Top 10 expertise and threat modeling methodology. Invoke it via the
-Agent tool at the strategic moment described below. For guidance on context
-packaging, see:
+Agent tool at the strategic moment described below. For guidance on timing
+and context packaging, see:
 
 @${CLAUDE_PLUGIN_ROOT}/references/advisor-timing.md
 
