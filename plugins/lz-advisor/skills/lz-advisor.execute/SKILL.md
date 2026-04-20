@@ -143,12 +143,16 @@ reference.
 
 This is a final check, not a request for approval. The advisor verifies
 the approach is sound and flags concerns the executor may have missed.
+
+### Handling a **Critical:** Block
+
+If the advisor response contains a `**Critical:**` block, treat its content as a primary signal with the same actionability weight as the numbered answers -- NOT bonus-triage content. The advisor's Response Structure budget-excludes Critical blocks from the 100-word cap precisely because they carry primary-signal weight; the budget exclusion is not an invitation to downweight the content. Address any Critical concerns in Phase 6 before declaring the task done.
 </final>
 
 <complete>
 ## Phase 6: Complete
 
-If the advisor flagged concerns in the final consultation:
+If the advisor flagged concerns in the final consultation -- including any content inside a `**Critical:**` block, which is treated as primary signal equivalent to the numbered answers -- address Critical items first:
 
 - Address actionable concerns (fix bugs, handle edge cases, update tests)
 - Commit any corrections (stage specific files by name)
