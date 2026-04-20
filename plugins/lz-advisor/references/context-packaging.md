@@ -190,6 +190,19 @@ lz-advisor.execute Phase 5 (final review).
 [What assets the code protects, what actors might target it, what the
 blast radius of a finding is. Omit or compress for quality review.]
 
+## Pre-Verified Package Behavior Claims (if any)
+[Each entry pairs a claim about third-party package behavior with the
+verification that supports it. Use the same `<pre_verified>` block
+structure as the Proposal template. Agents treat pre-verified claims as
+authoritative and do NOT re-verify them.
+
+<pre_verified source="<URL or file path>" claim_id="pv-1">
+  <claim><one-sentence factual assertion></claim>
+  <evidence method="<WebFetch|WebSearch|Read|Glob>">
+    <verbatim excerpt>
+  </evidence>
+</pre_verified>]
+
 ## Findings
 [Numbered list of 3-5 curated findings. Each with:]
 - Finding N: [title]
