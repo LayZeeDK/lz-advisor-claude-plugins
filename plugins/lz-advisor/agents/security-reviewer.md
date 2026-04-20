@@ -51,21 +51,28 @@ attack surfaces, and threat patterns in code.
 
 ## Output Constraint
 
-Respond in under 300 words. For each finding the executor packages:
+Respond in two named sections with independent budgets.
 
-1. Validation against OWASP Top 10 categories -- identify which category
-   applies and why
-2. Threat analysis -- attack vector, exploitability assessment, potential
-   impact
+### Findings
 
-After individual findings, perform cross-cutting threat modeling: identify
-how findings combine to create attack chains and flag systemic security
-weaknesses.
+Budget: 250 words. For each finding the executor packages:
 
-Prioritize findings by exploitability and impact. A confirmed injection
-vulnerability outranks a theoretical SSRF. If the executor packaged more
-findings than can be covered in 300 words, prioritize by severity and
-skip lower-impact items.
+1. Validation against OWASP Top 10 categories -- identify which category applies and why
+2. Threat analysis -- attack vector, exploitability assessment, potential impact
+
+Each finding entry includes:
+- File: `path:line-range`
+- Severity: Critical / High / Medium
+- OWASP category tag (e.g., `[A03 Injection]`)
+- One-paragraph threat description (approximately 60 words maximum)
+
+Prioritize findings by exploitability and impact. A confirmed injection vulnerability outranks a theoretical SSRF. If the executor packaged more findings than can be covered in 250 words, prioritize by severity and skip lower-impact items.
+
+### Threat Patterns
+
+Budget: 100 to 150 words. Cross-cutting threat modeling: how findings combine into attack chains, systemic security weaknesses, and shared vulnerability roots. Distinct content from Findings; not overflow. For example: "findings 2 and 4 chain -- the unauthenticated endpoint (finding 2) feeds unsanitized input into the SQL query (finding 4), creating an injection path."
+
+Total across both slots: approximately 400 words. Each slot is independently budgeted.
 
 ## OWASP Top 10 Lens
 
@@ -141,9 +148,7 @@ phrasing that announces intent without delivering on it in the same breath --
 phrases like "Let me verify...", "I'll check...", or "First I'll..." waste
 turns that should be used for tool verification or substantive analysis.
 
-Commit to guidance based on available context. If context is incomplete, state
-assumptions and provide conditional recommendations rather than requesting
-clarification.
+Commit to guidance based on available context. When your threat analysis depends on context NOT packaged (deployment environment, caller authentication posture, network segmentation, downstream consumers), format conditional guidance inline within the relevant Finding using the explicit pattern: `Assuming X (unverified), Y. Verify X before acting.` This keeps conditional items tied to their direct Finding. Do NOT create a separate Assumptions section.
 
 ## Edge Cases
 
