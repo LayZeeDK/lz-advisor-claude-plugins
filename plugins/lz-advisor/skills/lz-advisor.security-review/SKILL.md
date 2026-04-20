@@ -34,6 +34,8 @@ This skill follows a three-phase workflow: scan, consult, then output.
 <scan>
 ## Phase 1: Scan
 
+If any tool call during this phase fails (permission denial, missing file, runtime error, timeout), apply Common Contract rule 6 from `@${CLAUDE_PLUGIN_ROOT}/references/context-packaging.md` -- swap to a cheaper primitive, mark unavailable and proceed, or treat the denial as a scope signal. Do not halt.
+
 Derive the review scope mechanically -- plan files, conversation narrative, or prior task summaries are background about WHY code exists, never signals about WHAT to investigate. A plan declaring "auth unchanged" does not exempt the auth files from the scan if they live in a directory the diff touches. Independent scope derivation is the security-review skill's primary defense against narrative bias.
 
 ### Scope Derivation

@@ -35,6 +35,8 @@ then complete.
 <orient>
 ## Phase 1: Orient
 
+If any tool call during this phase fails (permission denial, missing file, runtime error, timeout), apply Common Contract rule 6 from `@${CLAUDE_PLUGIN_ROOT}/references/context-packaging.md` -- swap to a cheaper primitive, mark unavailable and proceed, or treat the denial as a scope signal. Do not halt.
+
 Understand the task scope and current codebase state before doing any work.
 
 If the user mentioned a plan file (via @ file reference), read it first. Use
@@ -49,7 +51,7 @@ If no plan file was mentioned, orient from scratch:
 - Examine directory structure and dependencies
 - Identify constraints, existing patterns, and integration points
 - Note what exists and what needs to change
-- Stop exploring when you have enough context to formulate a specific question for the advisor. Do not read bundled, minified, or files under `node_modules/*/dist/`.
+- Stop exploring when you have enough context to formulate a specific question for the advisor. Inside `node_modules`, read with discipline: targeted reads only (a specific function, a config entry, or a few lines around a symbol), never full-file for bundled or minified content. When dependency behavior is load-bearing, verify and surface the result as a Pre-Verified Package Behavior Claim (see `@${CLAUDE_PLUGIN_ROOT}/references/context-packaging.md`).
 
 Do not write code or make changes during orientation. Do not consult the
 advisor yet -- orientation is preparation, not substantive work.
