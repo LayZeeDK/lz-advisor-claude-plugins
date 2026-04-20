@@ -33,39 +33,41 @@ This skill follows a three-phase workflow: scan, consult, then output.
 <scan>
 ## Phase 1: Scan
 
-Determine the review scope from the user's request:
+Derive the review scope mechanically -- plan files, conversation narrative, or prior task summaries are background about WHY code exists, never signals about WHAT to investigate. If a plan says "no changes to file X," file X is still in scope when its directory is in the diff.
 
-- If the user specified files or directories, read those
-- If the user asked to review "recent changes" or "my changes", use
-  `git diff` or `git log` to identify changed files, then read them
-- If the user's request is in conversation context (for example, they
-  just finished coding), review the files they were working on
+### Scope Derivation
 
-Read any CLAUDE.md files in the reviewed directories -- project guidelines
-inform what counts as an issue.
+1. If the user specified files or directories, those are the scope. Also include every sibling file in each specified directory (coupling through shared module state is the highest-risk review surface).
+2. Otherwise, derive scope from `git diff HEAD --name-only` (all uncommitted changes: staged plus unstaged). Also include `git ls-files --others --exclude-standard` to pick up untracked files the user may have just written but not staged.
+3. If the user asked for a commit-range review (for example, "review the last 3 commits"), use `git diff <base>..HEAD --name-only`. Use `git log` to identify the base if commits were specified by count.
+4. Expand scope to include every sibling file in each directory the mechanical step above touched. Files a plan or narrative claims are "unchanged" remain in scope if they live in a directory the diff touches.
+
+Read any CLAUDE.md files in the reviewed directories -- project guidelines inform what counts as an issue.
+
+### Narrative-Isolation Rule
+
+Treat any plan file, conversation narrative, or background context as explanatory material about WHY code exists. Never treat narrative as a scope signal about WHAT to investigate. The review skill's value comes from INDEPENDENT triage: narrative can describe intent, but scope is derived from the code.
+
+### Scan Criteria
 
 Scan the code with high-signal criteria. Flag:
 
 - Logic errors and bugs
 - CLAUDE.md violations
-- Security issues (surface-level -- deep security analysis is for
-  `/lz-advisor.security-review`)
+- Security issues (surface-level -- deep security analysis is for `/lz-advisor.security-review`)
 - Clear correctness problems
 - Edge cases not handled
 
 Skip (do not flag):
 
-- Issues a linter or type checker would catch (formatting, unused
-  imports, type errors)
+- Issues a linter or type checker would catch (formatting, unused imports, type errors)
 - Style preferences or subjective suggestions
 - Pre-existing issues outside the review scope
 - Pedantic nitpicks
 
-Curate the top 3-5 highest-signal findings with file:line references
-and relevant code context. Read thoroughly within scope -- do not skim.
+Curate the top 3-5 highest-signal findings with file:line references and relevant code context. Read thoroughly within scope -- do not skim.
 
-Do not consult the reviewer agent during scanning. Scanning is
-preparation.
+Do not consult the reviewer agent during scanning. Scanning is preparation.
 </scan>
 
 <consult>
