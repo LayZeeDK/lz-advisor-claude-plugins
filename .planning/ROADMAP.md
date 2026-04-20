@@ -115,13 +115,16 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5
 
 ### Phase 05.4: Address UAT findings A-K (INSERTED)
 
-**Goal:** [Urgent work - to be planned]
-**Requirements**: TBD
-**Depends on:** Phase 5
-**Plans:** 0 plans
+**Goal:** Close 10 executor/agent discipline findings (A-K) surfaced in Phase 5.3 UAT by shipping a coherent "executor verifies cheaply and correctly before burdening agents" doctrine. Rewrites review/security-review scan phases to derive scope mechanically from git (Finding J), adds web tools to all four skill allowed-tools lines, introduces Pre-Verified Package Behavior Claims section and Common Contract rules 5 + 6 in context-packaging.md (Findings K + C + B + I), reworks the node_modules orientation-budget instruction (Finding A), and polishes advisor + reviewer + security-reviewer response structures with Position B Critical marker, inline Assuming X framing, and two-slot Findings + Cross-Cutting/Threat Patterns outputs (Findings D + E + F). Bumps plugin to 0.6.0.
+**Requirements**: D-01..D-17 (CONTEXT.md locked decisions; REQUIREMENTS.md IDs not assigned for this phase)
+**Depends on:** Phase 5.3
+**Plans:** 4 plans
 
 Plans:
-- [ ] TBD (run /gsd-plan-phase 05.4 to break down)
+- [ ] 05.4-01-PLAN-mechanism-c-review-scope.md -- Mechanism C scope derivation in review + security-review scan phases (Finding J)
+- [ ] 05.4-02-PLAN-verification-economics.md -- WebSearch/WebFetch + Pre-Verified Claims templates + Common Contract rule 5/5a (Findings K + C + B)
+- [ ] 05.4-03-PLAN-tool-discipline-portability.md -- D-11 allowed-tools expansion + Common Contract rule 6 + D-14 reword + 0.6.0 version bump (Findings H + I + A)
+- [ ] 05.4-04-PLAN-response-structure-polish.md -- advisor Position B Critical marker + inline Assuming X across three agents + reviewer/security-reviewer two-slot Output Constraint (Findings D + E + F)
 
 ### Phase 05.3: Resolve issues identified in field test and take the quick-260417-lhe task into account (INSERTED)
 
