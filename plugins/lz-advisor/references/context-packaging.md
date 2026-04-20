@@ -86,7 +86,24 @@ constraints apply. Summarized in your own words. Each bullet one sentence.]
 
 ## Source Material (if any)
 [User-pasted docs, error messages, or third-party content. Preserved
-verbatim. Use BEGIN/END delimiters when the block exceeds ~10 lines.]
+verbatim. Use `<fetched source="<URL>" trust="untrusted">...</fetched>`
+XML tags for web content the executor pre-fetched during orientation.
+Use BEGIN/END delimiters or blockquotes for user-pasted material.]
+
+## Pre-Verified Package Behavior Claims (if any)
+[Each entry pairs a claim about third-party package behavior with the
+verification that supports it. Agents treat pre-verified claims as
+authoritative and do NOT re-verify them with their own tools.
+
+<pre_verified source="<URL or file path>" claim_id="pv-1">
+  <claim><one-sentence factual assertion about library/framework/API behavior></claim>
+  <evidence method="<WebFetch|WebSearch|Read|Glob>">
+    <verbatim excerpt that establishes the claim -- keep concise, under ~200 words>
+  </evidence>
+</pre_verified>
+
+Repeat `<pre_verified>` blocks for additional claims. Number claim_ids
+sequentially (pv-1, pv-2, ...).]
 
 ## Relevant File Contents
 [Path-labelled fenced code blocks for files the advisor might need.
@@ -111,7 +128,27 @@ A single targeted ask, phrased so that a numbered-list answer is possible.]
 3. project.json has a `storybook` Nx target but no `docs:json` pre-step.
 
 ## Source Material
-[Nx Compodoc guide verbatim; see BEGIN NX GUIDE ... END NX GUIDE block.]
+[Nx Compodoc guide verbatim; see <fetched source="https://nx.dev/docs/..."
+trust="untrusted"> block below. Any inline user-pasted material uses
+BEGIN/END markers.]
+
+## Pre-Verified Package Behavior Claims
+<pre_verified source="https://github.com/storybookjs/storybook/releases/tag/v10.0.0" claim_id="pv-1">
+  <claim>Storybook 10.x removed the top-level `docs.autodocs` API; autodocs
+  must be configured via tags on individual stories.</claim>
+  <evidence method="WebFetch">
+    [verbatim excerpt from release notes, a paragraph or less]
+  </evidence>
+</pre_verified>
+
+<pre_verified source="node_modules/@storybook/addon-docs/angular/package.json" claim_id="pv-2">
+  <claim>`setCompodocJson` is no longer exported from
+  `@storybook/addon-docs/angular` in Storybook 10.3.5; a global-write path
+  is required instead.</claim>
+  <evidence method="Read">
+    [verbatim snippet of the exports field or the migration line]
+  </evidence>
+</pre_verified>
 
 ## Relevant File Contents
 [.storybook/main.ts, project.json, package.json -- in order, paths
