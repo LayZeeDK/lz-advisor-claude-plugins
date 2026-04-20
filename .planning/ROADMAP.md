@@ -121,10 +121,10 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5
 **Plans:** 4 plans
 
 Plans:
-- [ ] 05.4-01-PLAN-mechanism-c-review-scope.md -- Mechanism C scope derivation in review + security-review scan phases (Finding J)
-- [ ] 05.4-02-PLAN-verification-economics.md -- WebSearch/WebFetch + Pre-Verified Claims templates + Common Contract rule 5/5a (Findings K + C + B)
-- [ ] 05.4-03-PLAN-tool-discipline-portability.md -- D-11 allowed-tools expansion + Common Contract rule 6 + D-14 reword + 0.6.0 version bump (Findings H + I + A)
-- [ ] 05.4-04-PLAN-response-structure-polish.md -- advisor Position B Critical marker + inline Assuming X across three agents + reviewer/security-reviewer two-slot Output Constraint (Findings D + E + F)
+- [ ] 05.4-01-PLAN.md -- Mechanism C scope derivation in review + security-review scan phases (Finding J)
+- [ ] 05.4-02-PLAN.md -- WebSearch/WebFetch + Pre-Verified Claims templates + Common Contract rule 5/5a (Findings K + C + B)
+- [ ] 05.4-03-PLAN.md -- D-11 allowed-tools expansion + Common Contract rule 6 + D-14 reword + 0.6.0 version bump (Findings H + I + A)
+- [ ] 05.4-04-PLAN.md -- advisor Position B Critical marker + inline Assuming X across three agents + reviewer/security-reviewer two-slot Output Constraint (Findings D + E + F)
 
 ### Phase 05.3: Resolve issues identified in field test and take the quick-260417-lhe task into account (INSERTED)
 
