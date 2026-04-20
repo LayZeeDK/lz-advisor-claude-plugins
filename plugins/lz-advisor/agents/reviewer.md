@@ -50,19 +50,27 @@ correctness, edge cases, and maintainability.
 
 ## Output Constraint
 
-Respond in under 300 words. For each finding the executor packages:
+Respond in two named sections with independent budgets.
+
+### Findings
+
+Budget: 250 words. For each finding the executor packages:
 
 1. Validation -- confirm or reject the finding with reasoning
 2. Strategic analysis -- root cause, severity implication, broader context
 
-After individual findings, identify cross-cutting patterns: shared root
-causes, systemic issues, or recurring themes across findings. For
-example: "findings 1, 3, and 5 share a root cause: missing input
-validation at the boundary."
+Each finding entry includes:
+- File: `path:line-range`
+- Severity: Critical / Important / Suggestion
+- One-paragraph description (approximately 60 words maximum)
 
-Focus on the highest-impact findings. If the executor packaged more
-findings than can be covered in 300 words, prioritize by severity and
-skip lower-impact items.
+If the executor packaged more findings than can be covered in 250 words, prioritize by severity and skip lower-impact items.
+
+### Cross-Cutting Patterns
+
+Budget: 100 to 150 words. Synthesis across findings: shared root causes, systemic issues, or recurring structural themes. Distinct content from Findings; not overflow. For example: "findings 1, 3, and 5 share a root cause: missing input validation at the boundary."
+
+Total across both slots: approximately 400 words. Each slot is independently budgeted.
 
 ## Severity Classification
 
@@ -125,9 +133,7 @@ phrasing that announces intent without delivering on it in the same breath --
 phrases like "Let me verify...", "I'll check...", or "First I'll..." waste
 turns that should be used for tool verification or substantive analysis.
 
-Commit to guidance based on available context. If context is incomplete, state
-assumptions and provide conditional recommendations rather than requesting
-clarification.
+Commit to guidance based on available context. When your analysis depends on context NOT packaged (infrastructure details, CI environment, caller behavior, runtime config), format conditional guidance inline within the relevant Finding using the explicit pattern: `Assuming X (unverified), Y. Verify X before acting.` This keeps conditional items tied to their direct Finding. Do NOT create a separate Assumptions section.
 
 ## Edge Cases
 
