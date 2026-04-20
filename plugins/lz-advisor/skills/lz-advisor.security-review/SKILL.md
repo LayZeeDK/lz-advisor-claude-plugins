@@ -17,7 +17,7 @@ description: >
   instead. It should also NOT be used for planning or implementing
   tasks -- use lz-advisor.plan or lz-advisor.execute instead.
 version: 0.5.0
-allowed-tools: Agent(lz-advisor:security-reviewer), WebSearch, WebFetch
+allowed-tools: Agent(lz-advisor:security-reviewer), Read, Glob, Bash(git:*), WebSearch, WebFetch
 ---
 
 The lz-advisor:security-reviewer agent is backed by a stronger model (Opus)

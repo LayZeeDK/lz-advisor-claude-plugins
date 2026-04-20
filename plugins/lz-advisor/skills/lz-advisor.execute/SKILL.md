@@ -17,7 +17,7 @@ description: >
   sibling skills lz-advisor.plan, lz-advisor.review, and
   lz-advisor.security-review respectively.
 version: 0.5.0
-allowed-tools: Agent(lz-advisor:advisor), WebSearch, WebFetch
+allowed-tools: Agent(lz-advisor:advisor), Read, Glob, Edit, Write, Bash(git:*), WebSearch, WebFetch
 ---
 
 The lz-advisor:advisor agent is backed by a stronger model (Opus). Invoke it
