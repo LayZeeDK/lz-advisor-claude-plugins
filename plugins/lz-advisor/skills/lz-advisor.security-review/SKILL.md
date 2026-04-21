@@ -95,42 +95,28 @@ conversation -- all relevant context goes in the prompt.
 <output>
 ## Phase 3: Structure Output
 
-Present findings to the user as console output.
+Render the security-reviewer agent's response verbatim to the user. The security-reviewer emits two named sections with literal headers (`### Findings` and `### Threat Patterns`) per its Output Constraint contract; those headers are the skill's output shape and MUST reach the user intact.
 
-Start with a summary header:
+Prepend a one-line scope summary BEFORE the security-reviewer's verbatim response (so the user sees what was reviewed), then emit the security-reviewer's response unchanged.
 
-```
-## Security Review Summary
+Required output shape:
 
-Reviewed: [scope description -- files, directories, or change range]
-Findings: [N] Critical, [N] High, [N] Medium
-```
+> ## Security Review Summary
+>
+> Reviewed: [scope description -- files, directories, or commit range]
+>
+> [Security-reviewer agent's response, rendered verbatim. Begins with `### Findings`, continues with finding entries (each tagged with an OWASP category like `[A03 Injection]`) per the security-reviewer's Output Constraint, then the `### Threat Patterns` section.]
 
-Then group findings by severity (Critical / High / Medium):
+Do NOT:
+- Reformat the security-reviewer's response into severity groups (Critical / High / Medium) -- the security-reviewer already includes severity per finding entry within the `### Findings` section.
+- Strip, rename, or bold the `### Findings` or `### Threat Patterns` headers.
+- Drop the `### Threat Patterns` section even if its body is short -- the security-reviewer emits the header unconditionally per its Output Constraint; pass it through.
+- Add a "Recommended Action" or next-steps section.
+- Add Opus attribution tags, a "Threat Analysis" wrapper, or any other section not present in the security-reviewer's response.
 
-For each finding:
-- Finding title with file:line reference and OWASP category tag
-  (for example, `[A03 Injection]`)
-- Description with the security reviewer's threat analysis woven in
-  seamlessly (no attribution, no separate "Threat Analysis" section)
-- Attack vector and exploitability context (from the reviewer's analysis)
-- Concrete remediation suggestion (specific fix, not generic advice
-  like "validate input")
+If the security-reviewer rejected a finding the executor packaged, that rejection appears within the security-reviewer's `### Findings` body (validation step). The executor does not second-guess: pass the full `### Findings` and `### Threat Patterns` content through.
 
-Include only findings the security reviewer validated. Drop findings
-the reviewer rejected.
-
-Do not include:
-- A strengths or positive observations section
-- A "Recommended Action" or next-steps section
-- Opus attribution tags or a separate reviewer analysis section
-
-If the reviewer identified attack chains, present them as a connected
-narrative across related findings -- for example, note how an input
-validation gap in one finding enables escalation through a privilege
-check bypass in another.
+If no security issues were found during scanning (Phase 1 produced zero findings), skip Phase 2 consultation and report directly: "No security vulnerabilities identified in the reviewed scope. Reviewed: [scope]." Note briefly what was examined. Do not invoke the security-reviewer agent with an empty Findings packet.
 </output>
 
-Present the security review findings to the user. If no security issues were
-found during scanning, report that no vulnerabilities were identified in the
-reviewed scope and note the security aspects that were examined.
+Present the security review findings to the user following the Phase 3 output shape.

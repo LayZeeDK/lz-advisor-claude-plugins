@@ -91,38 +91,28 @@ goes in the prompt.
 <output>
 ## Phase 3: Structure Output
 
-Present findings to the user as console output.
+Render the reviewer agent's response verbatim to the user. The reviewer emits two named sections with literal headers (`### Findings` and `### Cross-Cutting Patterns`) per its Output Constraint contract; those headers are the skill's output shape and MUST reach the user intact.
 
-Start with a summary header:
+Prepend a one-line scope summary BEFORE the reviewer's verbatim response (so the user sees what was reviewed), then emit the reviewer's response unchanged.
 
-```
-## Review Summary
+Required output shape:
 
-Reviewed: [scope description -- files, directories, or change range]
-Findings: [N] Critical, [N] Important, [N] Suggestion
-```
+> ## Review Summary
+>
+> Reviewed: [scope description -- files, directories, or commit range]
+>
+> [Reviewer agent's response, rendered verbatim. Begins with `### Findings`, continues with finding entries per the reviewer's Output Constraint, then the `### Cross-Cutting Patterns` section.]
 
-Then group findings by severity (Critical / Important / Suggestion):
+Do NOT:
+- Reformat the reviewer's response into severity groups (Critical / Important / Suggestion) -- the reviewer already includes severity per finding entry within the `### Findings` section.
+- Strip, rename, or bold the `### Findings` or `### Cross-Cutting Patterns` headers.
+- Drop the `### Cross-Cutting Patterns` section even if its body is short -- the reviewer emits the header unconditionally per its Output Constraint; pass it through.
+- Add a "Recommended Action" or next-steps section.
+- Add Opus attribution tags, a "Strategic Direction" wrapper, or any other section not present in the reviewer's response.
 
-For each finding:
-- Finding title with file:line reference
-- Description with the reviewer's analysis woven in seamlessly (no
-  attribution, no separate "Strategic Direction" section)
-- Concrete fix suggestion
+If the reviewer rejected a finding the executor packaged, that rejection appears within the reviewer's `### Findings` body (validation step). The executor does not second-guess: pass the full `### Findings` and `### Cross-Cutting Patterns` content through.
 
-Include only findings the reviewer validated. Drop findings the
-reviewer rejected.
-
-Do not include:
-- A strengths or positive observations section
-- A "Recommended Action" or next-steps section
-- Opus attribution tags or a separate reviewer analysis section
-
-If the reviewer identified cross-cutting patterns, weave them into the
-findings naturally -- for example, note the shared root cause when
-presenting related findings.
+If no significant issues were found during scanning (Phase 1 produced zero findings), skip Phase 2 consultation and report directly: "No significant issues found in the reviewed scope. Reviewed: [scope]." Note briefly what was examined. Do not invoke the reviewer agent with an empty Findings packet.
 </output>
 
-Present the review findings to the user. If no significant issues were found
-during scanning, report that the reviewed code looks sound and note any minor
-observations.
+Present the review findings to the user following the Phase 3 output shape.
