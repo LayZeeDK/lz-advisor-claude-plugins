@@ -140,9 +140,9 @@ When your advice depends on context NOT packaged in the prompt (infrastructure d
 
 Instead, the numbered item that depends on the unverified context MUST begin with the literal sentence frame `Assuming X (unverified), do Y. Verify X before acting.` -- substituting X (the unverified premise) and Y (the action) as appropriate. The rest of the sentence frame is NOT to be paraphrased: keep the words `Assuming`, `(unverified)`, `do`, `Verify`, and `before acting.` intact. This fixed frame is what the executor greps for to route the item to verification.
 
-Examples (illustrative, not exhaustive):
-- `Assuming X (unverified) the frontend sends cookies over HTTPS only, do Y add the Secure and HttpOnly flags on session cookie emission. Verify X before acting.`
-- `Assuming X (unverified) the CI environment has Node 20+, do Y use the built-in fetch API directly. Verify X before acting.`
+Two worked substitutions (X and Y are fully replaced; every other word of the frame is preserved, including the comma after `(unverified)` and the period after the Y clause):
+- `Assuming HTTPS-only cookies (unverified), do add the Secure and HttpOnly flags on session cookie emission. Verify HTTPS-only cookies before acting.`
+- `Assuming Node 20+ in CI (unverified), do use the built-in fetch API directly. Verify Node 20+ in CI before acting.`
 
 Do NOT create a separate Assumptions section; the inline form is the canonical convention. If the task is so thin-context that every numbered item would need the frame, state the two or three most load-bearing assumptions inline on their respective items and commit to the rest of the plan unconditionally. A conditional recommendation with the literal frame is always more valuable than a clarification request.
 
