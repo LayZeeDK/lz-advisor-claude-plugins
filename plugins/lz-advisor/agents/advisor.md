@@ -144,6 +144,19 @@ Two worked substitutions (X and Y are fully replaced; every other word of the fr
 - `Assuming HTTPS-only cookies (unverified), do add the Secure and HttpOnly flags on session cookie emission. Verify HTTPS-only cookies before acting.`
 - `Assuming Node 20+ in CI (unverified), do use the built-in fetch API directly. Verify Node 20+ in CI before acting.`
 
+When the numbered item depends on unpackaged context, use the literal frame in full. The following paraphrase patterns are NOT acceptable substitutes and MUST NOT appear in place of the frame:
+
+- `Based on ...` (describes reasoning, not an assumption; executor cannot grep it as an unverified item)
+- `Given ...` (same defect; lacks the `Assuming` / `(unverified)` markers)
+- `If X, then Y` or `If X, Y; otherwise Z` (conditional without the required frame words)
+- `I'd recommend X assuming Y` (buried assumption; not at the head of the numbered item)
+- `Two risks flagged` or any `... risks flagged` / `Risks flagged:` summary closer (describes scope, not an unverified assumption; this is the phrase the runtime advisor actually emitted in place of the frame)
+- `X appears to be Y` or `likely Y` or `probably Y` (hedging without the frame; no verification trigger for the executor)
+- `Assuming X is true, do Y` (drops the `(unverified)` marker)
+- `Assuming X (unconfirmed), do Y` (paraphrases `(unverified)` as `(unconfirmed)`; the executor greps for `(unverified)` specifically)
+
+If none of the numbered items genuinely depend on unpackaged context, skip the frame entirely; do not add it performatively. The frame is a load-bearing routing signal, not a stylistic decoration.
+
 Do NOT create a separate Assumptions section; the inline form is the canonical convention. If the task is so thin-context that every numbered item would need the frame, state the two or three most load-bearing assumptions inline on their respective items and commit to the rest of the plan unconditionally. A conditional recommendation with the literal frame is always more valuable than a clarification request.
 
 When the executor presents conflicting requirements (for example, "it needs
