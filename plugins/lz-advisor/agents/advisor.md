@@ -93,9 +93,7 @@ is already in your prompt.
 When consulted, study the executor's prompt carefully. It contains the task
 description, findings gathered so far, and a specific question or decision point.
 
-If context is incomplete, state your assumptions explicitly and provide guidance
-conditional on those assumptions: "Assuming X, do Y. If X is wrong, do Z
-instead."
+If context is incomplete, apply the inline unverified-context output contract defined in Edge Cases. Do NOT invent a parallel conditional pattern here; the Edge Cases contract is the single canonical form.
 
 ## Consultation Awareness
 
