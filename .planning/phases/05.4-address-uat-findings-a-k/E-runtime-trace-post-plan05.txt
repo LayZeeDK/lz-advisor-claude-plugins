@@ -1,0 +1,87 @@
+=== Diagnostic Header (post-Plan-05, pre-Plan-06) ===
+Captured: 2026-04-21T20:55:08Z
+Command: claude --model sonnet --effort medium --plugin-dir plugins/lz-advisor --dangerously-skip-permissions -p "/lz-advisor.plan Add auth to this API. The frontend uses cookies." --verbose
+Exit code: 0
+Notes: timeout 300 wrapper used; command returned within budget. Side-effect artifact plans/add-cookie-auth.plan.md was written by the skill; relevant excerpt included below as supplementary evidence because the advisor's guidance is routed into the plan file, not emitted inline in stdout.
+
+Grep counts (case-insensitive, rg -ic) against the raw claude -p stdout:
+- Assuming: 0
+- (unverified): 0
+- Verify: 0
+- before acting.: 0
+- Based on: 0
+- Given [space]: 0
+- I'd recommend: 0
+- Two risks: 0
+- If X: 0
+- risks flagged: 0
+- appears to be: 0
+
+Supplementary counts against plans/add-cookie-auth.plan.md (where the advisor text actually landed):
+- Assuming: 0
+- (unverified): 0
+- Verify: 4
+- before acting.: 1
+- Based on: 0
+- Given [space]: 0
+- I'd recommend: 0
+- Two risks: 0
+- If X: 0
+- risks flagged: 0
+- appears to be: 0
+- confirm before acting: 1 (soft paraphrase form)
+- Blockers (as section header): 1 (section anchoring a clarification-style table; 7 rows of Question + Default)
+- otherwise: 1
+
+Interpretation:
+- `(unverified)` count = 0 everywhere and `before acting.` appears only in the soft paraphrase form `confirm before acting`. E-runtime confirmed still failing under the current advisor.md. Plan 06 must proceed with prompt-text edits.
+- Hypothesis #1 (prompt not thin enough) is CONFIRMED FALSE: Opus actively treated the context as incomplete. It produced a Pre-Implementation Blockers table with 7 rows, used the word `Verify` 4 times, and wrote `confirm before acting` in item 2. Opus recognized the unpackaged-context situation but paraphrased the literal frame into natural prose, losing the `Assuming` and `(unverified)` markers that the smoke-test greps for.
+- Hypothesis #5 (internal contradiction) is still live: the soft frame `"Assuming X, do Y. If X is wrong, do Z instead."` in Verification Process gives Opus a sanctioned alternative form that it can fall back to. Task 2 removes it.
+- Hypothesis #2 (contract location) is still live: the literal frame lives only in Edge Cases, and Opus treated thin-context-with-known-defaults as outside Edge Cases. Task 3 promotes the anchor into Output Constraint.
+- Hypothesis #3 (broken examples) is still live: examples 1 and 2 mix X/Y placeholders with substituted clauses, which a model imitating may copy verbatim (producing text that fails the grep). Task 4 rewrites both.
+- Hypothesis #4 (no forbidden-paraphrase list) is still live and now has concrete drift patterns observed at runtime:
+  * `confirm before acting` (soft paraphrase of `Verify X before acting.`)
+  * Structural Blockers table (Blocker | Question | Default) standing in for the inline frame
+  * `**Default recommendation:**` bolded commitment clause
+  * `(no default -- must confirm)` cell text
+  None of the eight baseline patterns in Task 5 (Based on, Given, If X then Y, I'd recommend, Two risks flagged, appears to be, Assuming X is true, (unconfirmed)) were emitted by the runtime advisor on this specific fixture. Task 5's baseline bullets are still correct for documented drift under other fixtures, so the 8-bullet baseline will ship as specified. The runtime-observed drift pattern `confirm before acting` (without the Assuming prefix) is NOT a novel enumerated pattern because any form of the word `Verify` is preserved by the strict frame itself -- the defect is the MISSING `Assuming X (unverified),` prefix, not a wrong `Verify` clause. Enumerating `confirm before acting` as forbidden would risk banning the correct literal frame ending. Diagnostic-informed addendum is therefore LIMITED to: tightening Task 5's escape hatch so Opus does not use a Blockers table as an alternative to inline frames, which Task 5's existing escape-hatch sentence already covers ("skip the frame entirely; do not add it performatively").
+
+Conclusion: Proceed with Tasks 2-5 as planned, no additional forbidden-paraphrase bullets beyond the 8 baseline.
+
+=== Raw claude -p stdout + stderr ===
+(NOTE: The raw capture below contains non-ASCII characters -- box-drawing U+2500, star U+2605, curly quotes -- emitted by the Claude Code CLI insight banner. This is verbatim model/tool output and is preserved for forensic accuracy. The characters have no semantic role in the diagnostic.)
+
+Warning: no stdin data received in 3s, proceeding without it. If piping from a slow command, redirect stdin explicitly: < /dev/null to skip, or wait longer.
+Plan written to `plans/add-cookie-auth.plan.md`.
+
+`* Insight ---------------------------------------`
+The plan captures two layers: **blockers** (unknowns that must be resolved before a single line of code is written) and **steps** (ordered implementation once blockers are cleared). Separating these prevents the common failure mode where a plan looks complete but hides a load-bearing assumption like "we have Redis" or "same-origin frontend."
+`---------------------------------------------------`
+
+---
+
+**One thing to sort out first:** this repo has no API code -- it's the `lz-advisor` Claude Code plugin (Markdown files). The plan was written generically as a result.
+
+To make it actionable, confirm:
+1. **Which repo holds the API?** (the plan should be opened there)
+2. **Same-origin or cross-site frontend?** (affects CORS and SameSite setting)
+3. **Framework?** (Express assumed; NestJS/Fastify change the middleware wiring)
+
+Once those are answered, pass the plan to `/lz-advisor.execute` and it will implement against the correct codebase.
+
+=== Side-effect artifact excerpt: plans/add-cookie-auth.plan.md (Strategic Direction section only) ===
+(The skill wrote 110 lines total. Only the Strategic Direction block is included here because it is the direct advisor output; the rest is skill-templated plan scaffolding.)
+
+# Plan: Add Cookie-Based Authentication to API
+
+## Strategic Direction
+
+> Advisor guidance (Opus 4.6, 0 tool calls):
+
+1. Stop and identify which repo holds the API -- this plugin repo has no server code to modify.
+2. Verify the target API framework (Node.js/Express is a reasonable default; confirm before acting).
+3. Resolve these decisions before coding: session vs JWT-in-cookie; session store (Redis/DB); cookie flags (HttpOnly, Secure, SameSite=Lax/Strict, Domain, Path, Max-Age); CSRF strategy (double-submit token or SameSite=Strict-only); login/logout/refresh endpoints; password hashing (argon2id); rate limiting; same-site vs cross-site frontend origin and CORS `credentials: true` allowlist.
+4. **Default recommendation:** session-cookie + Redis + SameSite=Lax + CSRF double-submit.
+5. Do not scaffold auth code into this plugin repo -- it is a Markdown-only marketplace plugin and would ship non-functional server code to users.
+
+=== End of trace ===
