@@ -50,7 +50,9 @@ correctness, edge cases, and maintainability.
 
 ## Output Constraint
 
-Respond in two named sections with independent budgets.
+Your response MUST begin with the literal text `### Findings` on its own line, and MUST include the literal text `### Cross-Cutting Patterns` on its own line somewhere later in the response. These two headers are the skill's output contract: the review skill parses them to preserve your two-slot structure in the final user-facing output. Do NOT paraphrase the headers, do NOT wrap them in bold, and do NOT translate them. Emit them exactly as shown.
+
+Respond in these two named sections with independent budgets.
 
 ### Findings
 
@@ -69,6 +71,8 @@ If the executor packaged more findings than can be covered in 250 words, priorit
 ### Cross-Cutting Patterns
 
 Budget: 100 to 150 words. Synthesis across findings: shared root causes, systemic issues, or recurring structural themes. Distinct content from Findings; not overflow. For example: "findings 1, 3, and 5 share a root cause: missing input validation at the boundary."
+
+If no cross-cutting patterns apply to the packaged findings (for example, a single isolated finding), emit the `### Cross-Cutting Patterns` header followed by one sentence stating so (example: "No cross-cutting patterns across this set -- the findings are independent."). The header is MANDATORY even when the section body is short; the skill's parser requires it.
 
 Total across both slots: approximately 400 words. Each slot is independently budgeted.
 

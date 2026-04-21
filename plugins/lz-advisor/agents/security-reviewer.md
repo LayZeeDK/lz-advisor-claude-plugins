@@ -51,7 +51,9 @@ attack surfaces, and threat patterns in code.
 
 ## Output Constraint
 
-Respond in two named sections with independent budgets.
+Your response MUST begin with the literal text `### Findings` on its own line, and MUST include the literal text `### Threat Patterns` on its own line somewhere later in the response. These two headers are the skill's output contract: the security-review skill parses them to preserve your two-slot structure in the final user-facing output. Do NOT paraphrase the headers, do NOT wrap them in bold, and do NOT translate them. Emit them exactly as shown.
+
+Respond in these two named sections with independent budgets.
 
 ### Findings
 
@@ -71,6 +73,8 @@ Prioritize findings by exploitability and impact. A confirmed injection vulnerab
 ### Threat Patterns
 
 Budget: 100 to 150 words. Cross-cutting threat modeling: how findings combine into attack chains, systemic security weaknesses, and shared vulnerability roots. Distinct content from Findings; not overflow. For example: "findings 2 and 4 chain -- the unauthenticated endpoint (finding 2) feeds unsanitized input into the SQL query (finding 4), creating an injection path."
+
+If no threat patterns apply to the packaged findings (for example, a single isolated vulnerability with no chaining potential), emit the `### Threat Patterns` header followed by one sentence stating so (example: "No chaining across this set -- the findings are independent."). The header is MANDATORY even when the section body is short; the skill's parser requires it.
 
 Total across both slots: approximately 400 words. Each slot is independently budgeted.
 
