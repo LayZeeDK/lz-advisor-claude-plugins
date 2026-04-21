@@ -115,16 +115,17 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5
 
 ### Phase 05.4: Address UAT findings A-K (INSERTED)
 
-**Goal:** Close 10 executor/agent discipline findings (A-K) surfaced in Phase 5.3 UAT by shipping a coherent "executor verifies cheaply and correctly before burdening agents" doctrine. Rewrites review/security-review scan phases to derive scope mechanically from git (Finding J), adds web tools to all four skill allowed-tools lines, introduces Pre-Verified Package Behavior Claims section and Common Contract rules 5 + 6 in context-packaging.md (Findings K + C + B + I), reworks the node_modules orientation-budget instruction (Finding A), and polishes advisor + reviewer + security-reviewer response structures with Position B Critical marker, inline Assuming X framing, and two-slot Findings + Cross-Cutting/Threat Patterns outputs (Findings D + E + F). Bumps plugin to 0.6.0.
+**Goal:** Close 10 executor/agent discipline findings (A-K) surfaced in Phase 5.3 UAT by shipping a coherent "executor verifies cheaply and correctly before burdening agents" doctrine. Rewrites review/security-review scan phases to derive scope mechanically from git (Finding J), adds web tools to all four skill allowed-tools lines, introduces Pre-Verified Package Behavior Claims section and Common Contract rules 5 + 6 in context-packaging.md (Findings K + C + B + I), reworks the node_modules orientation-budget instruction (Finding A), and polishes advisor + reviewer + security-reviewer response structures with Position B Critical marker, inline Assuming X framing, and two-slot Findings + Cross-Cutting/Threat Patterns outputs (Findings D + E + F). Bumps plugin to 0.6.0. Plan 05 closes 2 live-runtime regressions (E-runtime, F-runtime) and 1 smoke-test script bug (A-smoke-script-bug) surfaced during Phase 05.4 HUMAN-UAT.
 **Requirements**: D-01..D-17 (CONTEXT.md locked decisions; REQUIREMENTS.md IDs not assigned for this phase)
 **Depends on:** Phase 5.3
-**Plans:** 4/4 plans complete
+**Plans:** 4/5 plans complete
 
 Plans:
 - [x] 05.4-01-PLAN.md -- Mechanism C scope derivation in review + security-review scan phases (Finding J)
 - [x] 05.4-02-PLAN.md -- WebSearch/WebFetch + Pre-Verified Claims templates + Common Contract rule 5/5a (Findings K + C + B)
 - [x] 05.4-03-PLAN.md -- D-11 allowed-tools expansion + Common Contract rule 6 + D-14 reword + 0.6.0 version bump (Findings H + I + A)
 - [x] 05.4-04-PLAN.md -- advisor Position B Critical marker + inline Assuming X across three agents + reviewer/security-reviewer two-slot Output Constraint (Findings D + E + F)
+- [ ] 05.4-05-PLAN.md -- Gap closure: strengthen advisor Assuming X + reviewer/security-reviewer literal-header output contract + review/security-review Phase 3 pass-through + HIA smoke-script REPO_ROOT capture (E-runtime + F-runtime + A-smoke-script-bug)
 
 ### Phase 05.3: Resolve issues identified in field test and take the quick-260417-lhe task into account (INSERTED)
 
