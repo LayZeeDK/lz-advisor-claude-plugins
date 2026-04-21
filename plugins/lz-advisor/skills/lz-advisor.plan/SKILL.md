@@ -110,7 +110,7 @@ done in parallel and which are sequential.>
 
 If the user supplied an existing plan file (via @ mention or path reference), update it using Edit rather than rewriting wholesale. Preserve unchanged sections verbatim. Each edit corresponds to a specific user request; do not refactor the plan beyond what was asked. The plan skill never modifies source code under any circumstance -- use /lz-advisor.execute for implementation.
 
-The first Edit against an existing plan file produces a permission prompt (Edit is not in this skill's Profile B allowed-tools by design). The prompt is the intended safety signal for plan-artifact mutations, not a friction bug -- approve once per session and proceed.
+The first Edit against an existing plan file produces a permission prompt (Edit is deliberately not in this skill's `allowed-tools` frontmatter). The prompt is the intended safety signal for plan-artifact mutations, not a friction bug -- approve once per session and proceed.
 
 Present the plan file path to the user after writing it.
 </produce>
