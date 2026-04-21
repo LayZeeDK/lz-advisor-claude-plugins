@@ -1,0 +1,91 @@
+[OK] Finding D: advisor did NOT emit Critical for innocuous task (Position B calibration landed)
+[ERROR] Finding E: no unverified-framing phrase in advisor response
+[OK] Finding F: reviewer response has both ### Findings and ### Cross-Cutting Patterns slots
+--- D trace tail ---
+Warning: no stdin data received in 3s, proceeding without it. If piping from a slow command, redirect stdin explicitly: < /dev/null to skip, or wait longer.
+Plan written to `plans/node-github-actions-ci.plan.md`.
+
+`* Insight ---------------------------------------`
+- **`npm ci` vs `npm install`**: CI always uses `npm ci` because it treats a missing or out-of-sync lockfile as a hard error -- a silent `npm install` in CI can silently upgrade transitive deps and mask failures.
+- **`prettier --check` not `--write`**: In CI you want detection, not mutation. `--write` would auto-fix files on the runner but never commit them back, making the check meaningless and the build state misleading.
+`---------------------------------------------------`
+
+---
+
+The plan covers 8 sequential steps: init the project, install deps, configure ESLint (flat config) and Prettier, wire npm scripts, scaffold a stub test, create the workflow, then commit file-by-file. Run `/lz-advisor.execute` (or the equivalent `lz-advisor:lz-advisor-execute` skill) pointing at `plans/node-github-actions-ci.plan.md` to implement it.
+--- E trace tail ---
+Warning: no stdin data received in 3s, proceeding without it. If piping from a slow command, redirect stdin explicitly: < /dev/null to skip, or wait longer.
+Plan written to `plans/add-cookie-auth.plan.md`.
+
+It covers 10 steps: install auth deps, bootstrap the Express app with `trust proxy`, wire a Redis-backed session store, configure CORS for credential-bearing requests, write `requireAuth` middleware, implement the three auth endpoints (login/logout/me) with session fixation protection, add CSRF double-submit token defence, mount everything in the app, and document env vars. Run `/lz-advisor.execute` pointing at that file to implement it.
+--- F trace tail ---
+Warning: no stdin data received in 3s, proceeding without it. If piping from a slow command, redirect stdin explicitly: < /dev/null to skip, or wait longer.
+## Review Summary
+
+Reviewed: `review-src/handler.ts` and `review-src/validate.ts` (commit `3c296d5` -- "add unvalidated handler with JSON.parse")
+
+### Findings
+
+**Finding 1 -- Confirmed, Critical.** `JSON.parse` is well-known to throw `SyntaxError` on malformed input; with no try/catch the exception escapes `handle` and propagates to whatever framework middleware invoked it. Root cause: the handler treats parsing as infallible. In an HTTP context the practical manifestation is a 500 response (or an unhandled promise rejection if wrapped in async middleware) for any client that posts non-JSON -- trivially triggered by a typo or wrong `Content-Type`. Severity upheld: user-facing crash path on normal inputs.
+
+**Finding 2 -- Confirmed, Important.** The truthy check is a real defect: a JSON body of `0`, `false`, or `""` is valid per RFC 8259 and would be dropped as `null`. However, practical impact depends on whether callers actually send scalar bodies; most REST APIs send objects. Severity appropriate -- correctness gap on a specific edge case, not a universal crash.
+
+**Finding 3 -- Confirmed, Important.** Accurate framework analysis. Express's `express.json()` sets `req.body` to a parsed object; `JSON.parse({...})` coerces to `"[object Object]"` and throws. This compounds Finding 1 -- the same missing guard causes two distinct failure modes. Severity upheld.
+
+**Finding 4 -- Confirmed, Suggestion (downgrade from Important).** Dead code is a maintainability smell, not a correctness defect in itself. The validator's absence only becomes "important" if its intended contract (rejecting null/undefined bodies) is a requirement -- which is not established in the packaged context. Downgraded because no behavior is currently wrong solely due to the missing wiring; the handler's actual bugs are Findings 1-3.
+
+### Cross-Cutting Patterns
+
+Findings 1, 2, and 3 share a single root cause: **the handler makes unchecked assumptions about the shape and validity of `req.body`**. It assumes the value is present-when-truthy (Finding 2), always a string (Finding 3), and always well-formed JSON (Finding 1). A single input-validation boundary at the top of `handle` -- checking `req.body != null`, branching on `typeof req.body === 'string'`, and wrapping `JSON.parse` in try/catch -- would close all three. Finding 4 is the structural mirror of the same gap: a validator exists in the same commit but was never wired in, suggesting the author intended boundary validation and forgot to connect it. The commit message ("add unvalidated handler") implicitly acknowledges this. The systemic theme is missing input-boundary discipline; the fix is one consolidated guard, not four separate patches.
+
+=== ESCALATION: E-runtime still failing after Plan 06 ===
+
+Captured: 2026-04-21T21:15:00Z (post-Tasks-2..5; advisor.md end-of-Task-5 state committed at 3580ad0)
+Command: bash .planning/phases/05.4-address-uat-findings-a-k/smoke-tests/DEF-response-structure.sh
+Finding D: [OK]  (Position B calibration regression-preserved)
+Finding E: [ERROR]  (primary gap-closure gate -- FAILED)
+Finding F: [OK]  (two-slot reviewer output regression-preserved)
+
+Grep counts (case-insensitive, rg -ic) against the E trace tail region of this file (lines 16-20, approx., corresponding to the smoke-test "--- E trace tail ---" block which is the `tail -n 80 $OUT_E` output the smoke test fails on):
+- Assuming: 0
+- (unverified): 0
+- Verify: 0
+- before acting.: 0
+- Based on: 0
+- Given [space]: 0
+- I'd recommend: 0
+- Two risks: 0
+- If X: 0
+- risks flagged: 0
+- appears to be: 0
+
+Diagnostic note:
+Plan 06 prompt edits (soft-frame removal in Verification Process at Task 2, Output Constraint anchor at Task 3, example rewrite at Task 4, forbidden-paraphrase list at Task 5) were statically verified -- every acceptance-criteria grep for the four edits passed simultaneously on the end-of-Task-5 advisor.md -- but did NOT produce runtime compliance with DEF-response-structure.sh Finding E. The root cause observed in this trace is NOT an advisor prompt defect but a SKILL-ARCHITECTURE defect: the `/lz-advisor.plan` skill routes advisor output into a plan file (written to the smoke-test's `$SCRATCH/plans/add-cookie-auth.plan.md`) and emits only a brief completion summary ("Plan written to `plans/...`. It covers N steps: ...") on stdout. The smoke test asserts via `rg -iq "Assuming .*\(unverified\)|unverified"` against `$OUT_E`, which captures the full claude -p stdout. Advisor text is never on that stdout regardless of what advisor.md says about the literal frame.
+
+Evidence from the E trace tail (lines 16-20 of this file): the entire stdout for the Finding E invocation is two paragraphs -- "Plan written to `plans/add-cookie-auth.plan.md`." and a 10-step summary that begins "It covers 10 steps: install auth deps, ...". Neither paragraph contains `Assuming`, `(unverified)`, `Verify`, `before acting.`, nor any of the 8 forbidden-paraphrase bullets Task 5 enumerated. No paraphrase drift occurred because no advisor guidance was emitted on stdout.
+
+Task 1 diagnostic trace (E-runtime-trace-post-plan05.txt) showed the same pattern under the pre-Plan-06 advisor.md: stdout had zero `Assuming`/`(unverified)` tokens, and the advisor text lived only inside `plans/add-cookie-auth.plan.md`. Plan 06 changed the advisor prompt; it could not have changed the skill's routing of advisor output into a plan file.
+
+Consequence: E-runtime cannot be closed by advisor.md edits alone. The remedy is one of:
+(a) modify `plugins/lz-advisor/skills/lz-advisor.plan/SKILL.md` so the advisor's Strategic Direction block is ALSO emitted to stdout (e.g. after the "Plan written to X" sentence) so the smoke-test grep can see it;
+(b) replace DEF-response-structure.sh Finding E's assertion target with the plan file path (rg against `$SCRATCH/plans/*.plan.md` instead of $OUT_E) -- NOT recommended by the plan, which explicitly forbids modifying the fixture to hide the gap;
+(c) rewrite the smoke-test Finding E fixture to invoke a skill or agent path that DOES emit advisor text inline to stdout (e.g. `/lz-advisor.execute` or a direct agent spawn) -- requires a new fixture design;
+(d) escalate to advisor architectural redesign per 05.4-CONTEXT.md <deferred> block.
+
+Per 05.4-06-PLAN.md Step 3 escalation branch: no further advisor.md edits are made in this task; no smoke-test edits are made; no SKILL.md edits are made (those fall outside the Plan 06 scope, which is advisor.md only). Control is returned to the orchestrator with the escalation flag. Plan 06 Task 6 is NOT marked done; the phase needs a follow-up plan (Plan 07 scope: investigate skill-side advisor-output-to-stdout wiring OR fixture redesign; per 05.4-CONTEXT.md <deferred> block this may require architectural discussion).
+
+Regression evidence (both preserved):
+- Finding D remains `[OK]` on line 1 of this file.
+- Finding F remains `[OK]` on line 3 of this file.
+
+Plan-06 static wins (all preserved in advisor.md at commit 3580ad0):
+- `rg -c "If X is wrong, do Z instead" plugins/lz-advisor/agents/advisor.md` = 0 (soft frame removed)
+- `rg -c "This is an unconditional output contract, not an edge case" plugins/lz-advisor/agents/advisor.md` = 1 (Output Constraint anchor present)
+- `rg -c "Assuming X \(unverified\), do Y\. Verify X before acting\." plugins/lz-advisor/agents/advisor.md` = 2 (strict frame in Output Constraint + Edge Cases)
+- `rg -c "Assuming X \(unverified\) the" plugins/lz-advisor/agents/advisor.md` = 0 (broken example pattern removed)
+- `rg -c "are NOT acceptable substitutes" plugins/lz-advisor/agents/advisor.md` = 1 (forbidden-list anchor present)
+- 8 forbidden-paraphrase bullets enumerated (>= 6 minimum satisfied).
+
+These static wins stand and are not reverted; they harden the advisor against future prompt-text drift regardless of the current skill-side routing defect. The E-runtime gate remains open and is handed back to the orchestrator.
+
+=== End of trace ===
