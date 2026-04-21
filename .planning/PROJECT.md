@@ -24,6 +24,10 @@ Near-Opus intelligence at Sonnet cost for coding tasks, achieved through strateg
 - [x] Security review skill (`/lz-advisor.security-review`) -- Sonnet scans for attack surfaces, packages findings, Opus security-reviewer provides OWASP-informed threat analysis -- Validated in Phase 4
 - [x] Both review skills produce structured severity-classified output (Critical/Important/Suggestion for review, Critical/High/Medium for security) -- Validated in Phase 4
 - [x] Both review skills use scan-consult-output pattern consistent with plan and execute skills -- Validated in Phase 4
+- [x] Review + security-review scan phases derive scope mechanically from git (not narrative) -- Validated in Phase 5.4 (Mechanism C + Narrative-Isolation Rule; live smoke test J)
+- [x] Context-packaging Common Contract rules 5, 5a, 6 (external claim verification, fetched content isolation, graceful tool-use degradation) -- Validated in Phase 5.4 (live smoke tests C, B, H, I)
+- [x] D-11 per-skill allowed-tools profile ladder (A for review skills, B for plan, C for execute) with WebSearch + WebFetch on all four -- Validated in Phase 5.4
+- [x] Advisor + reviewer + security-reviewer response-structure polish: Position B Critical marker, inline Assuming X framing, two-slot outputs -- Static shipped in Phase 5.4; E + F runtime gaps open (see 05.4-HUMAN-UAT.md)
 
 ### Active
 
@@ -72,6 +76,9 @@ Near-Opus intelligence at Sonnet cost for coding tasks, achieved through strateg
 | Agent file renamed to `advisor.md` (qualified: `lz-advisor:advisor`) | Original `lz-advisor.md` produced redundant `lz-advisor:lz-advisor`. Renamed to `advisor.md` so qualified name is `lz-advisor:advisor`. Skills use `lz-advisor:advisor` as `subagent_type`. | Phase 1 UAT rename |
 | All skills use advisor pattern (no `context: fork`) | Review skills with `context: fork` + `model: opus` would be indistinguishable from `/review` + `/model opus`. Advisor pattern (Sonnet scans, packages context, Opus advises) genuinely differentiates. Consistent architecture across all skills. | -- Pending |
 | Conciseness calibration deferred to Phase 2 | Under 100 words constraint not respected with broad open-ended questions. Scoped skill prompts may suffice; measure with real invocations before tuning agent system prompt. | Phase 1 UAT finding |
+| Mechanism C: review scope derives from git diff, not conversation | Plan narrative claiming "file X is unchanged" previously collapsed review scope. Mechanical derivation via `git diff HEAD --name-only` + `git ls-files --others --exclude-standard` with explicit Narrative-Isolation Rule makes the reviewer robust to executor framing. | Phase 5.4 validated (D-04/D-05/D-06) |
+| Common Contract rule 5 + 5a: executor pre-verifies external claims; fetched content is untrusted source material | Executors routinely punt on "is method X still exported from package Y" rather than resolve during orient. Rule 5 mandates pre-verification with Pre-Verified Package Behavior Claims block; rule 5a wraps WebSearch/WebFetch content in `<fetched source trust="untrusted">` tags to block prompt-injection from docs. | Phase 5.4 validated (D-07/D-08/D-09/D-10) |
+| Common Contract rule 6: graceful degradation on tool-use failure | Denied tools previously produced "Interrupted" halt. Rule 6 enumerates four sub-rules: primitive swap on first denial, cheaper-primitive fallback, mark-unavailable-and-continue, never halt. Pairs with D-11 three-profile allowed-tools ladder. | Phase 5.4 validated (D-13) |
 
 ## Evolution
 
@@ -91,4 +98,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-04-17 -- Opus 4.7 adoption via opus alias (260417-lhe quick task)*
+*Last updated: 2026-04-21 -- Phase 5.4 complete: 10 UAT discipline findings (A-K) closed; 2 runtime gaps (E, F) tracked for follow-up; plugin bumped to 0.6.0.*
