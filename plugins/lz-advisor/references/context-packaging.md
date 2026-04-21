@@ -12,7 +12,7 @@ skill and call site to template.
 
 ## Common Contract
 
-Every advisor consultation follows these four rules:
+Every advisor consultation follows these rules:
 
 1. Inline file contents for any file the advisor might need. The advisor
    has Read and Glob tools, but every tool call burns one of its three
