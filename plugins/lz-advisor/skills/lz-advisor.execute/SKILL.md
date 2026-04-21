@@ -35,7 +35,7 @@ then complete.
 <orient>
 ## Phase 1: Orient
 
-If any tool call during this phase fails (permission denial, missing file, runtime error, timeout), apply Common Contract rule 6 from `@${CLAUDE_PLUGIN_ROOT}/references/context-packaging.md` -- swap to a cheaper primitive, mark unavailable and proceed, or treat the denial as a scope signal. Do not halt.
+If any tool call during this phase fails (permission denial, missing file, runtime error, timeout), apply the "Recover gracefully from tool-use failure" rule from `@${CLAUDE_PLUGIN_ROOT}/references/context-packaging.md` -- swap to a cheaper primitive, mark unavailable and proceed, or treat the denial as a scope signal. Do not halt.
 
 Understand the task scope and current codebase state before doing any work.
 
