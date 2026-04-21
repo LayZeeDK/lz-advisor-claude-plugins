@@ -8,6 +8,7 @@
 set -eu
 
 PLUGIN_DIR="$(git rev-parse --show-toplevel)/plugins/lz-advisor"
+REPO_ROOT="$(git rev-parse --show-toplevel)"
 SCRATCH="$(mktemp -d -t lz-advisor-hia-XXXX)"
 trap 'rm -rf "$SCRATCH"' EXIT
 
@@ -34,7 +35,7 @@ fi
 
 # -------- Finding A: node_modules targeted-reads wording in plan skill ----
 # Static assertion: plan SKILL.md has the D-14 reword
-if git -C "$(git rev-parse --show-toplevel)" grep -q "read with discipline: targeted reads only" plugins/lz-advisor/skills/lz-advisor.plan/SKILL.md; then
+if git -C "$REPO_ROOT" grep -q "read with discipline: targeted reads only" plugins/lz-advisor/skills/lz-advisor.plan/SKILL.md; then
   echo "[OK] Finding A: reworded D-14 orientation-budget present in plan SKILL.md"
 else
   echo "[ERROR] Finding A: reworded D-14 absent from plan SKILL.md"
