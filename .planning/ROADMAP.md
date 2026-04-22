@@ -118,7 +118,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5
 **Goal:** Close 10 executor/agent discipline findings (A-K) surfaced in Phase 5.3 UAT by shipping a coherent "executor verifies cheaply and correctly before burdening agents" doctrine. Rewrites review/security-review scan phases to derive scope mechanically from git (Finding J), adds web tools to all four skill allowed-tools lines, introduces Pre-Verified Package Behavior Claims section and Common Contract rules 5 + 6 in context-packaging.md (Findings K + C + B + I), reworks the node_modules orientation-budget instruction (Finding A), and polishes advisor + reviewer + security-reviewer response structures with Position B Critical marker, inline Assuming X framing, and two-slot Findings + Cross-Cutting/Threat Patterns outputs (Findings D + E + F). Bumps plugin to 0.6.0. Plan 05 closes 2 live-runtime regressions (E-runtime, F-runtime) and 1 smoke-test script bug (A-smoke-script-bug) surfaced during Phase 05.4 HUMAN-UAT.
 **Requirements**: D-01..D-17 (CONTEXT.md locked decisions; REQUIREMENTS.md IDs not assigned for this phase)
 **Depends on:** Phase 5.3
-**Plans:** 5/5 plans complete
+**Plans:** 7/7 plans complete
 
 Plans:
 - [x] 05.4-01-PLAN.md -- Mechanism C scope derivation in review + security-review scan phases (Finding J)
