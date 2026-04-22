@@ -1,0 +1,31 @@
+[OK] Finding D: advisor did NOT emit Critical for innocuous task (Position B calibration landed)
+[OK] Finding E: advisor used Assuming X (unverified) framing for thin-context task
+[OK] Finding F: reviewer response has both ### Findings and ### Cross-Cutting Patterns slots
+[SUCCESS] Smoke tests D + E + F passed (or warned with manual-review note)
+
+=== Plan 07 Closure Summary ===
+Captured: 2026-04-22T08:17:54Z..2026-04-22T08:23:31Z
+Command: bash .planning/phases/05.4-address-uat-findings-a-k/smoke-tests/DEF-response-structure.sh
+Smoke test exit code: 0
+
+Pre-edit baseline: see E-runtime-trace-post-plan07-baseline.txt (Assuming = 0 on stdout; Plan written to = 1; advisor text confined to plans/<slug>.plan.md in SCRATCH).
+
+Post-edit (this trace):
+- Finding D: [OK] -- regression-preserved (Plan 04 Position B calibration holds; advisor did NOT emit **Critical:** for an innocuous CI-pipeline plan task)
+- Finding E: [OK] -- PRIMARY GAP-CLOSURE GATE CLOSED (advisor Assuming X (unverified) framing now visible on stdout via lz-advisor.plan Phase 3 verbatim pass-through; the smoke-test grep `rg -iq "Assuming .*(unverified)|unverified"` against $OUT_E now matches)
+- Finding F: [OK] -- regression-preserved (Plan 05 two-slot reviewer output holds; reviewer response emitted both ### Findings and ### Cross-Cutting Patterns literal headers)
+
+Post-Task-2 commit (lz-advisor.plan/SKILL.md): 22934d3 (feat(05.4-07): emit advisor Strategic Direction verbatim to stdout in lz-advisor.plan Phase 3)
+
+Scope invariants (verified pre-Task-3):
+- advisor.md byte-identical to 3580ad0 (end-of-Plan-06; verified via git diff)
+- DEF-response-structure.sh byte-identical to pre-Plan-07 state (fixture untouched; verified via git diff against baseline-trace SHA bd979dc)
+- plugin.json version 0.6.0 unchanged (within-version gap closure)
+- reviewer.md, security-reviewer.md, review/SKILL.md, security-review/SKILL.md, execute/SKILL.md, context-packaging.md all byte-identical to their end-of-Plan-05.4-05 states
+
+Diagnostic observation:
+The Task 2 edit (Phase 3 stdout emission FIRST, plan-file write SECOND, Plan written to confirmation LAST, with unindented --- Strategic Direction --- markers and a 6-bullet Do NOT prohibition list) successfully changed the runtime behavior of /lz-advisor.plan without modifying advisor.md, reviewer.md, any other SKILL.md, or the smoke-test fixture. The advisor's strict frame (hardened in Plan 06) now reaches the user terminal and the automated smoke-test grep instead of being silently routed into the plan file under $SCRATCH.
+
+D-16 now closed at the runtime behavioral layer via skill-orchestration pass-through.
+
+=== End of trace ===
