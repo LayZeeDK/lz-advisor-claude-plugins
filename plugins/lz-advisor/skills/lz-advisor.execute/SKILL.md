@@ -141,6 +141,17 @@ in `@${CLAUDE_PLUGIN_ROOT}/references/context-packaging.md`. Include a
 summary of changes made, test results if applicable, and the commit
 reference.
 
+Adapt the template for the advisor's output shape. The Verification
+template's Findings-list structure (numbered findings with Severity /
+OWASP tags / code context) is shaped for the reviewer and security-
+reviewer agents; the advisor's Output Constraint requires a 100-word
+enumerated response beginning with `1.` and forbids Findings-list output.
+Skip the Findings-list scaffold for this call: package the summary block
+(changes made, test results, commit reference) plus a single targeted
+Request ("verify the approach is sound and flag any concerns"). Do not
+fabricate `### Findings` entries with severity tags -- the advisor does
+not produce that shape.
+
 This is a final check, not a request for approval. The advisor verifies
 the approach is sound and flags concerns the executor may have missed.
 
