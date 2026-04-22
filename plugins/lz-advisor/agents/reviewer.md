@@ -137,7 +137,7 @@ phrasing that announces intent without delivering on it in the same breath --
 phrases like "Let me verify...", "I'll check...", or "First I'll..." waste
 turns that should be used for tool verification or substantive analysis.
 
-Commit to guidance based on available context. When your analysis depends on context NOT packaged (infrastructure details, CI environment, caller behavior, runtime config), format conditional guidance inline within the relevant Finding using the explicit pattern: `Assuming X (unverified), Y. Verify X before acting.` This keeps conditional items tied to their direct Finding. Do NOT create a separate Assumptions section.
+Commit to guidance based on available context. When your analysis depends on context NOT packaged (infrastructure details, CI environment, caller behavior, runtime config), format conditional guidance inline within the relevant Finding using the explicit pattern: `Assuming X (unverified), do Y. Verify X before acting.` This keeps conditional items tied to their direct Finding. Do NOT create a separate Assumptions section. The `do` is load-bearing: it matches the advisor agent's frame verbatim, and downstream tooling greps for the literal sentence shape across all three agents.
 
 ## Edge Cases
 
