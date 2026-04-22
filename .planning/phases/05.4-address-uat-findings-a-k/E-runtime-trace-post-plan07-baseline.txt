@@ -1,0 +1,86 @@
+=== Diagnostic Header (post-Plan-06, pre-Plan-07) ===
+Captured: 2026-04-22T08:06:40Z..2026-04-22T08:08:44Z
+Command: timeout 300 claude --model sonnet --effort medium --plugin-dir plugins/lz-advisor --dangerously-skip-permissions -p "/lz-advisor.plan Add auth to this API. The frontend uses cookies." --verbose
+Exit code: 0
+Notes: Pre-edit baseline for Plan 07. advisor.md at commit 3580ad0 (end of Plan 06); lz-advisor.plan/SKILL.md at its post-Plan-05.4-03 state (Phase 3 routes advisor output into plans/<slug>.plan.md; no stdout emission of Strategic Direction).
+
+Scope-invariant file SHAs (captured in Step 4.5; Tasks 2 and 3 diff against these absolute anchors instead of fragile relative HEAD refs):
+- DEF-response-structure.sh: bd979dc504a74dd503d7d86f19ce53811f443611
+- advisor.md: 3580ad01b0bdf9ee303e1bf406fde76da14c483d
+- reviewer.md: fc86d6448fb788d3d65c2c934c92ab274c6db638
+- security-reviewer.md: fc86d6448fb788d3d65c2c934c92ab274c6db638
+- review/SKILL.md: 0dcfbab5521fe498eed43549b75ec1c51e81eb15
+- security-review/SKILL.md: 0dcfbab5521fe498eed43549b75ec1c51e81eb15
+- plugin.json: a747fdc1d558c8a9201eca057e76ae6420a6d438
+
+Grep counts (case-insensitive, rg -ic) against the raw claude -p stdout:
+- Plan written to: 1
+- Assuming: 0
+- (unverified): 0
+- Strategic Direction: 1
+- It covers: 0
+- Verify: 1
+- before acting.: 0
+- --- Strategic Direction --- (Plan 07 marker, expected 0 pre-edit): 0
+
+Interpretation:
+Pre-edit baseline expectation per the ESCALATION diagnosis in Plan 06: stdout contains `Plan written to <path>` (count 1 observed) and a brief coverage summary ("The plan covers 10 steps in dependency order: ..."), but NO `Assuming` or `(unverified)` tokens (both counts 0 observed). This confirms that the DEF-response-structure.sh Finding E assertion (rg -iq "Assuming .*\(unverified\)|unverified" against $OUT_E) CANNOT pass regardless of advisor.md strictness, because advisor text lands in plans/<slug>.plan.md (in $SCRATCH), not in $OUT_E.
+
+Notes on the observed counts:
+- "Strategic Direction" count = 1 comes from the skill's narrative Insight banner that references the Strategic Direction attribution pattern in the plan file. The literal `--- Strategic Direction ---` marker (Plan 07 addition) is count 0 as expected pre-edit.
+- "Verify" count = 1 comes from the skill's completion sentence ("When ready to implement, run `/lz-advisor.execute` with this plan file as context"), not from the advisor's literal `Verify X before acting.` frame. The `before acting.` count = 0 confirms the advisor's literal closing is absent from stdout.
+- The side-effect plan file `plans/add-api-cookie-auth.plan.md` (captured below) confirms the advisor DID emit the literal `Assuming X (unverified), do Y. Verify X before acting.` frame into the file (two occurrences in Strategic Direction steps 1 and 2). The static advisor.md contract (end-of-Plan-06) is working correctly; the runtime gate fails because the frame never reaches stdout.
+
+Hypothesis restated: the fix is to modify lz-advisor.plan/SKILL.md Phase 3 to render the advisor's Strategic Direction block verbatim to stdout IN ADDITION to writing it to the plan file. This task's baseline is the PRE-edit snapshot; Task 3 re-runs the smoke test POST-edit and compares.
+
+=== Raw claude -p stdout + stderr ===
+`★ Insight ─────────────────────────────────────`
+The plan separates the advisor's strategic guidance (quoted verbatim under "Strategic Direction") from the executor's expanded implementation detail. This attribution pattern is load-bearing: when the executor follows `/lz-advisor.execute` later, it can see exactly which steps came from Opus reasoning vs. mechanical expansion, and re-consult only when it deviates from the strategic layer.
+`─────────────────────────────────────────────────`
+
+Plan written to `plans/add-api-cookie-auth.plan.md`.
+
+**Important finding:** No API source files exist in this working directory (this is the lz-advisor plugin project). The plan is framework-agnostic -- you will need to adapt the file paths and framework-specific calls (e.g., `express-session`, `req.session`) to your actual project before executing.
+
+The plan covers 10 steps in dependency order:
+
+1. Verify SPA architecture + session store (Redis vs. DB)
+2. Session middleware with correct cookie flags
+3. argon2id password hashing utility
+4. `POST /login` with session ID rotation (fixes session fixation)
+5. `POST /logout` with server-side destruction
+6. `GET /me` for frontend auth state checks
+7. `requireAuth` middleware (401 on missing/expired session)
+8. CSRF protection (double-submit or `SameSite=Strict`)
+9. Rate limiting on the login endpoint
+10. Structured auth event logging (no cookie values in logs)
+
+When ready to implement, run `/lz-advisor.execute` with this plan file as context.
+
+=== Side-effect artifact excerpt: plans/add-api-cookie-auth.plan.md (Strategic Direction section only, captured) ===
+# Plan: Add Cookie-Based Session Authentication to API
+
+> **Note:** No API source files were found in the current working directory at
+> plan time. This is a framework-agnostic plan. Adapt file paths and framework
+> calls to match your actual project before executing.
+
+## Strategic Direction
+
+*Advisor guidance (Opus 4.6):*
+
+> 1. Assuming a server-rendered or same-site SPA (unverified), use server-side
+>    sessions with an opaque session ID cookie -- not JWT-in-cookie. Verify
+>    same-site SPA before acting.
+> 2. Assuming Redis or equivalent is available (unverified), persist sessions
+>    there keyed by a 128-bit random ID. Verify session store availability
+>    before acting.
+> 3. Set cookie flags: `HttpOnly`, `Secure`, `SameSite=Lax`, `Path=/`, explicit
+>    `Max-Age`.
+> 4. Add CSRF protection via double-submit token or `SameSite=Strict` on
+>    state-changing routes.
+> 5. Implement `POST /login` (hash+verify with argon2id, rotate session ID),
+>    `POST /logout` (destroy server-side), `GET /me`.
+> 6. Add auth middleware rejecting missing/expired sessions with 401.
+> 7. Rate-limit login; log auth events without cookie values.
+
+=== End of baseline trace ===
