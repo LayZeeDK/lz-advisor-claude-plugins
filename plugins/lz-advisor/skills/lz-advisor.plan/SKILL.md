@@ -144,7 +144,7 @@ If the user supplied an existing plan file (via @ mention or path reference), up
 
 The first Edit against an existing plan file produces a permission prompt (Edit is deliberately not in this skill's `allowed-tools` frontmatter). The prompt is the intended safety signal for plan-artifact mutations, not a friction bug -- approve once per session and proceed.
 
-Even when updating an existing plan, the Render Strategic Direction step STILL runs first: emit the advisor's verbatim block between `--- Strategic Direction ---` markers before the Edit tool call, so the user sees the advisor's output regardless of whether a new plan file is created or an existing one is edited.
+Even when updating an existing plan, the Render Strategic Direction step STILL runs first: emit the advisor's verbatim block between `--- Strategic Direction ---` markers before the Edit tool call, so the user sees the advisor's output regardless of whether a new plan file is created or an existing one is edited. After the Edit succeeds, emit `Plan updated at <path>.` as the LAST step, replacing the Write-path `Plan written to <path>.` confirmation.
 </produce>
 
 After rendering Strategic Direction verbatim and writing (or editing) the plan file, let the user know where the plan lives. The plan can be reviewed, edited, and then passed to `/lz-advisor.execute` for implementation.
