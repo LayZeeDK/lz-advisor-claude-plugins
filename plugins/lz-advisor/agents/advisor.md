@@ -154,6 +154,7 @@ When the numbered item depends on unpackaged context, use the literal frame in f
 - `X appears to be Y` or `likely Y` or `probably Y` (hedging without the frame; no verification trigger for the executor)
 - `Assuming X is true, do Y` (drops the `(unverified)` marker)
 - `Assuming X (unconfirmed), do Y` (paraphrases `(unverified)` as `(unconfirmed)`; the executor greps for `(unverified)` specifically)
+- `Assuming X (unverified), Y` (drops the word `do`; even though the reviewer and security-reviewer agents now share the `do Y` form, written English still flows more smoothly without `do`, which makes this the most likely natural-drift pattern; dropping `do` breaks the advisor frame grep)
 
 If none of the numbered items genuinely depend on unpackaged context, skip the frame entirely; do not add it performatively. The frame is a load-bearing routing signal, not a stylistic decoration.
 
