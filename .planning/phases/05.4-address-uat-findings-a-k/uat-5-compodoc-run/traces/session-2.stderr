@@ -1,0 +1,18 @@
+============================================================
+Bun v1.3.13 (6db6c97b) Windows arm64
+Windows v.win11_dt
+CPU: neon fp aes crc32 atomics
+Args: "C:\Users\LarsGyrupBrinkNielse\.local\bin\node_modules\@anthropic-ai\claude-code\bin\claude.exe" "--model" "sonnet" "--effort" "medium" "--plugin-dir" "D:/projects/github/LayZeeDK/lz-advisor-claude-plugins/plugins/l"...
+Features: Bun.stderr(2) Bun.stdin(2) Bun.stdout(2) abort_signal(8) fetch(51) jsc spawn(81) standalone_executable yaml_parse(152) claude_code 
+Builtins: "bun:main" "node:assert" "node:async_hooks" "node:buffer" "node:child_process" "node:constants" "node:crypto" "node:dns" "node:events" "node:fs" "node:fs/promises" "node:http" "node:https" "node:module" "node:net" "node:os" "node:path" "node:path/posix" "node:path/win32" "node:perf_hooks" "node:process" "node:stream" "node:stream/consumers" "node:timers/promises" "node:tls" "node:tty" "node:url" "node:util" "node:vm" "node:zlib" "ws" "node:http2" 
+Elapsed: 234140ms | User: 4421ms | Sys: 1812ms
+RSS: 0.49GB | Peak: 0.62GB | Commit: 0.69GB | Faults: 275940 | Machine: 33.90GB
+
+panic(main thread): Illegal instruction at address 0x7FF71A10355C
+oh no: Bun has crashed. This indicates a bug in Bun, not your code.
+
+To send a redacted crash report to Bun's team,
+please file a GitHub issue using the link below:
+
+ https://bun.report/1.3.13/W_16db6c97mgggkEuhogC4164yCg9235C4k435Co3t35Coqs35Covx64Bo4s64B47u74Bw4q54Bw4u++B4+z7qBg7g5kCoy03kC___A3u//B416gia
+

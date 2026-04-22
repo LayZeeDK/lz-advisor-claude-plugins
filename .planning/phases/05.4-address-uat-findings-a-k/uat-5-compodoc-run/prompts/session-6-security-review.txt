@@ -1,0 +1,1 @@
+/lz-advisor.security-review Security-review the full branch uat/lz-advisor-compodoc-5-4 vs main. Threat-model the added @compodoc/compodoc dev dependency, the runtime JSON injection into window.__STORYBOOK_COMPODOC_JSON__, and the Nx run-commands shelling of the compodoc binary.
