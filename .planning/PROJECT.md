@@ -27,7 +27,7 @@ Near-Opus intelligence at Sonnet cost for coding tasks, achieved through strateg
 - [x] Review + security-review scan phases derive scope mechanically from git (not narrative) -- Validated in Phase 5.4 (Mechanism C + Narrative-Isolation Rule; live smoke test J)
 - [x] Context-packaging Common Contract rules 5, 5a, 6 (external claim verification, fetched content isolation, graceful tool-use degradation) -- Validated in Phase 5.4 (live smoke tests C, B, H, I)
 - [x] D-11 per-skill allowed-tools profile ladder (A for review skills, B for plan, C for execute) with WebSearch + WebFetch on all four -- Validated in Phase 5.4
-- [x] Advisor + reviewer + security-reviewer response-structure polish: Position B Critical marker, inline Assuming X framing, two-slot outputs -- Static shipped in Phase 5.4; E + F runtime gaps open (see 05.4-HUMAN-UAT.md)
+- [x] Advisor + reviewer + security-reviewer response-structure polish: Position B Critical marker, inline Assuming X framing, two-slot outputs -- Validated in Phase 5.4 (D-runtime + E-runtime + F-runtime all [OK] in DEF-response-structure.sh; E-runtime closed at skill-orchestration layer via lz-advisor.plan Phase 3 stdout pass-through, Plan 07)
 
 ### Active
 
@@ -98,4 +98,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-04-21 -- Phase 5.4 complete: 10 UAT discipline findings (A-K) closed; 2 runtime gaps (E, F) tracked for follow-up; plugin bumped to 0.6.0.*
+*Last updated: 2026-04-22 -- Phase 5.4 complete: 10 UAT discipline findings (A-K) closed; all 3 runtime gaps (E-runtime, F-runtime, A-smoke-script-bug) resolved; plugin bumped to 0.6.0.*
