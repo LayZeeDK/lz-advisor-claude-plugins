@@ -47,6 +47,20 @@ else
   FAIL=1
 fi
 
+# -------- Word-budget: advisor Strategic Direction <=100 words --------
+# Reuse OUT_E output (advisor response from the thin-context plan call in Finding E).
+# Strip any **Critical:** block (line-anchored, extends to EOF) before counting --
+# the Critical block is budget-excluded per Phase 5.4 D-15. The sed pattern anchors
+# at column 0 (^\*\*Critical:\*\*) so indented matches inside code fences do not
+# false-positive-strip.
+WC=$(sed '/^\*\*Critical:\*\*/,$d' "$OUT_E" | wc -w | tr -d ' ')
+if [ "$WC" -le 100 ]; then
+  echo "[OK] Word-budget: advisor Strategic Direction $WC words (<=100)"
+else
+  echo "[ERROR] Word-budget: advisor Strategic Direction $WC words (>100 cap)"
+  FAIL=1
+fi
+
 # -------- Finding F: reviewer on a real commit should produce two slots -----
 mkdir -p review-src
 printf 'export function handle(req) {\n  if (req.body) return process(req.body);\n  return null;\n}\n\nfunction process(data) {\n  return JSON.parse(data);\n}\n' > review-src/handler.ts
