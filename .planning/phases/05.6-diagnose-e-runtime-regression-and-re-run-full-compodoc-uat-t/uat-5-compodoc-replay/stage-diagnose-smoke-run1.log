@@ -1,0 +1,67 @@
+[OK] Finding D: advisor did NOT emit Critical for innocuous task (Position B calibration landed)
+[OK] Finding E: advisor used Assuming X (unverified) framing for thin-context task
+[ERROR] Word-budget: advisor Strategic Direction 165 words (>100 cap)
+[OK] Finding F: reviewer response has both ### Findings and ### Cross-Cutting Patterns slots
+[OK] Findings G+H: security-reviewer response has both ### Findings and ### Threat Patterns slots
+--- D trace tail ---
+Plan written to `plans/nodejs-github-actions-ci.plan.md`.
+
+`★ Insight ─────────────────────────────────────`
+The workflow uses `npm ci` instead of `npm install` -- a critical CI distinction. `npm install` can silently update `package-lock.json` if ranges resolve to newer versions; `npm ci` fails fast if the lockfile is out of sync with `package.json`, making dependency drift visible rather than hiding it. The `cache: npm` option in `actions/setup-node` keys the cache on `package-lock.json`'s hash, so cache invalidation is automatic when deps change.
+`─────────────────────────────────────────────────`
+
+It covers 8 steps: init package.json as ESM, install devDeps, create ESLint 9 flat config, create Prettier config, add `.gitignore`, add a Vitest smoke test, create the Actions workflow, then commit each file by explicit path. Pass it to `/lz-advisor:lz-advisor-execute` when ready to implement.
+--- E trace tail ---
+Plan written to `plans/add-api-cookie-auth.plan.md`.
+
+It covers 11 steps: persistence store decision, install Fastify + session plugins, `.env` + `.gitignore` setup, server entry point with plugin registration order, auth guard preHandler, login/logout routes, a protected route example, Vitest auth tests, and a final commit.
+
+`★ Insight ─────────────────────────────────────`
+The plugin registration order in Fastify is load-bearing, not stylistic. `@fastify/cookie` must register before `@fastify/session` because the session plugin calls `req.cookies` internally. `@fastify/csrf-protection` must follow session because it stores the CSRF token in the session. Registering them out of order produces a runtime error at startup, not a silent bug -- which is actually Fastify's intentional design: fail fast at boot rather than fail silently at request time.
+`─────────────────────────────────────────────────`
+
+One unverified assumption to resolve before executing: **same-origin vs. cross-site frontend**. If the frontend is served from a different origin than the API, `SameSite: 'Lax'` will silently drop cookies on cross-site POSTs and you'll need `SameSite: 'None'` + `Secure: true` + explicit CORS `origin` allowlist. Clarify this before running `/lz-advisor:lz-advisor-execute`.
+--- F trace tail ---
+## Review Summary
+
+Reviewed: `review-src/handler.ts` and `review-src/validate.ts` (commit `3b47f8a` -- "add unvalidated handler with JSON.parse")
+
+### Findings
+
+**Finding 1: `JSON.parse` without try/catch** -- File: `review-src/handler.ts:7` -- Severity: **Critical (confirmed)**. Validated. `JSON.parse` throws `SyntaxError` synchronously on any malformed input (trailing commas, bare identifiers, truncated payloads, empty string). For an HTTP handler, attacker-controlled bodies are the norm, so this is a reliable denial-of-service trigger and, depending on the host framework, may leak a stack trace. Root cause: missing input-trust boundary. The fix is not just try/catch -- it is a typed `Result`/discriminated-union return so callers cannot forget to handle the failure.
+
+**Finding 2: `validate` unused** -- File: `review-src/handler.ts:1-4`, `review-src/validate.ts:1` -- Severity: **Important (confirmed)**. Validated. The commit message itself (`add unvalidated handler`) telegraphs the gap. Worse than dead code: the module's existence implies validation is happening, which is actively misleading during review. Also, `validate` as written (`x != null`) is a null-guard, not JSON validation -- even if wired in, it would not prevent Finding 1. Two defects stacked: unwired gate, and the gate itself is insufficient.
+
+**Finding 3: Falsy check drops valid bodies** -- File: `review-src/handler.ts:2` -- Severity: **Important (confirmed)**. Validated. Assuming this handler runs behind a framework that may pre-parse JSON (Express with `express.json()`, Fastify, Hono -- unverified), `req.body` can legitimately be `false`, `0`, `""`, or `null`. Do verify the framework contract before acting. If bodies are always raw strings, the practical trigger narrows to `""`, which is still wrong (empty string should 400, not silently return `null`).
+
+**Finding 4: Missing type annotations** -- File: both files -- Severity: **Suggestion (revised down from Important)**. Types would help, but implicit-any is a lint/tsconfig concern, not a correctness defect at runtime. Under `"strict": true` or `"noImplicitAny": true` this would not compile -- so the real finding is "tsconfig is permissive," which is upstream of these files. Keep as Suggestion unless the project's tsconfig is known strict (then it is a build break, unverified).
+
+**Additional issue missed:** `process` is a reserved-ish identifier in Node.js (global `process` object). Shadowing inside a module is legal but hostile to readers and breaks if the function is ever hoisted to module scope alongside `process.env` usage. Severity: Suggestion. Rename to `parseBody`.
+
+### Cross-Cutting Patterns
+
+Findings 1, 2, 3, and 4 share one root cause: **no trust boundary between the HTTP edge and the parse step**. Each finding is a different symptom of the same missing abstraction -- a typed, validated, error-returning `parseRequestBody(req): Result<T, ParseError>` function. Finding 2 (unused validator) and Finding 4 (no types) are *enablers*: they remove the compile-time and code-review signals that would have caught Findings 1 and 3. Finding 3 (falsy check) and Finding 1 (unguarded parse) are the *runtime consequences*. This is the classic "parse, don't validate" anti-pattern inverted -- the code neither parses safely nor validates, and the scaffolding that would do either exists but is disconnected. Fixing Finding 1 in isolation (wrapping `JSON.parse` in try/catch) without also wiring Finding 2 and tightening Finding 3 leaves two of the three failure modes live. Treat as a single refactor, not four patches.
+--- G+H trace tail ---
+`★ Insight ─────────────────────────────────────`
+The attack chain here is worth understanding: Finding 5 (dead validation code) is identified as the *root cause* of findings 1, 2, and 4. This is a common pattern -- a validation module exists in the codebase, creating a false impression of a defense layer, while the handler never imports it. The compiler gives no warning because TypeScript's implicit `any` (Finding 3) silences the contract mismatch at the call site.
+`─────────────────────────────────────────────────`
+
+## Security Review Summary
+
+Reviewed: last commit (`3b47f8a`) -- `review-src/handler.ts` and `review-src/validate.ts` (two new files added together)
+
+### Findings
+
+**Finding 1** -- `review-src/handler.ts:7` -- **High** -- `[A05 Security Misconfiguration]` (also touches A09). Confirmed. Unhandled `JSON.parse` is a zero-effort DoS: any unauthenticated attacker sending `POST /` with body `not-json` triggers `SyntaxError`, crashing Node unless a global handler exists. Default Express error middleware leaks stack traces in non-production, enabling path disclosure. Severity holds at High; escalate to Critical if deployed without process supervisor.
+
+**Finding 2** -- `review-src/handler.ts:2` -- **High** -- `[A04 Insecure Design]` (revised from A03). Confirmed but recategorize: there is no injection sink here (no SQL, shell, or template), just absent validation. `JSON.parse` itself is safe against prototype pollution in V8 for `__proto__` keys (they become own properties, not prototype writes). Severity holds at High due to the missing-defense-in-depth pattern and unbounded payload size (memory exhaustion DoS via large arrays).
+
+**Finding 3** -- `review-src/handler.ts:1` -- **Low** (revised from Medium) -- `[A04 Insecure Design]`. Implicit `any` is a code-quality issue, not a runtime vulnerability. TypeScript types are erased at runtime and provide no security boundary. Keep on the list for hygiene but do not treat as a security finding on its own.
+
+**Finding 4** -- `review-src/handler.ts:7` -- **Medium** -- `[A04 Insecure Design]` (revised from A03). Confirmed. With `express.json()`, `req.body` is already an object; `JSON.parse(obj)` throws deterministically -- another DoS path. The prototype-pollution-via-`toString` scenario requires a pre-existing pollution vulnerability upstream, so keep at Medium.
+
+**Finding 5** -- `review-src/validate.ts:1` -- **Medium** -- `[A04 Insecure Design]`. Confirmed. Dead validation code is worse than no validation -- it misleads reviewers. `x != null` is also a trivially weak check.
+
+### Threat Patterns
+
+Findings 1, 2, and 4 chain into a reinforced DoS surface: absent validation (2) lets any body reach `JSON.parse`, which throws on malformed strings (1) or on already-parsed objects under `express.json()` (4). The same unauthenticated request path triggers all three. Finding 5 is the systemic root cause -- a validation module exists but is never wired in, so the defense-in-depth layer that would have caught findings 1, 2, and 4 is structurally disconnected. Finding 3 (implicit `any`) is the compile-time echo of the same root: no type contract on `req`, no runtime validator on `req.body`. Fix priority: (a) wrap `JSON.parse` in try/catch returning 400, (b) import and call `validate()` (and strengthen it beyond `!= null` -- require typeof checks and size bounds), (c) annotate `req: Request` from `@types/express`. Assuming deployment behind a process supervisor with stack-trace suppression in production (unverified), do still fix (a) first -- verify supervisor config before relying on it.

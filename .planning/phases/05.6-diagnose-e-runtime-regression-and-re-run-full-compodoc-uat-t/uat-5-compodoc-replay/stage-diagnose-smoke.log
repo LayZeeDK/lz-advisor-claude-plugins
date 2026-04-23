@@ -1,0 +1,101 @@
+[OK] Finding D: advisor did NOT emit Critical for innocuous task (Position B calibration landed)
+[ERROR] Finding E: no unverified-framing phrase in advisor response
+[ERROR] Word-budget: advisor Strategic Direction 120 words (>100 cap)
+[OK] Finding F: reviewer response has both ### Findings and ### Cross-Cutting Patterns slots
+[OK] Findings G+H: security-reviewer response has both ### Findings and ### Threat Patterns slots
+--- D trace tail ---
+Here is what was created:
+
+**`.github/workflows/ci.yml`** -- the CI pipeline, triggered on every push and pull request. It:
+1. Checks out the repo
+2. Sets up Node 22 with `npm` cache enabled
+3. Runs `npm ci` for a clean, lockfile-exact install
+4. Runs ESLint (`npm run lint`)
+5. Runs Node's built-in test runner (`npm test`)
+
+**`package.json`** -- minimal scaffold using `"type": "module"` (ESM), with `node --test` as the test runner (no extra dependency needed -- it ships with Node 18+) and ESLint 9 for linting.
+
+**`eslint.config.js`** -- flat config format (ESLint 9 default), applying the recommended ruleset.
+
+Next steps to make this runnable:
+- Run `npm install` to generate `package-lock.json` (required for `npm ci` in CI)
+- Add your source files under e.g. `src/`
+- Add test files as `*.test.js` -- Node's built-in runner discovers them automatically
+--- E trace tail ---
+`★ Insight ─────────────────────────────────────`
+- Fastify's `server.inject()` lets tests send full HTTP requests through the entire plugin/middleware stack without binding a network port -- this is why the server listen guard (`if process.argv[1] === fileURLToPath(import.meta.url)`) is critical for testability.
+- The in-memory session store is the main production risk here: a server restart silently logs out every user. The plan explicitly calls this out as a pre-production blocker (swap to `@fastify/redis` or similar).
+`─────────────────────────────────────────────────`
+
+Plan written to `plans/add-cookie-auth.plan.md`.
+
+It covers 8 steps: dependency install, env/gitignore baseline, Fastify server with full plugin stack (helmet, CORS, cookies, sessions, CSRF), auth routes (login/logout/me), tests using `node --test` + Fastify inject, and a HTTPS-deployment verification gate. Pass the file to `/lz-advisor.execute` when ready to implement.
+--- F trace tail ---
+`★ Insight ─────────────────────────────────────`
+The cross-cutting pattern here -- contradictory assumptions about `req.body`'s type -- is a classic system-boundary problem. In TypeScript, this is precisely what typed request interfaces (e.g., `express.Request<..., ..., string>`) and parse-at-entry patterns are designed to catch at compile time rather than runtime.
+`─────────────────────────────────────────────────`
+
+---
+
+## Review Summary
+
+Reviewed: `review-src/handler.ts` and `review-src/validate.ts` (commit `764017e` -- "add unvalidated handler with JSON.parse")
+
+### Findings
+
+**Finding 1: Unguarded `JSON.parse` -- CONFIRMED, Critical**
+File: `review-src/handler.ts:7`
+Validated. `JSON.parse` throws synchronously on malformed input, and at an HTTP entry point this either fails the request with a 500 or, absent a framework-level error boundary, crashes the Node process via `unhandledException`. Root cause: trusting untrusted network input without a parse boundary. Severity stands -- any adversary or buggy client can trigger it with one request. Fix: wrap in `try/catch` and return a 400-equivalent, or use a safe-parse helper.
+
+**Finding 2: Exported-but-unused `validate` -- CONFIRMED, Important**
+Files: `review-src/validate.ts:1`, `review-src/handler.ts:1-8`
+Validated. The commit title ("add unvalidated handler") confirms this is the intended gap, not an oversight in analysis. Strategic concern: dead validator is worse than no validator -- future readers assume validation occurs because the module exists, masking the hole during code review. Severity stands. Note separately that `x != null` is an extremely weak contract (accepts `0`, `""`, arrays, functions); even if wired up, it would not meaningfully validate parsed JSON.
+
+**Finding 3: `JSON.parse` on pre-parsed object -- CONFIRMED, Important**
+File: `review-src/handler.ts:2,7`
+Validated. `JSON.parse({})` coerces to `"[object Object]"` and throws. Assuming this runs behind Express with `express.json()` (unverified), every request with a JSON content-type crashes here. Verify middleware stack before acting. Compounds Finding 1: the throw path is not hypothetical, it is the default path under common middleware.
+
+**Finding 4: Falsy guard drops valid primitives -- CONFIRMED, revise to Suggestion**
+File: `review-src/handler.ts:2`
+Validated mechanically, but practical trigger is narrow: HTTP bodies arrive as strings or Buffers, and the string `"0"` is truthy. The bug manifests only if an upstream layer pre-parses and yields a falsy primitive. Downgrading to Suggestion; use `req.body != null` for correctness with negligible cost.
+
+### Cross-Cutting Patterns
+
+Findings 1, 3, and 4 share one root cause: the handler has no explicit contract for what `req.body` is. It is treated simultaneously as (a) truthy-or-absent, (b) a JSON string, and (c) implicitly never an object. These three assumptions contradict each other under any realistic middleware configuration, which is why a single input shape cannot satisfy the code without throwing or being dropped. Finding 2 is the structural companion: the validator module exists but is not wired in, so the boundary where the contract should be enforced is empty. Collectively the commit encodes a missing input-validation boundary -- parsing, shape-checking, and type-narrowing all need to happen once, at entry, before `process` runs. Fixing any one finding in isolation leaves the others live.
+--- G+H trace tail ---
+## Security Review Summary
+
+Reviewed: `review-src/handler.ts` and `review-src/validate.ts` -- commit `764017e` ("add unvalidated handler with JSON.parse")
+
+---
+
+### Findings
+
+**1. `review-src/handler.ts:6-8` -- High [A05 Security Misconfiguration]**
+Confirmed. `JSON.parse` with no try/catch throws `SyntaxError` on malformed input. In Fastify, unhandled sync throws in handlers are caught by the default error serializer (returns 500), so process crash is unlikely -- but finding 3 escalates this into a reliable 500 on every valid request. Severity holds at High due to guaranteed availability impact.
+
+**2. `review-src/handler.ts:1-4` + `review-src/validate.ts:1` -- Revise to Medium [A04 Insecure Design]**
+A03 Injection is a mismatch: there is no downstream sink (SQL, shell, template). The defect is an absent trust boundary -- validation-never-invoked is a design flaw. `validate` itself is also anemic (`x != null` accepts `0`, `""`, arrays, polluted objects). Escalate to High once the handler feeds a real sink.
+
+**3. `review-src/handler.ts:6-8` -- Escalate to High [A04 Insecure Design]**
+Confirmed and under-rated. Fastify pre-parses `application/json` bodies; `JSON.parse(object)` coerces to `"[object Object]"` and throws deterministically. Any well-formed JSON POST triggers 500. This is a trivially exploitable DoS on the intended happy path, not an edge case.
+
+**4. `review-src/handler.ts:7` -- Medium [A08 Software and Data Integrity Failures]**
+Confirmed. Fastify's default JSON parser strips nothing; `__proto__` and `constructor.prototype` keys survive. Risk is latent until a downstream merge/assign appears. Hold at Medium; escalate when session middleware lands.
+
+**5. `review-src/handler.ts:1` -- Low-Medium [A04 Insecure Design]**
+The missing type annotation is a code-quality symptom of finding 2's design gap, not an independent vulnerability. Consider folding into finding 2.
+
+**Missed finding -- no request size limit / body schema [A04]**: Fastify without an explicit `bodyLimit` defaults to 1 MB, and without a route `schema.body` JSON Schema, arbitrarily nested/wide objects reach the handler. Combined with finding 4, this widens the pollution surface. Assuming Fastify defaults are unchanged (unverified), add per-route `schema.body` with `additionalProperties: false` and a conservative `bodyLimit`. Verify current Fastify config before acting.
+
+### Threat Patterns
+
+**Primary chain (findings 2 -> 3 -> 1):** absent validation (2) lets Fastify's pre-parsed object reach `JSON.parse` (3), which deterministically throws an uncaught `SyntaxError` (1). Result: every legitimate JSON request returns 500 -- a self-inflicted DoS requiring no attacker effort. This is the dominant risk today.
+
+**Latent chain (findings 2 -> 4 -> cookie-auth plan):** once finding 3 is fixed (remove the redundant `JSON.parse`), unvalidated parsed input (2) with `__proto__` keys (4) flows into code that will soon include session middleware and cookie handling. Session objects commonly use `Object.assign` or spread for merging session state; prototype pollution at that seam could bypass auth predicates (`user.isAdmin` resolving via polluted prototype). Fix order matters: land Fastify JSON Schema validation with `additionalProperties: false` BEFORE wiring session middleware, not after.
+
+**Systemic root:** no trust boundary between transport and application layers. All five findings share this root.
+
+`★ Insight ─────────────────────────────────────`
+The reviewer caught a subtle ordering dependency: the redundant `JSON.parse` (finding 3) must be removed first, because once it's gone, the prototype-pollution path (finding 4) opens directly into the request flow. Fixing in the wrong order (4 before 3) would address a latent risk while leaving the guaranteed-500 DoS in place -- a common mistake when findings interact. The session middleware plan makes finding 4's latent risk time-sensitive: `Object.assign({}, session, parsedBody)` is a standard session-merge pattern and exactly the sink that activates prototype pollution.
+`─────────────────────────────────────────────────`

@@ -1,0 +1,5 @@
+1. Ask the user to point to the actual API codebase -- do not produce a generic plan.
+2. Frame it as a one-line blocker: "No API source found in this plugin repo; which repo/path hosts the API?"
+3. Also request: language/runtime, framework, existing session store, and whether the frontend is same-site or cross-origin.
+4. Do not scaffold auth speculatively; every load-bearing detail (framework, CSRF posture, cookie domain, session vs JWT) is unverified, so the output would be a checklist of Assuming-frames rather than actionable code.
+5. Resume once the target repo is supplied.

@@ -1,0 +1,5 @@
+1. Assuming npm + Node 20 LTS (unverified), do run `npm init -y` and add `"test"` and `"lint"` scripts to `package.json`. Verify npm + Node 20 LTS before acting.
+2. Install devDeps: `npm i -D eslint vitest` and run `npx eslint --init`.
+3. Create `.gitignore` with `node_modules/`, `coverage/`, `dist/`.
+4. Write `.github/workflows/ci.yml`: trigger `on: [push, pull_request]`; single job `ubuntu-latest`; steps `actions/checkout@v4`, `actions/setup-node@v4` with `node-version: 20` and `cache: 'npm'`, `npm ci`, `npm run lint`, `npm test`.
+5. Commit `package.json`, `package-lock.json`, `.gitignore`, workflow; push to trigger run.

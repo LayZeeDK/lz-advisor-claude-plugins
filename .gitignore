@@ -3,3 +3,6 @@
 
 # Eval pipeline outputs (regenerated on re-run)
 evals/**/outputs/
+
+# Transient /lz-advisor.plan side-effect output (plan files written to cwd by skill)
+/plans/
