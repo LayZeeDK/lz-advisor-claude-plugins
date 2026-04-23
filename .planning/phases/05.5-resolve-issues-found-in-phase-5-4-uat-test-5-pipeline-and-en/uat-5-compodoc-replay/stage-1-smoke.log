@@ -1,0 +1,85 @@
+[OK] Finding D: advisor did NOT emit Critical for innocuous task (Position B calibration landed)
+[ERROR] Finding E: no unverified-framing phrase in advisor response
+[OK] Word-budget: advisor Strategic Direction 60 words (<=100)
+[OK] Finding F: reviewer response has both ### Findings and ### Cross-Cutting Patterns slots
+[OK] Findings G+H: security-reviewer response has both ### Findings and ### Threat Patterns slots
+--- D trace tail ---
+Plan written to `plans/github-actions-ci-node.plan.md`.
+
+`★ Insight ─────────────────────────────────────`
+The plan uses `eslint-config-prettier` rather than `eslint-plugin-prettier`. The latter runs Prettier as an ESLint rule and reports formatting issues as lint errors -- this conflates two tools' concerns and produces noisy output. The recommended pattern is to run ESLint and Prettier as separate steps, with `eslint-config-prettier` only disabling the ESLint rules that would conflict with Prettier's formatting choices.
+`─────────────────────────────────────────────────`
+
+It covers 7 steps: initialize `package.json`, install dev deps, ESLint flat config, Prettier config, smoke test, `.gitignore`, and the `ci.yml` workflow. Steps 3-6 are parallelizable once the install completes. Pass this plan to `/lz-advisor.execute` to implement it.
+--- E trace tail ---
+Plan written to `plans/add-api-cookie-auth.plan.md`.
+
+It covers 8 steps: topology verification, deps install, secret key generation, Fastify server setup, CSRF token endpoint, auth routes (`/login`, `/logout`, `/me`), `preHandler` auth guard, and `.gitignore`. Pass the plan to `/lz-advisor.execute` to implement it -- but resolve the topology question (same-origin vs. cross-origin) first, as that changes the `sameSite` policy and whether CORS is needed.
+--- F trace tail ---
+`★ Insight ─────────────────────────────────────`
+The reviewer identified a layered contract failure: three incompatible assumptions about `req.body` (truthy, raw string, safe to parse) converge on a single unchecked value. This "assumption stacking" pattern is especially common in glue code connecting HTTP transport to application logic -- each layer assumes the previous handled something it didn't.
+`─────────────────────────────────────────────────`
+
+---
+
+## Review Summary
+
+Reviewed: `review-src/handler.ts` and `review-src/validate.ts` (commit `f01e1a7`)
+
+### Findings
+
+**Finding 1 -- Confirmed, Critical.** `JSON.parse` on unverified input is a guaranteed crash surface for any caller passing malformed payloads. In a request-handling context (the file is literally named `handler.ts`), untrusted input is the default assumption, so "callers should pre-validate" is not a viable unstated contract. Root cause: missing error boundary at the trust boundary between transport and application layer. Severity holds -- a single `curl -d 'not json'` crashes the handler. Fix: wrap in `try/catch` and return a typed error result, or surface a 400-equivalent. Assuming this runs behind an Express-style framework with an error middleware (unverified), the throw may be caught upstream and converted to a 500, masking the real cause as a server error rather than client error. Verify the middleware chain before choosing between throw-vs-return.
+
+**Finding 2 -- Confirmed, Important.** `validate` is genuinely orphaned; `handle` uses a truthiness check that diverges from the exported guard's semantics (truthiness rejects `0`, `""`, `false`; `!= null` accepts them). This is the load-bearing bug: the module pair looks complete at a glance but the wiring is absent. Severity holds. The two checks are not equivalent, so "just inline the truthiness check" is not a safe simplification -- pick one semantic intentionally.
+
+**Finding 3 -- Confirmed, Important.** The double-parse hazard is real and common with Express's default `express.json()`. `JSON.parse({...})` stringifies to `"[object Object]"` and throws. Severity holds. This compounds Finding 1: even well-formed requests crash when middleware pre-parses. Root cause: the function's input contract (string vs. parsed object) is undocumented and unchecked.
+
+**Finding 4 -- Confirmed, Suggestion.** `x != null` is the canonical nullish-check idiom and is behaviourally correct. Downgrade consideration: not worth changing unless the project's ESLint config flags `eqeqeq` without a `null` exception. Add a comment (`// nullish check`) if retained. Severity holds as Suggestion.
+
+### Cross-Cutting Patterns
+
+Findings 1, 2, and 3 share a single root cause: **absent input contract at the module boundary**. The handler treats `req.body` as simultaneously (a) truthy-enough-to-process, (b) a raw JSON string, and (c) safe to parse without error handling -- three incompatible assumptions layered on one unchecked value. The orphaned `validate()` in Finding 2 is the smoking gun: someone started to build the contract, exported the primitive, then forgot to wire it in. Fixing any one finding in isolation leaves the others latent. The correct remediation is a single typed guard at the entry of `handle()` that (1) discriminates string vs. object body, (2) runs `validate()` or an equivalent nullish/shape check, and (3) wraps `JSON.parse` in a `try/catch` returning a structured error. Finding 4 is independent and stylistic -- not part of this cluster.
+--- G+H trace tail ---
+## Security Review Summary
+
+Reviewed: `review-src/handler.ts` and `review-src/validate.ts` -- commit f01e1a7 ("add unvalidated handler with JSON.parse")
+
+---
+
+### Findings
+
+**Finding 1: Unhandled `JSON.parse` on external input**
+- File: `review-src/handler.ts:7`
+- Severity: **High** (confirmed)
+- `[A08 Software and Data Integrity Failures]` (primary) with secondary `[A04 Insecure Design]`
+- Deserializing untrusted input without error handling or schema validation. A single malformed-JSON request (e.g. body `"{"`) triggers an uncaught `SyntaxError`; in Node.js HTTP frameworks this escapes to `uncaughtException`/`unhandledRejection`, which terminates the worker under modern defaults. Trivially exploitable unauthenticated DoS. Note: A03 Injection is a weaker fit -- `JSON.parse` is not a code-execution sink, so data-integrity/insecure-design is the correct lens.
+
+**Finding 2: Dead `validate()` export, bypassed at the call site**
+- File: `review-src/handler.ts:1-8`, `review-src/validate.ts:1`
+- Severity: **High** (confirmed; root cause of Finding 1's exploitability)
+- `[A04 Insecure Design]`
+- Security control exists in the codebase but is not wired in. Even if wired, `x != null` is a presence check, not a schema check -- it would not prevent Finding 1. This is the structural root cause.
+
+**Finding 3: Falsy body guard drops valid JSON primitives**
+- File: `review-src/handler.ts:2`
+- Severity: **Low** (revised down from Medium)
+- `[A04 Insecure Design]`
+- Correctness bug, not a security vulnerability. Silent-null on `"0"`/`""` is a liveness/UX issue; no confidentiality, integrity, or availability impact to the server.
+
+**Finding 4: Untyped `any` across the boundary**
+- File: `review-src/handler.ts:1,6`
+- Severity: **Low** (revised down from Medium)
+- `[A04 Insecure Design]`
+- Types are a compile-time aid, not a runtime defense. Adding annotations would not block any of the attacks above; runtime schema validation (zod/valibot) is what's needed.
+
+**Highest-priority fix:** Wrap `JSON.parse` in try/catch AND introduce a real schema validator at the `handle()` entry point (wire Finding 2 with a proper schema, not the current null-check). This closes Finding 1 at the root.
+
+### Threat Patterns
+
+Findings 1 and 2 chain as cause-and-effect rather than as independent issues. Finding 2 (validator exists but is never imported) is the structural root; Finding 1 (unguarded `JSON.parse`) is the exploitable symptom. An unauthenticated remote attacker sends one malformed-JSON request, `handle()` calls `process()`, `JSON.parse` throws `SyntaxError`, and with no try/catch and no upstream validator the exception propagates to the Node runtime -- reliable single-packet DoS against the worker.
+
+The systemic weakness is a **defense-in-depth gap at the deserialization boundary**: no input validation, no parse-error handling, no output schema check, and no type enforcement. All four findings share this root -- the module treats `req.body` as trusted data. Findings 3 and 4 are latent correctness debt that compounds the design flaw but are not independently exploitable. Fixing Finding 1 plus Finding 2 (with a real schema, not `x != null`) collapses the entire attack surface of this module.
+
+`★ Insight ─────────────────────────────────────`
+The severity downgrade on Findings 3 and 4 is instructive: **compile-time safety (TypeScript types) and logic bugs (falsy guard) are not security controls** -- they're correctness aids. Runtime schema validation (e.g. zod's `z.parse()`) is what actually closes the deserialization boundary, because it enforces shape at the moment untrusted data enters the process.
+`─────────────────────────────────────────────────`
