@@ -17,7 +17,7 @@ Requirements for initial release. Each maps to roadmap phases.
 ### Advisor Agent
 
 - [ ] **ADVR-01**: Agent definition uses `model: opus` to always run on Opus 4.6 regardless of session model
-- [ ] **ADVR-02**: Agent enforces conciseness: under 100 words, enumerated steps, not explanations
+- [x] **ADVR-02**: Agent enforces conciseness: under 100 words, enumerated steps, not explanations
 - [ ] **ADVR-03**: Agent has read-only tools (Read, Glob) -- never takes write actions
 - [ ] **ADVR-04**: Agent uses `maxTurns: 1` -- single strategic response, no iterative tool-call loops
 - [ ] **ADVR-05**: Agent uses `effort: high` for deep strategic reasoning
@@ -102,7 +102,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | INFRA-03 | Phase 1 | Pending |
 | INFRA-04 | Phase 5 | Pending |
 | ADVR-01 | Phase 1 | Pending |
-| ADVR-02 | Phase 1 | Pending |
+| ADVR-02 | Phase 1 | Complete |
 | ADVR-03 | Phase 1 | Pending |
 | ADVR-04 | Phase 1 | Pending |
 | ADVR-05 | Phase 1 | Pending |
