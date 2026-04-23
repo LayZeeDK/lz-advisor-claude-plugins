@@ -86,11 +86,38 @@ else
   FAIL=1
 fi
 
+# -------- Findings G + H: security-reviewer on same commit produces two slots -----
+# D-06: security-reviewer has its own ### Findings + ### Threat Patterns contract
+# (security-flavored analogue of reviewer's ### Findings + ### Cross-Cutting Patterns).
+# D-07: reuse the F-block review-src/handler.ts + review-src/validate.ts commit
+# fixture (already in git at this point); no new commits needed.
+# Use a SEPARATE claude -p invocation -- /lz-advisor.security-review is a different
+# skill with different scan logic; re-using F's OUT_F would test reviewer output
+# against a security-reviewer expected shape, which would always fail structurally.
+OUT_GH="$SCRATCH/GH-output.txt"
+claude --model sonnet --effort medium --plugin-dir "$PLUGIN_DIR" \
+  --dangerously-skip-permissions \
+  -p "/lz-advisor.security-review Review the last commit." \
+  --verbose > "$OUT_GH" 2>&1 || true
+
+HAS_SEC_FINDINGS=0
+HAS_TP=0
+if rg -q "^### Findings" "$OUT_GH"; then HAS_SEC_FINDINGS=1; fi
+if rg -q "^### Threat Patterns" "$OUT_GH"; then HAS_TP=1; fi
+
+if [ "$HAS_SEC_FINDINGS" -eq 1 ] && [ "$HAS_TP" -eq 1 ]; then
+  echo "[OK] Findings G+H: security-reviewer response has both ### Findings and ### Threat Patterns slots"
+else
+  echo "[ERROR] Findings G+H: missing named slot(s): Findings=$HAS_SEC_FINDINGS TP=$HAS_TP"
+  FAIL=1
+fi
+
 if [ "$FAIL" -ne 0 ]; then
   echo "--- D trace tail ---"; tail -n 80 "$OUT_D" || true
   echo "--- E trace tail ---"; tail -n 80 "$OUT_E" || true
   echo "--- F trace tail ---"; tail -n 80 "$OUT_F" || true
+  echo "--- G+H trace tail ---"; tail -n 80 "$OUT_GH" || true
   exit 1
 fi
 
-echo "[SUCCESS] Smoke tests D + E + F passed (or warned with manual-review note)"
+echo "[SUCCESS] Smoke tests D + E + F + G + H + word-budget passed (or warned with manual-review note)"
