@@ -113,6 +113,16 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5
 | 4. Review Skills | 0/2 | Planning complete | - |
 | 5. Polish and Marketplace Readiness | 0/5 | Planning complete | - |
 
+### Phase 05.6: Diagnose E-runtime regression and re-run full Compodoc UAT to close Phase 5.5 Plan 06 (INSERTED)
+
+**Goal:** [Urgent work - to be planned]
+**Requirements**: TBD
+**Depends on:** Phase 5
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd-plan-phase 05.6 to break down)
+
 ### Phase 05.5: Resolve issues found in Phase 5.4 UAT Test #5 pipeline and ensure plan skill uses WebSearch and WebFetch to research and verify information not in pre-trained knowledge before asking the plan advisor agent, including Nx knowledge gap. Include minor and follow-up issues: plan-skill Nx-convention verification gap, security-reviewer output-shape smoke test, advisor word-budget discipline audit, verbose-prompt detection nudge. (INSERTED)
 
 **Goal:** Close 4 actionable issues from Phase 5.4 UAT Test #5 through surgical edits to plan/execute SKILLs, advisor agent, smoke-test script, and context-packaging reference: (MAJOR) plan-skill Nx-ecosystem convention knowledge gap that drove S5 to 3 advisor consultations on cache inputs / dependsOn / lint dependsOn -- closed via Common Contract rule 5 broadening (D-01) and symmetric orient-phase framework-verification cues in plan + execute SKILLs (D-02); (MODERATE) security-reviewer has no output-shape smoke-test analog to DEF-response-structure.sh -- closed by extending DEF with G and H assertion blocks against a separate security-review invocation (D-06/D-07); (MODERATE) advisor word-budget drift (S4 = 136 full / 118 numbered-only, not S1 per empirical R-03 correction) -- closed via advisor.md density example (D-04) + DEF word-count gate (D-05); (MINOR) verbose-prompt orient-loop trigger -- closed via plan-skill-only runtime reshape nudge (D-08). Bumps plugin to 0.8.0 (plugin.json + 4 SKILL.md files, correcting Phase 5.4 drift where execute/review/security-review were missed). Verified via two-stage gate: extended DEF-response-structure.sh (Stage 1) + full 6-session UAT replay with tally.mjs against fresh traces (Stage 2; D-11 per-skill gates).
