@@ -98,4 +98,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-04-22 -- Phase 5.4 complete: 10 UAT discipline findings (A-K) closed; all 3 runtime gaps (E-runtime, F-runtime, A-smoke-script-bug) resolved; plugin bumped to 0.6.0.*
+*Last updated: 2026-04-24 -- Phase 5.6 complete: Finding E regression closed via Shape 3 diagnosis (stdout-echo vs JSONL measurement layer); density bifurcation + DEF JSONL redesign shipped; 6-session Compodoc UAT replay against real ngx-smart-components validated S4 overage resolved (-22w) and S5 mid-execute calls eliminated; plugin bumped to 0.8.1. v1.0 milestone ready for audit.*
