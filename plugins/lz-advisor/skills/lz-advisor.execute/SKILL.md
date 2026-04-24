@@ -16,7 +16,7 @@ description: >
   completed code, or run security audits -- those are handled by
   sibling skills lz-advisor.plan, lz-advisor.review, and
   lz-advisor.security-review respectively.
-version: 0.8.1
+version: 0.8.2
 allowed-tools: Agent(lz-advisor:advisor), Read, Glob, Edit, Write, Bash(git:*), WebSearch, WebFetch
 ---
 
@@ -52,6 +52,7 @@ If no plan file was mentioned, orient from scratch:
 - Identify constraints, existing patterns, and integration points
 - Note what exists and what needs to change
 - Stop exploring when you have enough context to formulate a specific question for the advisor. Inside `node_modules`, read with discipline: targeted reads only (a specific function, a config entry, or a few lines around a symbol), never full-file for bundled or minified content. When dependency behavior is load-bearing, verify and surface the result as a Pre-Verified Package Behavior Claim (see `@${CLAUDE_PLUGIN_ROOT}/references/context-packaging.md`).
+- Prefer web-first verification over code archaeology for public-library tasks. When the task depends on a third-party library, framework, or public API, rank verification methods in this order: (1) WebFetch of official documentation (the library's docs site, GitHub README, release notes); (2) WebSearch for version/API compatibility when the right doc URL is not known; (3) `git grep` / `rg` against project code to find existing usage patterns; (4) targeted reads of `node_modules/<pkg>/dist/**` as a last resort. Reading compiled or bundled `node_modules/**/dist/**/*.js` via `rg` substring anchoring or `readFileSync + indexOf` to reverse-engineer an exported API is orient-waste -- the official docs are one WebFetch away and the compiled output is minified, chunked, and intentionally unstable across versions. If WebFetch is blocked or the docs are missing, fall back through the ranking in order; do not skip WebFetch because the library "feels niche."
 - When the task names a framework or build tool (Nx, Angular, Next.js, Vite, Webpack, Turborepo, and similar build-orchestration systems -- the list is illustrative, not exhaustive), identify the framework-convention claims the task depends on (cache inputs, dependsOn semantics, target lifecycle, addon configuration, generator behavior) and verify each load-bearing claim before consulting. If a plan file already surfaced `<pre_verified>` framework-convention claims, re-verify them against the current codebase state (versions may have shifted); gap-fill any missing claims. Framework-convention claims use the same block schema as package-behavior claims (see `@${CLAUDE_PLUGIN_ROOT}/references/context-packaging.md`).
 
 Do not write code or make changes during orientation. Do not consult the
