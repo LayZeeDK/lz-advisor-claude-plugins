@@ -115,13 +115,17 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5
 
 ### Phase 05.6: Diagnose E-runtime regression and re-run full Compodoc UAT to close Phase 5.5 Plan 06 (INSERTED)
 
-**Goal:** [Urgent work - to be planned]
-**Requirements**: TBD
+**Goal:** Diagnose and close the Finding E semantic regression in the advisor literal-frame contract for thin-context plan tasks; re-run the full 6-session Compodoc UAT against the fixed plugin to close Phase 5.5 Plan 06's D-11 gates. Gap 1 (plan-skill Orient phase uses node_modules archaeology instead of WebFetch/WebSearch for public-library tasks, surfaced via 05.6-UAT.md rerun under plugin 0.8.1) closed via Plan 05 with tool-preference prose edits to plan + execute SKILLs + context-packaging.md Rule 5 amendment + SemVer patch 0.8.1 -> 0.8.2.
+**Requirements**: ADVR-02 (umbrella advisor-calibration requirement)
 **Depends on:** Phase 5
-**Plans:** 4/4 plans complete
+**Plans:** 4/5 plans complete
 
 Plans:
-- [x] TBD (run /gsd-plan-phase 05.6 to break down) (completed 2026-04-24)
+- [x] 05.6-01-PLAN.md -- Forward-capture diagnostic for Finding E regression (completed 2026-04-24)
+- [x] 05.6-02-PLAN.md -- Density bifurcation (two-example advisor density) + DEF JSONL-layer redesign (Shape 3 supersession) (completed 2026-04-24)
+- [x] 05.6-03-PLAN.md -- Plugin version bump 0.8.0 -> 0.8.1 (SemVer patch) (completed 2026-04-24)
+- [x] 05.6-04-PLAN.md -- Stage 0 DEF fix-validation + Stage 2 6-session UAT replay + VERIFICATION.md with D-11 gates (completed 2026-04-24)
+- [ ] 05.6-05-PLAN.md -- Orient-phase tool-preference ranking: WebFetch over node_modules archaeology (plan + execute skills + context-packaging Rule 5 amendment) + SemVer patch 0.8.1 -> 0.8.2 (closes Gap 1 from 05.6-UAT.md)
 
 ### Phase 05.5: Resolve issues found in Phase 5.4 UAT Test #5 pipeline and ensure plan skill uses WebSearch and WebFetch to research and verify information not in pre-trained knowledge before asking the plan advisor agent, including Nx knowledge gap. Include minor and follow-up issues: plan-skill Nx-convention verification gap, security-reviewer output-shape smoke test, advisor word-budget discipline audit, verbose-prompt detection nudge. (INSERTED)
 
