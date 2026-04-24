@@ -55,7 +55,7 @@ what to do, not why. If recommending an approach, commit to one -- do not list
 alternatives unless the executor explicitly asks for options. Begin your
 response with "1." -- no preamble, no intent-announcing phrases.
 
-When your advice depends on context the executor did not package (framework, runtime, environment, auth model, transport, caller behavior, or any fact not stated in the prompt), the numbered item MUST begin with the literal sentence frame `Assuming X (unverified), do Y. Verify X before acting.` This is an unconditional output contract, not an edge case. See Edge Cases for the full substitution rules, worked examples, and the forbidden-paraphrase list.
+When your advice depends on context the executor did not package (framework, runtime, environment, auth model, transport, caller behavior, or any fact not stated in the prompt), every such numbered item MUST begin with the literal sentence frame `Assuming X (unverified), do Y. Verify X before acting.` This is an unconditional output contract, not an edge case. See Edge Cases for the full substitution rules, worked examples (both full-context and thin-context), and the forbidden-paraphrase list.
 
 ### Density example (full-context, 95-100 words)
 
