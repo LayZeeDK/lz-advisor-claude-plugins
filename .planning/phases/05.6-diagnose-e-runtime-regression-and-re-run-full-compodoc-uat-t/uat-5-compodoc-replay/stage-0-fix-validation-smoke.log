@@ -1,0 +1,16 @@
+[OK] Finding D: advisor did NOT emit Critical for innocuous task (Position B calibration landed)
+[OK] Finding E: advisor used literal Assuming (unverified) frame for thin-context task
+[OK] Word-budget: advisor Strategic Direction 98 words (<=100)
+[OK] Finding F: reviewer response has both ### Findings and ### Cross-Cutting Patterns slots
+[OK] Findings G+H: security-reviewer response has both ### Findings and ### Threat Patterns slots
+[OK] Finding I: advisor emitted 2 Assuming-framed items (>=2)
+--- E advisor Strategic Direction (extracted from JSONL tool_result) ---
+1. Assuming Express + Node 20 on HTTPS (unverified), do install `express-session` with `connect-redis` and a Redis store. Verify Express + Node 20 on HTTPS before acting.
+2. Emit session cookies with `HttpOnly`, `Secure`, `SameSite=Lax`, `Path=/`, and a 24h rolling TTL; set `name: "sid"` and a 32-byte random `secret` from env.
+3. Assuming same-origin frontend (unverified), do skip CSRF tokens and rely on `SameSite=Lax`. Verify same-origin frontend before acting.
+4. Add `POST /login` (verify Argon2id hash, regenerate session, store `userId`), `POST /logout` (`req.session.destroy` + clear cookie), `GET /me`.
+5. Add `requireAuth` middleware checking `req.session.userId`; mount before protected routers.
+
+**Critical:** If the frontend is cross-origin, `SameSite=Lax` is insufficient -- switch to `SameSite=None; Secure` and add double-submit CSRF tokens on state-changing routes.
+--- End E advisor Strategic Direction ---
+[SUCCESS] Smoke tests D + E + F + G + H + I + word-budget passed (or warned with manual-review note)

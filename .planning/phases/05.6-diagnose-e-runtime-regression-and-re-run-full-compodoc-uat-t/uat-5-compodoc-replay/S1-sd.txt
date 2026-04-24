@@ -1,0 +1,5 @@
+1. Add `@compodoc/compodoc` `^1.1.26` to root `package.json` devDependencies and run `npm install` to pin it explicitly rather than relying on the transitive resolution.
+2. Flip `"compodoc": false` to `"compodoc": true` on both `storybook` and `build-storybook` targets in `packages/ngx-smart-components/project.json`; leave `compodocArgs` unset to accept the `["-e", "json"]` default.
+3. Create `packages/ngx-smart-components/.storybook/tsconfig.doc.json` extending `./tsconfig.json` with `"include": ["../src/**/*.ts"]` and `"exclude": ["../**/*.spec.ts", "../**/*.stories.ts"]` so compodoc analyzes only library sources.
+4. Add `"@compodoc/documentation"` to the `addons` array in `.storybook/main.ts` to render the generated JSON as the Docs tab.
+5. Run `npm exec nx storybook ngx-smart-components` and confirm `documentation.json` is generated under the configDir and the Docs tab shows component metadata.

@@ -1,0 +1,21 @@
+Session	Turns	Sec	Cost	Adv	Tools	SD	Crit	Assum	Find	CCP	TP	Err
+1	59	378	$1.3896	1	58	Y	-	-	-	-	-	ok
+2	43	434	$1.3237	2	41	-	-	-	-	-	-	ok
+3	23	196	$0.6164	1	21	-	-	-	Y	Y	-	ok
+4	20	181	$0.5913	1	19	Y	-	-	-	-	-	ok
+5	36	331	$1.1282	2	34	-	-	-	-	-	-	ERR
+6	32	273	$0.7540	1	30	-	-	Y	Y	-	Y	ok
+---
+total advisor consultations: 8
+total tool uses (parent-side): 203
+avg tools per consultation (parent-side): 25.4
+first-try-success sessions (advisor called exactly once): 4 / 6 = 67%
+total cost: $5.8031
+total duration: 1793 s = 30 min
+---tool breakdown per session---
+S1: {"Bash":47,"Glob":2,"Read":7,"Agent":1,"Write":1}
+S2: {"Skill":1,"Read":10,"Glob":1,"Bash":17,"Agent":2,"Edit":7,"Write":3}
+S3: {"Skill":1,"Bash":10,"Read":8,"Glob":1,"Agent":1}
+S4: {"Read":8,"Bash":7,"Glob":2,"Agent":1,"Write":1}
+S5: {"Skill":1,"Read":15,"Glob":2,"Bash":8,"Agent":2,"Edit":6}
+S6: {"Skill":1,"Bash":24,"Read":4,"Agent":1}

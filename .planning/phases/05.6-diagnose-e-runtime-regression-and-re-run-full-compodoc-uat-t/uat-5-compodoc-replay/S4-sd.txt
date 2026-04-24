@@ -1,0 +1,5 @@
+1. Add a separate `compodoc` target in `packages/ngx-smart-components/project.json` using `nrwl/run-commands` (or `@twittwer/compodoc:compodoc`) with `outputs: ["{workspaceRoot}/documentation.json"]` and `-e json -d {workspaceRoot}`.
+2. Set `compodoc: false` on both `storybook` and `build-storybook` targets and add `dependsOn: ["compodoc"]` -- this eliminates the double-run and makes the artifact contract visible to Nx.
+3. Add `tags: ['autodocs']` to the meta in `ngx-smart-components.stories.ts`; without it the compodoc JSON is dead weight.
+4. Apply Finding 2: replace the cast with a `declare global` Window augmentation in `preview.ts`.
+5. Run `npx nx reset && npx nx build-storybook ngx-smart-components` to validate cache inputs and autodocs rendering.
