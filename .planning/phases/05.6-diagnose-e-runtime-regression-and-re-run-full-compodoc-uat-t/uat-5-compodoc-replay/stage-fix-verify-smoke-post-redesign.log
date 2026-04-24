@@ -1,0 +1,17 @@
+[OK] Finding D: advisor did NOT emit Critical for innocuous task (Position B calibration landed)
+[OK] Finding E: advisor used literal Assuming (unverified) frame for thin-context task
+[OK] Word-budget: advisor Strategic Direction 98 words (<=100)
+[OK] Finding F: reviewer response has both ### Findings and ### Cross-Cutting Patterns slots
+[OK] Findings G+H: security-reviewer response has both ### Findings and ### Threat Patterns slots
+[OK] Finding I: advisor emitted 2 Assuming-framed items (>=2)
+--- E advisor Strategic Direction (extracted from JSONL tool_result) ---
+1. Assuming Express + Node 24 (unverified), do install `express-session`, `connect-redis`, `redis`, `bcrypt`, and `helmet`. Verify Express + Node 24 before acting.
+2. Configure `express-session` with `httpOnly: true`, `secure: true`, `sameSite: 'lax'`, `maxAge: 86400000`, rolling sessions, and a 32-byte secret from env.
+3. Assuming Redis is provisioned (unverified), do back sessions with `connect-redis` using prefix `sess:` and 24h TTL. Verify Redis before acting.
+4. Build `POST /auth/login` (bcrypt verify, regenerate session id), `POST /auth/logout` (destroy + clear cookie), `GET /auth/me`.
+5. Add `requireAuth` middleware checking `req.session.userId`; mount before protected routers.
+6. Enable `app.set('trust proxy', 1)` behind TLS terminator.
+
+**Critical:** Rate-limit `/auth/login` (e.g., `express-rate-limit`) to block credential stuffing, and enforce CSRF protection or strict `SameSite=Strict` if any cross-site form posts are possible.
+--- End E advisor Strategic Direction ---
+[SUCCESS] Smoke tests D + E + F + G + H + I + word-budget passed (or warned with manual-review note)

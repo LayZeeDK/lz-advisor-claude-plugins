@@ -1,0 +1,10 @@
+[OK] Finding D: advisor did NOT emit Critical for innocuous task (Position B calibration landed)
+[ERROR] Finding E: no literal-frame Assuming X (unverified), do Y. Verify X before acting. in advisor response
+[OK] Word-budget: advisor Strategic Direction 75 words (<=100)
+[ERROR] Finding F: missing named slot(s): Findings=0 CCP=0
+[ERROR] Findings G+H: missing named slot(s): Findings=0 TP=0
+[ERROR] Finding I: only 0 Assuming-framed item(s) (need >=2 for thin-context calibration)
+--- D trace tail ---
+Plan written to `plans/github-actions-ci-nodejs.plan.md`.
+
+It covers 6 steps: init project, install deps, add scripts, pin Node via `.nvmrc`, commit the lock file, and create `.github/workflows/ci.yml`. Key risks noted: ESLint v9 flat config compatibility and optional Prettier enforcement in CI. Pass to `/lz-advisor.execute` when ready to implement.

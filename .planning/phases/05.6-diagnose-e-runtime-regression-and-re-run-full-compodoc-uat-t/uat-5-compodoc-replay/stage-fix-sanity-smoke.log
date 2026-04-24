@@ -1,0 +1,78 @@
+[OK] Finding D: advisor did NOT emit Critical for innocuous task (Position B calibration landed)
+[ERROR] Finding E: no unverified-framing phrase in advisor response
+[OK] Word-budget: advisor Strategic Direction 62 words (<=100)
+[OK] Finding F: reviewer response has both ### Findings and ### Cross-Cutting Patterns slots
+[OK] Findings G+H: security-reviewer response has both ### Findings and ### Threat Patterns slots
+--- D trace tail ---
+`★ Insight ─────────────────────────────────────`
+- The `cache: npm` option in `actions/setup-node@v4` caches `~/.npm` keyed on `package-lock.json` hash automatically -- no manual cache step needed. This typically saves 20-40 seconds per run.
+- The matrix over `node-version: [20, 22]` tests against both the current LTS (20) and the active release (22). This catches cases where your code accidentally uses APIs that were added or changed between versions.
+- ESLint 9 uses the flat config format (`eslint.config.js`) instead of the legacy `.eslintrc.*` format -- important distinction if you're reading older tutorials that use `extends` arrays and `.eslintrc.json`.
+`─────────────────────────────────────────────────`
+
+Here's what was created:
+
+**`.github/workflows/ci.yml`** -- the workflow triggers on every `push` and `pull_request`, runs on `ubuntu-latest`, and tests against Node 20 and 22 in a matrix. Steps: checkout, set up Node with npm cache, `npm ci`, lint, then test.
+
+**`package.json`** -- uses `node --test` (Node's built-in test runner, no extra dependency) for tests, and `eslint .` for linting.
+
+**`eslint.config.js`** -- ESLint 9 flat config with the recommended JS ruleset plus `no-unused-vars` as error and `no-console` as a warning.
+
+To complete the setup, run `npm install` locally to generate `package-lock.json` (required for `npm ci` in CI), then commit everything:
+
+```bash
+npm install
+git add package.json package-lock.json eslint.config.js .github/workflows/ci.yml
+git commit -m "Add CI pipeline and Node.js project scaffold"
+```
+--- E trace tail ---
+Plan written to `plans/add-cookie-auth.plan.md`.
+
+It covers 15 steps: install Fastify + auth plugins, bootstrap the app factory, register cookie/session/CSRF plugins, config validation, in-memory user store, register/login/logout routes, `requireSession` preHandler, protected route, tests with `node --test` + `inject()`, and a `.env.example`. Two assumptions to verify before executing -- same-site frontend over HTTPS, and single-instance deploy -- are flagged inline per the advisor's guidance.
+--- F trace tail ---
+## Review Summary
+
+Reviewed: `review-src/handler.ts` and `review-src/validate.ts` (commit `a54eccc` -- "add unvalidated handler with JSON.parse")
+
+### Findings
+
+**1. Unhandled JSON.parse exception -- CONFIRMED, Critical**
+File: `review-src/handler.ts:7`. Validated: `JSON.parse` throws `SyntaxError` synchronously on malformed input. With no try/catch in `handle` or `process`, the exception propagates to the caller. In an HTTP handler context this typically crashes the request (and in Node without a top-level handler, can crash the process via `unhandledRejection`/`uncaughtException`). Root cause: missing boundary error handling at the trust boundary where untrusted strings enter parsing. This is the highest-severity issue because it triggers on trivial malformed input, not edge cases.
+
+**2. Validation wired but unused -- CONFIRMED, Important**
+Files: `review-src/handler.ts:1-3`, `review-src/validate.ts:1`. Validated: `validate.ts` has no importers in the handler. Even if imported, the function (`x != null`) is so weak it would only reject `null`/`undefined` -- not an actual schema check. Two defects compound: the validator is dead code, and the validator itself is insufficient. Severity appropriate: the absence of validation combined with finding 1 means any string reaches `JSON.parse`.
+
+**3. `process` shadows Node global -- CONFIRMED, downgrade to Suggestion**
+File: `review-src/handler.ts:6`. Validated, but severity overstated. Shadowing only manifests as a bug if/when someone adds `process.env` or similar to this 8-line file. Current code has no such usage. Classify as Suggestion per the fragile-assumption rule: breakage requires a specific future edit, not a reasonable one a maintainer would make without noticing the local `function process`. Rename to `parseBody` regardless -- the name also fails to describe what it does.
+
+**4. No size/type guard on req.body -- CONFIRMED, Important**
+File: `review-src/handler.ts:2`. Validated. `JSON.parse` is synchronous and blocks the event loop proportionally to input size; a multi-MB payload creates a DoS vector. Assuming this runs behind a framework with body-size middleware (unverified), do confirm the upstream limit before acting. Verify framework body limits before acting. If standalone, add an explicit length check.
+
+**5. Missing type annotations -- CONFIRMED, Suggestion**
+Files: both. Validated. Without `strict`/`noImplicitAny` in `tsconfig`, `req` and `x` are implicit `any`, which hides findings 1 and 4 from the compiler. Severity appropriate.
+
+### Cross-Cutting Patterns
+
+Findings 1, 2, 4, and 5 share one root cause: **no enforced trust boundary between untrusted input and parsing**. The handler treats `req.body` as safe by virtue of truthiness alone -- no validation (2), no size/type guard (4), no exception handling (1), and no static type contract to catch the gap at compile time (5). The commit message ("add unvalidated handler with JSON.parse") telegraphs this: the author added a parser before adding the validator that a sibling file already drafts. The fix is structural, not piecemeal: import `validate`, strengthen it to a real schema check (not `!= null`), wrap `JSON.parse` in try/catch returning a typed error result, annotate `req: { body?: string }`, and enable `noImplicitAny`. Finding 3 is independent -- a naming hazard unrelated to the input-trust theme.
+--- G+H trace tail ---
+## Security Review Summary
+
+Reviewed: last commit `a54eccc` -- `review-src/handler.ts` and `review-src/validate.ts` (2 new files)
+
+### Findings
+
+**Finding 1** -- `review-src/handler.ts:7` -- **Critical** -- `[A04 Insecure Design]` (retain; A05 Security Misconfiguration is a plausible secondary mapping). Confirmed: unauthenticated `JSON.parse` with no try/catch is a one-packet DoS. On Node.js, an uncaught `SyntaxError` thrown from a sync handler propagates to `uncaughtException`, which by default terminates the process. Exploitability is trivial (`curl -d 'x' <host>`). Critical stands.
+
+**Finding 2** -- `review-src/handler.ts:1-4`, `review-src/validate.ts:1` -- **Medium** (revised down from High) -- `[A04 Insecure Design]` (revised from A03). The `validate` function only checks `x != null`, which is strictly weaker than the existing `if (req.body)` truthy gate. Wiring it in would change nothing exploitable -- this is a dead-code/design gap, not an injection path. No injection sink exists in the current code. Severity reflects missing-defense-in-depth, not an active bypass.
+
+**Finding 3** -- `review-src/handler.ts:6-8` -- **High** -- `[A04 Insecure Design]` confirmed. No `Content-Length` ceiling, no depth cap. V8's `JSON.parse` is non-recursive for depth, so stack overflow is unlikely, but memory exhaustion via a multi-GB body is trivial and blocks the event loop during parse. High stands; escalate to Critical if deployment lacks a reverse-proxy body-size limit. Assuming no upstream body-size cap (unverified), treat as Critical. Verify reverse-proxy/framework limits before acting.
+
+**Finding 4** -- `review-src/handler.ts:1`, `review-src/validate.ts:1` -- **Medium** -- `[A08 Software and Data Integrity Failures]` confirmed. The pre-parsed-object coercion path (`JSON.parse({})` -> parses `"[object Object]"` -> throws) actually chains into Finding 1 as another crash trigger, not silent corruption. Medium stands.
+
+### Threat Patterns
+
+Findings 1, 3, and 4 chain into a unified unauthenticated DoS surface with multiple trigger variants from a single attacker position: malformed JSON (F1), oversized payload (F3), and framework-pre-parsed body type confusion (F4) all terminate in the same unguarded `JSON.parse` call with no exception boundary. An attacker needs only one working variant; the defender must fix all three. Finding 2 is the systemic root: the codebase has a validation primitive but no enforcement wiring, indicating absent security-review discipline at the handler boundary. The true fix is architectural -- a validated, size-capped, typed request pipeline with a try/catch boundary -- not patching each sink individually. Adjacent unscanned surface: whatever consumes `handle()`'s `any` return value likely trusts its shape and is the next audit target.
+
+`★ Insight ─────────────────────────────────────`
+The attack chain analysis reveals a key security principle: "defense-in-depth requires that each layer actually be wired in." The `validate.ts` function is a textbook example of a security control that exists architecturally but fails to activate -- it provides false assurance that validation is present while contributing nothing at runtime. This pattern is common when validation is extracted to a utility module but the callsite integration is skipped or forgotten.
+`─────────────────────────────────────────────────`

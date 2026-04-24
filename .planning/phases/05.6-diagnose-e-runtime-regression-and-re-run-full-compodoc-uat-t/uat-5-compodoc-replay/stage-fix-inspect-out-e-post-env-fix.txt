@@ -1,0 +1,3 @@
+Plan written to `plans/add-cookie-auth.plan.md`.
+
+It covers 10 steps: verify stack/topology, provision Redis + env vars, install deps, wire session middleware with hardened cookie options, implement `/login` + `/logout` + `/me` routes, conditional CSRF protection, rate-limit on `/login`, and integration tests. The advisor flagged one critical decision to resolve before implementation: whether the frontend and API share the same origin (same-site `Lax`) or are cross-site (`None; Secure` + CSRF defense). Confirm that before passing to `/lz-advisor.execute`.

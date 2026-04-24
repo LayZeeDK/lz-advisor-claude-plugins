@@ -1,0 +1,7 @@
+Plan written to `plans/add-api-cookie-auth.plan.md`.
+
+`★ Insight ─────────────────────────────────────`
+Step 6's `session.regenerate()` call on login is the most commonly skipped security detail: without it, an attacker who plants a known session ID before login (session fixation) gains an authenticated session after the victim logs in. Express does not regenerate automatically -- you must call it explicitly in the login handler.
+`─────────────────────────────────────────────────`
+
+It covers 9 steps: verify stack assumptions, install deps, configure session middleware, wire the env secret, add user lookup, implement the three auth routes (`/login`, `/logout`, `/me`), add the `requireAuth` guard middleware, handle CSRF for cross-site setups, and add a Zod schema for the login body. The three `Assuming X (unverified)` frames in the Strategic Direction are the first thing to resolve before executing -- framework, same-site status, and database all gate later steps. Pass it to `/lz-advisor.execute` when the assumptions are confirmed.

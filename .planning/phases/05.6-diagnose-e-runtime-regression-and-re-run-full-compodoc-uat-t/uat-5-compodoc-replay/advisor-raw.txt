@@ -1,0 +1,7 @@
+1. Re-confirm the existing plan as-is; do not produce a speculative auth plan against a repo with no API source.
+2. Assuming the user intends a different target repo (unverified), do respond with a single blocking question asking for the absolute path to the API codebase and the framework in use. Verify the target repo before acting.
+3. Update `plans/add-cookie-auth.plan.md` only to append a dated "Re-invocation" note recording this second ask and the same blocker -- no new recommendations.
+4. Do not inline framework-specific guidance (Express, Fastify, ASP.NET, etc.) until the target is confirmed; thin-context auth advice is a correctness and security hazard.
+5. Hold execution until the user supplies the path; then re-run `/lz-advisor.plan` scoped to that directory.
+
+**Critical:** Emitting cookie-auth code without knowing transport (HTTPS), session store, CSRF posture, and SameSite context risks shipping an insecure default. The blocker is load-bearing -- do not bypass it.

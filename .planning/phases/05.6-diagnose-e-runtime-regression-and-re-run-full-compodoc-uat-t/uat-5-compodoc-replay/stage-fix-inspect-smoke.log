@@ -1,0 +1,89 @@
+[OK] Finding D: advisor did NOT emit Critical for innocuous task (Position B calibration landed)
+[ERROR] Finding E: no literal-frame Assuming X (unverified), do Y. Verify X before acting. in advisor response
+[OK] Word-budget: advisor Strategic Direction 66 words (<=100)
+[OK] Finding F: reviewer response has both ### Findings and ### Cross-Cutting Patterns slots
+[OK] Findings G+H: security-reviewer response has both ### Findings and ### Threat Patterns slots
+[ERROR] Finding I: only 0 Assuming-framed item(s) (need >=2 for thin-context calibration)
+--- D trace tail ---
+Plan written to `plans/node-ci-github-actions.plan.md`.
+
+It covers 6 steps: initialize package.json, install dev deps (vitest + eslint), create ESLint flat config, pin Node 20 in `.nvmrc`, add minimal src/test files, and write the `.github/workflows/ci.yml` workflow.
+
+`★ Insight ─────────────────────────────────────`
+- The workflow triggers on both `push` and `pull_request` -- this matters because PRs from forks don't trigger `push` events on the upstream repo, so omitting `pull_request` would leave fork-based PRs unchecked.
+- Separating `npm run lint` and `npm test` as distinct `run` steps (rather than one combined script) gives GitHub Actions separate pass/fail annotations and makes it immediately obvious in the UI whether it was a lint failure or a test failure.
+- Step 5 (trivial src/test files) is a real prerequisite -- Vitest exits non-zero when it finds no test files, which would permanently fail CI until real tests are added.
+`─────────────────────────────────────────────────`
+
+When you're ready to implement, pass this plan to `/lz-advisor-execute` and it will scaffold all the files.
+--- E trace tail ---
+Plan written to `plans/add-api-auth.plan.md`.
+
+It covers 7 steps: verify the three unverified assumptions (Fastify, HTTPS same-site, Redis), install auth deps, configure cookie/session plugins, wire the deny-by-default `preHandler`, add `/login` + `/logout` + `/me` routes with argon2 password hashing, lock down env config for `SESSION_SECRET`, and write Vitest integration tests for the cookie round-trip and CSRF rejection cases.
+
+When ready to implement, pass this plan to `/lz-advisor-execute`.
+--- F trace tail ---
+## Review Summary
+
+Reviewed: `review-src/handler.ts` and `review-src/validate.ts` -- commit 78b348b "add unvalidated handler with JSON.parse"
+
+### Findings
+
+**Finding 1 -- Unguarded `JSON.parse`**
+- File: `review-src/handler.ts:7`
+- Severity: Critical (confirmed)
+- Validation: Confirmed. `JSON.parse` throws `SyntaxError` synchronously on malformed input, and nothing in `handle()` or `process()` catches it. Root cause: the handler treats the input as trusted. In any HTTP handler exposed to clients, this is a trivial-to-trigger DoS vector and can leak stack traces via unhandled rejection handlers. Fix is a try/catch returning a typed error result, or moving parsing behind a validator. Assuming this is wired into an Express-style framework (unverified), do wrap the call in try/catch and return a 400. Verify the caller shape before acting.
+
+**Finding 2 -- `validate` never called**
+- File: `review-src/validate.ts:1`, `review-src/handler.ts` (no import)
+- Severity: Important (confirmed; arguably Critical given commit intent)
+- Validation: Confirmed. The commit message "add unvalidated handler" signals the gap is intentional-for-now, but shipping a handler with an unused validator is a latent risk: the next developer sees `validate` exported and assumes coverage exists. Either wire it in (`if (!validate(req.body)) return null;` before `process`) or delete the file until it is integrated. Dead exports decay into false assurance.
+
+**Finding 3 -- `JSON.parse` on pre-parsed body**
+- File: `review-src/handler.ts:7`
+- Severity: Important (confirmed)
+- Validation: Confirmed. Express's `express.json()`, Fastify, Koa body-parsers, and AWS Lambda proxy events all deliver `req.body` as an already-parsed object (Lambda is the exception where body is a string). `JSON.parse({})` coerces to `"[object Object]"` and throws. This compounds Finding 1: the handler throws on both malformed strings AND on the normal success path in most frameworks. Decide the contract: string-in (document it, type it `string`) or object-in (drop `JSON.parse` entirely).
+
+**Finding 4 -- Loose `!= null`**
+- Severity: Suggestion (confirmed, low priority)
+- Validation: Confirmed but intentionally idiomatic. `x != null` is the canonical both-null-and-undefined check and is explicitly allowed by `eqeqeq: ["error", "always", {"null": "ignore"}]`. Not worth word budget.
+
+### Cross-Cutting Patterns
+
+Findings 1, 2, and 3 share a single root cause: **the input-trust boundary is undefined**. The handler does not establish what `req.body` is (string vs. object), does not validate it against a schema, and does not guard the parse step -- yet a validator was added in the same commit and left disconnected. This is the classic "validation exists on paper, not in the call graph" anti-pattern, and it is reinforced by the commit message treating "unvalidated" as a feature rather than a TODO. The fix is structural, not local: define the body contract (typed `unknown` narrowed by a schema validator like Zod or a hand-rolled guard), route all input through it, and make `process` operate only on validated data. Patching Finding 1 with a try/catch without addressing Findings 2-3 would leave the handler silently accepting `[object Object]` failures as "bad input" and hide the framework mismatch. Finding 4 is independent and stylistic.
+--- G+H trace tail ---
+## Security Review Summary
+
+Reviewed: commit `78b348b` -- `review-src/handler.ts` and `review-src/validate.ts` (2 files added)
+
+### Findings
+
+1. **File: `review-src/handler.ts:7`**
+   - Severity: High (revised down from Critical)
+   - `[A05 Security Misconfiguration]` (consider `[A04 Insecure Design]` as secondary)
+   - Unhandled `JSON.parse` on attacker-controlled body is trivially exploitable: any malformed payload triggers a synchronous `SyntaxError`. In modern Express 4+/5 the error bubbles to the default error middleware (500 response) rather than crashing the process; in a raw `http.createServer` handler without try/catch, it propagates to `uncaughtException` and can terminate the worker. Critical only if the latter deployment is confirmed. Assuming deployment behind Express with default error middleware (unverified), do wrap in try/catch and return 400. Verify the server framework before acting.
+
+2. **File: `review-src/handler.ts:1-4`, `review-src/validate.ts:1`**
+   - Severity: High (confirmed)
+   - `[A04 Insecure Design]` (revised from A03 -- this is a missing-control design gap, not injection itself)
+   - Dead-code validation is the root enabler. The exported-but-unused `validate` is the classic "security theatre" smell and the proximate cause of findings 1 and 3 reaching `JSON.parse` unguarded.
+
+3. **File: `review-src/handler.ts:7`**
+   - Severity: High (confirmed)
+   - `[A08 Software and Data Integrity Failures]`
+   - `JSON.parse` itself assigns `__proto__` as an own property (not a pollution vector in isolation), but the returned graph is handed to unknown downstream consumers. Exploitability depends entirely on whether any caller does `Object.assign({}, parsed)`, lodash `merge`, or recursive copy. Without downstream visibility, treat as High latent risk. Assuming at least one downstream consumer performs a recursive merge (unverified), do add a `__proto__`/`constructor`/`prototype` key reviver. Verify downstream usage.
+
+4. **File: `review-src/validate.ts:1`**
+   - Severity: Medium (confirmed)
+   - `[A04 Insecure Design]` (revised from A03)
+   - `x != null` is structurally meaningless. Even if wired up it would not gate any of findings 1-3. Low direct exploitability, but high misleading-signal value during code review.
+
+### Threat Patterns
+
+Findings 2, 1, and 3 form a single attack chain rooted in one defect -- the validator is never invoked. Finding 2 is the enabling condition: because `validate()` is dead code, the handler's sole gate is `if (req.body)`, which admits both malformed JSON (triggering finding 1's DoS/500 path) and malicious object graphs with `__proto__` keys (finding 3's latent prototype-pollution payload). Finding 4 compounds the chain by making the gap invisible during review -- a reviewer scanning for "is there a validate function?" sees one and moves on, never noticing it is unreferenced and semantically empty. The systemic root is **validation-as-artifact rather than validation-as-control**: a function exists, is exported, looks plausible, and does nothing. Fix order: wire `validate` into `handle` (closes the chain entry point), then replace its body with schema validation (zod/ajv), then add try/catch and a `__proto__` reviver around `JSON.parse`.
+
+---
+
+`★ Insight ─────────────────────────────────────`
+The advisor's most precise call here is the OWASP reclassification: the dead `validate` export is A04 (Insecure Design), not A03 (Injection). The distinction matters because A03 is fixed by sanitization, but A04 requires architectural change -- the control never existed, so you can't just harden it, you have to wire it in first. The "security theatre" pattern (a validator that exists, is exported, looks right, and does nothing) is one of the harder classes to catch in review because the eye naturally resolves it as "present."
+`─────────────────────────────────────────────────`

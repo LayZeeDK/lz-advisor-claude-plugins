@@ -1,0 +1,95 @@
+[OK] Finding D: advisor did NOT emit Critical for innocuous task (Position B calibration landed)
+[ERROR] Finding E: no literal-frame Assuming X (unverified), do Y. Verify X before acting. in advisor response
+[OK] Word-budget: advisor Strategic Direction 92 words (<=100)
+[OK] Finding F: reviewer response has both ### Findings and ### Cross-Cutting Patterns slots
+[OK] Findings G+H: security-reviewer response has both ### Findings and ### Threat Patterns slots
+[ERROR] Finding I: only 0 Assuming-framed item(s) (need >=2 for thin-context calibration)
+--- D trace tail ---
+`★ Insight ─────────────────────────────────────`
+- `npm ci` (not `npm install`) is always preferred in CI: it installs exactly what's in `package-lock.json`, fails if the lockfile is out of sync, and never writes back to disk -- making builds reproducible and fast.
+- The `strategy.matrix` over Node 20 and 22 catches version-specific API differences cheaply. Node 20 is the current LTS; Node 22 is the next LTS. Running both gives you early warning before your next upgrade.
+- `actions/setup-node@v4` with `cache: npm` handles the `~/.npm` cache automatically -- you don't need a separate `actions/cache` step.
+`─────────────────────────────────────────────────`
+
+Two files created:
+
+**`.github/workflows/ci.yml`** -- the workflow triggers on every push and PR, runs on `ubuntu-latest`, and tests against Node 20 and 22 in a matrix. Steps: checkout, setup-node (with npm cache), `npm ci`, lint, test.
+
+**`package.json`** -- minimal scaffold using Node's built-in `node --test` runner (no extra dependency) and ESLint 9 for linting.
+
+A few things you'll want to add before the first push:
+- `eslint.config.js` -- ESLint 9 uses flat config by default; without it `npm run lint` will warn/fail.
+- `package-lock.json` -- run `npm install` once locally to generate the lockfile, since `npm ci` requires it.
+- An `index.js` or test files under a `test/` directory for `node --test` to discover.
+--- E trace tail ---
+Plan written to `plans/add-api-auth.plan.md`.
+
+It covers 10 steps: verify frontend origin (the one unresolved assumption blocking step 5), install Fastify + auth plugins, bootstrap the app factory, configure session cookie attributes, conditionally mount CSRF protection, add login/logout/me routes, add tests, and wire up ESLint 9 flat config. The Redis-backed session store and session fixation protection (regenerate on login) are both accounted for.
+
+**One thing to resolve before executing:** confirm whether the frontend is same-origin or cross-origin relative to the API. That answer flips `SameSite=Lax` to `SameSite=None` and determines whether `@fastify/csrf-protection` is needed.
+--- F trace tail ---
+`★ Insight ─────────────────────────────────────`
+The reviewer's cross-cutting diagnosis is the sharpest takeaway: each finding is individually manageable, but they compound into a *trust-boundary absence* -- untyped input flows end-to-end with no containment. In HTTP handlers, the fix is structural (type the boundary, gate early, contain parse errors) not line-local.
+`─────────────────────────────────────────────────`
+
+---
+
+## Review Summary
+
+Reviewed: commit `caf91be` -- `review-src/handler.ts` and `review-src/validate.ts` (both new files)
+
+### Findings
+
+**Finding 1 -- `JSON.parse` without error handling (`review-src/handler.ts:6-8`)** -- Confirmed. Severity: Critical. Any caller passing malformed JSON (empty string cannot reach here due to Finding 2's truthiness guard, but truncated payloads, binary data, HTML error bodies from upstream proxies, or double-encoded strings all will) triggers an unhandled `SyntaxError`. Root cause: trust boundary violation -- `process()` treats request-sourced input as well-formed without a parse-guard. In an HTTP handler context this typically crashes the request and, depending on framework, can propagate to the process (Express middleware without `next(err)` wiring, or Node HTTP servers without domain-level handlers). Wrap in try/catch and return a typed parse-failure result.
+
+**Finding 2 -- Falsy-body truthiness check (`review-src/handler.ts:2`)** -- Confirmed. Severity: Important. Practically, `req.body` for a JSON endpoint is usually a string or parsed object, so `0`/`false`/`NaN` are unlikely, but empty string `""` is a realistic pre-middleware state that would silently return `null` rather than surfacing a parse error the caller could act on. Use `req.body != null`.
+
+**Finding 3 -- `validate` is dead code (`review-src/handler.ts`, `review-src/validate.ts:1`)** -- Confirmed. Severity: Important. Verified via Glob: only two files exist in `review-src/`, and `handler.ts` contains no `import` statement at all. The commit message "add unvalidated handler" suggests intent, but shipping an exported `validate` that no call site uses creates a maintenance trap -- future readers assume validation occurs. Either wire it in before `JSON.parse`, or remove the export.
+
+**Finding 4 -- Implicit `any` parameters (`review-src/handler.ts:1,6`, `review-src/validate.ts:1`)** -- Confirmed. Severity: raised to Important. Assuming `tsconfig.json` has `strict` / `noImplicitAny` enabled (unverified -- no tsconfig present in the repo snapshot), these files would fail compilation; if not enabled, the file silently forfeits type safety at the HTTP boundary where it matters most. Verify tsconfig `strict` setting before acting; if unset, enable `noImplicitAny` and type `req` as `{ body?: unknown }`, `data` as `string`, return as `unknown`.
+
+### Cross-Cutting Patterns
+
+Findings 1, 2, 3, and 4 share a single root cause: **the module has no defined trust boundary**. At the HTTP ingress, untyped input (`req`) flows through a loose truthiness gate (F2), bypasses the available validator (F3), and reaches `JSON.parse` without types (F4) or error containment (F1). Each individual weakness is modest; composed, they form a fragile pipeline where a single malformed request crashes the handler with no diagnostic context. The fix is structural rather than line-local: type `req.body` as `unknown`, call `validate()` (or a stricter schema check) as the first step, wrap `JSON.parse` in try/catch, and return a discriminated-union result so callers must handle the failure case. Addressing any one finding in isolation leaves the others exploitable.
+--- G+H trace tail ---
+## Security Review Summary
+
+Reviewed: `review-src/handler.ts` and `review-src/validate.ts` -- commit `caf91be` ("add unvalidated handler with JSON.parse")
+
+---
+
+### Findings
+
+1. **Prototype Pollution via JSON deserialization**
+   - File: `review-src/handler.ts:6-8`
+   - Severity: High (confirmed)
+   - `[A08 Software and Data Integrity Failures]`
+   - Raw `JSON.parse` on attacker input preserves `__proto__` / `constructor.prototype` keys when the parsed value is later merged or spread. Given the planned Fastify session/Redis auth layer, a polluted `Object.prototype.isAdmin = true` can bypass authorization predicates on all subsequent requests in the process. Exploitability trivial; blast radius process-wide. Mitigation: parse with a reviver that rejects `__proto__`/`constructor`, or use a schema validator (Ajv, Zod) that strips unknown keys.
+
+2. **Unvalidated deserialization enabling DoS**
+   - File: `review-src/handler.ts:1-3`
+   - Severity: High (confirmed)
+   - `[A04 Insecure Design]` (re-mapped from A03 -- no injection sink, the root cause is absent design control: no size limit, no schema, no depth cap)
+   - `req.body` flows directly to `JSON.parse` with only a truthiness gate. Attacker sends multi-MB payloads or deeply nested objects; Node's single-threaded event loop blocks parsing. Assuming no upstream body-size middleware (unverified), do add a body-size limit (Fastify `bodyLimit`) and schema validation. Verify the middleware stack before acting.
+
+3. **Unhandled `JSON.parse` SyntaxError**
+   - File: `review-src/handler.ts:6-8`
+   - Severity: Medium (downgraded from High)
+   - `[A09 Security Logging and Monitoring Failures]` (re-mapped from A05 -- the failure mode is uncaught exception propagation, not misconfiguration)
+   - Malformed JSON throws synchronously. In Fastify this surfaces as 500 with framework-default error serialization; risk is stack-trace disclosure and noisy logs, not crash (Fastify catches route handler throws). Downgraded because Fastify provides a safety net; still warrants an explicit `try/catch` returning 400.
+
+4. **Dead `validate()` creates false assurance**
+   - File: `review-src/validate.ts:1`
+   - Severity: Low (downgraded from Medium)
+   - `[A04 Insecure Design]` (confirmed)
+   - Exported but never imported. Even if wired, `x != null` is not a schema check. Code-review smell more than live vulnerability. Replace with Ajv/Zod schema and import it into `handle()`.
+
+### Threat Patterns
+
+Findings 1 and 2 form the primary attack chain and should be treated as a single exploitation path: the absent design controls in finding 2 (no size cap, no schema, direct body-to-parser flow) are precisely what enables finding 1 (prototype pollution payload reaches `JSON.parse` unfiltered). The planned Fastify session/Redis auth layer in `plans/add-api-auth.plan.md` amplifies this -- a polluted `Object.prototype` persists for the lifetime of the Node process, so one malicious request can flip authorization defaults for every subsequent authenticated request. Finding 4 compounds the chain by creating a false security signal: a future reviewer seeing `validate.ts` in the tree may assume input is gated when it is not. Fix order: (a) wire a real schema validator into `handle()` before the auth routes land, (b) delete or replace the stub `validate()`, (c) add `try/catch` for parse errors.
+
+---
+
+`★ Insight ─────────────────────────────────────`
+The reviewer re-mapped two OWASP categories: the DoS risk moved from A03 (Injection) to A04 (Insecure Design) because there is no code injection sink -- the danger is the absent design gate (no size cap, no schema). The unhandled exception moved from A05 to A09 because Fastify's framework error boundary changes the failure mode from crash to stack-trace leakage. OWASP category selection depends on the actual failure mode, not just the vulnerable pattern.
+`─────────────────────────────────────────────────`

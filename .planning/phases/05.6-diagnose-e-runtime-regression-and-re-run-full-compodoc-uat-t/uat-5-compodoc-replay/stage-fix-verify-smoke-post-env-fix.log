@@ -1,0 +1,55 @@
+[OK] Finding D: advisor did NOT emit Critical for innocuous task (Position B calibration landed)
+[ERROR] Finding E: no literal-frame Assuming X (unverified), do Y. Verify X before acting. in advisor response
+[OK] Word-budget: advisor Strategic Direction 81 words (<=100)
+[OK] Finding F: reviewer response has both ### Findings and ### Cross-Cutting Patterns slots
+[OK] Findings G+H: security-reviewer response has both ### Findings and ### Threat Patterns slots
+[ERROR] Finding I: only 0 Assuming-framed item(s) (need >=2 for thin-context calibration)
+--- D trace tail ---
+Plan written to `plans/github-actions-ci-nodejs.plan.md`.
+
+It covers 8 steps: init package.json, install deps, Vitest config, placeholder test, ESLint flat config, Prettier config, .gitignore, and the GitHub Actions workflow. One correction from the advisor: Node.js 22 replaces 20 as the Active LTS target. Pass the plan to `/lz-advisor.execute` when ready to implement.
+--- E trace tail ---
+Plan written to `plans/add-cookie-auth.plan.md`.
+
+It covers 14 steps: install deps (express, express-session, connect-redis, redis, bcrypt, zod, csrf-csrf, supertest), verify Redis availability, wire up the Express app with session middleware, build login/logout routes with bcrypt and session fixation protection, add `requireAuth` middleware, document env vars, update CI, and write supertest integration tests. One item to resolve before acting: confirm Redis is available in your local dev environment and CI (the advisor flagged it as unverified). Pass the plan to `/lz-advisor:lz-advisor-execute` when ready.
+--- F trace tail ---
+## Review Summary
+
+Reviewed: `review-src/handler.ts` and `review-src/validate.ts` (commit `22572af` -- "add unvalidated handler with JSON.parse")
+
+### Findings
+
+**Finding 1: `JSON.parse` without error handling** -- Confirmed, Critical.
+File: `review-src/handler.ts:7`. Any non-JSON input (empty string survives the `req.body` truthiness check only if falsy-coerced, but `"abc"`, truncated payloads, or `"[object Object]"` all throw `SyntaxError`). The error propagates synchronously out of `handle()`, and in a typical Node/Express pipeline this escapes the route handler as an uncaught exception unless the caller wraps it. Root cause: no error boundary at the parse site, and no documented contract that callers must wrap. Severity stands at Critical because malformed input is a user-controllable, normal-operation trigger -- not an edge case. Minimal fix: wrap in try/catch returning a typed result (`{ ok: false, error }`) rather than throwing, so callers cannot forget to handle it.
+
+**Finding 2: Validate module exported but never imported** -- Confirmed, Important. The commit message "add unvalidated handler" makes intent explicit, so this is a known gap rather than an oversight; still, shipping an unused validator alongside an unvalidated handler is actively misleading -- future maintainers will assume validation happens. Either wire `validate(req.body)` into `handle()` before `process()`, or delete `validate.ts`. Current `validate` (`x != null`) is also too weak to prevent Finding 1 or 3 on its own -- it accepts `""`, `0`, objects, arrays. Severity stands.
+
+**Finding 3: Implicit `any` + no runtime string guard** -- Confirmed, Important. Upgrade consideration: with Express `express.json()` upstream, `req.body` is an object in the happy path, so `JSON.parse(req.body)` fails on every valid request -- that pushes this toward Critical in that deployment. Assuming Express with `express.json()` middleware (unverified), do treat this as Critical and add `typeof data === 'string'` guard. Verify middleware config before acting. Root cause: missing type annotations defeat TypeScript's purpose.
+
+### Cross-Cutting Patterns
+
+All three findings share one root cause: **the handler has no input contract**. There is no type annotation on `req`, no runtime validation call, and no parse-error boundary -- three independent defenses are all absent, and the one defense that exists (`validate.ts`) is disconnected. This is defense-in-depth inverted: a single malformed or mistyped input reaches `JSON.parse` with nothing between it and the throw site.
+
+Compound risk: Findings 2 and 3 amplify Finding 1. Even if a caller adds try/catch around `handle()`, they will still see `SyntaxError` for legitimate pre-parsed object bodies (Finding 3), and the presence of `validate.ts` will mislead reviewers into thinking validation is wired up (Finding 2). Fix order: annotate types (3), wire validation at the boundary (2), then wrap parse in a Result type (1). Fixing only (1) leaves the contract ambiguity intact.
+--- G+H trace tail ---
+## Security Review Summary
+
+Reviewed: `review-src/handler.ts` and `review-src/validate.ts` -- commit `22572af` ("add unvalidated handler with JSON.parse")
+
+---
+
+### Findings
+
+1. `review-src/handler.ts:7` - **High** `[A05 Security Misconfiguration]` - Confirmed. Unhandled `SyntaxError` from `JSON.parse` on any malformed body trivially crashes the worker. Unauthenticated, one-shot DoS with no preconditions. A05 fits (missing error handling is a misconfiguration); A04 Insecure Design is an acceptable alternative mapping since the absence of a try/catch is a design gap, not a config toggle.
+
+2. `review-src/handler.ts:7` - **High** `[A08 Software and Data Integrity Failures]` - Confirmed. `JSON.parse` preserves `__proto__` as an own property; exploitation requires a downstream sink (merge, assign, spread). Since `handle` returns the parsed object to an unknown caller, assume a sink exists. Audit all call sites of `handle()` and replace `JSON.parse` with a reviver that strips `__proto__`/`constructor`/`prototype` keys. Verify the downstream sink before acting.
+
+3. `review-src/handler.ts:2` - **Medium** `[A04 Insecure Design]` - Confirmed. Memory-exhaustion risk is real but typically bounded by upstream body-parser limits (Express default 100KB). Severity holds at Medium absent confirmation that no upstream limit exists.
+
+4. `review-src/validate.ts:1` - **High** (escalated from Medium) `[A04 Insecure Design]` - Confirmed, remapped. The root issue is not injection but a dead validator creating false assurance; `handle` never imports it. Escalated because this is the control that should have prevented findings 1, 2, and 5 -- its absence is the proximate cause of exploitability.
+
+5. `review-src/handler.ts:6-7` - **Low** (downgraded from Medium) `[A03 Injection]` - Confirmed as a correctness bug; security impact collapses into Finding 1 (the SyntaxError path). Not independently exploitable beyond DoS already covered.
+
+### Threat Patterns
+
+Findings 1, 2, 3, and 5 share a single root cause: `req.body` flows into `JSON.parse` with zero interposed checks. Finding 4 is the missing control that would have neutralized all four -- a real schema validator (zod, ajv) called before `process()` would reject malformed JSON (kills 1), strip `__proto__` (kills 2), enforce size bounds (kills 3), and assert string type (kills 5). This is a classic "validator exists but is unwired" pattern: the presence of `validate.ts` in the commit suggests the author intended defence-in-depth but shipped only the scaffolding. Attack chain: unauthenticated client sends `{"__proto__":{"isAdmin":true}}` -- `JSON.parse` accepts it -- returned object reaches any downstream merge sink -- process-wide prototype pollution affects all subsequent requests. Recommend wiring `validate` (replaced with a real schema) into `handle` as the single remediation point.

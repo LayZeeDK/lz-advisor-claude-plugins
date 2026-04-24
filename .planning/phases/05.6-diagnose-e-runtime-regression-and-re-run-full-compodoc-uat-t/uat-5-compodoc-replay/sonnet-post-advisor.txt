@@ -1,0 +1,28 @@
+=== Line 33 (first assistant message after advisor tool_result) ===
+--- Strategic Direction ---
+
+1. Re-confirm the existing plan as-is; do not produce a speculative auth plan against a repo with no API source.
+2. Assuming the user intends a different target repo (unverified), do respond with a single blocking question asking for the absolute path to the API codebase and the framework in use. Verify the target repo before acting.
+3. Update `plans/add-cookie-auth.plan.md` only to append a dated "Re-invocation" note recording this second ask and the same blocker -- no new recommendations.
+4. Do not inline framework-specific guidance (Express, Fastify, ASP.NET, etc.) until the target is confirmed; thin-context auth advice is a correctness and security hazard.
+5. Hold execution until the user supplies the path; then re-run `/lz-advisor.plan` scoped to that directory.
+
+**Critical:** Emitting cookie-auth code without knowing transport (HTTPS), session store, CSRF posture, and SameSite context risks shipping an insecure default. The blocker is load-bearing -- do not bypass it.
+
+--- End Strategic Direction ---
+
+=== Line 39 (final assistant message) ===
+Plan updated at `plans/add-cookie-auth.plan.md`.
+
+The edit succeeded (the file was already read earlier this session). The hook fired after the fact -- no action needed.
+
+---
+
+No API source exists in this repo (`lz-advisor-claude-plugins` contains only plugin artifacts). The blocker from the previous invocation stands.
+
+To unblock, please supply:
+
+1. **Path or repo** that hosts the API (e.g., `D:\projects\myapp\api`)
+2. **Framework** in use (e.g., Express, FastAPI, ASP.NET, Gin)
+
+Once those are confirmed, re-run `/lz-advisor:lz-advisor-plan Add auth to this API. The frontend uses cookies.` from the correct working directory and the skill will orient against real source files.
