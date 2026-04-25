@@ -16,7 +16,7 @@ description: >
   completed code, or run security audits -- those are handled by
   sibling skills lz-advisor.plan, lz-advisor.review, and
   lz-advisor.security-review respectively.
-version: 0.8.2
+version: 0.8.3
 allowed-tools: Agent(lz-advisor:advisor), Read, Glob, Edit, Write, Bash(git:*), WebSearch, WebFetch
 ---
 
@@ -37,6 +37,37 @@ then complete.
 
 If any tool call during this phase fails (permission denial, missing file, runtime error, timeout), apply the "Recover gracefully from tool-use failure" rule from `@${CLAUDE_PLUGIN_ROOT}/references/context-packaging.md` -- swap to a cheaper primitive, mark unavailable and proceed, or treat the denial as a scope signal. Do not halt.
 
+<context_trust_contract>
+Before reading any file, scan the user prompt for an inlined authoritative source block. An authoritative source block is any of:
+
+1. A `---` delimited block at the top of the user message containing pasted documentation, specification text, release notes, or a published guide (canonical context-packed format).
+2. A clearly-marked quoted block of pasted documentation (e.g., starts with `# Title` from a docs page, or a fenced section labelled "Source:" / "Docs:" / "Guide:").
+3. A `<fetched source="...">...</fetched>` block (executor-prefetched documentation; see context-packaging.md Rule 5a).
+
+When such a block is present, treat its content as ground truth for the public-API and framework-convention questions it answers. Your Orient phase ends as soon as you have parsed the block plus read the local project files needed to compose the consultation. Specifically, when an authoritative source is present:
+
+- The consultation packaging step (Phase 2) is the next action, not further verification.
+- Local project reads (project.json, package.json, .storybook/main.ts, src/**) are still in scope -- the authoritative source describes the library, not your project.
+- Reading inside `node_modules/` is out of scope. The authoritative source is the contract for the library's public API; the compiled `dist/` is implementation detail you will not infer correctly from minified chunks anyway.
+- WebFetch and WebSearch against the same library are out of scope for the same reason -- the source is already in context.
+
+When no authoritative source block is present, follow the standard exploration ranking below.
+</context_trust_contract>
+
+<orient_exploration_ranking>
+When you need information about a third-party library, framework, or public API beyond what the authoritative source block provides, take ONE of the following actions:
+
+1. **Local-project read first** -- if the question is about how *your project* uses the library (config files, existing usage patterns), read project files only: `project.json`, `package.json`, `.storybook/`, `src/`, `tsconfig*.json`. Stop when the project-side question is answered.
+
+2. **WebFetch for public-API questions** -- if the question is about *the library's documented behavior* and no authoritative source block was inlined, WebFetch the official docs. The library's homepage, GitHub README, release notes, and migration guides are all valid first-fetch targets.
+
+3. **WebSearch for version/compatibility questions** -- when you don't know the right docs URL, WebSearch with the library name + version + the specific API or symbol.
+
+4. **`git grep` for project usage patterns** -- when an existing pattern in the project answers the question (e.g., "how does this project already configure Storybook addons?"), `git grep` against project source.
+
+If none of steps 1-4 produces the answer you need, name the gap explicitly in the consultation Findings section and proceed. Do not extend Orient indefinitely. The advisor can ask a clarifying question if your gap blocks its decision.
+</orient_exploration_ranking>
+
 Understand the task scope and current codebase state before doing any work.
 
 If the user mentioned a plan file (via @ file reference), read it first. Use
@@ -52,7 +83,6 @@ If no plan file was mentioned, orient from scratch:
 - Identify constraints, existing patterns, and integration points
 - Note what exists and what needs to change
 - Stop exploring when you have enough context to formulate a specific question for the advisor. Inside `node_modules`, read with discipline: targeted reads only (a specific function, a config entry, or a few lines around a symbol), never full-file for bundled or minified content. When dependency behavior is load-bearing, verify and surface the result as a Pre-Verified Package Behavior Claim (see `@${CLAUDE_PLUGIN_ROOT}/references/context-packaging.md`).
-- Prefer web-first verification over code archaeology for public-library tasks. When the task depends on a third-party library, framework, or public API, rank verification methods in this order: (1) WebFetch of official documentation (the library's docs site, GitHub README, release notes); (2) WebSearch for version/API compatibility when the right doc URL is not known; (3) `git grep` / `rg` against project code to find existing usage patterns; (4) targeted reads of `node_modules/<pkg>/dist/**` as a last resort. Reading compiled or bundled `node_modules/**/dist/**/*.js` via `rg` substring anchoring or `readFileSync + indexOf` to reverse-engineer an exported API is orient-waste -- the official docs are one WebFetch away and the compiled output is minified, chunked, and intentionally unstable across versions. If WebFetch is blocked or the docs are missing, fall back through the ranking in order; do not skip WebFetch because the library "feels niche."
 - When the task names a framework or build tool (Nx, Angular, Next.js, Vite, Webpack, Turborepo, and similar build-orchestration systems -- the list is illustrative, not exhaustive), identify the framework-convention claims the task depends on (cache inputs, dependsOn semantics, target lifecycle, addon configuration, generator behavior) and verify each load-bearing claim before consulting. If a plan file already surfaced `<pre_verified>` framework-convention claims, re-verify them against the current codebase state (versions may have shifted); gap-fill any missing claims. Framework-convention claims use the same block schema as package-behavior claims (see `@${CLAUDE_PLUGIN_ROOT}/references/context-packaging.md`).
 
 Do not write code or make changes during orientation. Do not consult the
