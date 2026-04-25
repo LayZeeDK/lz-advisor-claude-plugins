@@ -81,7 +81,7 @@ Recent decisions affecting current work:
 
 ### Pending Todos
 
-None yet.
+- [research-rtk-command-suitability-for-skills-and-agents](./todos/pending/research-rtk-command-suitability-for-skills-and-agents.md) -- analyze whether `rtk git diff` / `rtk gh pr diff` are appropriate for review + security-review skills/agents (token savings vs. detail-loss trade-off). Captured 2026-04-26 during Phase 05.6 Test 2 review.
 
 ### Blockers/Concerns
 
