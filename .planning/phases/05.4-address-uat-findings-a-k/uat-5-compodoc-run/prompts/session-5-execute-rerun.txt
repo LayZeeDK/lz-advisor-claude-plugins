@@ -1,0 +1,1 @@
+/lz-advisor.execute Implement the plan in plans/fix-compodoc-static-import.plan.md. Commit each completed step atomically.
