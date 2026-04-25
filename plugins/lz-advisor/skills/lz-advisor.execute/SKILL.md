@@ -16,7 +16,7 @@ description: >
   completed code, or run security audits -- those are handled by
   sibling skills lz-advisor.plan, lz-advisor.review, and
   lz-advisor.security-review respectively.
-version: 0.8.3
+version: 0.8.4
 allowed-tools: Agent(lz-advisor:advisor), Read, Glob, Edit, Write, Bash(git:*), WebSearch, WebFetch
 ---
 
@@ -82,7 +82,7 @@ If no plan file was mentioned, orient from scratch:
 - Examine directory structure and dependencies
 - Identify constraints, existing patterns, and integration points
 - Note what exists and what needs to change
-- Stop exploring when you have enough context to formulate a specific question for the advisor. Inside `node_modules`, read with discipline: targeted reads only (a specific function, a config entry, or a few lines around a symbol), never full-file for bundled or minified content. When dependency behavior is load-bearing, verify and surface the result as a Pre-Verified Package Behavior Claim (see `@${CLAUDE_PLUGIN_ROOT}/references/context-packaging.md`).
+- Stop exploring when you have enough context to formulate a specific question for the advisor.
 - When the task names a framework or build tool (Nx, Angular, Next.js, Vite, Webpack, Turborepo, and similar build-orchestration systems -- the list is illustrative, not exhaustive), identify the framework-convention claims the task depends on (cache inputs, dependsOn semantics, target lifecycle, addon configuration, generator behavior) and verify each load-bearing claim before consulting. If a plan file already surfaced `<pre_verified>` framework-convention claims, re-verify them against the current codebase state (versions may have shifted); gap-fill any missing claims. Framework-convention claims use the same block schema as package-behavior claims (see `@${CLAUDE_PLUGIN_ROOT}/references/context-packaging.md`).
 
 Do not write code or make changes during orientation. Do not consult the
