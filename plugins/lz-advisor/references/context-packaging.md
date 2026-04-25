@@ -55,6 +55,12 @@ Every advisor consultation follows these rules:
 
    d. **Never halt on failure.** Do not wait for user intervention unless the missing information blocks every possible path forward. In non-interactive automation (`claude -p`), halting is a permanent hang.
 
+7. **Include prior Strategic Direction in subsequent advisor consultations.** Each advisor (or reviewer / security-reviewer) Agent invocation is stateless: the agent has no access to the conversation history or to prior consultations within the same skill invocation. When a skill makes more than one consultation in a single run (lz-advisor.execute Phase 5 final-review after Phase 2 pre-execute, or any mid-execute reconciliation call per Phase 3), the executor MUST include the prior consultation's Strategic Direction text -- verbatim, between literal `--- Prior Strategic Direction (consultation N) ---` / `--- End Prior Strategic Direction ---` markers -- inside the new prompt's `## Source Material` section (Proposal template) or as a dedicated `## Prior Advisor Guidance` block (Verification template). Include only the agent-emitted Strategic Direction (numbered items plus any `**Critical:**` block), not the full prior prompt or the executor's own commentary.
+
+   Why: Without prior context, two consecutive advisor calls can issue contradictory recommendations on the same question (observed empirically in 05.6-UAT.md Test 2: Advisor #1 said "do not use setCompodocJson; removed in Storybook 10"; Advisor #2 -- with no awareness of Advisor #1 -- recommended "use setCompodocJson from @storybook/addon-docs/angular"; reconciliation cost one extra advisor call). Including the prior Strategic Direction lets the new advisor see what was previously decided and either reaffirm, refine, or explicitly contradict with rationale -- preventing silent drift. Cost is zero added executor tokens beyond the prior SD text itself, which is short by design (the Output Constraint caps Strategic Direction at 100 words).
+
+   This rule applies WITHIN one skill invocation only. Across separate user-driven skill invocations the executor starts fresh and does not carry prior SD forward; the user can paste prior SD manually if continuity is desired.
+
 ### Source Material vs Your Own Findings
 
 Distinguish between source material and your own findings when packaging:
