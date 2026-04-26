@@ -118,7 +118,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5
 **Goal:** Diagnose and close the Finding E semantic regression in the advisor literal-frame contract for thin-context plan tasks; re-run the full 6-session Compodoc UAT against the fixed plugin to close Phase 5.5 Plan 06's D-11 gates. Gap 1 (plan-skill Orient phase uses node_modules archaeology instead of WebFetch/WebSearch for public-library tasks, surfaced via 05.6-UAT.md rerun under plugin 0.8.1) closed via Plan 05 with tool-preference prose edits + SemVer patch 0.8.1 -> 0.8.2. Gap 2 (regression of Plan 05 fix under sonnet/medium even with authoritative docs inlined) closed via Plan 06 with <context_trust_contract> + <orient_exploration_ranking> XML blocks across all 4 SKILLs + Pattern C in Rule 5 + SemVer patch 0.8.2 -> 0.8.3.
 **Requirements**: ADVR-02 (umbrella advisor-calibration requirement)
 **Depends on:** Phase 5
-**Plans:** 7 plans (6 complete, 1 pending Plan 07 gap-closure)
+**Plans:** 7/7 plans complete
 
 Plans:
 - [x] 05.6-01-PLAN.md -- Forward-capture diagnostic for Finding E regression (completed 2026-04-24)
@@ -127,7 +127,7 @@ Plans:
 - [x] 05.6-04-PLAN.md -- Stage 0 DEF fix-validation + Stage 2 6-session UAT replay + VERIFICATION.md with D-11 gates (completed 2026-04-24)
 - [x] 05.6-05-PLAN.md -- Orient-phase tool-preference ranking: WebFetch over node_modules archaeology (plan + execute skills + context-packaging Rule 5 amendment) + SemVer patch 0.8.1 -> 0.8.2 (closes Gap 1 from 05.6-UAT.md)
 - [x] 05.6-06-PLAN.md -- Context Trust Contract + Orient Exploration Ranking (Pattern A + B XML blocks) replacing Plan 05's failed soft-preference bullet across all 4 SKILL.md + Pattern C in context-packaging.md Rule 5 + SemVer patch 0.8.2 -> 0.8.3 (closes Gap 2 from 05.6-UAT.md)
-- [ ] 05.6-07-PLAN.md -- SKILL.md de-conflict (remove permissive Inside-node_modules clause from plan + execute SKILL.md L74/L85 leaving only the unconditional prohibition; brings plan + execute to byte-identical prohibition-only parity with review + security-review) + context-packaging.md Rule 7 (prior Strategic Direction inclusion in subsequent advisor consultations) + SemVer patch 0.8.3 -> 0.8.4 (closes Gap 3 from 05.6-UAT.md)
+- [x] 05.6-07-PLAN.md -- SKILL.md de-conflict (remove permissive Inside-node_modules clause from plan + execute SKILL.md L74/L85 leaving only the unconditional prohibition; brings plan + execute to byte-identical prohibition-only parity with review + security-review) + context-packaging.md Rule 7 (prior Strategic Direction inclusion in subsequent advisor consultations) + SemVer patch 0.8.3 -> 0.8.4 (closes Gap 3 from 05.6-UAT.md)
 
 ### Phase 05.5: Resolve issues found in Phase 5.4 UAT Test #5 pipeline and ensure plan skill uses WebSearch and WebFetch to research and verify information not in pre-trained knowledge before asking the plan advisor agent, including Nx knowledge gap. Include minor and follow-up issues: plan-skill Nx-convention verification gap, security-reviewer output-shape smoke test, advisor word-budget discipline audit, verbose-prompt detection nudge. (INSERTED)
 
