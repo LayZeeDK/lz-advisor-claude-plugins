@@ -1,0 +1,23 @@
+/lz-advisor.plan Plan fixes for the review findings below. Address Finding 1 as the primary goal (cross-cutting remediation per the structural pattern); include Finding 4 verification; treat Findings 2, 3, and the workspace-path observation as optional hygiene.
+---
+Review Summary
+
+Reviewed: 5 commits on uat/phase-5.6-rerun vs main -- Compodoc + Storybook integration across .storybook/preview.ts, .storybook/tsconfig.json, project.json, package.json, and .gitignore.
+
+Findings
+
+Finding 1: Static import of gitignored generated file -- CONFIRMED, severity upgrade to Critical-adjacent Important.
+
+File: packages/ngx-smart-components/.storybook/preview.ts:1. Severity: Important (confirmed). The static import documentation from '../documentation.json' resolves at TypeScript compile time, not runtime. On fresh clone the file is absent, so IDE language service, nx lint, and any tsc --noEmit against the .storybook/tsconfig.json will emit TS2307. The Storybook executor regenerates the file pre-launch, masking the issue during nx storybook, but CI steps that lint or typecheck before storybook runs will fail. Mitigation: dynamic await import() inside a guard, or commit a stub documentation.json containing {}, or run compodoc as a dependsOn target that produces a tracked output. Assuming CI runs nx affected -t lint before build-storybook (unverified), do verify lint passes on a clean checkout. Verify CI ordering before acting.
+
+Finding 2: compodoc output in package source root -- CONFIRMED, Suggestion stands. Routing output to .storybook/generated/documentation.json (and updating the import path plus gitignore entry) keeps generated artifacts colocated with the consumer and clarifies provenance. Minor; not behavior-affecting.
+
+Finding 3: unknown global typing -- CONFIRMED, Suggestion stands. unknown is the pragmatic choice given compodoc does not publish a stable JSON schema type. The recent commit a46be57 explicitly replaced as any, so this is already an intentional tradeoff. No action needed unless a maintained type emerges.
+
+Finding 4: missing trailing newline -- CONFIRMED, Suggestion (low priority). Pure hygiene; does not affect gitignore semantics. Worth fixing opportunistically only.
+
+Cross-Cutting Patterns
+
+Findings 1 and 2 share a root cause: the build pipeline treats documentation.json as a runtime executor artifact while preview.ts treats it as a compile-time module. This mismatch is the load-bearing issue -- Finding 1 is the failure mode, Finding 2 is the structural smell that makes the coupling fragile (output path is implicit, not declared as an Nx target output). A cleaner design would model compodoc generation as its own Nx target with explicit outputs, then declare dependsOn: ["compodoc"] on storybook and build-storybook. This would make the artifact tracked by Nx's input/output graph, enable caching, and let lint/typecheck steps depend on it explicitly rather than racing against executor side effects.
+
+One item not in your packaged findings worth flagging: compodocArgs uses workspace-relative paths (packages/ngx-smart-components/...) inside a project-scoped project.json. This works because the Storybook executor runs from workspace root, but it couples the project config to its current location -- moving the package would silently break compodoc. Not severe, but worth a comment in project.json if you keep the current structure.
