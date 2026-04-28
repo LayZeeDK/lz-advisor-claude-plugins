@@ -63,6 +63,8 @@ When you need information about a third-party library, framework, or public API 
 4. **`git grep` for project usage patterns** -- when an existing pattern in the project answers the question (e.g., "how does this project already configure Storybook addons?"), `git grep` against project source.
 
 If none of steps 1-4 produces the answer you need, name the gap explicitly in the consultation Findings section and proceed. Do not extend Orient indefinitely. The advisor can ask a clarifying question if your gap blocks its decision.
+
+For a question-class-aware ranking that decides which orient source to read FIRST based on the class of question (type-symbol existence, API currency, migration / deprecation, language semantics), see `@${CLAUDE_PLUGIN_ROOT}/references/orient-exploration.md`.
 </orient_exploration_ranking>
 
 Explore the codebase to understand the task scope and current state.
