@@ -62,6 +62,21 @@ First-try-success: 4/6 = 67% (S1, S3, S4, S6 single-shot; S2, S5 needed mid-exec
 
 The executor still searches node_modules `.d.ts` files via `rg -uu` for type-resolution questions. This is closer to the SPIRIT of the prohibition (the `.d.ts` IS the contract source, distinct from the "compiled `dist/` is implementation detail you will not infer correctly from minified chunks anyway" rationale) than to its LETTER (no node_modules access at all). If stricter LETTER-of-the-prohibition adherence is desired, a future patch could add a Pattern D to `<orient_exploration_ranking>` covering type-system questions specifically (prefer WebFetch of TypeScript-specific docs / library API reference docs first; only fall back to `rg -uu` against `.d.ts` after WebFetch fails).
 
+### WebSearch / WebFetch usage observation
+
+| Session | WebFetch tool calls | WebSearch tool calls |
+|---------|---------------------|----------------------|
+| S1 (plan) | 0 | 0 |
+| S2 (execute) | 0 | 0 |
+| S3 (review) | 0 | 0 |
+| S4 (plan) | 0 | 0 |
+| S5 (execute) | 0 | 0 |
+| S6 (security-review) | 0 | 0 |
+
+**Zero web-tool usage across all 6 sessions.** This is significant because Plan 06's `<orient_exploration_ranking>` Pattern B explicitly ranks WebFetch / WebSearch ABOVE node_modules archaeology for public-library questions. In practice on this UAT, the executor consistently preferred `rg -uu` against local `.d.ts` files even for genuine public-API questions (S2: Storybook 10.3.5 `DocsOptions` shape; S5: TypeScript dynamic-import compile-time semantics). Pattern B's web-first ranking is not winning over local-`.d.ts`-first behavior in this scenario.
+
+The executor's implicit heuristic appears defensible -- "the installed `.d.ts` is the typed contract for the exact version actually present, more authoritative than docs that may lag behind" -- but it bypasses the ranking Plan 06 intended. This reinforces the Pattern D refinement above: a type-system-question-specific Pattern D (prefer WebFetch of TypeScript-spec / library-API-reference docs) would close this behavioral gap if web-first preference for type questions is the desired contract.
+
 ---
 
 ## Plan 07 Gap-Closure Validation (SECONDARY)
