@@ -194,3 +194,13 @@ Plans:
 
 Plans:
 - [x] 05.1-01-PLAN.md -- Final Response Discipline, verbatim-vs-summary rules, re-consultation triggers, version bump
+
+### Phase 6: Address Phase 5.6 UAT findings
+
+**Goal:** [To be planned]
+**Requirements**: TBD
+**Depends on:** Phase 5
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd-plan-phase 6 to break down)
