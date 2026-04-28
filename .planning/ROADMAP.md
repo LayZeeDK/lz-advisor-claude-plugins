@@ -197,10 +197,13 @@ Plans:
 
 ### Phase 6: Address Phase 5.6 UAT findings
 
-**Goal:** [To be planned]
-**Requirements**: TBD
-**Depends on:** Phase 5
-**Plans:** 0 plans
+**Goal:** Close two open behavioral gaps from Phase 5.6 Plan 07 autonomous UAT (zero WebFetch/WebSearch usage across 6 sessions; Pattern B class-conflation) by shipping a question-class-aware Pattern D in a new shared reference (`plugins/lz-advisor/references/orient-exploration.md`) `@`-loaded from all 4 SKILL.md, with mirrored cross-reference in `references/context-packaging.md` Rule 5 and SemVer patch 0.8.4 -> 0.8.5. Pre-existing KCB-economics smoke (synthetic-prompt artifact) re-runs as the load-bearing gate signal. Verified via two-stage gate: 4 smoke scripts on plugin 0.8.5 (Stage 1) + 6-session reshaped-prompt UAT replay with web-usage gate >=1 in >=4/6 sessions (Stage 2; D-11 per-skill thresholds inherit Phase 5.5/5.6 verbatim).
+**Requirements**: D-01..D-06 (CONTEXT.md locked decisions; REQUIREMENTS.md IDs not assigned for this phase)
+**Depends on:** Phase 5.6
+**Plans:** 4 plans
 
 Plans:
-- [ ] TBD (run /gsd-plan-phase 6 to break down)
+- [ ] 06-01-PLAN.md -- Create plugins/lz-advisor/references/orient-exploration.md (Pattern D 4-class taxonomy: type-symbol existence, API currency, migration/deprecation, language semantics) (D-01, D-03)
+- [ ] 06-02-PLAN.md -- Wire Pattern D: @-load line in 4 SKILL.md <orient_exploration_ranking> blocks + context-packaging.md Rule 5 cross-reference + plugin version 0.8.4 -> 0.8.5 (D-02, D-06)
+- [ ] 06-03-PLAN.md -- UAT replay infrastructure: copy runners + extend tally.mjs with web_uses column + compose 6 reshaped prompts per D-04 class assignments (D-04)
+- [ ] 06-04-PLAN.md -- Two-stage verification gate: Stage 1 smoke (4 scripts on 0.8.5; KCB K+C+B load-bearing) + Stage 2 6-session UAT replay + tally aggregation + session-notes.md + 06-VERIFICATION.md (D-04, D-05)
