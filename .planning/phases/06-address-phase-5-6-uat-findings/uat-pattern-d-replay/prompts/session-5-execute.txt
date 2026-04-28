@@ -1,0 +1,1 @@
+/lz-advisor.execute Implement a TypeScript dynamic-import pattern for lazy-loading a Storybook addon. How does TypeScript handle dynamic-import type narrowing at compile time -- does the resulting type collapse to any when the imported module is uncached? Verify against the TypeScript handbook or by compiling a minimal reproducer. Commit each completed step atomically.

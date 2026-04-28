@@ -1,0 +1,1 @@
+/lz-advisor.review Review the recent Compodoc + Storybook integration work for alignment with the current Storybook 10.x documentation. Consult the official Storybook 10.x reference to confirm the docs configuration is current.

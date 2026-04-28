@@ -1,0 +1,1 @@
+/lz-advisor.plan Plan how to keep the Nx Compodoc generator current in 2026-Q1. Was the Nx Compodoc generator deprecated, replaced, or kept between recent Nx releases? Check the Nx release notes and migration guides for the current Nx version.
