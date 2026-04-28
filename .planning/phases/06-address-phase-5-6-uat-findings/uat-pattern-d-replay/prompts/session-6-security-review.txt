@@ -1,0 +1,1 @@
+/lz-advisor.security-review Security-review the dependency on @compodoc/compodoc for supply-chain risk. What is the current advisory and maintenance status of @compodoc/compodoc as of 2026-Q1? Consult npm security advisories and the GitHub Security tab for the package.

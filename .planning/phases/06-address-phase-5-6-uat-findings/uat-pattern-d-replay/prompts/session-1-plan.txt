@@ -1,0 +1,1 @@
+/lz-advisor.plan Plan how to configure Storybook 10.x docs for an Nx Angular library. What is the current recommended approach for Storybook 10.x docs configuration in 2026? Storybook released v10 in late 2025 -- check the official Storybook docs.
