@@ -499,27 +499,33 @@ fi
 
 **If this table is empty:** All claims in this research were verified or cited — no user confirmation needed.
 
-## Open Questions
+## Open Questions (RESOLVED)
+
+> All four open questions were resolved during planning. Each question retains its analysis below; the inline `**RESOLVED:**` line under each question records the decision and the plan that locked it. No D-XX escalation needed (per checker guidance: inline RESOLVED markers are sufficient; CONTEXT.md `## Decisions` block stays under the discuss-step lock).
 
 1. **Question:** Should `tally.mjs` add the `web_uses` column or should a new shell-only smoke script (`L-pattern-d-coverage.sh`) handle the assertion?
    - **What we know:** Both work technically. tally.mjs extension is ~5 lines; new shell script is ~30 lines but mirrors KCB-economics shape.
    - **What's unclear:** Phase convention. Phase 5.4 added new smoke scripts (KCB, DEF, HIA, J); Phase 5.5 / 5.6 extended them. Phase 6 has both options open per CONTEXT.md Claude's Discretion.
    - **Recommendation:** Extend tally.mjs (canonical aggregation, 5 lines) AND add a single trivial assertion line to `06-VERIFICATION.md` Section 2. Skip the new shell script unless the planner wants per-class assertions later (deferred per CONTEXT.md). Single source of truth for metrics; cheaper to maintain.
+   - **RESOLVED:** Extend `tally.mjs` with `web_uses` column (no new shell script) per Plan 06-03 Task 2. The web-usage gate is asserted directly against the tally output in Plan 06-04 Task 2.
 
 2. **Question:** Should the web-usage gate threshold be `≥1 in ≥4 of 6` or `≥1 in ≥5 of 6`?
    - **What we know:** Per D-04 class assignment: S1, S2, S3, S4, S6 are web-first-class (5 sessions). S5 is language-semantics, may use empirical compile per Pattern D Class 4 — legitimately not WebFetch.
    - **What's unclear:** How aggressively to enforce. Pitfall 2 documents the trade-off.
    - **Recommendation:** `≥1 in ≥4 of 6` as the BASELINE (CONTEXT.md recommended) — this gives one session of tolerance beyond S5's allowed-not-WebFetch behavior. If Phase 6 reshaped prompts perform well in dry-run preview, planner may tighten to `≥5/6`. Default to the conservative threshold; document the upgrade path in 06-VERIFICATION.md.
+   - **RESOLVED:** Threshold locked at `>=4/6` per Plan 06-04 Task 2. Tightening to `>=5/6` is an explicit future-phase concern, not a Phase 6 runtime decision. The lock prevents the executor from retroactively shifting the bar after seeing UAT data.
 
 3. **Question:** Does Class 4 (language semantics) need its own corroborating-evidence sentence shape?
    - **What we know:** Classes 1, 2, 3 share the same shape ("X corroborates the web answer; they do not replace it"). Class 4 has an OR (empirical compile OR `WebFetch` language spec) that doesn't fit the same template.
    - **What's unclear:** Whether the OR is best expressed as a fork-in-the-prose or as two sub-classes (4a empirical, 4b spec fetch).
    - **Recommendation:** Single Class 4 with an OR ("the first orient action is empirical compile / run OR `WebFetch` of the language spec"). Two sub-classes inflate to 5+ classes (anti-pattern). Single OR matches Pattern D D-01 text verbatim. Provide one worked example for each branch (compile; spec fetch) so the executor can see both legitimate first actions.
+   - **RESOLVED:** Single Class 4 with an OR shape per Plan 06-01. Both worked branches (empirical compile and language-spec WebFetch) are present in `references/orient-exploration.md` so the executor can pattern-match either legitimate first action.
 
 4. **Question:** Is the `references/context-packaging.md` Rule 5 cross-reference a one-line pointer or a paragraph mirror?
    - **What we know:** Rule 5 currently says: "Verification ranking is defined in the skill's `<orient_exploration_ranking>` block." (~one sentence, line 44).
    - **What's unclear:** Whether the cross-reference adds depth or just a pointer.
    - **Recommendation:** One-line pointer: append after "skill's `<orient_exploration_ranking>` block": " — see also `@${CLAUDE_PLUGIN_ROOT}/references/orient-exploration.md` for the question-class taxonomy." Paragraph-mirror inflates context-packaging.md unnecessarily; the SKILL.md `@`-loads orient-exploration.md anyway, so the planner / advisor agent sees both. Pointer suffices.
+   - **RESOLVED:** One-line pointer per Plan 06-02. The SKILL.md `@`-loads `orient-exploration.md` already; Rule 5 just gains a single reference line, no paragraph mirror.
 
 ## Environment Availability
 
