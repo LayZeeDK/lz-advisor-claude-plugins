@@ -15,6 +15,33 @@ plugin_versions_iterated: ["0.8.5", "0.8.6", "0.8.7", "0.8.8", "0.8.9"]
 
 # Phase 6 Verification -- Pattern D Replay
 
+## Unclosed Phase-6 Gaps (Plan Surface)
+
+**Status as of 2026-04-30:** Phase 6 ships at `PASS-with-caveat` mechanically, but **three amendments below explicitly claim Phase-6 scope and remain unclosed**. They are the plan surface for `/gsd-plan-phase 6 --gaps`.
+
+| Gap | Amendment | Owns | Fix surface |
+|---|---|---|---|
+| G1 -- Trust-contract carve-out triggers on agent-generated source material (review-file shape) | Amendment 2 (2026-04-29) | Phase 6 (per amendment 2 text: "the fix surface is `<context_trust_contract>` in the SKILL.md files -- exactly Phase 6's surface") | `<context_trust_contract>` block in 4 SKILL.md (`lz-advisor.plan`, `lz-advisor.execute`, `lz-advisor.review`, `lz-advisor.security-review`) |
+| G2 -- Carve-out scope extends to plan-file input AND suppression operates at ToolSearch loading layer; classify by source provenance not structural shape | Amendment 3 (2026-04-29) | Phase 6 (refines G1's surface) | Same as G1 + add ToolSearch-availability rule for orient phase when input contains agent-generated source on Class-2/3/4 questions |
+| G3 -- Pattern D's question-class taxonomy (Class 1-4) does not surface security-embedded Class-2 patterns (CVE / advisory / npm audit) | Amendment 4 (2026-04-30) | Phase 6 (Pattern D is Phase 6's deliverable; the taxonomy lives in `references/orient-exploration.md`) | `references/orient-exploration.md` add Class 2-S sub-pattern + worked example in `lz-advisor.security-review/SKILL.md` |
+
+**Out of Phase-6 scope (defer to Phase 7):**
+
+- Phase 7 Finding A (silent apply-then-revert reconciliation) -- execute-skill discipline, not Pattern D / trust-contract.
+- Phase 7 Finding B.1 + B.2 (pv-* synthesis + carry-forward + "Pre-verified Claims" confabulation) -- `references/context-packaging.md` Common Contract Rule 5, not orient-exploration / trust-contract.
+- Phase 7 Finding C (4 confidence-laundering guards including the NEW scope-disambiguated provenance markers) -- cross-skill workflow concern; Pattern D suppression contributes but root cause sits in consultation-discipline surfaces.
+- Phase 7 Finding D (word-budget regression on security-reviewer agent) -- agent prompt engineering, orthogonal to Pattern D.
+
+**Closure criteria for Phase 6 (after `/gsd-plan-phase 6 --gaps` produces 06-05+ plans and `/gsd-execute-phase 6` runs them):**
+
+1. G1 + G2 closed: `<context_trust_contract>` rewritten to classify by source provenance (vendor-doc vs agent-generated); ToolSearch-availability rule fires before ranking when input contains agent-generated source on Class-2/3/4 questions; byte-identical canon preserved across 4 SKILL.md.
+2. G3 closed: `references/orient-exploration.md` carries Class 2-S sub-pattern with worked example for CVE / npm audit / GitHub Security Advisories surfaces; security-review SKILL.md references the sub-pattern in its scan-phase guidance.
+3. Plugin version bump (suggest 0.8.9 -> 0.9.0; minor for contract-shape change).
+4. Regression replay: re-run a representative subset of the 6 closed UATs (at minimum: plan-fixes UAT and security-review UAT) on the new plugin version and verify Pattern D fires (web tool count > 0 OR pv-* synthesized OR Class 2-S worked example triggers a CVE check) on the inputs that previously suppressed it.
+5. `06-VERIFICATION.md` final amendment downgrades `PASS-with-caveat` to `PASS` (or `PASS-with-residual-Phase-7-scope`).
+
+Until G1, G2, G3 are closed, Phase 6 should be treated as `executing` for milestone-audit purposes, not `complete`.
+
 ## Summary verdict
 
 **Phase 6 two-stage gate: FAIL.** Stage 1 smoke gate failed: 3 of 4 smoke scripts exited with code 1 on plugin 0.8.5. The load-bearing KCB-economics K + C + B closure signal (D-05) failed: Finding K WARN (executor used `npm pack` + local tarball read, no `WebSearch` / `WebFetch`), Finding C ERROR (no Pre-Verified Package Behavior Claims section in advisor package), Finding B ERROR (no `<pre_verified>` block). DEF-response-structure exited 1 on a Word-budget regression (advisor Strategic Direction 111 words > 100-word cap). HIA-discipline exited 1 on Finding A (reworded D-14 absent from plan SKILL.md). Only J-narrative-isolation passed.
