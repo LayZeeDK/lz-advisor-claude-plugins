@@ -197,3 +197,46 @@ Pattern D ships and works empirically on real Class 2/3 prompts. The Stage 1 KCB
 - Plan quality materially better than any prior plugin version, including the pre-Phase-6 baseline
 
 Recommended ROADMAP.md update: Phase 6 status `executing` with verdict `FAIL` -> Phase 6 status `complete` with verdict `PASS-with-caveat`. The DEF Word-budget regression and HIA Finding A drift are the residual follow-up scope, not gates on Phase 6 closure.
+
+---
+
+## Amendment 2026-04-29 (second) -- Pattern D suppression on review-file authoritative-source treatment
+
+A subsequent plan-fixes UAT (session log `26868ae7-1f9a-4a71-a146-16e7781b74c6.jsonl`) surfaced a NEW Phase 6 gap that the original amendment did not anticipate. The plan skill was invoked on a contested vendor-API question (signal-output `argTypes.action` vs `fn()` spy in `@storybook/angular@10.3.5`) with the prior review's findings inlined as authoritative source via @-mention to `D:/projects/github/LayZeeDK/ngx-smart-components/plans/compodoc-storybook-angular-signals.review.md`.
+
+### What happened
+
+The plan-skill executor:
+
+1. Read the @-resolved review file. Saw the literal string **"Verify Storybook Angular version behavior before acting."** in Finding 2.
+2. Read three project files (stories.ts, .gitignore, component.ts).
+3. Skipped WebSearch / WebFetch entirely. Zero web tool calls in the entire session despite the contested vendor-API question being a textbook Class-2 (API currency) question that Pattern D's worked example explicitly covers.
+4. Packaged the consultation with the review's `fn()` recommendation framed as fact, dropping the "verify before acting" caveat.
+5. The advisor's response introduced a new "canonical Storybook 8+ pattern" qualifier; the testbed runs Storybook 10.3.5.
+
+### Why Pattern D didn't fire
+
+The `<context_trust_contract>` block in the SKILL.md treats `---` delimited blocks at the top of the user message as authoritative source, AND treats the @-resolved file content the same way (since `<fetched source="...">...</fetched>` and equivalent shapes are listed as authoritative). The review file is structurally similar to authoritative source material -- numbered findings, code blocks, recommendation paragraphs. Per the contract: "When such a block is present ... WebFetch and WebSearch against the same library are out of scope ... the source is already in context."
+
+The contract does not currently distinguish between **vendor-doc-derived authoritative source** (release notes, official guides, API references) and **agent-generated authoritative source** (review output, prior plans, prior consultations). Treating agent-generated content as ground truth is exactly the failure mode here: agent output can contain unverified claims, training-data injections, or hedge markers that the executor strips when promoting the content into "Pre-verified Claims" framing.
+
+### Why this is a Phase 6 gap (not Phase 7)
+
+Phase 6's scope is question-class-aware orient ranking (Pattern D). The plan-fixes UAT shows Pattern D's web-first prescription is being suppressed on a Class-2 vendor-API question. The fix surface is the SKILL.md `<context_trust_contract>` block -- exactly the surface Phase 6 owns. Phase 7's gaps (consultation discipline + pv-* + confidence laundering) compound this, but the root cause is the Pattern D contract itself.
+
+### Proposed direction
+
+Update `<context_trust_contract>` in all four SKILL.md files (plan, execute, review, security-review):
+
+- Add an explicit carve-out: "Agent-generated source material -- review output, prior plan files, prior consultation transcripts -- IS NOT authoritative for vendor-API behavior questions. Even when such content is shaped like authoritative source (numbered findings, code blocks, recommendations), it does NOT exempt the orient phase from WebSearch / WebFetch on Class-2 (API currency), Class-3 (migration / deprecation), or Class-4 (language semantics) questions."
+- Add a hedge-detection rule: "When an authoritative source block contains a verify-first marker (literal: `Verify .+ before acting`, `Assuming .+ \(unverified\)`, `confirm .+ before`, or similar), the source is NOT authoritative for the claims behind that marker. The orient phase MUST resolve those claims via WebSearch / WebFetch (Class-2/3) or empirical Read (Class-1) before packaging the consultation. The hedge marker MUST survive into the consultation prompt's `## Source Material` block; it MUST NOT be stripped or promoted into `## Pre-verified Claims`."
+
+### Coordination with Phase 7 candidates
+
+This Phase 6 gap and Phase 7 Findings B.2 + C share a common motif: hedge-stripping during prompt construction. The Phase 6 fix is upstream (orient ranking + trust contract); the Phase 7 fixes are downstream (packaging discipline + cross-skill chain-of-custody). They should be designed together so the hedge-survival contract is consistent across all four SKILL.md surfaces. A Phase 7 plan that addresses Findings A + B + C without the Phase 6 trust-contract carve-out will be incomplete; a Phase 6 amendment that addresses the trust contract without the Phase 7 packaging fixes will leave residual confidence-laundering surface.
+
+### Phase 6 closure status with this amendment
+
+Phase 6 still ships with verdict `PASS-with-caveat`. The Pattern D web-usage gate closure on plugin 0.8.9 (original amendment) stands -- the gap surfaced here is a refinement, not a regression. The contract carve-out and hedge-detection rule are scope for a follow-up phase that runs alongside or after Phase 7. Capturing this here so the next phase's discuss + planning has the full picture and does not have to re-derive the gap from session logs.
+
+Evidence: `.planning/phases/06-address-phase-5-6-uat-findings/uat-plan-skill-fixes/session-notes.md`.
