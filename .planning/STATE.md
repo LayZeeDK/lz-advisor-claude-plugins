@@ -3,9 +3,9 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Phase 6 context gathered
-last_updated: "2026-04-28T09:39:33.863Z"
-last_activity: 2026-04-28 -- Phase 06 planning complete
+stopped_at: Phase 6 plan-fixes UAT closed; execute-fixes UAT queued as next blocking action
+last_updated: "2026-04-29T23:30:00.000Z"
+last_activity: 2026-04-29 -- plan+execute fix cycle UAT in progress; plan-fixes done at 2173e39, execute-fixes next
 progress:
   total_phases: 12
   completed_phases: 10
@@ -21,16 +21,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-10)
 
 **Core value:** Near-Opus intelligence at Sonnet cost for coding tasks, through strategic advisor consultation at high-leverage moments
-**Current focus:** Phase 05.6 — diagnose-e-runtime-regression-and-re-run-full-compodoc-uat-t
+**Current focus:** Phase 06 -- address Phase 5.6 UAT findings; four follow-up manual UATs done on plugin 0.8.9 (plan, execute, review, plan-fixes); execute-fixes is the next blocking UAT
 
 ## Current Position
 
-Phase: 05.6
-Plan: Not started
-Status: Ready to execute
-Last activity: 2026-04-28 -- Phase 06 planning complete
+Phase: 06
+Plan: All 4 phase plans done (06-01 through 06-04); 4 manual UAT cycles closed (uat-plan-skill, uat-execute-skill, uat-review-skill, uat-plan-skill-fixes); 1 UAT remaining (uat-execute-skill-fixes), 1 queued (uat-security-review-skill)
+Status: UAT cycle in progress on plugin 0.8.9 (testbed: ngx-smart-components, branch uat/manual-s4-v089-compodoc)
+Last activity: 2026-04-29 -- plan-fixes UAT closed at testbed commit 2173e39; PHASE-7-CANDIDATES.md sharpened (Findings A reinforced, B split into B.1/B.2, NEW Finding C); 06-VERIFICATION.md amended with new Phase 6 gap (Pattern D suppression on review-file authoritative-source treatment)
 
-Next: Phase 05.4 (Address UAT findings A-K) -- planning not started
+Next: Run /lz-advisor.execute UAT in ngx-smart-components testbed against the plan-fixes plan (commit 2173e39, file plans/address-review-findings-compodoc-storybook.plan.md). See HANDOFF.json `human_actions_pending[0]` for the exact prompt and regression checks.
 
 Progress: [##########] 100%
 
@@ -54,6 +54,7 @@ Progress: [##########] 100%
 | 05.2 | 4 | - | - |
 | 05.4 | 7 | - | - |
 | 05.6 | 7 | - | - |
+| 06 | 4 + 4 UATs | - | - |
 
 **Recent Trend:**
 
@@ -78,6 +79,10 @@ Recent decisions affecting current work:
 - [Phase 05.6]: Drift classification: under-supply (dominant); 0 of 4+ load-bearing premises framed with literal Assuming frame; secondary clarification-request defect variant
 - [Phase 05.6]: Identified fix surface: Plan 05.5-03 density example (commit 84aaa5b) as SOLE surface; D-02 cue ruled out by D fixture textbook pass; no D-04 escalation required
 - [Phase 05.6]: No R-05 two-worktree bisect triggered; forward-capture confidence HIGH; saved ~$6 diagnostic cost
+- [Phase 06]: Phase 6 closes with PASS-with-caveat on plugin 0.8.9 (06-VERIFICATION.md amendment 2026-04-29)
+- [Phase 06]: Add plan+execute fix cycle UAT before security-review; doubles as Phase 7 Findings A/B regression check
+- [Phase 06]: Capture Pattern D suppression on review-file authoritative-source treatment as Phase 6 gap (06-VERIFICATION.md second amendment) rather than Phase 7 candidate -- root cause is the trust-contract surface owned by Phase 6
+- [Phase 06]: Sharpen Phase 7 Finding B into B.1 (carry-forward) + B.2 (Pre-verified Claims confabulation) and add new Finding C (4-hop confidence-laundering chain)
 
 ### Pending Todos
 
@@ -106,6 +111,6 @@ Recent decisions affecting current work:
 
 ## Session Continuity
 
-Last session: 2026-04-28T08:04:59.961Z
-Stopped at: Phase 6 context gathered
-Resume file: .planning/phases/06-address-phase-5-6-uat-findings/06-CONTEXT.md
+Last session: 2026-04-29T23:30:00.000Z
+Stopped at: Plan-fixes UAT closed at testbed commit 2173e39; new Phase 6 gap captured (Pattern D suppression on review-file input); Phase 7 Findings sharpened (A reinforced, B split into B.1/B.2, NEW Finding C). Execute-fixes UAT is the next blocking action.
+Resume file: .planning/HANDOFF.json (primary resumption source -- has next_action, human_actions_pending[0] with exact `/lz-advisor.execute` prompt, and instrumented_observations for the post-UAT trace analysis)
