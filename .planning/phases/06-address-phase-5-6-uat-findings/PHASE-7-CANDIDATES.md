@@ -1,23 +1,25 @@
 ---
-source: "06 UAT observations (execute-skill, review-skill, plan-fixes, and execute-fixes manual UATs on plugin 0.8.9)"
+source: "06 UAT observations (execute-skill, review-skill, plan-fixes, execute-fixes, and security-review manual UATs on plugin 0.8.9)"
 captured: 2026-04-29
-amended: 2026-04-29
+amended: 2026-04-30
 type: phase-7-candidates
 related_artifacts:
   - .planning/phases/06-address-phase-5-6-uat-findings/uat-execute-skill/session-notes.md
   - .planning/phases/06-address-phase-5-6-uat-findings/uat-review-skill/session-notes.md
   - .planning/phases/06-address-phase-5-6-uat-findings/uat-plan-skill-fixes/session-notes.md
   - .planning/phases/06-address-phase-5-6-uat-findings/uat-execute-skill-fixes/session-notes.md
+  - .planning/phases/06-address-phase-5-6-uat-findings/uat-security-review-skill/session-notes.md
 session_logs:
   - c:/Users/LarsGyrupBrinkNielse/.claude/projects/D--projects-github-LayZeeDK-ngx-smart-components/ff614de1-c25d-4e84-bee9-5de67de4b208.jsonl
   - c:/Users/LarsGyrupBrinkNielse/.claude/projects/D--projects-github-LayZeeDK-ngx-smart-components/5dbcc147-5119-439b-950e-f2bdac619598.jsonl
   - c:/Users/LarsGyrupBrinkNielse/.claude/projects/D--projects-github-LayZeeDK-ngx-smart-components/26868ae7-1f9a-4a71-a146-16e7781b74c6.jsonl
   - c:/Users/LarsGyrupBrinkNielse/.claude/projects/D--projects-github-LayZeeDK-ngx-smart-components/e4592a03-0cf4-4925-af93-fdf20c663a25.jsonl
+  - c:/Users/LarsGyrupBrinkNielse/.claude/projects/D--projects-github-LayZeeDK-ngx-smart-components/2d388e98-1e6a-4978-8290-115852470529.jsonl
 ---
 
 # Phase 7 Candidates -- Advisor Consultation Discipline, Template Carry-Forward, and Confidence-Laundering Guards
 
-Captured during Phase 6 UATs on plugin 0.8.9: execute-skill against the Compodoc + Storybook implementation, review-skill against the resulting commits `09a09d7^..0cb8ae7`, plan-fixes (plan skill called on the review's findings as input), and execute-fixes (execute skill called on the plan-fixes plan as input). All four UATs passed mechanically; together they surface three distinct advisor-consultation-discipline gaps that warrant a dedicated follow-up phase. The execute-fixes UAT extended Finding C's chain from 5 hops (claim in plan file) to 7 hops (claim in committed source code), making C the highest-priority candidate.
+Captured during Phase 6 follow-up UATs on plugin 0.8.9 (cycle complete 2026-04-30): execute-skill against the Compodoc + Storybook implementation, review-skill against the resulting commits `09a09d7^..0cb8ae7`, plan-fixes (plan skill called on the review's findings as input), execute-fixes (execute skill called on the plan-fixes plan as input), and security-review (security-review skill called on the post-fix commit range `09a09d7^..05ea109`). All five UATs passed mechanically; together they surface three core advisor-consultation-discipline gaps (Findings A, B, C) plus a new fourth candidate (Finding D, word-budget regression on security-reviewer agent). The execute-fixes UAT extended Finding C's chain from 5 hops (claim in plan file) to 7 hops (claim in committed source code); the security-review UAT bifurcated the chain across question-class axes, making C the highest-priority candidate with a refined fourth proposed guard.
 
 ## Context
 
@@ -114,6 +116,7 @@ The executor noticed the contradiction (event 192: "Point 2 contradicts my pre-v
 | Plan-fixes plan-skill UAT consultation | 0 (4 plain bullets, not XML) | 0 (in PLAN.md) | See B.2 below |
 | Execute-fixes pre-execute consult | 0 | n/a | Plan input had 0 pv-*; executor synthesized 0 despite running `git grep` + 2 file reads that all could anchor pv-* claims |
 | Execute-fixes final consult | 0 | n/a | No pv-* synthesized for the empirically-verified test-pass result |
+| Security-review consult (NEW) | 0 | n/a | Input was 3 commit SHAs; executor ran 3 git diffs + 2 Reads that all could anchor pv-* claims (window assignment line, compodoc version, gitignore entry); 0 synthesized despite `context-packaging.md` attached at session start |
 
 Finding B.1: pv-* discipline must apply at THREE layers, not two. Within a skill (pre -> mid -> final consult). Across skill invocations within the same workflow (plan -> execute -> review -> security-review). **AND: synthesized de novo for empirical anchors verified during the current skill's orient phase, not just propagated from upstream sources.**
 
@@ -170,8 +173,10 @@ The other three bullets are assertions without evidence; one paraphrases the inp
 | 3 | Plan-fixes executor's "Pre-verified Claims" section (session `26868ae7-...` event 38) | OutputEmitterRef behavior asserted without "verify" caveat; mislabeled "Pre-verified" | Hedge stripped (B.2) |
 | 4 | Plan-fixes advisor's Critical block (event 39) | "**which Finding 2 establishes** is broken for `OutputEmitterRef`" | Cited as established fact |
 | 5 | Plan output PLAN.md (event 42, committed `2173e39`) | "the canonical Storybook 8+ pattern" -- new version qualifier introduced; testbed runs Storybook 10.3.5 | Confident assertion in durable artifact |
-| **6 (NEW)** | **Execute-fixes consultation prompts (session `e4592a03-...` events 11 + 32)** | Plan SD quoted verbatim into pre-execute prompt's `## Source Material > Plan Strategic Direction` block; final-verification prompt restates the change rationale without re-anchoring | Qualifier propagates into both advisor call sites |
-| **7 (NEW)** | **Commit `05ea109` on testbed branch `uat/manual-s4-v089-compodoc`** | Implementation matches the unverified pattern; tests pass empirically (luck or correct API); rationale lives in plan-input chain | **Durable source code with unverified provenance** |
+| **6** | **Execute-fixes consultation prompts (session `e4592a03-...` events 11 + 32)** | Plan SD quoted verbatim into pre-execute prompt's `## Source Material > Plan Strategic Direction` block; final-verification prompt restates the change rationale without re-anchoring | Qualifier propagates into both advisor call sites |
+| **7** | **Commit `05ea109` on testbed branch `uat/manual-s4-v089-compodoc`** | Implementation matches the unverified pattern; tests pass empirically (luck or correct API); rationale lives in plan-input chain | **Durable source code with unverified provenance** |
+| **8a (NEW, API-correctness axis)** | **Security-review skill UAT (session `2d388e98-...`)** | Reviewer never engaged with fn() spy or Storybook 8+ qualifier (out of scope for security review); chain stalled but NOT broken on this axis | No change |
+| **8b (NEW, security-clearance axis)** | **Security-review skill UAT away_summary + final output** | "Two low-severity and one medium-severity finding around supply chain risk and XSS in the docs site" -- security imprimatur attached to commits that include the unverified API claim | **Imprimatur added on a different axis** |
 
 Each hop strips a hedge or adds a confidence layer. By hop 7, an originally-flagged unverified claim has been laundered into committed source code with passing tests. **Seven agents/artifacts, zero empirical verification.**
 
@@ -183,13 +188,48 @@ The advisor specifically introduced "Storybook 8+" -- a version qualifier presen
 
 Pattern D's web-first orient is specifically designed to break this chain by forcing empirical verification on Class-2 questions. When Pattern D is suppressed (per the Phase 6 amendments 2 and 3), the chain runs end-to-end without a verification anchor. The execute-fixes UAT showed Pattern D suppression operates at the ToolSearch loading layer (executor never invoked `ToolSearch select:WebSearch,WebFetch`), making the chain harder to break than amendment 2 suggested.
 
-**Proposed direction (C):** Three complementary guards (was two):
+**Proposed direction (C):** Four complementary guards (was three):
 
 - **Hedge propagation rule** (in `references/context-packaging.md` Common Contract): when source material contains a verify-first marker (regex shapes: `\b(unverified)\b`, `\bverify .+ before acting\b`, `\bAssuming .+ \(unverified\)\b`, `\bconfirm .+ before\b`), the executor MUST either: (a) perform the verification step (WebSearch, Read, Bash) and replace the marker with an evidence citation; or (b) carry the marker verbatim into the consultation prompt's `## Source Material` section, forbidden from packaging the same content under `## Pre-verified Claims`.
 - **Cross-skill hedge tracking** (in `references/orient-exploration.md`): a workflow-level note that successive skills MUST NOT strip verify-first markers introduced by upstream skills. If upstream review flags content as "verify before acting", downstream plan / execute must either resolve or propagate the hedge.
-- **NEW: Version-qualifier anchoring rule** (in `references/context-packaging.md` Common Contract): when an upstream artifact introduces a version qualifier for a vendor library (e.g., "Storybook 8+", "Angular 17+", "TypeScript 5+"), the executor MUST verify the qualifier against the installed version before propagating into the consultation prompt. Mechanism: read the relevant `package.json` (or equivalent dependency manifest) for the actual installed version; either confirm the qualifier matches and synthesize a `pv-version-anchor` block, or strip the qualifier and replace with the empirically observed version. This rule is necessary because version-qualifier injection is the most common training-data bleed pattern observed across the chain.
+- **Version-qualifier anchoring rule** (in `references/context-packaging.md` Common Contract): when an upstream artifact introduces a version qualifier for a vendor library (e.g., "Storybook 8+", "Angular 17+", "TypeScript 5+"), the executor MUST verify the qualifier against the installed version before propagating into the consultation prompt. Mechanism: read the relevant `package.json` (or equivalent dependency manifest) for the actual installed version; either confirm the qualifier matches and synthesize a `pv-version-anchor` block, or strip the qualifier and replace with the empirically observed version. This rule is necessary because version-qualifier injection is the most common training-data bleed pattern observed across the chain.
+- **NEW: Scope-disambiguated provenance markers on verdicts** (in `references/context-packaging.md` Common Contract + each SKILL.md output template): when a skill issues a verdict (PASS-with-observations, security-cleared, review-approved, etc.), the verdict MUST be tagged with the question-class scope it covers. Example tag set: `scope: api-correctness`, `scope: security-threats`, `scope: performance`, `scope: accessibility`. Downstream skills reading the verdict MUST check scope-match before treating it as authoritative for the question they are answering. Necessary because the security-review UAT (session `2d388e98-...`) demonstrated the chain bifurcates: the security-review broke the API-correctness chain (out of scope) but extended a different axis (security-clearance) by attaching its imprimatur to commits that ship unverified API claims. Without scope tags, downstream consumers (humans or agents) might conflate "security-cleared" with "API-correctness-verified".
 
-**Effort (C):** Medium-high. Requires text edits across multiple references docs + a workflow-level smoke test that synthesizes a chain (review -> plan -> execute) on a fixture with a verify-first marker AND a version qualifier and asserts both survive or are empirically resolved. Worth the effort: this is the meta-pattern that makes individual A/B failures dangerous in compound workflows, and the execute-fixes UAT confirmed the chain reaches durable source code -- the highest-stakes failure surface.
+**Effort (C):** Medium-high. Requires text edits across multiple references docs + a workflow-level smoke test that synthesizes a chain (review -> plan -> execute -> security-review) on a fixture with a verify-first marker, a version qualifier, AND a question-class boundary and asserts: (a) markers survive or are empirically resolved; (b) version qualifier is anchored to installed version; (c) verdicts carry scope tags; (d) downstream skills do not conflate scopes. Worth the effort: this is the meta-pattern that makes individual A/B failures dangerous in compound workflows, and the execute-fixes + security-review UATs confirmed the chain reaches durable source code AND bifurcates across question-class axes -- the highest-stakes failure surface.
+
+---
+
+### D. NEW: word-budget regression on security-reviewer agent
+
+**Observed (security-review UAT, session `2d388e98-...` event 14, advisor response):**
+
+The security-reviewer's response runs ~412 words against the **300-word cap** specified in `agents/security-reviewer.md` and CLAUDE.md ("reviewer and security-reviewer use `effort: xhigh` ... Word budget 300 words"). ~37% over budget.
+
+**Breakdown (approximate):**
+
+| Section | Words |
+|---|---|
+| Findings header + 3 finding blocks | 233 |
+| Missed surfaces note | 28 |
+| Threat Patterns | 140 |
+| Headers / labels | 11 |
+| **Total** | **~412** |
+
+The output is structurally compliant (Findings + Threat Patterns sections present, file:line citations, OWASP categorization, severity revisions with rationale, hedge marker preserved on Finding 1) and qualitatively useful. The over-run is concentrated in the Threat Patterns section's extended chain articulation -- valuable content but exceeding the prescribed cap.
+
+**Comparison to prior word-budget regression** (06-VERIFICATION.md original Stage 1 DEF, advisor SD 111w against 100w cap, ~11% over): this case is materially worse (~37% over a higher cap), suggesting the security-reviewer's word-budget contract is not load-bearing in the agent prompt the way the advisor's is. Plan-fixes UAT also showed advisor SD slightly over at ~115w numbered + ~50w Critical (above 100w cap). Pattern: word-budget regressions are pervasive across agents but currently treated as orthogonal follow-up scope.
+
+**Why it matters.** Word-budget caps exist to control marketplace cost (advisor consultations should be strategic, not exhaustive) and to discourage the agent from re-deriving context the executor already has. ~37% over budget on every security-reviewer call multiplies cost across multi-skill workflows; cost discipline is a Plan 5.5 explicit goal that this regression undermines.
+
+**Proposed direction (D):** Three options, prioritized by effort:
+
+- **Option 1 (low effort):** tighten `agents/security-reviewer.md` word-budget enforcement language. Phase 5.4 D-08 verbose-prompt nudge style: descriptive triggers + worked example of a 300w response shape. Anthropic prompt-engineering doc warns against imperative escalation; descriptive triggers + few-shot examples are the recommended pattern.
+- **Option 2 (low-medium effort):** add a smoke test fixture to `uat-pattern-d-replay/` (or a new `agent-budget-replay/` infrastructure) that runs the security-reviewer agent on a representative scan input and asserts response stays at <=300w. Run gates per-release like the existing closure-signal smokes.
+- **Option 3 (medium effort, requires advisor input):** re-evaluate whether 300w is the right cap for security-review. Threat Patterns sections are inherently multi-finding-spanning narratives; perhaps 400w is the right cap with stricter Findings-section discipline (e.g., "each Finding block <= 80w; Threat Patterns <= 160w; Missed surfaces <= 30w; total <= 400w").
+
+**Effort (D):** Low to medium. Recommend Option 1 + Option 2 in tandem -- the prompt change is cheap, and the smoke test prevents future regressions. Option 3 is a separate consideration about the contract itself.
+
+**Cross-cutting note.** Word-budget regressions across multiple agents (advisor SD, security-reviewer) suggest a class-level gap: the agents do not currently treat word-budget as a hard constraint the way they treat structural section presence. A Phase 7 / Phase 6.1 plan should consider whether word-budget belongs in the agent prompt's hard-rules layer (alongside `tool_uses` discipline) rather than the soft-style layer.
 
 ---
 
@@ -200,6 +240,7 @@ Pattern D's web-first orient is specifically designed to break this chain by for
 - **Trivial unused-import correction** (execute-skill UAT events 144 -> 161): correctly handled solo per Phase 3 ("Trivial fixes ... proceed solo").
 - **Plan-fixes UAT first-invocation no-args double-tap** (events 6 and 17): user input artifact, not a skill defect.
 - **Execute-fixes UAT recovery loop on test runner** (events 20 -> 27): graceful Phase 1 failure recovery (failed `nx run ... test-storybook` -> background Storybook -> 30s wait -> retry); behaves correctly per `references/context-packaging.md` "recover gracefully from tool-use failure". Inflated Bash count (7) but no skill defect.
+- **Security-review UAT em-dash usage in agent output** (Opus reviewer's natural style): user CLAUDE.md prohibits em dashes for the user's local environment; marketplace-plugin agent output has different conventions and em dashes are acceptable. Not a skill defect.
 
 ## Cross-references
 
@@ -207,5 +248,6 @@ Pattern D's web-first orient is specifically designed to break this chain by for
 - Review-skill UAT artifact: `.planning/phases/06-address-phase-5-6-uat-findings/uat-review-skill/session-notes.md`
 - Plan-fixes UAT artifact: `.planning/phases/06-address-phase-5-6-uat-findings/uat-plan-skill-fixes/session-notes.md`
 - Execute-fixes UAT artifact: `.planning/phases/06-address-phase-5-6-uat-findings/uat-execute-skill-fixes/session-notes.md`
-- Phase 6 verification: `.planning/phases/06-address-phase-5-6-uat-findings/06-VERIFICATION.md` (amendment 2026-04-29 PASS-with-caveat; second amendment captures Pattern D / review-file authoritative-source gap; third amendment captures Pattern D / plan-file input + ToolSearch-layer suppression)
+- Security-review UAT artifact: `.planning/phases/06-address-phase-5-6-uat-findings/uat-security-review-skill/session-notes.md`
+- Phase 6 verification: `.planning/phases/06-address-phase-5-6-uat-findings/06-VERIFICATION.md` (amendment 1 = PASS-with-caveat on plan-skill UAT 2026-04-29; amendment 2 = Pattern D / review-file authoritative-source gap; amendment 3 = Pattern D / plan-file input + ToolSearch-layer suppression; amendment 4 = security-embedded Class-2 patterns missing from question-class taxonomy)
 - Phase 5.4 candidates (precedent for pv-* template work): `.planning/phases/05.3-resolve-issues-identified-in-field-test-and-take-the-quick-2/PHASE-5.4-CANDIDATES.md` (Findings B, C)

@@ -287,3 +287,74 @@ Phase 6's trust-contract scope (orient ranking + ToolSearch loading) and Phase 7
 Phase 6 still ships with verdict `PASS-with-caveat`. The original amendment's empirical web-usage gate closure on plugin 0.8.9 (Compodoc + Storybook setup prompt) stands. The amendments capture refinements: Pattern D's web-first prescription is empirically effective on net-new vendor-API questions (original amendment), but is suppressed when the input is agent-generated source material on the SAME or RELATED question (second amendment for review-file input; this third amendment confirms plan-file input + ToolSearch-layer suppression). All three amendments converge on the trust-contract surface as the fix; effort lives in a follow-up phase that runs alongside or after Phase 7.
 
 Evidence: `.planning/phases/06-address-phase-5-6-uat-findings/uat-execute-skill-fixes/session-notes.md`.
+
+---
+
+## Amendment 2026-04-30 (fourth) -- Pattern D's question-class taxonomy missing security-embedded Class-2 patterns
+
+The security-review UAT (session log `2d388e98-1e6a-4978-8290-115852470529.jsonl`, commit range `09a09d7^..05ea109`) closes the Phase 6 follow-up UAT cycle. It surfaces a NEW gap in Pattern D's question-class taxonomy that the prior amendments did not anticipate.
+
+### What happened
+
+The security-review skill was invoked on a 3-commit range (Compodoc + Storybook integration through fn() spy fixes). Input was 3 commit SHAs -- pure references, no inlined authoritative-source-shaped content. The trust-contract carve-out (amendments 2 and 3) did not trigger; this UAT does not exercise that gap.
+
+The executor produced 3 security findings via standard scan -> consult -> output workflow. **Zero web tool calls** (WebSearch / WebFetch / ToolSearch) across executor and security-reviewer. For the actual question mix, this is mostly correct: security-review's primary questions are domain-reasoning (Class-1) -- "is this code pattern a threat?" -- and Pattern D's web-first prescription should not fire for Class-1.
+
+**HOWEVER**, security-review's question mix structurally INCLUDES embedded Class-2 (currency-dependent) questions that the current Pattern D taxonomy does not surface as Class-2:
+
+- **CVE / security-advisory lookups** ("Are there known CVEs in `@compodoc/compodoc@1.2.1`?")
+- **Package-vulnerability scans** (npm audit, GitHub Security Advisories database queries)
+- **Vendor security-bulletin checks** (e.g., "Has `@storybook/angular@10.3.5` published any security advisories?")
+
+These are Class-2 by nature (the answer changes over time as new advisories are published) but live INSIDE Class-1 domain-reasoning skills. The security-reviewer's Finding 2 (unpinned `@compodoc/compodoc^1.2.1`) flagged the supply-chain risk THEORETICALLY but never ran an empirical CVE check. The orient ranking did not promote the CVE-lookup question to Class-2.
+
+### Why this is a Pattern D gap (not a Phase 7 candidate)
+
+The original Pattern D taxonomy (Phase 6 Plan 01, `references/orient-exploration.md`, 4 class blocks) classifies questions structurally:
+
+- Class 1: type-symbol existence (file/library presence) -> .d.ts first
+- Class 2: API currency (correct usage of public APIs) -> WebFetch first
+- Class 3: Migration / deprecation -> WebFetch on release notes / migration guides
+- Class 4: Language semantics -> empirical compile/run OR WebFetch language spec
+
+The taxonomy is question-shape based, not skill-context based. Security-embedded Class-2 patterns are missing because the current taxonomy assumes the orient phase is the entry point for a coding task, not a security review. When the SKILL is `lz-advisor.security-review`, the natural question mix shifts: a higher fraction of questions are Class-1 (domain reasoning), but a small-but-load-bearing fraction are Class-2 (vulnerability currency) that have a different surface (CVE databases, npm audit, GitHub Security Advisories) than vendor-doc Class-2.
+
+This is Phase 6's scope (orient-exploration.md taxonomy) rather than Phase 7's scope (consultation discipline). The fix surface is `references/orient-exploration.md` plus the Pattern D worked examples in the SKILL.md files.
+
+### Proposed direction
+
+Update `references/orient-exploration.md` to add a Class-2 sub-pattern for security-embedded queries:
+
+- **Class 2-S (Security currency):** vulnerability and advisory questions that depend on time-varying data (CVE databases, GitHub Security Advisories, vendor security bulletins, npm audit databases). When the SKILL is `lz-advisor.security-review` AND a finding involves a third-party dependency or library, the orient phase MUST consider Class 2-S as a primary route. Recommended sequence: `npm audit --json` first (local, fast); fallback to `WebFetch` against GitHub Security Advisories for the package; `WebSearch` for "<package> CVE <year>" as a third-line check. Result: a `pv-no-known-cves` block (or `pv-cve-list`) anchoring the supply-chain finding's severity.
+
+Add a worked example to the Pattern D ranking in each SKILL.md:
+
+```
+Example -- security-review skill scanning unpinned @compodoc/compodoc^1.2.1:
+Class 2-S route: npm audit -> WebFetch GitHub Security Advisories
+-> WebSearch "@compodoc/compodoc CVE 2026"
+-> synthesize pv-no-known-cves block (or pv-cve-list with affected version range).
+Without this anchor, severity assertion is theoretical, not empirical.
+```
+
+### Coordination with prior amendments
+
+This amendment 4 is orthogonal to amendments 2 and 3 (which targeted the trust-contract carve-out on agent-generated source material). The fix surfaces are different:
+
+- **Amendments 2 + 3:** rewrite `<context_trust_contract>` to classify by source provenance (vendor-doc vs agent-generated) and to ensure ToolSearch loads Web tools before ranking short-circuits.
+- **Amendment 4 (this):** extend `references/orient-exploration.md` with a Class 2-S sub-pattern for security-embedded currency questions and add worked examples in security-review SKILL.md.
+
+A follow-up phase that addresses Pattern D refinements should bundle amendments 2, 3, and 4 together with Phase 7's consultation-discipline gaps; the trust-contract rewrite, ToolSearch-availability rule, and Class 2-S taxonomy are all `references/orient-exploration.md` + 4 SKILL.md edits with a shared smoke-test surface.
+
+### Phase 6 closure status with this amendment
+
+Phase 6 still ships with verdict `PASS-with-caveat`. All 5 follow-up UATs are now closed (plan, execute, review, plan-fixes, execute-fixes, security-review). The amendments capture progressive refinements:
+
+- Amendment 1: Pattern D works empirically on net-new vendor-API questions (PASS-with-caveat baseline).
+- Amendment 2: Pattern D suppressed on review-file authoritative-source treatment.
+- Amendment 3: scope extends to plan-file input AND suppression operates at ToolSearch loading layer; trust-contract direction refined to classify by provenance.
+- Amendment 4: question-class taxonomy missing security-embedded Class-2 patterns; recommend Class 2-S sub-pattern for security-review's natural CVE/advisory question mix.
+
+All four amendments are scope for a follow-up phase. The Phase 6 follow-up UAT cycle is complete; ready for a Phase 7 / Phase 6.1 planning cycle that addresses the four amendment surfaces plus Phase 7's separately-tracked consultation-discipline gaps (Findings A, B.1+B.2, C).
+
+Evidence: `.planning/phases/06-address-phase-5-6-uat-findings/uat-security-review-skill/session-notes.md`.
