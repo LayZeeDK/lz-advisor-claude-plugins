@@ -240,3 +240,50 @@ This Phase 6 gap and Phase 7 Findings B.2 + C share a common motif: hedge-stripp
 Phase 6 still ships with verdict `PASS-with-caveat`. The Pattern D web-usage gate closure on plugin 0.8.9 (original amendment) stands -- the gap surfaced here is a refinement, not a regression. The contract carve-out and hedge-detection rule are scope for a follow-up phase that runs alongside or after Phase 7. Capturing this here so the next phase's discuss + planning has the full picture and does not have to re-derive the gap from session logs.
 
 Evidence: `.planning/phases/06-address-phase-5-6-uat-findings/uat-plan-skill-fixes/session-notes.md`.
+
+---
+
+## Amendment 2026-04-29 (third) -- Pattern D suppression extends to plan-file input AND operates at ToolSearch loading layer
+
+A subsequent execute-fixes UAT (session log `e4592a03-0cf4-4925-af93-fdf20c663a25.jsonl`, commit `05ea109` on testbed branch `uat/manual-s4-v089-compodoc`) confirms the second amendment's "agent-generated source material" carve-out scope extends from review-file inputs to plan-file inputs, AND that the suppression operates one layer earlier than previously described.
+
+### What happened
+
+The execute skill was invoked on the plan-fixes plan (commit `2173e39`) produced by the prior plan-fixes UAT. The plan contained an unanchored "canonical Storybook 8+ pattern" qualifier that should have been a textbook Class-2 (API currency) trigger for Pattern D's web-first orient. The execute-skill executor:
+
+1. Read the @-resolved plan file. Saw the literal string "fn() in args is the canonical Storybook 8+ pattern" in Strategic Direction step 2.
+2. Read two project files (`.gitignore`, `ngx-smart-components.stories.ts`).
+3. Ran one Bash check (`git grep -n documentation.json`).
+4. Skipped WebSearch / WebFetch entirely. Zero web tool calls in the entire session.
+5. Quoted the plan's Strategic Direction verbatim into the consultation prompt's `## Source Material > Plan Strategic Direction (from prior consultation)` block, including the unanchored "Storybook 8+" qualifier.
+6. Both advisor calls (pre-execute + final verification) accepted the framing without challenge. Both recorded `server_tool_use.web_search_requests: 0, web_fetch_requests: 0`.
+7. Implementation shipped as commit `05ea109` with rationale chain inheriting the unverified version qualifier.
+
+### Why Pattern D's suppression is stronger here than in the plan-fixes UAT
+
+The plan-fixes UAT (second amendment) showed Pattern D's web-first PRESCRIPTION was suppressed: the orient phase ran the ranking but did not steer toward web tools because the input shape triggered the trust-contract carve-out.
+
+This UAT shows suppression operates one layer EARLIER. WebSearch and WebFetch are deferred tools in this session (per the JSONL `deferred_tools_delta` attachment at line 11). The executor would have needed `ToolSearch select:WebSearch,WebFetch` to load their schemas before invocation. **It never invoked ToolSearch.** This implies the orient phase did not reach the question-class evaluation step that would have triggered a web-tool consideration; it short-circuited on the plan input's authoritative-source treatment BEFORE considering web-first ranking.
+
+Permissions are not the gate. `command_permissions.allowedTools` (line 15 of JSONL) explicitly includes `WebSearch` and `WebFetch`. The 0-use is purely behavioral.
+
+### Why the carve-out scope must be category-shaped, not enumerated
+
+The second amendment's proposed direction listed specific input shapes ("review output, prior plans, prior consultations"). This UAT shows the failure mode is generic to "any artifact-shaped block": the structural cues that trigger the carve-out are the same across review files (numbered findings + recommendations), plan files (Strategic Direction + Steps + Key Decisions), and transcripts (sequential numbered turns). Enumerating shapes risks under-coverage as future skill outputs evolve.
+
+**Refined direction (supersedes second amendment direction):** `<context_trust_contract>` should classify by SOURCE PROVENANCE, not by structural shape:
+
+- **Vendor-doc authoritative source** (release notes, official guides, API references, MDN, RFCs): treated as authoritative; web tools out of scope for the same library.
+- **Agent-generated source material** (any artifact produced by a prior skill invocation -- review files, plan files, consultation transcripts, prior session notes -- regardless of structural shape): NOT authoritative for vendor-API behavior questions. Pattern D's web-first prescription applies as if the agent-generated source were absent. Verify-first markers within agent-generated source survive into the consultation prompt.
+- **Hedge marker preservation rule (unchanged from second amendment):** verify-first markers (`Verify .+ before acting`, `Assuming .+ \(unverified\)`, `confirm .+ before`) MUST survive into the consultation prompt's `## Source Material` section and MUST NOT be stripped or promoted into `## Pre-verified Claims`.
+- **NEW: ToolSearch availability rule:** the orient phase MUST invoke `ToolSearch select:WebSearch,WebFetch` (or equivalent ensure-loaded mechanism) when the input prompt contains agent-generated source material on a Class-2/3/4 question, regardless of whether the orient ranking has classified the question yet. This makes the web tools structurally available before the trust-contract carve-out can short-circuit ranking.
+
+### Coordination with Phase 7 candidates (unchanged from second amendment)
+
+Phase 6's trust-contract scope (orient ranking + ToolSearch loading) and Phase 7's downstream consultation discipline (pv-* synthesis + hedge propagation + cross-skill chain-of-custody) share a common motif: hedge-stripping during prompt construction. They should be designed together so the hedge-survival contract is consistent across all four SKILL.md surfaces.
+
+### Phase 6 closure status with this amendment
+
+Phase 6 still ships with verdict `PASS-with-caveat`. The original amendment's empirical web-usage gate closure on plugin 0.8.9 (Compodoc + Storybook setup prompt) stands. The amendments capture refinements: Pattern D's web-first prescription is empirically effective on net-new vendor-API questions (original amendment), but is suppressed when the input is agent-generated source material on the SAME or RELATED question (second amendment for review-file input; this third amendment confirms plan-file input + ToolSearch-layer suppression). All three amendments converge on the trust-contract surface as the fix; effort lives in a follow-up phase that runs alongside or after Phase 7.
+
+Evidence: `.planning/phases/06-address-phase-5-6-uat-findings/uat-execute-skill-fixes/session-notes.md`.
