@@ -1,6 +1,6 @@
 {
   "version": "1.0",
-  "timestamp": "2026-04-29T20:30:00.000Z",
+  "timestamp": "2026-04-29T22:00:00.000Z",
   "context": "phase",
   "phase": "06",
   "phase_name": "address-phase-5-6-uat-findings",
@@ -15,16 +15,17 @@
     {"id": "06-03", "name": "UAT replay infrastructure", "status": "done", "commit": "dce2b25"},
     {"id": "06-04", "name": "Two-stage verification gate (Stage 1 ran, halted before Stage 2)", "status": "done", "commit": "54b281a"},
     {"id": "uat-plan-skill", "name": "Manual UAT of /lz-advisor.plan on plugin 0.8.9 (Compodoc + Storybook setup prompt)", "status": "done", "verdict": "PASS", "commit": "de51120", "evidence": "06-VERIFICATION.md amendment 2026-04-29; 2 WebSearch + 5 WebFetch + 4 pre_verified blocks"},
-    {"id": "uat-execute-skill", "name": "Manual UAT of /lz-advisor.execute on plugin 0.8.9 with the Compodoc + Storybook plan", "status": "done", "verdict": "PASS-with-observations", "evidence": ".planning/phases/06-address-phase-5-6-uat-findings/uat-execute-skill/session-notes.md", "observations_phase_7": [".planning/phases/06-address-phase-5-6-uat-findings/PHASE-7-CANDIDATES.md (Finding A: silent apply-then-revert; Finding B: pv-* not carried forward)"]}
+    {"id": "uat-execute-skill", "name": "Manual UAT of /lz-advisor.execute on plugin 0.8.9 with the Compodoc + Storybook plan", "status": "done", "verdict": "PASS-with-observations", "evidence": ".planning/phases/06-address-phase-5-6-uat-findings/uat-execute-skill/session-notes.md", "observations_phase_7": [".planning/phases/06-address-phase-5-6-uat-findings/PHASE-7-CANDIDATES.md (Finding A: silent apply-then-revert; Finding B: pv-* not carried forward)"]},
+    {"id": "uat-review-skill", "name": "Manual UAT of /lz-advisor.review on plugin 0.8.9 against commits 09a09d7^..0cb8ae7", "status": "done", "verdict": "PASS", "evidence": ".planning/phases/06-address-phase-5-6-uat-findings/uat-review-skill/session-notes.md", "observations_phase_7": ["Strengthens Finding A (3 of 4 consultations recommend fn() spy; executor revert was un-grounded)", "Strengthens Finding B (review-skill prompt had 0 pv-* blocks; reviewer guessed Storybook 8.x when 10.3.5 is installed)"]}
   ],
   "remaining_tasks": [
-    {"id": "uat-review-skill", "name": "Manual UAT of /lz-advisor.review on plugin 0.8.9 against the execute-skill output (commits 09a09d7 + 0cb8ae7)", "status": "not_started"}
+    {"id": "uat-security-review-skill", "name": "Manual UAT of /lz-advisor.security-review on plugin 0.8.9 against commits 09a09d7^..0cb8ae7", "status": "not_started"}
   ],
   "blockers": [],
   "human_actions_pending": [
     {
-      "action": "Launch interactive Claude in ngx-smart-components testbed and run /lz-advisor.review on the execute-skill output",
-      "context": "Verifies review-skill orient + reviewer (cyan, xhigh effort) consultation against the realistic Compodoc + Storybook implementation. Branch uat/manual-s4-v089-compodoc has commits 09a09d7 (main implementation, 8 files) and 0cb8ae7 (post-review correction, 1 file). The reviewer agent has 300-word budget and produces ### Findings + ### Cross-Cutting Patterns slots.",
+      "action": "Launch interactive Claude in ngx-smart-components testbed and run /lz-advisor.security-review on the execute-skill output",
+      "context": "Verifies security-review-skill scan + security-reviewer (yellow, xhigh effort) consultation against the same commit range 09a09d7^..0cb8ae7. The security-reviewer agent has its own 250w + 100-150w two-slot budget and produces ### Findings + ### Threat Patterns slots with OWASP-aligned severity. Expected behaviors: scope from git (D-11 J-narrative-isolation), surface security-relevant findings (input validation, output encoding, dependency pinning, gitignore leakage), preserve literal headers in output.",
       "blocking": true
     }
   ],
@@ -48,11 +49,16 @@
       "decision": "Update 06-VERIFICATION.md to PASS-with-caveat (gate_verdict, status, web_usage_count) and append amendment section",
       "rationale": "Reflects empirical state on plugin 0.8.9 while preserving Stage 1 history for traceability.",
       "phase": "06"
+    },
+    {
+      "decision": "Broaden Phase 7 Finding B from intra-skill carry-forward to cross-skill carry-forward",
+      "rationale": "Review-skill UAT showed pv-* blocks were not packaged at all in the review consultation, even though plan skill produced 4 anchored claims. The fix surface is the workflow boundary, not just a single skill's Verification template.",
+      "phase": "06"
     }
   ],
   "uncommitted_files": [],
-  "next_action": "Launch /lz-advisor.review UAT in ngx-smart-components testbed against the execute-skill output. Two commits are now on uat/manual-s4-v089-compodoc: 09a09d7 (main implementation, 8 files) and 0cb8ae7 (post-review correction, 1 file). Invoke as: '/lz-advisor.review the recent Compodoc + Storybook integration commits 09a09d7..0cb8ae7' (or pass commit refs / a base ref via the review skill's expected input shape).",
-  "context_notes": "Phase 6 plan-skill UAT (uat-plan-skill) and execute-skill UAT (uat-execute-skill) both closed on plugin 0.8.9. Execute-skill UAT verdict PASS-with-observations; two behavioral / packaging gaps captured for Phase 7 in PHASE-7-CANDIDATES.md (Finding A: silent apply-then-revert of advisor Critical without reconciliation; Finding B: pv-* blocks not carried forward into Verification template). The review-skill UAT now exercises the cyan reviewer agent (xhigh effort, 300-word cap, ### Findings + ### Cross-Cutting Patterns slots) against the realistic implementation produced by the execute-skill UAT. Expected behaviors: scope reviewer to commits 09a09d7..0cb8ae7 from git (D-11 J-narrative-isolation contract), produce a structured ### Findings list with severity tags + a ### Cross-Cutting Patterns synthesis, stay within 300w + ~10% tolerance.",
+  "next_action": "Launch /lz-advisor.security-review UAT in ngx-smart-components testbed against the execute-skill output. Same commit range as the review-skill UAT. Invoke as: '/lz-advisor.security-review 09a09d7^..0cb8ae7'.",
+  "context_notes": "Phase 6 has now closed plan-skill, execute-skill, and review-skill UATs on plugin 0.8.9. The review-skill UAT verdict was PASS (clean three-phase workflow, schema-correct reviewer output, word budget within ~400w target). Two observations strengthened existing Phase 7 candidates rather than introducing new ones: (1) the reviewer recommended the same fn() spy approach the execute-skill executor silently reverted, making Finding A more concrete; (2) the review-skill prompt contained zero pv-* blocks despite the plan skill producing 4, broadening Finding B to a cross-skill carry-forward gap. Next: security-review-skill UAT to close the four-skill matrix.",
   "uat_iteration_history": [
     {"version": "0.8.5", "result": "9 WebFetch (with leading prompt) / 0 WebSearch", "commit": "77bac39"},
     {"version": "0.8.6", "change": "WebSearch-first prescription in references/orient-exploration.md", "result": "1 WebFetch / 0 WebSearch on non-leading prompt", "commit": "785fdf4"},
@@ -71,6 +77,9 @@
     "execute_skill_uat_session_log": "c:/Users/LarsGyrupBrinkNielse/.claude/projects/D--projects-github-LayZeeDK-ngx-smart-components/ff614de1-c25d-4e84-bee9-5de67de4b208.jsonl",
     "execute_skill_uat_session_notes": ".planning/phases/06-address-phase-5-6-uat-findings/uat-execute-skill/session-notes.md",
     "execute_skill_uat_commits": ["09a09d7", "0cb8ae7"],
+    "review_skill_uat_session_log": "c:/Users/LarsGyrupBrinkNielse/.claude/projects/D--projects-github-LayZeeDK-ngx-smart-components/5dbcc147-5119-439b-950e-f2bdac619598.jsonl",
+    "review_skill_uat_session_notes": ".planning/phases/06-address-phase-5-6-uat-findings/uat-review-skill/session-notes.md",
+    "review_skill_uat_scope": "09a09d7^..0cb8ae7",
     "phase_7_candidates": ".planning/phases/06-address-phase-5-6-uat-findings/PHASE-7-CANDIDATES.md"
   }
 }
