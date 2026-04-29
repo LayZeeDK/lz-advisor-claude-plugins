@@ -30,45 +30,57 @@ Example. Question: "Is the `DocsOptions` type still exported from `@storybook/an
 
 When the question is about documented behavior, recommended
 configuration, or current best practice for an integration, the first
-orient action is `WebFetch` of the official source. The library's
-homepage, GitHub README, current-version docs, and migration guides
-are the contracts the maintainers publish; local files show what is
-installed, not what the library currently recommends.
+orient action is to locate the vendor's current docs page and read it.
+Run `WebSearch` with the library name, the installed version, and the
+specific symbol or topic, then `WebFetch` the top result. Vendor docs
+URLs are not stable across releases, so search discovers the current
+canonical URL rather than guessing it. The library's current-version
+docs, GitHub README, and migration guides are the contracts the
+maintainers publish; local files show what is installed, not what the
+library currently recommends.
 
 Local reads (`project.json`, `package.json`, `.storybook/main.ts`,
 `src/**`) and `.d.ts` corroborate the web answer; they do not replace it.
 
-Example. Question: "What is the current recommended approach for Storybook 10.x docs configuration in an Nx Angular library?" Class: API currency. First action: `WebFetch` of `https://storybook.js.org/docs/configure` or the matching 10.x docs URL.
+Example. Question: "What is the current recommended approach for Storybook docs configuration in an Nx Angular library?" Class: API currency. First action: `WebSearch` for `Storybook Angular docs configuration`, then `WebFetch` the top result. Corroborate with `Read` of the installed `@storybook/angular` `package.json` exports.
 
-Example. Question: "How should the Nx Compodoc generator be configured for 2026-Q1 Storybook?" Class: API currency. First action: `WebFetch` of the Nx docs page for the Compodoc generator at the current Nx version.
+Example. Question: "How should the Nx Compodoc generator be configured for current Storybook?" Class: API currency. First action: `WebSearch` for `Nx Compodoc Storybook generator`, then `WebFetch` the top Nx-hosted result. Corroborate with `Read` of `nx.json` and the workspace's project graph.
 
 ## Class 3: Migration / deprecation
 
 When the question is about whether a symbol was removed, deprecated, or
-replaced between versions, the first orient action is `WebFetch` of the
-release notes or the migration guide. The `CHANGELOG.md`, GitHub
-releases, and migration-guide pages decide what was removed; `.d.ts`
+replaced between versions, the first orient action is to locate the
+relevant release notes or migration guide and read it. Run `WebSearch`
+with the library name, the symbol, and the version range or change
+keyword (e.g. `removed`, `deprecated`, `migration`), then `WebFetch` the
+top result. The `CHANGELOG.md`, GitHub releases, and migration-guide
+pages decide what was removed; their URLs change with each release, so
+search discovers the current location rather than guessing it. `.d.ts`
 shows the current shape but cannot show what used to be there.
 
 `.d.ts` and `node_modules` corroborate the migration answer and provide
 negative evidence when a symbol named in old docs is absent from the
 current types.
 
-Example. Question: "Is `setCompodocJson` still exported from `@storybook/addon-docs/angular` in Storybook 10.3.5?" Class: migration / deprecation. First action: `WebFetch` Storybook 10.x release notes at `https://github.com/storybookjs/storybook/releases` and the Storybook 9 to 10 migration guide.
+Example. Question: "Is `setCompodocJson` still exported from `@storybook/addon-docs/angular`?" Class: migration / deprecation. First action: `WebSearch` for `setCompodocJson Storybook removed`, then `WebFetch` the top result (likely the migration guide or a v10 release page). Corroborate with `rg setCompodocJson node_modules/@storybook/` to confirm the symbol's current absence.
 
-Example. Question: "Was the Nx Compodoc generator deprecated between Nx 19 and Nx 20?" Class: migration / deprecation. First action: `WebFetch` of the Nx release notes and migration-guide pages for the current Nx version.
+Example. Question: "Was the Nx Compodoc generator deprecated in a recent Nx release?" Class: migration / deprecation. First action: `WebSearch` for `Nx Compodoc generator deprecated`, then `WebFetch` the top result (Nx release notes or migration page). Corroborate with `Read` of the workspace's `nx.json` and `package.json`.
 
 ## Class 4: Language semantics
 
 When the question is about how the language itself behaves at compile
 time or runtime, independent of any specific library, the first orient
-action is an empirical compile or run (build the example, observe the
-error) or a `WebFetch` of the language spec. The spec and the compiler
-decide language semantics, not archaeology in `node_modules`.
+action is one of two paths. The empirical path: build a minimal example
+that triggers the rule and observe the compiler or runtime output
+(`tsc --noEmit`, `node`, `deno run`). The spec path: `WebSearch` for the
+language name plus the construct (e.g. `TypeScript dynamic import type`,
+`ECMAScript optional chaining`), then `WebFetch` the top spec or
+handbook result. The spec and the compiler decide language semantics,
+not archaeology in `node_modules`.
 
 Library `.d.ts` files reflect language semantics but do not define them.
 
-Example. Question: "How does TypeScript treat `import()` at compile time when the imported module is a type-only export?" Class: language semantics. First action: an empirical `tsc --noEmit` against a minimal example, or `WebFetch` of the TypeScript handbook page on dynamic imports.
+Example. Question: "How does TypeScript treat `import()` at compile time when the imported module is a type-only export?" Class: language semantics. First action: an empirical `tsc --noEmit` against a minimal example, or `WebSearch` for `TypeScript dynamic import type-only` followed by `WebFetch` of the top handbook result.
 
 ## Closing Note
 

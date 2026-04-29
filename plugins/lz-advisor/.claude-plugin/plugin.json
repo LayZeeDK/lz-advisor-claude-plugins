@@ -1,6 +1,6 @@
 {
   "name": "lz-advisor",
-  "version": "0.8.5",
+  "version": "0.8.6",
   "description": "Advisor strategy: pair Opus advisor with session model for near-Opus intelligence at Sonnet cost",
   "author": {
     "name": "Lars Gyrup Brink Nielsen",
