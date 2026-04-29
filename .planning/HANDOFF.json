@@ -1,0 +1,70 @@
+{
+  "version": "1.0",
+  "timestamp": "2026-04-29T19:29:47.506Z",
+  "context": "phase",
+  "phase": "06",
+  "phase_name": "address-phase-5-6-uat-findings",
+  "phase_dir": ".planning/phases/06-address-phase-5-6-uat-findings",
+  "plan": null,
+  "task": null,
+  "total_tasks": 4,
+  "status": "paused",
+  "completed_tasks": [
+    {"id": "06-01", "name": "Pattern D reference doc", "status": "done", "commit": "4128992"},
+    {"id": "06-02", "name": "Wire Pattern D into 4 SKILLs + 0.8.5 bump", "status": "done", "commit": "15425c3"},
+    {"id": "06-03", "name": "UAT replay infrastructure", "status": "done", "commit": "dce2b25"},
+    {"id": "06-04", "name": "Two-stage verification gate (Stage 1 ran, halted before Stage 2)", "status": "done", "commit": "54b281a"}
+  ],
+  "remaining_tasks": [
+    {"id": "uat-execute-skill", "name": "Manual UAT of /lz-advisor.execute on plugin 0.8.9 with the Compodoc + Storybook plan", "status": "not_started"}
+  ],
+  "blockers": [],
+  "human_actions_pending": [
+    {
+      "action": "Launch interactive Claude in ngx-smart-components testbed and run /lz-advisor.execute on the existing plan",
+      "context": "Verifies execute-skill orient + consult + 7-step execute + final review on plugin 0.8.9 with the plan-skill output as input. The plan-skill UAT already passed (2 WebSearch + 5 WebFetch).",
+      "blocking": true
+    }
+  ],
+  "decisions": [
+    {
+      "decision": "Path C2 (descriptive-trigger refinement) chosen over C1 (advisor refusal) and C3 (PreToolUse hook)",
+      "rationale": "Anthropic 2026 prompt-engineering doc and prior memory both warn against imperative escalation; descriptive triggers + worked examples + reordering + tightened triggers is the recommended pattern.",
+      "phase": "06"
+    },
+    {
+      "decision": "Strip personal CLAUDE.md fetch chain references (markdown.new, url-to-markdown, playwright-cli) from SKILL body",
+      "rationale": "Marketplace plugin neutrality. User-level fetch substitutes operate at a different precedence layer; plugin shouldn't enumerate them.",
+      "phase": "06"
+    },
+    {
+      "decision": "Treat Stage 1 KCB synthetic-fixture FAIL as historical context, not operative gate verdict",
+      "rationale": "Manual UAT on plugin 0.8.9 against realistic Compodoc + Storybook setup prompt produced 7 web tool calls and the highest-quality plan of any version tested. KCB synthetic prompt didn't exercise the rich orient + pre_verified pattern.",
+      "phase": "06"
+    },
+    {
+      "decision": "Update 06-VERIFICATION.md to PASS-with-caveat (gate_verdict, status, web_usage_count) and append amendment section",
+      "rationale": "Reflects empirical state on plugin 0.8.9 while preserving Stage 1 history for traceability.",
+      "phase": "06"
+    }
+  ],
+  "uncommitted_files": [],
+  "next_action": "Launch /lz-advisor.execute UAT in ngx-smart-components testbed. Pass the existing plan via @ file mention: '/lz-advisor.execute Implement the plan at @plans/compodoc-storybook-angular-signals.plan.md.'",
+  "context_notes": "Phase 6 plan-skill UAT successfully closed on plugin 0.8.9. The execute-skill UAT is the next test in the same iteration cycle to verify the full executor-advisor loop on a realistic implementation task. Plan was written by 0.8.9 plan skill with 2 WebSearch + 5 WebFetch + 4 pre_verified blocks; uniquely caught the Compodoc-1.2.1 signal-class gotcha (input() lands in propertiesClass not inputsClass; needs argTypes recategorization). The execute skill should re-verify the plan's pre_verified claims, consult advisor before substantive work, execute the 7 steps with atomic commits, do final review, and complete.",
+  "uat_iteration_history": [
+    {"version": "0.8.5", "result": "9 WebFetch (with leading prompt) / 0 WebSearch", "commit": "77bac39"},
+    {"version": "0.8.6", "change": "WebSearch-first prescription in references/orient-exploration.md", "result": "1 WebFetch / 0 WebSearch on non-leading prompt", "commit": "785fdf4"},
+    {"version": "0.8.7", "change": "Promoted WebSearch-first to SKILL body + Bash-substitute prohibition", "result": "0 WebFetch / 0 WebSearch (prohibition suppressed everything)", "commit": "aa04b43"},
+    {"version": "0.8.8", "change": "Narrowed prohibition to WebSearch-only (allow fetch substitutes)", "result": "not re-tested (superseded by 0.8.9 design)", "commit": "2849220"},
+    {"version": "0.8.9", "change": "Reordered ranking to web-first + tightened step 2 trigger + worked example + stripped personal-tool refs", "result": "2 WebSearch + 5 WebFetch + 4 pre_verified blocks; highest-quality plan", "commit": "93d74fb"}
+  ],
+  "key_artifacts": {
+    "verification_md": ".planning/phases/06-address-phase-5-6-uat-findings/06-VERIFICATION.md",
+    "verification_amendment_commit": "de51120",
+    "current_plugin_version": "0.8.9",
+    "testbed": "D:/projects/github/LayZeeDK/ngx-smart-components",
+    "testbed_branch": "uat/manual-s4-v089-compodoc",
+    "plan_to_execute": "D:/projects/github/LayZeeDK/ngx-smart-components/plans/compodoc-storybook-angular-signals.plan.md",
+    "plan_skill_uat_session_log": "c:/Users/LarsGyrupBrinkNielse/.claude/projects/D--projects-github-LayZeeDK-ngx-smart-components/6cba971a-fe19-4a09-8d3c-4a288ea14ce0.jsonl"
+  }
+}
