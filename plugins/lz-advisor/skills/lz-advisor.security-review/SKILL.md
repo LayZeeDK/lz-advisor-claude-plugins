@@ -16,7 +16,7 @@ description: >
   reviews, bug finding, or style issues -- use lz-advisor.review
   instead. It should also NOT be used for planning or implementing
   tasks -- use lz-advisor.plan or lz-advisor.execute instead.
-version: 0.8.6
+version: 0.8.7
 allowed-tools: Agent(lz-advisor:security-reviewer), Read, Glob, Bash(git:*), WebSearch, WebFetch
 ---
 
@@ -58,13 +58,11 @@ When you need information about a third-party library, framework, or public API 
 
 1. **Local-project read first** -- if the question is about how *your project* uses the library (config files, existing usage patterns), read project files only: `project.json`, `package.json`, `.storybook/`, `src/`, `tsconfig*.json`. Stop when the project-side question is answered.
 
-2. **WebFetch for public-API questions** -- if the question is about *the library's documented behavior* and no authoritative source block was inlined, WebFetch the official docs. The library's homepage, GitHub README, release notes, and migration guides are all valid first-fetch targets.
+2. **`WebSearch` then `WebFetch` for public-API questions** -- if the question is about *the library's documented behavior* and no authoritative source block was inlined, first `WebSearch` with the library name plus the installed version plus the specific API or symbol, then `WebFetch` the top result. Vendor docs URLs change between releases; search discovers the current canonical URL rather than guessing it from training. Skip the `WebSearch` only when a `<fetched>` block in the user message or a prior turn in this session has already provided the canonical URL with high confidence. Do not substitute Bash invocations of `curl`, `node` scripts, browser automation, or other content-retrieval tools for `WebSearch` and `WebFetch`; those tools take a URL as input and cannot replace the search step that discovers the URL.
 
-3. **WebSearch for version/compatibility questions** -- when you don't know the right docs URL, WebSearch with the library name + version + the specific API or symbol.
+3. **`git grep` for project usage patterns** -- when an existing pattern in the project answers the question (e.g., "how does this project already configure Storybook addons?"), `git grep` against project source.
 
-4. **`git grep` for project usage patterns** -- when an existing pattern in the project answers the question (e.g., "how does this project already configure Storybook addons?"), `git grep` against project source.
-
-If none of steps 1-4 produces the answer you need, name the gap explicitly in the consultation Findings section and proceed. Do not extend Orient indefinitely. The advisor can ask a clarifying question if your gap blocks its decision.
+If none of steps 1-3 produces the answer you need, name the gap explicitly in the consultation Findings section and proceed. Do not extend Orient indefinitely. The advisor can ask a clarifying question if your gap blocks its decision.
 
 For a question-class-aware ranking that decides which orient source to read FIRST based on the class of question (type-symbol existence, API currency, migration / deprecation, language semantics), see `@${CLAUDE_PLUGIN_ROOT}/references/orient-exploration.md`.
 </orient_exploration_ranking>
