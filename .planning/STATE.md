@@ -3,9 +3,9 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Phase 6 execute-fixes UAT closed (PASS-with-significant-observations); security-review UAT queued as final Phase 6 action
-last_updated: "2026-04-30T00:30:00.000Z"
-last_activity: 2026-04-30 -- execute-fixes UAT closed at testbed commit 05ea109; 06-VERIFICATION.md amendment 3 captured (Pattern D suppression at ToolSearch loading layer); PHASE-7-CANDIDATES updated (Finding C now 7-hop chain reaching committed source code)
+stopped_at: Phase 6 follow-up UAT cycle complete (5 of 5 done); 4 06-VERIFICATION.md amendments + Phase 7 candidates ready for follow-up phase planning
+last_updated: "2026-04-30T01:30:00.000Z"
+last_activity: 2026-04-30 -- security-review UAT closed (PASS-with-observations); 06-VERIFICATION.md amendment 4 captured (Pattern D taxonomy missing security-embedded Class-2 patterns); PHASE-7-CANDIDATES updated (Finding C bifurcates across question-class axes with NEW scope-disambiguated provenance markers guard; NEW Finding D word-budget regression on security-reviewer)
 progress:
   total_phases: 12
   completed_phases: 10
@@ -21,16 +21,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-10)
 
 **Core value:** Near-Opus intelligence at Sonnet cost for coding tasks, through strategic advisor consultation at high-leverage moments
-**Current focus:** Phase 06 -- address Phase 5.6 UAT findings; five follow-up manual UATs done on plugin 0.8.9 (plan, execute, review, plan-fixes, execute-fixes); security-review is the final blocking UAT
+**Current focus:** Phase 06 -- follow-up UAT cycle COMPLETE (5 of 5 manual UATs done on plugin 0.8.9: plan, execute, review, plan-fixes, execute-fixes, security-review). Four 06-VERIFICATION.md amendments + Phase 7 candidates ready for follow-up phase planning.
 
 ## Current Position
 
-Phase: 06
-Plan: All 4 phase plans done (06-01 through 06-04); 5 manual UAT cycles closed (uat-plan-skill, uat-execute-skill, uat-review-skill, uat-plan-skill-fixes, uat-execute-skill-fixes); 1 UAT remaining (uat-security-review-skill)
-Status: UAT cycle in progress on plugin 0.8.9 (testbed: ngx-smart-components, branch uat/manual-s4-v089-compodoc, latest commit 05ea109)
-Last activity: 2026-04-30 -- execute-fixes UAT closed at testbed commit 05ea109; 06-VERIFICATION.md amendment 3 captured (Pattern D suppression at ToolSearch loading layer; carve-out scope confirmed for plan-file input); PHASE-7-CANDIDATES.md updated (Finding A: n=1 in-skill empirical confirmation of override-acceptance pathway; Finding B.1 broadened to in-skill synthesis gap; Finding C extended to 7-hop chain reaching committed source code)
+Phase: 06 (UAT cycle complete; ready for follow-up phase planning)
+Plan: All 4 phase plans done (06-01 through 06-04); 5 of 5 manual UAT cycles closed (uat-plan-skill, uat-execute-skill, uat-review-skill, uat-plan-skill-fixes, uat-execute-skill-fixes, uat-security-review-skill)
+Status: Phase 6 ships PASS-with-caveat on plugin 0.8.9 (testbed: ngx-smart-components, branch uat/manual-s4-v089-compodoc, latest commit 05ea109). All gaps captured in 4 06-VERIFICATION.md amendments + PHASE-7-CANDIDATES.md (3 core findings + 1 new word-budget candidate).
+Last activity: 2026-04-30 -- security-review UAT closed (PASS-with-observations) at session 2d388e98; 06-VERIFICATION.md amendment 4 captured (Pattern D's question-class taxonomy missing security-embedded Class-2 patterns -- CVE/security-advisory lookups inside lz-advisor.security-review's natural question mix); PHASE-7-CANDIDATES.md Finding C now bifurcates across API-correctness vs security-clearance axes (NEW fourth guard: scope-disambiguated provenance markers); NEW Finding D for word-budget regression (security-reviewer ~412w vs 300w cap, ~37% over).
 
-Next: Run /lz-advisor.security-review UAT in ngx-smart-components testbed against the post-fix commit range (uat/manual-s4-v089-compodoc base through 05ea109). See HANDOFF.json `human_actions_pending[0]` for the exact prompt and security-focused observations.
+Next: Plan the Phase 6 follow-up phase. Recommended entry: `/gsd-discuss-phase 7` to gather context for a phase that bundles the four 06-VERIFICATION.md amendment surfaces (trust-contract rewrite, ToolSearch-availability rule, Class 2-S taxonomy, scope-disambiguated provenance) WITH Phase 7 Findings A, B (B.1 + B.2), C, D. Alternative: `/gsd-add-phase` to add the phase first, then `/gsd-plan-milestone-gaps` to derive plans from the captured gaps.
 
 Progress: [##########] 100%
 
@@ -54,7 +54,7 @@ Progress: [##########] 100%
 | 05.2 | 4 | - | - |
 | 05.4 | 7 | - | - |
 | 05.6 | 7 | - | - |
-| 06 | 4 + 5 UATs | - | - |
+| 06 | 4 + 6 UATs | - | - |
 
 **Recent Trend:**
 
@@ -87,6 +87,10 @@ Recent decisions affecting current work:
 - [Phase 06]: Broaden Phase 7 Finding B.1 from carry-forward gap to synthesis gap -- executor does not synthesize pv-* blocks for orient-phase empirical findings even when canonical templates are attached at session start
 - [Phase 06]: Extend Phase 7 Finding C chain to 7 hops, reaching committed source code (commit 05ea109); add NEW version-qualifier anchoring rule as third proposed C guard; promote C to highest-priority Phase 7 candidate
 - [Phase 06]: Phase 7 Finding A status -- n=1 in-skill empirical confirmation of override-acceptance pathway (advisor critical override applied as-is, attributed in summary); needs n>=3 across heterogeneous override scenarios before declaring resolved
+- [Phase 06]: Capture Pattern D's question-class taxonomy gap as 06-VERIFICATION.md fourth amendment 2026-04-30 -- security-review's natural question mix INCLUDES embedded Class-2 (CVE/security-advisory) questions that the current 4-class taxonomy does not surface; recommend Class 2-S sub-pattern in references/orient-exploration.md
+- [Phase 06]: Bifurcate Phase 7 Finding C across question-class axes -- security-review skill breaks the API-correctness chain (out of scope) but extends the security-clearance chain (imprimatur attached to commits with unverified API claims); add NEW fourth guard: scope-disambiguated provenance markers on verdicts
+- [Phase 06]: Add Phase 7 Finding D for word-budget regression on security-reviewer agent (~412w vs 300w cap, ~37% over) -- mirrors original DEF Word-budget regression pattern; cross-cutting concern that word-budget is currently soft-style not hard-rule layer in agent prompts
+- [Phase 06]: Phase 6 follow-up UAT cycle COMPLETE (5 of 5 manual UATs); ready for follow-up phase planning -- recommend /gsd-discuss-phase 7 to gather context for a phase bundling the 4 amendment surfaces with the 4 Phase 7 findings (A, B.1+B.2, C, D)
 
 ### Pending Todos
 
@@ -115,6 +119,6 @@ Recent decisions affecting current work:
 
 ## Session Continuity
 
-Last session: 2026-04-30T00:30:00.000Z
-Stopped at: Execute-fixes UAT closed at testbed commit 05ea109; 06-VERIFICATION.md third amendment captured (Pattern D suppression extends to plan-file input AND operates at ToolSearch loading layer; trust-contract direction refined to classify by source provenance); PHASE-7-CANDIDATES.md updated (Finding A: n=1 in-skill confirmation; Finding B.1 broadened to synthesis gap; Finding C extended to 7-hop chain reaching committed source code with new version-qualifier anchoring rule). Security-review UAT is the final blocking Phase 6 action.
-Resume file: .planning/HANDOFF.json (primary resumption source -- has next_action, human_actions_pending[0] with exact `/lz-advisor.security-review` prompt, and security-focused observations for the post-UAT trace analysis)
+Last session: 2026-04-30T01:30:00.000Z
+Stopped at: Phase 6 follow-up UAT cycle COMPLETE. All 5 manual UATs closed on plugin 0.8.9 (plan, execute, review, plan-fixes, execute-fixes, security-review). Four 06-VERIFICATION.md amendments capture the Pattern D refinements (1: PASS-with-caveat baseline; 2: review-file authoritative-source carve-out; 3: plan-file input + ToolSearch-layer suppression + provenance-based classification; 4: security-embedded Class-2 patterns missing from question-class taxonomy). PHASE-7-CANDIDATES.md captures 4 findings (A: silent apply-then-revert with n=1 in-skill confirmation; B.1+B.2: pv-* discipline broken in synthesis + carry-forward + confabulation; C: 7-hop confidence-laundering chain reaching committed source code, bifurcated across API-correctness vs security-clearance axes with 4 proposed guards; D: word-budget regression on security-reviewer agent). HANDOFF.json deleted (cycle complete; no active blocker).
+Resume next: plan the follow-up phase. Recommend `/gsd-discuss-phase 7` to gather context, then `/gsd-plan-phase 7` to produce the executable plan that bundles the 4 amendment surfaces with the 4 Phase 7 findings.
