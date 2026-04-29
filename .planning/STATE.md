@@ -3,9 +3,9 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Phase 6 plan-fixes UAT closed; execute-fixes UAT queued as next blocking action
-last_updated: "2026-04-29T23:30:00.000Z"
-last_activity: 2026-04-29 -- plan+execute fix cycle UAT in progress; plan-fixes done at 2173e39, execute-fixes next
+stopped_at: Phase 6 execute-fixes UAT closed (PASS-with-significant-observations); security-review UAT queued as final Phase 6 action
+last_updated: "2026-04-30T00:30:00.000Z"
+last_activity: 2026-04-30 -- execute-fixes UAT closed at testbed commit 05ea109; 06-VERIFICATION.md amendment 3 captured (Pattern D suppression at ToolSearch loading layer); PHASE-7-CANDIDATES updated (Finding C now 7-hop chain reaching committed source code)
 progress:
   total_phases: 12
   completed_phases: 10
@@ -21,16 +21,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-10)
 
 **Core value:** Near-Opus intelligence at Sonnet cost for coding tasks, through strategic advisor consultation at high-leverage moments
-**Current focus:** Phase 06 -- address Phase 5.6 UAT findings; four follow-up manual UATs done on plugin 0.8.9 (plan, execute, review, plan-fixes); execute-fixes is the next blocking UAT
+**Current focus:** Phase 06 -- address Phase 5.6 UAT findings; five follow-up manual UATs done on plugin 0.8.9 (plan, execute, review, plan-fixes, execute-fixes); security-review is the final blocking UAT
 
 ## Current Position
 
 Phase: 06
-Plan: All 4 phase plans done (06-01 through 06-04); 4 manual UAT cycles closed (uat-plan-skill, uat-execute-skill, uat-review-skill, uat-plan-skill-fixes); 1 UAT remaining (uat-execute-skill-fixes), 1 queued (uat-security-review-skill)
-Status: UAT cycle in progress on plugin 0.8.9 (testbed: ngx-smart-components, branch uat/manual-s4-v089-compodoc)
-Last activity: 2026-04-29 -- plan-fixes UAT closed at testbed commit 2173e39; PHASE-7-CANDIDATES.md sharpened (Findings A reinforced, B split into B.1/B.2, NEW Finding C); 06-VERIFICATION.md amended with new Phase 6 gap (Pattern D suppression on review-file authoritative-source treatment)
+Plan: All 4 phase plans done (06-01 through 06-04); 5 manual UAT cycles closed (uat-plan-skill, uat-execute-skill, uat-review-skill, uat-plan-skill-fixes, uat-execute-skill-fixes); 1 UAT remaining (uat-security-review-skill)
+Status: UAT cycle in progress on plugin 0.8.9 (testbed: ngx-smart-components, branch uat/manual-s4-v089-compodoc, latest commit 05ea109)
+Last activity: 2026-04-30 -- execute-fixes UAT closed at testbed commit 05ea109; 06-VERIFICATION.md amendment 3 captured (Pattern D suppression at ToolSearch loading layer; carve-out scope confirmed for plan-file input); PHASE-7-CANDIDATES.md updated (Finding A: n=1 in-skill empirical confirmation of override-acceptance pathway; Finding B.1 broadened to in-skill synthesis gap; Finding C extended to 7-hop chain reaching committed source code)
 
-Next: Run /lz-advisor.execute UAT in ngx-smart-components testbed against the plan-fixes plan (commit 2173e39, file plans/address-review-findings-compodoc-storybook.plan.md). See HANDOFF.json `human_actions_pending[0]` for the exact prompt and regression checks.
+Next: Run /lz-advisor.security-review UAT in ngx-smart-components testbed against the post-fix commit range (uat/manual-s4-v089-compodoc base through 05ea109). See HANDOFF.json `human_actions_pending[0]` for the exact prompt and security-focused observations.
 
 Progress: [##########] 100%
 
@@ -54,7 +54,7 @@ Progress: [##########] 100%
 | 05.2 | 4 | - | - |
 | 05.4 | 7 | - | - |
 | 05.6 | 7 | - | - |
-| 06 | 4 + 4 UATs | - | - |
+| 06 | 4 + 5 UATs | - | - |
 
 **Recent Trend:**
 
@@ -83,6 +83,10 @@ Recent decisions affecting current work:
 - [Phase 06]: Add plan+execute fix cycle UAT before security-review; doubles as Phase 7 Findings A/B regression check
 - [Phase 06]: Capture Pattern D suppression on review-file authoritative-source treatment as Phase 6 gap (06-VERIFICATION.md second amendment) rather than Phase 7 candidate -- root cause is the trust-contract surface owned by Phase 6
 - [Phase 06]: Sharpen Phase 7 Finding B into B.1 (carry-forward) + B.2 (Pre-verified Claims confabulation) and add new Finding C (4-hop confidence-laundering chain)
+- [Phase 06]: Extend Pattern D suppression scope from review-file to plan-file input (06-VERIFICATION.md third amendment); confirm suppression operates at ToolSearch loading layer (executor never invokes ToolSearch to load deferred Web tools), not just at ranking layer; refined trust-contract direction to classify by source provenance (vendor-doc vs agent-generated) rather than structural shape
+- [Phase 06]: Broaden Phase 7 Finding B.1 from carry-forward gap to synthesis gap -- executor does not synthesize pv-* blocks for orient-phase empirical findings even when canonical templates are attached at session start
+- [Phase 06]: Extend Phase 7 Finding C chain to 7 hops, reaching committed source code (commit 05ea109); add NEW version-qualifier anchoring rule as third proposed C guard; promote C to highest-priority Phase 7 candidate
+- [Phase 06]: Phase 7 Finding A status -- n=1 in-skill empirical confirmation of override-acceptance pathway (advisor critical override applied as-is, attributed in summary); needs n>=3 across heterogeneous override scenarios before declaring resolved
 
 ### Pending Todos
 
@@ -111,6 +115,6 @@ Recent decisions affecting current work:
 
 ## Session Continuity
 
-Last session: 2026-04-29T23:30:00.000Z
-Stopped at: Plan-fixes UAT closed at testbed commit 2173e39; new Phase 6 gap captured (Pattern D suppression on review-file input); Phase 7 Findings sharpened (A reinforced, B split into B.1/B.2, NEW Finding C). Execute-fixes UAT is the next blocking action.
-Resume file: .planning/HANDOFF.json (primary resumption source -- has next_action, human_actions_pending[0] with exact `/lz-advisor.execute` prompt, and instrumented_observations for the post-UAT trace analysis)
+Last session: 2026-04-30T00:30:00.000Z
+Stopped at: Execute-fixes UAT closed at testbed commit 05ea109; 06-VERIFICATION.md third amendment captured (Pattern D suppression extends to plan-file input AND operates at ToolSearch loading layer; trust-contract direction refined to classify by source provenance); PHASE-7-CANDIDATES.md updated (Finding A: n=1 in-skill confirmation; Finding B.1 broadened to synthesis gap; Finding C extended to 7-hop chain reaching committed source code with new version-qualifier anchoring rule). Security-review UAT is the final blocking Phase 6 action.
+Resume file: .planning/HANDOFF.json (primary resumption source -- has next_action, human_actions_pending[0] with exact `/lz-advisor.security-review` prompt, and security-focused observations for the post-UAT trace analysis)
