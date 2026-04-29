@@ -1,6 +1,6 @@
 {
   "version": "1.0",
-  "timestamp": "2026-04-29T22:00:00.000Z",
+  "timestamp": "2026-04-29T22:30:00.000Z",
   "context": "phase",
   "phase": "06",
   "phase_name": "address-phase-5-6-uat-findings",
@@ -19,13 +19,37 @@
     {"id": "uat-review-skill", "name": "Manual UAT of /lz-advisor.review on plugin 0.8.9 against commits 09a09d7^..0cb8ae7", "status": "done", "verdict": "PASS", "evidence": ".planning/phases/06-address-phase-5-6-uat-findings/uat-review-skill/session-notes.md", "observations_phase_7": ["Strengthens Finding A (3 of 4 consultations recommend fn() spy; executor revert was un-grounded)", "Strengthens Finding B (review-skill prompt had 0 pv-* blocks; reviewer guessed Storybook 8.x when 10.3.5 is installed)"]}
   ],
   "remaining_tasks": [
-    {"id": "uat-security-review-skill", "name": "Manual UAT of /lz-advisor.security-review on plugin 0.8.9 against commits 09a09d7^..0cb8ae7", "status": "not_started"}
+    {
+      "id": "uat-plan-skill-fixes",
+      "name": "Manual UAT of /lz-advisor.plan on plugin 0.8.9 to plan fixes for the review-skill findings (3 findings on commit 0cb8ae7)",
+      "status": "not_started",
+      "instrumented_observations": [
+        "Whether plan skill resolves the contested fn() spy question via WebSearch + WebFetch on @storybook/angular@10.3.5 signal-output behavior",
+        "How many pv-* blocks the planner advisor consultation contains (baseline expectation: >=1 for the fn() question)",
+        "Whether plan output PLAN.md preserves pv-* blocks in a recognizable shape for downstream execute skill consumption"
+      ]
+    },
+    {
+      "id": "uat-execute-skill-fixes",
+      "name": "Manual UAT of /lz-advisor.execute on plugin 0.8.9 against the plan from uat-plan-skill-fixes (Phase 7 Finding A and B regression check)",
+      "status": "not_started",
+      "instrumented_observations": [
+        "Phase 7 Finding A repro check: does the execute-skill executor silently apply-then-revert any advisor Critical, or now issue a reconciliation call?",
+        "Phase 7 Finding B repro check: does the execute-skill carry the plan-skill's pv-* blocks into its consultations (pre-execute and final)?",
+        "Whether the fn() spy question is empirically resolved in the shipped fix (i.e., the plan-skill pv-* anchors break the tie)"
+      ]
+    },
+    {
+      "id": "uat-security-review-skill",
+      "name": "Manual UAT of /lz-advisor.security-review on plugin 0.8.9 against the post-fix state (commit range from uat/manual-s4-v089-compodoc base through the fix commits)",
+      "status": "queued"
+    }
   ],
   "blockers": [],
   "human_actions_pending": [
     {
-      "action": "Launch interactive Claude in ngx-smart-components testbed and run /lz-advisor.security-review on the execute-skill output",
-      "context": "Verifies security-review-skill scan + security-reviewer (yellow, xhigh effort) consultation against the same commit range 09a09d7^..0cb8ae7. The security-reviewer agent has its own 250w + 100-150w two-slot budget and produces ### Findings + ### Threat Patterns slots with OWASP-aligned severity. Expected behaviors: scope from git (D-11 J-narrative-isolation), surface security-relevant findings (input validation, output encoding, dependency pinning, gitignore leakage), preserve literal headers in output.",
+      "action": "Launch interactive Claude in ngx-smart-components testbed and run /lz-advisor.plan with the review findings as authoritative source, per canonical UAT prompt format",
+      "context": "Plans the fixes for the 3 review findings on commit 0cb8ae7. The contested fn() spy question (Findings A across 3 of 4 prior consultations) needs empirical resolution via plan-skill WebSearch + WebFetch on @storybook/angular@10.3.5 signal-output integration. Use canonical prompt format: '/lz-advisor.plan <one sentence>:\\n---\\n<verbatim review output>\\n---'. Authoritative review output is the verbatim ### Findings + ### Cross-Cutting Patterns block from the review-skill UAT session log 5dbcc147-5119-439b-950e-f2bdac619598.jsonl event 56.",
       "blocking": true
     }
   ],
@@ -54,11 +78,16 @@
       "decision": "Broaden Phase 7 Finding B from intra-skill carry-forward to cross-skill carry-forward",
       "rationale": "Review-skill UAT showed pv-* blocks were not packaged at all in the review consultation, even though plan skill produced 4 anchored claims. The fix surface is the workflow boundary, not just a single skill's Verification template.",
       "phase": "06"
+    },
+    {
+      "decision": "Add a plan+execute fix cycle UAT before security-review and use it as a regression check for Phase 7 Findings A and B",
+      "rationale": "The contested fn() spy question deserves empirical resolution via plan-skill web research before any code change. Running plan+execute on the review findings doubles as a Phase 7 repro check: does executor silent-revert recur, do plan-skill pv-* blocks carry forward into execute-skill consultations? Two new behavioral data points for ~$2 of plugin spend.",
+      "phase": "06"
     }
   ],
   "uncommitted_files": [],
-  "next_action": "Launch /lz-advisor.security-review UAT in ngx-smart-components testbed against the execute-skill output. Same commit range as the review-skill UAT. Invoke as: '/lz-advisor.security-review 09a09d7^..0cb8ae7'.",
-  "context_notes": "Phase 6 has now closed plan-skill, execute-skill, and review-skill UATs on plugin 0.8.9. The review-skill UAT verdict was PASS (clean three-phase workflow, schema-correct reviewer output, word budget within ~400w target). Two observations strengthened existing Phase 7 candidates rather than introducing new ones: (1) the reviewer recommended the same fn() spy approach the execute-skill executor silently reverted, making Finding A more concrete; (2) the review-skill prompt contained zero pv-* blocks despite the plan skill producing 4, broadening Finding B to a cross-skill carry-forward gap. Next: security-review-skill UAT to close the four-skill matrix.",
+  "next_action": "Launch /lz-advisor.plan UAT in ngx-smart-components testbed with the review findings as authoritative source. Use canonical UAT prompt format (one sentence + --- delimited authoritative block). The expected workflow: plan skill orient + WebSearch + WebFetch on @storybook/angular@10.3.5 signal-output integration -> planner consultation with >=1 pv-* block -> PLAN.md output. Then queued: /lz-advisor.execute against the resulting plan, then /lz-advisor.security-review on the post-fix state.",
+  "context_notes": "Phase 6 has closed plan-skill, execute-skill, and review-skill UATs on plugin 0.8.9. Per user direction 2026-04-29, a plan+execute fix cycle is added to the queue BEFORE security-review so security-review eventually runs against the final post-fix state. The fix cycle doubles as a regression check for Phase 7 Findings A (silent apply-then-revert) and B (pv-* not carried forward) -- the second time the same code surface goes through the plan -> execute -> review loop on the same plugin version. If Findings A and B reproduce, the case for Phase 7 strengthens further; if they don't reproduce, the original observations were stochastic and the fix scope can be narrower.",
   "uat_iteration_history": [
     {"version": "0.8.5", "result": "9 WebFetch (with leading prompt) / 0 WebSearch", "commit": "77bac39"},
     {"version": "0.8.6", "change": "WebSearch-first prescription in references/orient-exploration.md", "result": "1 WebFetch / 0 WebSearch on non-leading prompt", "commit": "785fdf4"},
