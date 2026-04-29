@@ -15,7 +15,7 @@ description: >
   fix bugs, or run security audits -- those are handled by sibling
   skills lz-advisor.execute, lz-advisor.review, and
   lz-advisor.security-review respectively.
-version: 0.8.8
+version: 0.8.9
 allowed-tools: Agent(lz-advisor:advisor), Read, Glob, Bash(git:*), Write, WebSearch, WebFetch
 ---
 
@@ -54,13 +54,15 @@ When no authoritative source block is present, follow the standard exploration r
 <orient_exploration_ranking>
 When you need information about a third-party library, framework, or public API beyond what the authoritative source block provides, take ONE of the following actions:
 
-1. **Local-project read first** -- if the question is about how *your project* uses the library (config files, existing usage patterns), read project files only: `project.json`, `package.json`, `.storybook/`, `src/`, `tsconfig*.json`. Stop when the project-side question is answered.
+1. **`WebSearch` then `WebFetch` for library-behavior questions** -- if the question is about *the library itself* (its current API, recommended configuration, integration pattern, or migration path between versions), the first orient action is `WebSearch` with the library name plus the installed version plus the specific symbol or topic, then `WebFetch` the top result. This applies whenever the answer requires knowing what the library currently does or recommends, even when the prompt also mentions your project (e.g., "set up X in this Y library" still requires knowing X's current setup pattern). Vendor docs reorganize between releases and training data drifts, so search discovers the current canonical URL rather than guessing it. Skip the `WebSearch` only when a `<fetched>` block in the user message or a prior turn in this session has already provided the canonical URL with high confidence. Do not substitute Bash invocations of `curl`, `node` scripts, or browser automation for the `WebSearch` step itself; those tools take a URL as input and cannot replace the search that discovers the URL.
 
-2. **`WebSearch` then fetch for public-API questions** -- if the question is about *the library's documented behavior* and no authoritative source block was inlined, first `WebSearch` with the library name plus the installed version plus the specific API or symbol. Then retrieve the top result via `WebFetch` or via the project's preferred fetch tool (e.g., `CLAUDE.md` fallback chains using `markdown.new`, `url-to-markdown`, `playwright-cli`, or similar). Vendor docs URLs change between releases; search discovers the current canonical URL rather than guessing it from training. Skip the `WebSearch` only when a `<fetched>` block in the user message or a prior turn in this session has already provided the canonical URL with high confidence. Do not substitute fetch tools for the `WebSearch` step itself; fetch tools take a URL as input and cannot replace the search that discovers the URL.
+2. **Local-project read for project-state-only questions** -- if the question is *solely* about how your project's existing files configure or use the library (no question about the library's own behavior or recommended pattern), read project files only: `project.json`, `package.json`, `.storybook/`, `src/`, `tsconfig*.json`. Stop when the project-side question is answered. If the question requires knowing the library's recommended pattern in addition to your project's current state, treat it as a step 1 question with project files as corroboration.
 
 3. **`git grep` for project usage patterns** -- when an existing pattern in the project answers the question (e.g., "how does this project already configure Storybook addons?"), `git grep` against project source.
 
 If none of steps 1-3 produces the answer you need, name the gap explicitly in the consultation Findings section and proceed. Do not extend Orient indefinitely. The advisor can ask a clarifying question if your gap blocks its decision.
+
+**Worked example.** Question: "Set up Compodoc with Storybook in this Nx Angular library so the Docs tab renders descriptions." Class: step 1 (library behavior). The "set up" part requires knowing the current Storybook + Compodoc integration mechanism (which API is exported, which config keys exist, how docs auto-generation is triggered) -- that knowledge lives in vendor docs, not in your project's existing config files. Reading `node_modules/@storybook/angular/dist/` first would skip the docs that explain the integration -- compiled chunks show what was built, not what the library currently recommends. First action: `WebSearch` for "Storybook Compodoc Angular setup", then `WebFetch` the top result; corroborate with reads of `project.json` and `.storybook/` after.
 
 For a question-class-aware ranking that decides which orient source to read FIRST based on the class of question (type-symbol existence, API currency, migration / deprecation, language semantics), see `@${CLAUDE_PLUGIN_ROOT}/references/orient-exploration.md`.
 </orient_exploration_ranking>
