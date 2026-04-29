@@ -46,6 +46,40 @@ Example. Question: "What is the current recommended approach for Storybook docs 
 
 Example. Question: "How should the Nx Compodoc generator be configured for current Storybook?" Class: API currency. First action: `WebSearch` for `Nx Compodoc Storybook generator`, then `WebFetch` the top Nx-hosted result. Corroborate with `Read` of `nx.json` and the workspace's project graph.
 
+### Class 2-S: Security currency (sub-pattern of Class 2)
+
+When the question is whether a third-party dependency has known
+vulnerabilities, security advisories, or CVE entries, the first orient
+action is `npm audit --json` (local, fast; runs against
+`package-lock.json` directly; produces structured output with severity
+levels critical / high / moderate / low). Fallback ordering: `WebFetch
+https://github.com/advisories?query=<package>` for advisory text and
+GHSA-* IDs; `WebSearch "<package> CVE <year>"` as a third-line check
+for NVD entries not mirrored to GitHub Advisories.
+
+Synthesize a `<pre_verified source="npm audit --json"
+claim_id="pv-no-known-cves-N">` block (no-CVE outcome) or
+`<pre_verified source="..." claim_id="pv-cve-list-N">` block (CVE-list
+outcome with affected version range). Use the pv-* anchor to ground
+the supply-chain finding's severity in the consultation prompt; without
+this anchor, the severity assertion is theoretical, not empirical.
+
+This sub-pattern fires only inside `lz-advisor.security-review` for
+findings on third-party dependencies. Other skills' security-adjacent
+questions remain Class 2 (vendor-doc) or Class 1 (type-symbol existence).
+
+Example. Question: "Are there known CVEs in `@compodoc/compodoc@1.2.1`
+or its transitive deps?" Class: 2-S. First action: `npm audit --json`.
+Output: `{"metadata": {"vulnerabilities": {"info":0, "low":0,
+"moderate":0, "high":0, "critical":0, "total":0}}}` -- zero advisories
+for the installed version. Optional second action: `WebFetch
+https://github.com/advisories?query=@compodoc/compodoc` to confirm the
+empty result against GitHub's Security Advisories index. Synthesize a
+`<pre_verified source="npm audit --json" claim_id="pv-no-known-cves-1">`
+block anchoring Finding 2's severity. Without this empirical anchor,
+the supply-chain risk assertion remains "unpinned package" pattern
+alone, not vulnerability-grounded.
+
 ## Class 3: Migration / deprecation
 
 When the question is about whether a symbol was removed, deprecated, or
