@@ -16,7 +16,7 @@ description: >
   reviews, bug finding, or style issues -- use lz-advisor.review
   instead. It should also NOT be used for planning or implementing
   tasks -- use lz-advisor.plan or lz-advisor.execute instead.
-version: 0.8.9
+version: 0.9.0
 allowed-tools: Agent(lz-advisor:security-reviewer), Read, Glob, Bash(git:*), WebSearch, WebFetch
 ---
 
