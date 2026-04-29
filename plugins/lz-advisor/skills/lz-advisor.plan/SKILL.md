@@ -15,7 +15,7 @@ description: >
   fix bugs, or run security audits -- those are handled by sibling
   skills lz-advisor.execute, lz-advisor.review, and
   lz-advisor.security-review respectively.
-version: 0.8.7
+version: 0.8.8
 allowed-tools: Agent(lz-advisor:advisor), Read, Glob, Bash(git:*), Write, WebSearch, WebFetch
 ---
 
@@ -56,7 +56,7 @@ When you need information about a third-party library, framework, or public API 
 
 1. **Local-project read first** -- if the question is about how *your project* uses the library (config files, existing usage patterns), read project files only: `project.json`, `package.json`, `.storybook/`, `src/`, `tsconfig*.json`. Stop when the project-side question is answered.
 
-2. **`WebSearch` then `WebFetch` for public-API questions** -- if the question is about *the library's documented behavior* and no authoritative source block was inlined, first `WebSearch` with the library name plus the installed version plus the specific API or symbol, then `WebFetch` the top result. Vendor docs URLs change between releases; search discovers the current canonical URL rather than guessing it from training. Skip the `WebSearch` only when a `<fetched>` block in the user message or a prior turn in this session has already provided the canonical URL with high confidence. Do not substitute Bash invocations of `curl`, `node` scripts, browser automation, or other content-retrieval tools for `WebSearch` and `WebFetch`; those tools take a URL as input and cannot replace the search step that discovers the URL.
+2. **`WebSearch` then fetch for public-API questions** -- if the question is about *the library's documented behavior* and no authoritative source block was inlined, first `WebSearch` with the library name plus the installed version plus the specific API or symbol. Then retrieve the top result via `WebFetch` or via the project's preferred fetch tool (e.g., `CLAUDE.md` fallback chains using `markdown.new`, `url-to-markdown`, `playwright-cli`, or similar). Vendor docs URLs change between releases; search discovers the current canonical URL rather than guessing it from training. Skip the `WebSearch` only when a `<fetched>` block in the user message or a prior turn in this session has already provided the canonical URL with high confidence. Do not substitute fetch tools for the `WebSearch` step itself; fetch tools take a URL as input and cannot replace the search that discovers the URL.
 
 3. **`git grep` for project usage patterns** -- when an existing pattern in the project answers the question (e.g., "how does this project already configure Storybook addons?"), `git grep` against project source.
 
