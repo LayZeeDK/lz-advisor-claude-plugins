@@ -1,16 +1,16 @@
 ---
-status: pass-with-caveat
+status: partial
 phase: 06-address-phase-5-6-uat-findings
 type: verification
-plugin_version: 0.8.9
-gate_verdict: PASS-with-caveat
+plugin_version: 0.9.0
+gate_verdict: PARTIAL
 smoke_verdict: FAIL
 uat_verdict: PASS
 web_usage_count: 7
 web_usage_threshold: ">= 1 in >= 4 of 6"
 started: 2026-04-28T19:57:32Z
-ended: 2026-04-29T18:00:00Z
-plugin_versions_iterated: ["0.8.5", "0.8.6", "0.8.7", "0.8.8", "0.8.9"]
+ended: 2026-04-30T00:09:16Z
+plugin_versions_iterated: ["0.8.5", "0.8.6", "0.8.7", "0.8.8", "0.8.9", "0.9.0"]
 ---
 
 # Phase 6 Verification -- Pattern D Replay
@@ -18,6 +18,8 @@ plugin_versions_iterated: ["0.8.5", "0.8.6", "0.8.7", "0.8.8", "0.8.9"]
 ## Unclosed Phase-6 Gaps (Plan Surface)
 
 **Status as of 2026-04-30:** Phase 6 ships at `PASS-with-caveat` mechanically, but **three amendments below explicitly claim Phase-6 scope and remain unclosed**. They are the plan surface for `/gsd-plan-phase 6 --gaps`.
+
+**Status as of 2026-04-30 (gap-closure cycle):** Plans 06-05, 06-06, 06-07 ran against plugin 0.9.0. G3 closed empirically via security-review replay (npm audit fired); G1+G2 structurally landed (Plan 06-05 sentinels present in all 4 SKILL.md) but empirically residual on plugin 0.9.0 (plan-fixes and execute-fixes replays still showed 0 web tools / 0 ToolSearch). See amendment 5 below for the gap-closure verdict and residual Phase 7 scope.
 
 | Gap | Amendment | Owns | Fix surface |
 |---|---|---|---|
@@ -385,3 +387,61 @@ Phase 6 still ships with verdict `PASS-with-caveat`. All 5 follow-up UATs are no
 All four amendments are scope for a follow-up phase. The Phase 6 follow-up UAT cycle is complete; ready for a Phase 7 / Phase 6.1 planning cycle that addresses the four amendment surfaces plus Phase 7's separately-tracked consultation-discipline gaps (Findings A, B.1+B.2, C).
 
 Evidence: `.planning/phases/06-address-phase-5-6-uat-findings/uat-security-review-skill/session-notes.md`.
+
+---
+
+## Amendment 2026-04-30 (fifth) -- Gap closure for amendments 2, 3, 4 + final verdict downgrade
+
+The Phase 6 follow-up gap-closure cycle (Plans 06-05, 06-06, 06-07) ran against plugin 0.9.0 and produced a mixed empirical outcome: G3 closed empirically; G1 + G2 landed structurally but did not flip behavior on the regression-replay fixtures.
+
+### Gap-closure plans
+
+| Plan | Closes | Surface | Commit |
+|------|--------|---------|--------|
+| 06-05 | G1 + G2 | `<context_trust_contract>` rewrite (provenance-based classification + ToolSearch-availability rule) byte-identically across 4 SKILL.md | `0df782d` (feat) / `4e74b7b` (docs SUMMARY) |
+| 06-06 | G3 | `references/orient-exploration.md` Class 2-S sub-section + `lz-advisor.security-review/SKILL.md` cross-reference | `b7ec018` (feat) / `afad319` (docs SUMMARY) |
+| 06-07 | Closure criteria 3, 4, 5 | Plugin version bump 0.8.9 -> 0.9.0; regression replay subset (plan-fixes + execute-fixes + security-review UATs); this amendment | `7ceeffd` (chore version bump); replay session-notes + this amendment in the closure commit |
+
+### Regression replay results on plugin 0.9.0
+
+| UAT | Original gap | Replay session log | Pattern D / Class 2-S fires? | Verdict |
+|-----|--------------|--------------------|-------------------------------|---------|
+| plan-fixes | Amendment 2 (review-file carve-out) | `0c6698fd-5010-4225-be83-f0086078bfba.jsonl` | NO -- 0 WebSearch + 0 WebFetch + 0 ToolSearch (same as 0.8.9 baseline) | FAIL |
+| execute-fixes | Amendment 3 (plan-file + ToolSearch layer) | `49a38cc3-9e70-4146-8c95-5d0c6e0a1777.jsonl` | NO -- 0 WebSearch + 0 WebFetch + 0 ToolSearch across 37 advisor turn snapshots | FAIL |
+| security-review | Amendment 4 (Class 2-S) | `db5e0511-55b8-4814-b38a-d8c4cc39eb6b.jsonl` | YES -- 5 npm audit invocations, 1 GHSA URL surfaced, transitive HIGH advisories anchored on @verdaccio/core / lodash / minimatch / picomatch | PASS |
+
+### Plugin version on disk
+
+| Surface | Pre | Post |
+|---------|-----|------|
+| `plugins/lz-advisor/.claude-plugin/plugin.json` | 0.8.9 | 0.9.0 |
+| 4 SKILL.md frontmatter | 0.8.9 | 0.9.0 |
+
+Verified post-bump: `rg -uu -l '0\.8\.9' plugins/lz-advisor/` returns no matches; all 5 surfaces grep to 0.9.0; plugin.json parses as JSON; all 4 SKILL.md frontmatter parses; Plan 06-05 trust-contract sentinel ("Vendor-doc authoritative source") present in all 4 SKILL.md; Plan 06-06 Class 2-S sentinels preserved.
+
+### Final verdict
+
+**PARTIAL** -- the Class 2-S taxonomy addition (Plan 06-06) produced the predicted behavioral flip on the security-review replay (G3 empirical closure). The trust-contract rewrite (Plan 06-05) is structurally landed in all 4 SKILL.md (sentinels present, 3296-byte block byte-identical across files) but did not flip the runtime behavior of plan-fixes / execute-fixes replays on plugin 0.9.0 (G1+G2 structural-only closure; empirical surface remains the same as 0.8.9 baseline).
+
+Two interpretations of the G1+G2 empirical residual:
+
+1. The path heuristic for "agent-generated" provenance (`/plans/`, `/.planning/`, filenames containing `review` / `consultation` / `session-notes` / `plan`) is loaded into the SKILL prose but not behaviorally selected by Sonnet 4.6 on the fixture inputs. Pitfall G5 (provenance over-matching) was a planning concern; the replays show the symmetric under-matching failure mode.
+2. The ToolSearch-availability rule fires "BEFORE ranking" per the contract prose, but in practice the trust-contract carve-out short-circuits the orient phase before the rule's classification check runs. The rule may need a stronger upstream trigger (path-heuristic-only, not classification-gated).
+
+Either way, the empirical gate did not flip on plugin 0.9.0 for the plan-fixes / execute-fixes replays. G1+G2 closure status downgrades from "closed" to "structurally landed but empirically residual"; the residual surface inherits to Phase 7.
+
+### Residual Phase 7 scope (out of Phase 6 closure)
+
+- **G1+G2 empirical residual** (NEW from this amendment): Plan 06-05 contract is structurally landed but does not flip web-tool / ToolSearch usage on the plan-fixes / execute-fixes replay fixtures. Phase 7 should consider a non-text steering mechanism (advisor refusal-pattern, hook, hard skill prefix) or a stronger upstream trigger for the ToolSearch-availability rule. Cross-references the existing 05.6 Path C1 / C3 evaluation.
+- **Phase 7 Finding A** (silent apply-then-revert): n>=3 trial requirement still open per PHASE-7-CANDIDATES.md.
+- **Phase 7 Finding B** (B.1 carry-forward + B.1 broadened synthesis + B.2 confabulation): pv-* discipline at the consultation-construction layer. Reaffirmed by all 3 replays (zero pv-* synthesis, even on the security-review replay where the empirical npm audit data was sufficient to anchor a `pv-no-known-cves-N` block).
+- **Phase 7 Finding C** (4-guard suite including scope-disambiguated provenance markers): cross-skill workflow concern.
+- **Phase 7 Finding D** (security-reviewer word-budget regression): unchanged.
+
+Phase 6 closes with PARTIAL gate_verdict; Phase 7 inherits the residual scope including the new G1+G2 empirical residual.
+
+### Replay evidence
+
+- `.planning/phases/06-address-phase-5-6-uat-findings/uat-plan-skill-fixes-rerun/session-notes.md` -- plan-fixes replay (FAIL).
+- `.planning/phases/06-address-phase-5-6-uat-findings/uat-execute-skill-fixes-rerun/session-notes.md` -- execute-fixes replay (FAIL).
+- `.planning/phases/06-address-phase-5-6-uat-findings/uat-security-review-skill-rerun/session-notes.md` -- security-review replay (PASS).
