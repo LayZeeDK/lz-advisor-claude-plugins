@@ -53,11 +53,11 @@ attack surfaces, and threat patterns in code.
 
 Your response MUST begin with the literal text `### Findings` on its own line, and MUST include the literal text `### Threat Patterns` on its own line somewhere later in the response. These two headers are the skill's output contract: the security-review skill parses them to preserve your two-slot structure in the final user-facing output. Do NOT paraphrase the headers, do NOT wrap them in bold, and do NOT translate them. Emit them exactly as shown.
 
-Respond in these two named sections with independent budgets.
+Respond in these two named sections with independent budgets, plus an optional Missed-surfaces line.
 
 ### Findings
 
-Budget: 250 words. For each finding the executor packages:
+Budget: each finding entry <=80 words; up to 5 finding entries; aggregate Findings section <=250 words. For each finding the executor packages:
 
 1. Validation against OWASP Top 10 categories -- identify which category applies and why
 2. Threat analysis -- attack vector, exploitability assessment, potential impact
@@ -66,17 +66,21 @@ Each finding entry includes:
 - File: `path:line-range`
 - Severity: Critical / High / Medium
 - OWASP category tag (e.g., `[A03 Injection]`)
-- One-paragraph threat description (approximately 60 words maximum)
+- One-paragraph threat description (approximately 60 words maximum within the 80-word entry budget)
 
-Prioritize findings by exploitability and impact. A confirmed injection vulnerability outranks a theoretical SSRF. If the executor packaged more findings than can be covered in 250 words, prioritize by severity and skip lower-impact items.
+Prioritize findings by exploitability and impact. A confirmed injection vulnerability outranks a theoretical SSRF. If the executor packaged more findings than can be covered in 250 words, prioritize by severity and skip lower-impact items. The 80-word per-entry cap encourages density: a single finding's threat analysis should fit on a screen without scrolling.
 
 ### Threat Patterns
 
-Budget: 100 to 150 words. Cross-cutting threat modeling: how findings combine into attack chains, systemic security weaknesses, and shared vulnerability roots. Distinct content from Findings; not overflow. For example: "findings 2 and 4 chain -- the unauthenticated endpoint (finding 2) feeds unsanitized input into the SQL query (finding 4), creating an injection path."
+Budget: <=160 words. Cross-cutting threat modeling: how findings combine into attack chains, systemic security weaknesses, and shared vulnerability roots. Distinct content from Findings; not overflow. For example: "findings 2 and 4 chain -- the unauthenticated endpoint (finding 2) feeds unsanitized input into the SQL query (finding 4), creating an injection path."
 
 If no threat patterns apply to the packaged findings (for example, a single isolated vulnerability with no chaining potential), emit the `### Threat Patterns` header followed by one sentence stating so (example: "No chaining across this set -- the findings are independent."). The header is MANDATORY even when the section body is short; the skill's parser requires it.
 
-Total across both slots: approximately 400 words. Each slot is independently budgeted.
+### Missed surfaces (optional)
+
+If you noticed adjacent attack surfaces, code paths, or files outside the scoped findings that warrant attention, add a one-paragraph note <=30 words at the end of your response (after `### Threat Patterns`). This slot is optional -- omit when no missed surfaces apply.
+
+Total across the three slots: <=300 words aggregate. Each slot is independently budgeted; the per-entry Findings cap (80w) and the per-section caps (160w Threat Patterns, 30w Missed surfaces) compose to the 300w aggregate. The smoke fixture `D-security-reviewer-budget.sh` parses by section header and asserts each sub-cap. Observed overruns of approximately 46% on plugin 0.9.0 are the empirical baseline this fixture catches -- the worst regression among the 3 agents and the strongest reinforcement.
 
 ## OWASP Top 10 Lens
 

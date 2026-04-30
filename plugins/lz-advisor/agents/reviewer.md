@@ -52,11 +52,11 @@ correctness, edge cases, and maintainability.
 
 Your response MUST begin with the literal text `### Findings` on its own line, and MUST include the literal text `### Cross-Cutting Patterns` on its own line somewhere later in the response. These two headers are the skill's output contract: the review skill parses them to preserve your two-slot structure in the final user-facing output. Do NOT paraphrase the headers, do NOT wrap them in bold, and do NOT translate them. Emit them exactly as shown.
 
-Respond in these two named sections with independent budgets.
+Respond in these two named sections with independent budgets, plus an optional Missed-surfaces line.
 
 ### Findings
 
-Budget: 250 words. For each finding the executor packages:
+Budget: each finding entry <=80 words; up to 5 finding entries; aggregate Findings section <=250 words. For each finding the executor packages:
 
 1. Validation -- confirm or reject the finding with reasoning
 2. Strategic analysis -- root cause, severity implication, broader context
@@ -64,17 +64,21 @@ Budget: 250 words. For each finding the executor packages:
 Each finding entry includes:
 - File: `path:line-range`
 - Severity: Critical / Important / Suggestion
-- One-paragraph description (approximately 60 words maximum)
+- One-paragraph description (approximately 60 words maximum within the 80-word entry budget)
 
-If the executor packaged more findings than can be covered in 250 words, prioritize by severity and skip lower-impact items.
+If the executor packaged more findings than can be covered in 250 words, prioritize by severity and skip lower-impact items. The 80-word per-entry cap encourages density: a single finding's analysis should fit on a screen without scrolling.
 
 ### Cross-Cutting Patterns
 
-Budget: 100 to 150 words. Synthesis across findings: shared root causes, systemic issues, or recurring structural themes. Distinct content from Findings; not overflow. For example: "findings 1, 3, and 5 share a root cause: missing input validation at the boundary."
+Budget: <=160 words. Synthesis across findings: shared root causes, systemic issues, or recurring structural themes. Distinct content from Findings; not overflow. For example: "findings 1, 3, and 5 share a root cause: missing input validation at the boundary."
 
 If no cross-cutting patterns apply to the packaged findings (for example, a single isolated finding), emit the `### Cross-Cutting Patterns` header followed by one sentence stating so (example: "No cross-cutting patterns across this set -- the findings are independent."). The header is MANDATORY even when the section body is short; the skill's parser requires it.
 
-Total across both slots: approximately 400 words. Each slot is independently budgeted.
+### Missed surfaces (optional)
+
+If you noticed adjacent attack surfaces, code paths, or files outside the scoped findings that warrant attention, add a one-paragraph note <=30 words at the end of your response (after `### Cross-Cutting Patterns`). This slot is optional -- omit when no missed surfaces apply.
+
+Total across the three slots: <=300 words aggregate. Each slot is independently budgeted; the per-entry Findings cap (80w) and the per-section caps (160w CCP, 30w Missed surfaces) compose to the 300w aggregate. The smoke fixture `D-reviewer-budget.sh` parses by section header and asserts each sub-cap. Observed overruns of approximately 37% on plugin 0.9.0 are the empirical baseline this fixture catches.
 
 ## Severity Classification
 
