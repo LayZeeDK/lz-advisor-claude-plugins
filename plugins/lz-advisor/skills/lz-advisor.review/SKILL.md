@@ -100,6 +100,7 @@ Scan the code with high-signal criteria. Flag:
 - Security issues (surface-level -- deep security analysis is for `/lz-advisor.security-review`)
 - Clear correctness problems
 - Edge cases not handled
+- Verification gaps in implementation of hedged claims. When changed code implements a load-bearing claim that an upstream artifact (plan, prior consultation, review file) marked as hedged (sentinel patterns: `\b(unverified)\b`, `\bverify .+ before acting\b`, `\bAssuming .+ \(unverified\)\b`, `\bconfirm .+ before\b`, `\bfall back to .+ if .+\b`), check the commit body and any follow-up commits in scope for a verification record. The verification record is one of: (a) a `Verified: <claim>` trailer naming the hedge action; (b) a `<pre_verified>` anchor referenced in the commit body; (c) explicit empirical evidence (test output, build log, file content) recorded in the commit body. The absence of all three is a finding: "Hedged claim X was implemented without verification record." Severity: Important if the hedge concerns correctness or security; Suggestion otherwise. To check: read `git log --format="%B" <range>` for the changed-code commit range and `rg -e '^Verified:' <commit-body>` to detect trailers.
 
 Skip (do not flag):
 

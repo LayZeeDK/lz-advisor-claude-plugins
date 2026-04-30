@@ -151,6 +151,18 @@ the SAME verbatim text that was emitted in user-visible output between the
 --- Strategic Direction --- markers; the plan file preserves it as
 a durable artifact.>
 
+## Findings Disposition (when input is a numbered finding list)
+
+When the user invocation supplies a numbered finding list as input -- review file, security-review file, prior plan file with hedged claims, or any artifact containing N enumerated findings -- the plan file MUST address ALL N input findings with explicit disposition. For each input finding, list:
+
+- **Finding F<N>:** <one-line summary of the input finding>
+- **Disposition:** one of `addressed` (a Step in this plan implements the fix), `deferred` (acknowledged but out of scope for this plan; references where it will be handled), `rejected` (the finding does not apply or the proposed fix would create new problems; rationale required), or `not-applicable` (the finding has been resolved by other means or was a false positive)
+- **Rationale:** one or two sentences explaining the disposition; for `addressed`, name the Step number(s) that implement the fix; for `deferred` / `rejected`, the reason
+
+If no numbered finding list is supplied (the user provided a free-form task description), this section is OMITTED -- it does not apply to fresh tasks.
+
+This convention closes the silent-resolve sub-pattern observed in 7th UAT (plan-fixes-2): the plan addressed 3 of 5 input findings with code changes but silently dropped F3 and F4 with no acknowledgment. Explicit disposition makes drops visible to the user and downstream skills (execute may pick up the deferred items in a later invocation).
+
 ## Steps
 
 1. **<Step title>**
