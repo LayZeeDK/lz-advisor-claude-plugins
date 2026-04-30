@@ -111,6 +111,25 @@ Skip (do not flag):
 
 Curate the top 3-5 highest-signal findings with file:line references and relevant code context. Read thoroughly within scope -- do not skim.
 
+### Pre-emptive Class-2 scan (Option 1 closure for Finding F)
+
+Before consulting the reviewer agent, identify likely Class-2 surfaces in the changed code per `@${CLAUDE_PLUGIN_ROOT}/references/orient-exploration.md` Class 2 (API currency / configuration / recommended pattern) and Class 2-S (security currency / CVE / advisory). Common Class-2 surfaces in code-review scope:
+
+- **Vendor library imports.** Identify any `import` statements (or language-equivalents) referencing third-party packages. For each import, the library version + symbol pair is a likely Class-2 question (e.g., "is symbol X still exported in installed version Y?").
+- **Framework version-conditional patterns.** Patterns that depend on framework version: Storybook addon registration patterns, Angular signals usage, Next.js routing conventions, Nx target configurations, build-tool orchestration rules.
+- **Build-tool target configs.** Files like `project.json`, `nx.json`, `webpack.config.*`, `vite.config.*`, `tsconfig.*`, `package.json` scripts -- target options change across tool versions.
+- **Supply-chain dependencies (Class 2-S sub-pattern, security-review only).** Each dependency in `package.json` is a Class 2-S question for the security-reviewer.
+
+For each pre-emptable Class-2 surface in the changed code:
+
+1. Pre-empt with `WebSearch` then `WebFetch` per orient-exploration.md Class 2 ranking.
+2. Synthesize a `<pre_verified>` block per `@${CLAUDE_PLUGIN_ROOT}/references/context-packaging.md` Common Contract Rule 5b. The pv-* anchor lives in the executor's pre-consultation packaging.
+3. The pre-empted answer anchors the reviewer's findings: when the reviewer encounters the same surface, the pv-* block in the consultation prompt lets the reviewer close the hedge that pre-emption resolved.
+
+The pre-emption is conservative: pre-empt the top 3-5 most-likely Class-2 surfaces per review invocation, not every import. The cost target is approximately 1-3 additional WebSearch / WebFetch invocations per review (matches the long-tail vs short-tail tradeoff in CONTEXT.md D-04 cost-discipline analysis). The reviewer's escalation hook (Phase 3 below) handles the long tail of reviewer-surfaced Class-2 surprises that pre-emption did not anticipate.
+
+The pre-empted pv-* blocks ride into the consultation prompt's `## Pre-Verified Package Behavior Claims` section per context-packaging.md Verification template; the reviewer treats them as authoritative per Common Contract Rule 5.
+
 Do not consult the reviewer agent during scanning. Scanning is preparation.
 </scan>
 
@@ -153,6 +172,24 @@ Do NOT:
 If the reviewer rejected a finding the executor packaged, that rejection appears within the reviewer's `### Findings` body (validation step). The executor does not second-guess: pass the full `### Findings` and `### Cross-Cutting Patterns` content through.
 
 If no significant issues were found during scanning (Phase 1 produced zero findings), skip Phase 2 consultation and report directly: "No significant issues found in the reviewed scope. Reviewed: [scope]." Note briefly what was examined. Do not invoke the reviewer agent with an empty Findings packet.
+
+### Reviewer Escalation Hook (Option 2 closure for Finding F)
+
+The reviewer agent emits a structured `<verify_request>` block when it encounters a Class-2 question that the executor's Phase 1 pre-emption did not anticipate AND that the reviewer cannot resolve from `[Read, Glob]` tool access alone. The block shape is documented in `@${CLAUDE_PLUGIN_ROOT}/references/context-packaging.md` "Verify Request Schema" section.
+
+Before emitting the reviewer's verbatim response to the user (per the Required output shape above), scan the response for `<verify_request` opening tags. If one or more `<verify_request>` blocks are present, perform the following one-shot escalation flow:
+
+1. **Parse each `<verify_request>` block.** Extract `question`, `class`, `anchor_target` (optional), and `severity` (optional) attributes.
+2. **Perform the requested verification.** For each `class="2"` request, run `WebSearch` then `WebFetch` per orient-exploration.md Class 2 ranking. For each `class="2-S"` request (security-review only), run `npm audit --json` then `WebFetch https://github.com/advisories?query=<package>` per Class 2-S sub-pattern.
+3. **Synthesize `<pre_verified>` blocks** per Common Contract Rule 5b. Use the `anchor_target` value from the verify_request as the new pv-* `claim_id` (or generate a fresh `pv-N` if anchor_target was omitted).
+4. **Re-invoke the reviewer agent ONCE** with the new pv-* anchors appended to the consultation prompt's `## Pre-Verified Package Behavior Claims` section. The re-invocation is one-shot only -- if the second invocation still surfaces the same hedge, emit an ungrounded finding with explicit "verification unsuccessful" tag in the user-facing output. Do NOT iterate further (Spotify Honk one-shot principle).
+5. **Replace the original reviewer response with the re-invoked response** in the user-visible output. The user sees only the resolved (or marked-unsuccessful) version, not the intermediate verify_request flow.
+
+The one-shot rule prevents reviewer-side gaming of the verifier feedback (the failure mode that makes self-reports unreliable per outcome-based verification research). It also caps cost: at most 1 additional WebSearch + WebFetch + reviewer-re-invocation per review, even when the reviewer surfaces N verify_request blocks (perform all verifications in one pre-pass, then re-invoke once).
+
+If no `<verify_request>` blocks are present in the reviewer's first response (the typical case when Phase 1 pre-emption successfully anticipated the Class-2 surfaces), proceed to the user-visible output unchanged.
+
+The reviewer agent keeps `[Read, Glob]` tool grant per `agents/reviewer.md` -- principle of least privilege per OWASP AI Agent Security Cheat Sheet. The verify_request hook is the structured-output security control that lets the reviewer escalate WITHOUT extending its tool grant.
 
 ### Verdict scope marker
 
