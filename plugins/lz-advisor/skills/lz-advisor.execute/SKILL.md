@@ -158,11 +158,83 @@ what decision is needed. The pre-execute consultation context carries
 implicitly; a full repackage is unnecessary.
 </execute>
 
+<verify_before_commit>
+## Phase 3.5: Verify Before Commit
+
+Before staging or committing changes (Phase 4), execute pending verification actions surfaced by upstream artifacts or by the advisor. This phase closes the gap between hedge-preservation at the prompt-construction layer (Phase 6 Plan 06-05) and verification-completion at the execute layer.
+
+### Hedge marker resolution (E.1)
+
+If the source material in your pre-execute consultation prompt contains an unresolved verify-first marker on a load-bearing implementation choice -- sentinel patterns `\b(unverified)\b`, `\bverify .+ before acting\b`, `\bAssuming .+ \(unverified\)\b`, `\bconfirm .+ before\b`, `\bfall back to .+ if .+\b` -- AND the advisor's Strategic Direction did not flag the hedge with the literal `Unresolved hedge:` frame, perform the verification action yourself before staging the related changes. Add a `Verified: <claim>` trailer to the commit body naming the claim that was verified.
+
+If the advisor's Strategic Direction or `**Critical:**` block flagged the hedge with the literal frame `Unresolved hedge: <marker>. Verify <action> before committing.`, treat the verification action as a hard precondition for the commit. Do not stage the related changes until the verification has run AND its outcome is recorded in either (a) a new `<pre_verified>` block synthesized for the next consultation, OR (b) a `Verified: <claim>` trailer on the commit body.
+
+### Plan-step shape rule (E.2)
+
+When the plan input contains a numbered, executable plan step structured as:
+
+```
+N. **Validate** (or Verify, Test, Confirm)
+   - Run: `<command>`
+   - Verify: <observable conditions>
+```
+
+The `Run:` directive is an EXECUTOR-BOUND action, not a USER-FACING instruction. Execute the `<command>` as a Bash invocation BEFORE the commit that ships the related changes. The post-commit summary may surface the result to the user, but the verification itself runs pre-commit. Failure to execute the `Run:` directive before the commit is a verify-skip violation and triggers the cost-cliff allowance below.
+
+### Cost-cliff allowance for long-running async validations
+
+Cheap synchronous validations execute pre-commit:
+
+- `npm ls`, `npm install`, `git grep`, `git check-ignore`, `git status`, `lint`, `tsc --noEmit`, `tsc --noEmit --pretty`, `jest --bail`, focused test runs
+- Commands expected to complete in under 30 seconds on a warm dev machine
+
+Long-running async validations move to a `wip:` prefixed commit + `## Outstanding Verification` section in the commit body listing the pending checks:
+
+- `nx storybook`, `nx test`, `nx test-storybook`, `nx serve*`, `nx run-many` over many projects (more than 3)
+- Full test suites lasting longer than 30 seconds
+- Dev-server startup or watch-mode commands
+
+`wip:` commit body shape:
+
+```
+wip: <subject describing partial deliverable>
+
+<body explaining what is in and what is pending>
+
+## Outstanding Verification
+
+- Run: `nx storybook ngx-smart-components` -- verify Docs tab renders Compodoc descriptions
+- Run: `nx test-storybook ngx-smart-components` -- verify play-test assertions pass
+
+Verified: <any cheap-validation claim already executed>
+```
+
+Convert the `wip:` commit to a regular commit (or follow up with a non-wip commit) once the Outstanding Verification items have been executed. The conversion records the verification outcomes either as additional `Verified:` trailers OR as a new commit body section `## Verified Outstanding`.
+
+### `Verified:` trailer convention
+
+Format: `Verified: <claim text>` on its own line in the commit body, after the body paragraphs. Multiple trailers are allowed (one per verified claim). Do not embed in the subject line.
+
+The trailer is a DETECTION SIGNAL, not a verification mechanism. Phase 7's smoke fixture `E-verify-before-commit.sh` (created in Plan 07-06) grep-checks BOTH (a) the `Verified:` trailer presence in `git log --format="%B" -1`, AND (b) the corresponding `tool_use` event for the verification command in the JSONL trace. Either alone is non-conforming -- a trailer without a tool_use event is a self-report (unreliable per outcome-based verification research); a tool_use event without a trailer is undocumented (loses the audit trail).
+
+### Reconciliation extension (apply-then-revert flow, Finding A)
+
+The Phase 3 Reconciliation rule already covers findings-vs-advisor conflicts during execution. It now also covers Phase 6 (Complete) apply-then-revert flows on advisor `**Critical:**` content:
+
+If you applied an advisor `**Critical:**` block during Phase 3 / 4 / 5 and conclude during Phase 6 that it does not apply, do not revert silently. Choose ONE of:
+
+- (a) Verify the contradicting evidence empirically (compile, run, or read the relevant source) and document the verification in a new commit body's `Verified:` trailer naming the claim verified, OR
+- (b) Issue a reconciliation call to the advisor: "Applied your Critical X, then found Y contradicts it. Which is correct?"
+
+Silent revert of advisor `**Critical:**` content based on un-grounded internal reasoning is forbidden. The xhigh advisor cost (approximately one extra advisor consultation) is cheap insurance against Critical-content silent loss.
+</verify_before_commit>
+
 <durable>
 ## Phase 4: Make Durable
 
 Before the final advisor consultation, make the deliverable durable.
 
+0. Apply Phase 3.5 verify-before-commit rules from `<verify_before_commit>` -- resolve hedge markers, execute plan Run: directives, route long-running validations to a `wip:` commit if necessary, and record verifications via `Verified:` trailers. The commit you make in step 3 must reflect either completed verifications or a `wip:` prefix with an Outstanding Verification body section.
 1. Write all files -- ensure nothing remains only in memory or tool output
 2. Run tests if applicable and fix failures
 3. Commit the changes: stage specific files by name (never use `git add .` or
