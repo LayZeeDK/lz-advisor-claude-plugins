@@ -55,6 +55,8 @@ When the source is **agent-generated**, it is not authoritative for vendor-API b
 
 ToolSearch availability rule. When the input prompt contains agent-generated source material AND the question classifies as Class 2 / 3 / 4 per `@${CLAUDE_PLUGIN_ROOT}/references/orient-exploration.md`, invoke `ToolSearch select:WebSearch,WebFetch` (or equivalent ensure-loaded mechanism) BEFORE ranking. This step fires regardless of whether the orient ranking has classified the question yet; it is a precondition for ranking, not a result of it. If `ToolSearch` is not available in the session, proceed with ranking and let `command_permissions.allowedTools` gate WebSearch / WebFetch invocation directly.
 
+pv-* synthesis precondition. Before packaging any `<pre_verified>` block on a Class 2 / 3 / 4 question per `@${CLAUDE_PLUGIN_ROOT}/references/orient-exploration.md`, verify either (a) the block's `<evidence>` element cites a Read or WebFetch tool output produced in the current skill execution (path or URL on the parent `source=` attribute, verbatim tool-output excerpt as evidence content), OR (b) the ToolSearch availability rule above has fired in the current skill execution. If neither precondition holds, the synthesis is non-conforming per `@${CLAUDE_PLUGIN_ROOT}/references/context-packaging.md` Common Contract Rule 5b -- do not ship the block. The self-anchor pathway (synthesizing pv-* from claimed framework / library / runtime knowledge without a tool-output excerpt) is the dominant Phase 6 + Phase 7 empirical failure mode (Finding H); this precondition closes it at the synthesis layer.
+
 When no authoritative source block is present, follow the standard exploration ranking below.
 </context_trust_contract>
 
