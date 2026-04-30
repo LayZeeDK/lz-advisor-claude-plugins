@@ -40,8 +40,13 @@ sessions:
     output: 5 security findings + Threat Patterns (rendered to user)
     tests: 41-48
     status: complete
+  - skill: lz-advisor.plan (plan-fixes-2 against security-review findings)
+    log: c:/Users/LarsGyrupBrinkNielse/.claude/projects/D--projects-github-LayZeeDK-ngx-smart-components/5cb44a72-bbd7-4359-8c83-0a5658397e85.jsonl
+    output: D:/projects/github/LayZeeDK/ngx-smart-components/plans/compodoc-storybook-security-findings.plan.md
+    tests: 49-56
+    status: complete
 started: 2026-04-30T09:07:30Z
-updated: 2026-04-30T15:30:00Z
+updated: 2026-04-30T16:00:00Z
 ---
 
 ## Current Test
@@ -522,14 +527,98 @@ evidence: All 5 findings are security-relevant:
   - No general code-quality complaints (no "this code is hard to read", "consider refactoring", "missing comment", etc.)
   - Adjacent-surface note ("Storybook 8.x ReDoS history") is forward-looking security guidance, not scope-creep.
 
+---
+
+## Plan-Fixes-2 UAT (Tests 49-56)
+
+**Load-bearing question:** Does the plan-skill handle security-review findings differently than code-quality review findings? The security-review input (5 findings, Threat Patterns, OWASP-categorized severities) is structurally similar to the code-quality reviewer output (Tests 18-24) but with different content domain. This UAT also tests:
+- Plan 06-05 G1 carve-out on a 5th plan-file fixture (security-review findings = agent-generated source)
+- Whether the plan-skill triggers Class 2-S inappropriately (Plan 06-06 scope discipline says Class 2-S is security-review-specific; plan skill should NOT fire it)
+- Whether Finding H (self-confabulation despite carve-out) reproduces on security-content input shape
+
+**Plan output expected at:** `D:/projects/github/LayZeeDK/ngx-smart-components/plans/address-security-review-findings.plan.md` (or similar; user-determined)
+
+**Plan-fixes-2 session log:** `c:/Users/LarsGyrupBrinkNielse/.claude/projects/D--projects-github-LayZeeDK-ngx-smart-components/5cb44a72-bbd7-4359-8c83-0a5658397e85.jsonl` (53 lines, 148 KB)
+
+**Plan output:** `D:/projects/github/LayZeeDK/ngx-smart-components/plans/compodoc-storybook-security-findings.plan.md`
+
+### 49. Plan-fixes-2 skill activation on security-review findings input
+expected: Plan skill activates, workflow runs end-to-end.
+result: pass
+evidence: 1 Agent (advisor) tool spawn: `description="Advisor consultation for security review remediation plan"`. Workflow ran end-to-end: orient (5 Bash + 3 Read + 2 Glob), consult (1 advisor Agent), produce (1 Write to plan file).
+
+### 50. Trust-contract carve-out fires on security-review input
+expected: All 3 Plan 06-05 sentinels in session context.
+result: pass
+evidence: All 3 sentinels present (`Vendor-doc authoritative source`, `Agent-generated source material`, `ToolSearch select:WebSearch,WebFetch` — 1 hit each). Same prose-classification path as plan-fixes Test 26 PASS.
+
+### 51. ToolSearch fires on Class-2 questions surfaced in security findings
+expected: At least 1 ToolSearch invocation.
+result: issue
+reported: "0 ToolSearch invocations on plan-fixes-2 session despite 5 security findings containing multiple Class-2 surfaces (npm overrides syntax, --ignore-scripts behavior, picomatch patched-version range). 5th plan-file fixture FAILing G1+G2 surface."
+severity: major
+evidence: |
+  - 0 ToolSearch tool_use blocks.
+  - 5th plan-file fixture FAILing G1+G2 surface across the Compodoc+Storybook chain (after `uat-plan-skill-fixes` 0.8.9 + `uat-plan-skill-fixes-rerun` 0.9.0 + plan-fixes 0.9.0 Test 27 + execute-fixes 0.9.0 Test 35 + this plan-fixes-2 0.9.0).
+  - Same self-anchor failure mechanism as Finding H: trust-contract sentinels present (Test 50 PASS), classification fires correctly, but executor self-anchors on claimed npm/lockfile semantics ("lockfile integrity already gates malicious version bumps", "Exact-pinning ... does not block postinstall scripts") instead of invoking ToolSearch + WebSearch.
+
+### 52. WebSearch / WebFetch fires on Class-2 questions
+expected: WebSearch/WebFetch >= 1 for npm semantics questions (overrides syntax, --ignore-scripts behavior, etc.).
+result: issue
+reported: "0 WebSearch + 0 WebFetch in plan-fixes-2 session. Class-2 npm semantics claims ('lockfile integrity gates version bumps', '.npmrc ignore-scripts applies to all packages', 'overrides syntax enforces forward floor') asserted in plan as facts via Finding H self-confabulation pathway."
+severity: major
+evidence: |
+  - `rg -c '"name":"WebSearch"'` returns 0; `rg -c '"name":"WebFetch"'` returns 0.
+  - Advisor `web_search_requests:0, web_fetch_requests:0` aggregates across all turns.
+  - **NUANCE: Class-1 verification did fire empirically.** 2 of 5 Bash invocations are `rg -uu` against node_modules — the executor empirically verified installed picomatch versions (Class-1: type-symbol existence in node_modules), producing the plan's claim "All installed picomatch instances are already at patched versions (2.3.2 or 4.0.3+)" with empirical anchor. Per Pattern D's orient_exploration_ranking step 2 ("Local-project read for project-state-only questions"), this is appropriate.
+  - **What's MISSING: Class-2 npm semantics verification.** The plan asserts npm-runtime behavior claims that depend on npm version + npm config defaults:
+    - "lockfile integrity already gates malicious version bumps" (npm semantics claim)
+    - ".npmrc ignore-scripts=true applies to all packages, not just @compodoc/compodoc" (npm config behavior)
+    - "overrides ^4.0.3 enforces forward protection on future npm install resolutions" (npm semantics)
+    - These are textbook Class-2 questions answered by self-anchor instead of WebSearch.
+  - 5th plan-file fixture exhibiting Finding H pattern (carve-out fires + executor self-confabulates).
+
+### 53. Hedge markers from security review preserved verbatim into plan output
+expected: Security-reviewer's hedge marker from Finding 1 survives verbatim into plan output's source material OR is empirically resolved.
+result: pass
+evidence: |
+  - Hedge marker counts in session: `Verify CI install command` 3 hits, `before acting` 4 hits, `unverified` 1 hit, `Assuming` 1 hit.
+  - The reviewer's `Verify CI install command before acting` hedge survived into pre-execute consultation source material verbatim.
+  - **Plan 06-05 prompt-construction layer rule continues to work:** hedge markers survived from security-review input into plan-skill consultation prompt unstripped. 6th UAT confirming the prompt-layer rule.
+  - Caveat (covered by Test 54): the hedge survived the prompt layer; plan output's treatment of the hedge is evaluated separately.
+
+### 54. Plan addresses Finding 1 hedge with verification step
+expected: Plan's step on F1 includes verification, preserves hedge frame, OR cites empirically resolved pv-* anchor.
+result: pass
+evidence: |
+  - Plan Key Decisions block includes a NEW hedge frame: "**Risk -- .npmrc ignore-scripts scope**: `ignore-scripts=true` applies to all packages, not just `@compodoc/compodoc`. Any package relying on a postinstall script for native binary setup (e.g., node-gyp compiled modules) would need an explicit override. **Verify no current packages depend on postinstall scripts for binary extraction before merging.**"
+  - This is hedge-frame preservation in spirit: the executor identified a load-bearing risk introduced by the F1 mitigation choice and added a `Verify ... before merging` frame.
+  - **Caveat:** the security-reviewer's specific hedge ("Verify CI install command before acting") was about whether CI uses `--ignore-scripts` flag at install time. The plan chose `.npmrc` `ignore-scripts=true` instead (which applies to local + CI). The plan's hedge is on a DIFFERENT load-bearing concern (postinstall side effects on other packages) than the reviewer's hedge (CI command shape). Both hedges relate to F1 mitigation but cover different surfaces.
+  - PASS-with-caveat: hedge-frame preservation contract is met (plan preserves hedge thinking on the load-bearing decision), but the specific reviewer hedge was implicitly resolved by the choice of `.npmrc` (which makes the CI command surface less load-bearing) rather than carried verbatim.
+
+### 55. Plan addresses all 5 security findings
+expected: All 5 findings addressed as plan steps OR explicit non-action decisions; no silent drops.
+result: issue
+reported: "Plan addresses 3 of 5 findings (F1, F2, F5) with code changes. SILENTLY DROPS Findings 3 and 4 — neither appears in plan steps, Key Decisions, or rationale."
+severity: minor
+evidence: |
+  - **Finding 1** (Medium: opencollective-postinstall + lockfile pin) → ADDRESSED via Step 1 (.npmrc with ignore-scripts=true). PASS.
+  - **Finding 2** (Medium: transitive picomatch ReDoS) → ADDRESSED via Step 2 + Step 3 (overrides + npm install). PASS.
+  - **Finding 3** (Low: uuid via http-auth — security-reviewer noted "Note only") → **SILENTLY DROPPED.** Not mentioned in plan steps, Key Decisions, or rationale. Even though F3 was "note only" per security-reviewer (no action expected), the plan should have explicitly acknowledged it as "F3 noted; no action per reviewer disposition."
+  - **Finding 4** (Low: preview.ts prototype pollution sink — security-reviewer noted "Acceptable as the documented integration pattern") → **SILENTLY DROPPED.** Same pattern as F3.
+  - **Finding 5** (Low: gitignore + --disableSourceCode symmetry) → ADDRESSED via Step 4 (.gitignore) + Step 5 (--disableSourceCode). PASS.
+  - Severity is MINOR because F3 + F4 are both Low-severity findings with reviewer dispositions that didn't require action. But silent drops violate the test contract — the plan should have explicitly closed each finding with either a plan step or a "no action; reason" decision. The pattern of silent-dropping Low-severity findings is consistent with execute-fixes UAT Test 38's behavior of skipping validation steps; both are forms of "scope-discipline gap" where the plan/execute author elides items they consider already-resolved without explicit acknowledgment.
+
+### 56. Class 2-S does NOT fire in plan skill
+expected: Plan skill orient does NOT invoke npm audit or GHSA URLs. 0 of each sentinel.
+result: pass
+evidence: 0 `npm audit` Bash invocations, 0 `github.com/advisories` URL refs, 0 `Class 2-S` text refs, 0 `pv-no-known-cves` blocks. Plan skill correctly stayed scoped — the security-reviewer already ran the security checks (10 npm audit invocations in Tests 41-48); the plan skill's job is to PLAN remediation, not re-run the checks. Plan 06-06 cross-reference discipline upheld.
+
 ## Summary
 
-total: 48
-passed: 34
-issues: 14
-pending: 0
-skipped: 0
-blocked: 0
+total: 56
+passed: 39
+issues: 17
 pending: 0
 skipped: 0
 blocked: 0
@@ -828,6 +917,56 @@ blocked: 0
     6 data points, 3 agents, 3 plugin versions. Pattern: regressions are pervasive AND worsening on security-reviewer specifically. Recommend Phase 7 plan ELEVATES security-reviewer word-budget enforcement priority within Finding D's scope (the regression is largest AND worsening on this agent).
   routing: |
     Already tracked under Finding D in PHASE-7-CANDIDATES.md. This UAT significantly reinforces evidence base. Recommend Phase 7 plan addresses ALL three agent prompts (advisor + reviewer + security-reviewer) in a single edit pass with security-reviewer as priority target since the regression is strongest there.
+
+- truth: "Plan 06-05 G2 ToolSearch-availability rule fires on security-review input (5th plan-file fixture)"
+  status: failed
+  reason: "0 ToolSearch invocations on plan-fixes-2 session despite 5 security findings containing multiple Class-2 surfaces (npm overrides syntax, --ignore-scripts behavior, picomatch patched-version range). 5th plan-file fixture FAILing G1+G2 surface — failure mechanism (Finding H self-anchor) consistent across plan + execute on plan-file inputs and now plan-skill on security-review input."
+  severity: major
+  test: 51
+  skill: lz-advisor.plan (plan-fixes-2)
+  artifacts:
+    - "plugins/lz-advisor/skills/lz-advisor.plan/SKILL.md (<context_trust_contract> ToolSearch-availability rule)"
+    - "c:/Users/LarsGyrupBrinkNielse/.claude/projects/D--projects-github-LayZeeDK-ngx-smart-components/5cb44a72-bbd7-4359-8c83-0a5658397e85.jsonl"
+  routing: |
+    Reinforces existing G1+G2 empirical residual + Finding H. 5th plan-file fixture FAILing same surface. Across the Compodoc+Storybook UAT chain, the failure mechanism is robust across input shapes (review files, plan files, security-review files) and skill contexts (plan-skill + execute-skill).
+
+- truth: "Pattern D web-first prescription fires on Class-2 npm-semantics questions in security-review remediation plan"
+  status: failed
+  reason: "0 WebSearch + 0 WebFetch in plan-fixes-2 session. Class-2 npm semantics claims ('lockfile integrity gates malicious version bumps', '.npmrc ignore-scripts applies to all packages', 'overrides syntax enforces forward floor') asserted in plan as facts via Finding H self-confabulation pathway. NUANCE: Class-1 verification DID fire (2 of 5 Bash invocations are `rg -uu` against node_modules verifying installed picomatch versions; appropriate per Pattern D's local-project read step)."
+  severity: major
+  test: 52
+  skill: lz-advisor.plan (plan-fixes-2)
+  artifacts: (same as Test 51)
+  diagnosis_new: |
+    NEW empirical observation: **Class-1 (project-state) verification fired correctly while Class-2 (vendor-API) verification did NOT fire on the same prompt.** This is a partial Pattern D success that's worth noting for Phase 7 design:
+    - Executor used `rg -uu` against node_modules to verify installed picomatch versions (Class-1: type-symbol existence). This produced the plan's empirically-anchored claim "All installed picomatch instances are already at patched versions (2.3.2 or 4.0.3+)."
+    - Executor did NOT use WebSearch/WebFetch to verify Class-2 npm semantics claims (lockfile gating, .npmrc scope, overrides forward-floor enforcement). These are asserted as facts via self-anchor.
+    - Pattern: when the question type can be answered locally (Class-1), Pattern D's local-project read fires correctly. When the question is purely Class-2 (vendor-API behavior), self-anchor pathway dominates over web-first.
+    
+    This is consistent with Finding H's interpretation: the executor has high confidence in claimed knowledge for npm semantics ("everyone knows how npm works"), so the self-anchor pathway is faster than ranking. Class-1 questions don't trigger this because the executor needs to actually look at the project state to answer them.
+  routing: |
+    Paired with Test 51; same fix surface. Reinforces Finding H interpretation: self-anchor pathway dominates on Class-2 questions where the executor has high confidence in framework/runtime claimed knowledge. Phase 7 fix surface (B.2 strengthening + advisor refuse-or-flag + Plan 06-05 G2 supplement) addresses both.
+
+- truth: "Plan addresses all 5 security findings (no silent drops)"
+  status: failed
+  reason: "Plan addresses 3 of 5 findings (F1, F2, F5) with code changes. SILENTLY DROPS F3 (uuid via http-auth, 'note only') and F4 (preview.ts prototype pollution, 'Acceptable as documented integration pattern'). Even though both were Low severity with reviewer dispositions that didn't require action, the plan should have explicitly closed each with a 'no action; reason' decision rather than silent drop."
+  severity: minor
+  test: 55
+  skill: lz-advisor.plan (plan-fixes-2)
+  artifacts:
+    - "plugins/lz-advisor/skills/lz-advisor.plan/SKILL.md (Phase 3 produce contract — disposition for each finding)"
+    - "D:/projects/github/LayZeeDK/ngx-smart-components/plans/compodoc-storybook-security-findings.plan.md (3 of 5 findings addressed)"
+  missing:
+    - "Plan SKILL.md output convention: when input contains numbered findings (review or security-review), plan output MUST explicitly close each finding with one of: (a) plan step addressing it, (b) explicit 'no action; reason' decision in Key Decisions, (c) deferral note carrying the finding forward to a follow-up cycle"
+    - "Smoke test fixture: plan-fixes scenario with 5 findings asserting plan output contains either a step or a Key Decision entry for each finding by ID"
+  diagnosis_new: |
+    NEW pattern observation. Both dropped findings (F3 uuid, F4 prototype-pollution) were marked by the security-reviewer as not requiring action ("Note only"; "Acceptable as the documented integration pattern"). The plan author correctly inferred no code change is needed but elided the explicit acknowledgment. This is a different failure mode than Findings A/E/H (apply-without-verify): it's "silently-resolve-without-acknowledge" — close enough to violate the "no silent drops" contract but not load-bearing for correctness.
+    
+    Adjacent to Finding G (review-skill safety net for verify-skip): G says "review skill should catch unverified commits"; this is "plan skill should explicitly close every input finding." Both are scope-discipline gaps where the skill author elides items they consider already-resolved.
+    
+    Could be addressed as a sub-rule of Plan 06-05 hedge-marker preservation: extend the rule from "hedge markers MUST survive" to "ALL numbered findings from input MUST receive explicit disposition in plan output."
+  routing: |
+    NEW minor Phase 7 candidate. Recommend folding under Plan 06-05's hedge-marker preservation contract OR adding to Finding G's scope as a "scope discipline" parallel. Fix surface = plan SKILL.md Phase 3 output contract + smoke fixture asserting all input findings have plan-output disposition. Low priority (severity minor; both dropped findings were Low+no-action) but cheap to add to Phase 7 plan since the rule is a 1-line addition to SKILL.md.
 ```
 
 ## Phase 6 Empirical Result on Canonical D-04 Scenario (plugin 0.9.0)
