@@ -65,6 +65,36 @@ Every advisor consultation follows these rules:
 
    Why: 13-UAT empirical evidence (Phase 6 + Phase 7 candidates) shows the dominant pv-* failure mode is structural-XML-compliant but evidence-free synthesis ("self-anchor" pattern -- Finding H) and plain-bullet Pre-verified-Claims headers (Finding B.2). The synthesis-mandate sub-rule closes Finding B.1 (carry-forward + synthesis gap). The ToolSearch precondition closes GAP-G1+G2-empirical at the synthesis layer (per CONTEXT.md D-02). All four sub-rules together rebuild trust in the pv-* primitive that the rest of Phase 7 depends on.
 
+   **5c. Hedge propagation rule.** When source material packaged into a consultation prompt contains a verify-first marker -- sentinel patterns `\b(unverified)\b`, `\bverify .+ before acting\b`, `\bAssuming .+ \(unverified\)\b`, `\bconfirm .+ before\b`, `\bfall back to .+ if .+\b` -- the executor MUST take ONE of the following actions before consulting:
+
+   - **(a) Resolve the hedge empirically.** Perform the verification step (WebSearch / WebFetch / Read / Bash) and replace the marker with an evidence citation: synthesize a `<pre_verified>` block per Rule 5b citing the verification source.
+   - **(b) Carry the marker verbatim.** Place the source material into the consultation prompt's `## Source Material` section with the marker preserved exactly as it appeared upstream. Forbidden: packaging the same content under `## Pre-Verified Package Behavior Claims` (this is the laundering pathway Finding C documented across the 7-hop chain).
+
+   The hedge marker MUST appear either resolved (with evidence) OR preserved verbatim in `## Source Material`. Stripping the marker silently is non-conforming. Stripping the marker AND repackaging the same claim under `## Pre-Verified Package Behavior Claims` without verification is the "Pre-verified Claims confabulation" failure mode (Finding B.2 + Finding C hop 3).
+
+   This rule complements the agent-side `## Hedge Marker Discipline` section in `agents/{advisor,reviewer,security-reviewer}.md` (Plan 07-02 Task 1): the agent flags unresolved hedges with the literal `Unresolved hedge:` frame; the executor packaging rule (this rule) preserves the marker so the agent can see it. Both layers are necessary.
+
+   **5d. Version-qualifier anchoring rule.** When an upstream artifact (review file, plan file, prior consultation, fetched docs) introduces a version qualifier for a vendor library or framework -- patterns like `Storybook 8+`, `Angular 17+`, `TypeScript 5+`, `Nx 19+`, `Node 20+`, `<library> >= <version>`, or any prose-form version constraint -- the executor MUST verify the qualifier against the installed version BEFORE propagating the qualifier into the consultation prompt.
+
+   Mechanism:
+
+   1. Read the relevant dependency manifest (`package.json`, `pyproject.toml`, `Cargo.toml`, `go.mod`, etc.) to determine the actually installed version. For npm projects, also Read `package-lock.json` if the manifest uses range specifiers and the lock file pins the resolved version.
+   2. Compare the upstream qualifier against the installed version using SemVer / project-appropriate comparison.
+   3. If the qualifier matches the installed version, synthesize a `<pre_verified>` block with `claim_id="pv-version-anchor-N"`:
+
+      ```
+      <pre_verified source="package.json" claim_id="pv-version-anchor-1">
+        <claim>Installed version of @storybook/angular is 10.3.5; the upstream "Storybook 8+" qualifier is verified against this installation.</claim>
+        <evidence method="Read">
+          "@storybook/angular": "10.3.5"
+        </evidence>
+      </pre_verified>
+      ```
+
+   4. If the qualifier does NOT match (the installed version is older than or different from the qualifier's range), STRIP the qualifier from the propagated content and replace with the empirically observed version. The replacement annotation: `[upstream qualifier "Storybook 8+" replaced with empirically installed "Storybook 10.3.5"]`. Note the strip-and-replace decision in the consultation prompt's `## Orientation Findings` section so the agent can see the divergence.
+
+   Why: Version-qualifier injection is the most common training-data bleed pattern observed in 7-hop confidence-laundering chains (Finding C hop 5: "Storybook 8+" qualifier introduced by an advisor when the testbed runs `@storybook/angular@10.3.5`). The qualifier is not just unverified -- it is positively wrong if the chain were to migrate to a Storybook version where the API was different. Anchoring to the installed version closes this hop.
+
 6. **Recover gracefully from tool-use failure.** When a tool call during orientation or scanning fails for any reason (permission denial, missing file, runtime error, timeout), do not halt the workflow. Apply these sub-rules in order:
 
    a. **First-denial primitive swap.** If the failure was a permission denial AND a cheaper or more direct primitive could retrieve the same information (for example, Read replacing a language-runtime parse of a structured file), retry once using the alternative primitive. The user may be redirecting you toward the right primitive.
@@ -298,3 +328,26 @@ across findings. Confirm or revise my initial severity assignments.
 The short-form Proposal variant for Phase 3 of execute is a deliberate
 compression: those calls reuse prior context implicitly and do not need a
 full repackage.
+
+## Scope-Disambiguated Provenance Markers
+
+Verdicts emitted by skills (PASS-with-observations, security-cleared, review-approved, plan-ready, execute-complete) MUST be tagged with the question-class scope they cover. The scope tag prevents downstream consumers (humans or agents) from conflating axes. The 7-hop confidence-laundering chain (Finding C hop 8b) demonstrated the failure mode: a security-review skill issued a verdict ("two low-severity and one medium-severity finding around supply chain risk and XSS") that downstream consumers interpreted as a general approval, even though the security-review never engaged with the upstream confabulated API claims that lived on a different axis (`api-correctness`).
+
+### Scope tag values
+
+The scope tag is one of:
+
+- `scope: api-correctness` -- verdict covers public-API correctness, framework-convention adherence, integration shape, build-tool orchestration. Default for `lz-advisor.plan`, `lz-advisor.execute`, `lz-advisor.review` (when not explicitly security-focused).
+- `scope: security-threats` -- verdict covers OWASP Top 10 vulnerabilities, supply-chain risk, attack surface, threat-model coverage, CVE / advisory currency. Default for `lz-advisor.security-review`.
+- `scope: performance` -- verdict covers runtime performance, memory, latency, throughput, build-time. Currently no skill defaults to this; opt-in when the skill invocation is performance-focused.
+- `scope: accessibility` -- verdict covers WCAG conformance, screen-reader semantics, keyboard navigation, color contrast. Currently no skill defaults to this; opt-in when the skill invocation is a11y-focused.
+
+### Output template requirement
+
+Each skill's user-visible output (plan file body, execute completion summary, review summary, security review summary) MUST include a `**Verdict scope:** scope: <value>` line in a recognizable position so downstream skills reading the output can extract the scope mechanically. The 4 SKILL.md files (Plan 07-03 Task 3) place the marker in their output templates.
+
+### Downstream consumer rule
+
+When a downstream skill reads an upstream skill's verdict (e.g., execute reads plan file's verdict; security-review reads execute's commit-body verdict), the downstream skill MUST check `scope:` match BEFORE treating the verdict as authoritative for the question being asked. If scopes differ (e.g., security-review verdict has `scope: security-threats`, execute is asking about `scope: api-correctness`), the upstream verdict is NOT authoritative for the downstream question. Either re-verify on the relevant axis OR explicitly note the scope-mismatch in the consultation prompt's `## Source Material` section.
+
+This rule closes Finding C hop 8b: the security-review's `scope: security-threats` verdict cannot be reused as evidence that the upstream API claims are correct, regardless of how confident the security-review's prose appeared.
