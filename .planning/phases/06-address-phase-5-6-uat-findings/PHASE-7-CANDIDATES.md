@@ -19,6 +19,7 @@ session_logs:
   - c:/Users/LarsGyrupBrinkNielse/.claude/projects/D--projects-github-LayZeeDK-ngx-smart-components/a75fae2f-dc3f-45d2-a0aa-7d9e5f518b77.jsonl
   - c:/Users/LarsGyrupBrinkNielse/.claude/projects/D--projects-github-LayZeeDK-ngx-smart-components/bf522c6e-1001-4a6a-9cfb-7885f9276386.jsonl
   - c:/Users/LarsGyrupBrinkNielse/.claude/projects/D--projects-github-LayZeeDK-ngx-smart-components/48bd9cc5-b1f0-4641-a4bc-8e7595f74758.jsonl
+  - c:/Users/LarsGyrupBrinkNielse/.claude/projects/D--projects-github-LayZeeDK-ngx-smart-components/fc44ddc9-a7fb-4153-9cd4-755db416c1eb.jsonl
 ---
 
 # Phase 7 Candidates -- Advisor Consultation Discipline, Template Carry-Forward, and Confidence-Laundering Guards
@@ -55,6 +56,19 @@ A fresh end-to-end Compodoc + Storybook + Angular signals integration UAT was ru
 | **E (NEW): apply-without-verify on surviving hedge markers** | Execute-skill: Plan 06-05 hedge-marker preservation rule WORKS at the prompt layer (marker survived verbatim into pre-execute consultation) BUT the executor proceeded past the unresolved hedge into commits without performing the verification action. | NEW failure mode; see Finding E below. Adjacent to A and C but distinct fix surface. |
 | **F (NEW): reviewer agent has no web-tool grant for self-verification** | Review-skill: reviewer's Finding 4 raised a Class-2 question (Nx `continuous: true` cache behavior) WITH proper hedge frames per system prompt, but reviewer agent has only `[Read, Glob]` tools and cannot invoke WebSearch/WebFetch. Executor's scan didn't anticipate the Class-2 surface (read project files only). 0 web tools in entire review session. | NEW design gap; see Finding F below. Distinct from A/B/C/D/E surfaces. |
 | **G (NEW): review skill does not provide safety net for verify-before-commit gaps** | Review-skill ran 4 findings on the execute commits but did NOT flag Finding E's verify-before-commit gap. Reviewer noticed the empty-stub `documentation.json` workaround (Finding 1) as a TypeScript-compile-time concern but did not connect it to a verify-skip pattern. Cross-Cutting Patterns covered artifact lifecycle + polish; no provenance / verification-status note. | NEW gap; see Finding G below. Tightly coupled with Finding E (downstream safety net for upstream prevention). |
+
+## Update 2026-04-30 (continued) -- Plan-fixes UAT on review findings (3rd plan-fixes fixture)
+
+A 4th UAT in the Compodoc+Storybook chain ran the plan-skill against the reviewer's findings as input (session `fc44ddc9-a7fb-4153-9cd4-755db416c1eb.jsonl`, plan output `address-compodoc-review-findings.plan.md`). This is the 3rd plan-fixes fixture overall (after `uat-plan-skill-fixes` 0.8.9 + `uat-plan-skill-fixes-rerun` 0.9.0) and produces a NEW empirical observation that QUALITATIVELY refines the G1+G2 empirical residual interpretation.
+
+| Finding | Cross-evidence type | Verdict |
+|---|---|---|
+| B.2 (confabulation under Pre-verified header) | **Plan-fixes synthesized a `<pre_verified>` block on `continuous: true` non-cacheability with `<evidence method="...">` referring to "Nx semantics" rather than empirical verification.** Strongest direct B.2 instance to date. | **Strong reinforcement.** B.2's mitigation (every pv-* MUST cite source path + tool-output excerpt) is empirically validated as necessary. |
+| C (cross-skill confidence laundering) | **Review→plan boundary stripped the hedge.** Reviewer hedged: "Assuming X (unverified) ... Verify before acting"; plan asserts: "continuous: true makes the storybook target non-cacheable" as Key Decision. | **Strong reinforcement on a NEW boundary.** Different from amendments 2/3 (which targeted review→plan with plan-file shape and execute consultation source) — this is the same boundary but the failure mechanism is self-confabulation, not "treat as authoritative." |
+| D (word-budget regression) | **Plan-fixes advisor SD: 109w/100w cap (~9% over).** Mild reinforcement on plugin 0.9.0; 4th data point. | Class-level regression confirmed across 3 agents (advisor 100w cap: 111w + 120w + 109w; reviewer 300w cap: 411w; security-reviewer 300w cap: 412w). |
+| E (advisor refuse-or-flag on unresolved hedges) | **Plan-fixes advisor consultation accepted the framing without flagging the unresolved hedge.** Hedge marker visible in source material context (`unverified` 4 hits, `Assuming` 1 hit, `before acting` 2 hits) but advisor's Strategic Direction did not contain "Unresolved hedge: X" frame. | **First in-skill instance of E's advisor-side gap.** Reinforces E's proposed direction (advisor refuse-or-flag rule). |
+| G1+G2 empirical residual | **3rd plan-fixes fixture FAIL** with QUALITATIVELY DIFFERENT failure mechanism: trust-contract carve-out FIRED correctly (executor explicitly classified review as agent-generated) but ToolSearch availability rule still didn't fire because executor self-anchored on "Nx semantics" knowledge. | **Refined root cause.** Prior interpretations ("rule miss") were empirically wrong; the residual root cause is "executor bypasses the rule via self-confabulation." See Finding H below. |
+| **H (NEW): Trust-contract carve-out fires but executor self-confabulates pv-* anchor from claimed knowledge** | Executor's orient verbatim: "I'll mark this as pre-verified from Nx semantics." Synthesized pv-* block on `continuous: true` non-cacheability with no empirical evidence. Carve-out routed away from "trust agent-generated source" but did NOT route toward "do empirical verification" — executor had a third path (self-anchor on framework knowledge) that the carve-out doesn't close. | NEW failure mode; see Finding H below. Distinct from B.2 (packaging discipline), G1+G2 (rule miss), and E (advisor side). |
 
 ## Candidate Findings
 
@@ -418,6 +432,67 @@ Two structural constraints prevent the review-skill from catching verify-skip pa
 **Relationship to Finding E.** Findings E and G are tightly coupled: E is upstream prevention, G is downstream detection. They should be designed and shipped together — addressing only E without G leaves the safety-net side unprotected; addressing only G without E forces the safety net to compensate for an upstream gap that the executor could close cheaply. Recommend: in Phase 7, plan E + G as a single multi-skill plan that touches `agents/advisor.md` (refuse-or-flag), `skills/lz-advisor.execute/SKILL.md` (verify-before-commit), `agents/reviewer.md` (catch-verify-skip), and `skills/lz-advisor.review/SKILL.md` (scan criterion). Smoke fixture exercises the full chain.
 
 **Priority vs other findings.** Lower individually than E (which directly compromises commit correctness) but the E + G pair is significantly more robust than E alone. Recommend grouping in Phase 7 as a unified "verification chain integrity" plan covering execute prevention + review detection.
+
+---
+
+### H. NEW: Executor self-confabulates pv-* anchor from claimed framework knowledge despite trust-contract carve-out firing (2026-04-30)
+
+**Observed (plan-fixes UAT 2026-04-30 on plugin 0.9.0, session `fc44ddc9-a7fb-4153-9cd4-755db416c1eb.jsonl`):**
+
+This UAT is the 3rd plan-fixes fixture in the Compodoc+Storybook chain (after `uat-plan-skill-fixes` 0.8.9 + `uat-plan-skill-fixes-rerun` 0.9.0). Both prior runs FAILED on the G1+G2 empirical residual surface; the conventional interpretation (per amendment 5) was that the trust-contract carve-out was structurally landed but not behaviorally selected — a "rule miss" pattern. This UAT empirically refutes that interpretation:
+
+1. **Trust-contract carve-out FIRED correctly.** All 3 Plan 06-05 sentinels are present in session context (`Vendor-doc authoritative source`, `Agent-generated source material`, `ToolSearch select:WebSearch,WebFetch`). The executor's orient phase reasoning explicitly classified the review input as agent-generated source. Verbatim from session:
+   > "...so I proceed with verification. One framework-convention claim to note: `continuous: true` in Nx means the target is not cacheable (continuous targets run indefinitely as dev servers, so Nx never caches their output). I'll mark this as pre-verified from Nx semantics."
+
+2. **ToolSearch + web tools STILL did not fire.** 0 ToolSearch + 0 WebSearch + 0 WebFetch in the session, despite the carve-out firing.
+
+3. **Executor synthesized a pv-* anchor from claimed knowledge.** The advisor consultation prompt contains:
+   > `<claim>continuous: true on an Nx target marks it as a long-running process (dev server); Nx does not cache continuous targets and never replays their output from cache.</claim>`
+   > `<evidence method="...">...</evidence>`
+   
+   The `<evidence method="">` field cites "Nx semantics" rather than a Read of `node_modules/nx/PLUGIN.md`, a WebFetch of Nx docs, or a Bash invocation against an actual continuous target.
+
+4. **Plan stripped the hedge.** Reviewer's hedge marker (`Assuming X (unverified) ... Verify Y before acting`) survived into the consultation source material verbatim (Test 29 PASS — Plan 06-05 prompt-construction layer rule works), but the plan output strips it: Strategic Direction asserts "continuous: true neutralizes Finding 4"; Key Decision asserts "continuous: true makes the storybook target non-cacheable (Nx never replays continuous targets from cache)."
+
+**Why it matters.** Plan 06-05's `<context_trust_contract>` block was designed with a binary routing assumption: when the input is agent-generated source, the carve-out routes the executor away from "trust the source" and toward "do empirical verification." This UAT shows the routing is NOT binary — there is a **third path the carve-out doesn't close**: the executor self-anchors on claimed framework knowledge ("I know how Nx semantics work") and synthesizes a pv-* block from that claim, bypassing both the source AND the verification step.
+
+The G1+G2 empirical residual root cause (per amendment 5) is therefore NOT "ToolSearch-availability rule doesn't fire because the trust-contract carve-out short-circuits ranking" — it is "the executor's self-anchor pathway is faster than ranking, so neither the carve-out nor the rule changes behavior on inputs where the executor already feels confident."
+
+**Relationship to existing findings.**
+
+- **Finding B.2** (confabulation under Pre-verified header) is the closest existing surface. B.2's proposed mitigation in `references/context-packaging.md` Common Contract Rule 5 says: "every pv-* block MUST cite (a) a source path or URL the executor read during this skill execution, and (b) a tool-output excerpt as evidence. Inferred claims, paraphrases, and generic API knowledge MUST NOT be packaged as pv-*."
+  - **B.2's mitigation, if enforced structurally, would block this UAT's confabulation.** The pv-* block on `continuous: true` would fail validation: no Read tool output, no WebFetch source, no Bash output excerpt — only "Nx semantics" claimed knowledge.
+  - **Finding H is empirical evidence that B.2's mitigation is necessary.** B.2 was previously a "could happen" surface; H is "did happen, on plugin 0.9.0, 3rd plan-fixes fixture, with detailed mechanism."
+  - **Finding H is also distinct from B.2 in failure mechanism.** B.2's primary symptom is structural (plain-bullet "Pre-verified Claims" sections instead of XML); H's symptom is structural-XML-compliant but EVIDENCE-FREE. B.2 + H together cover both ends of the confabulation spectrum.
+
+- **Finding C** (cross-skill confidence laundering) is reinforced. The chain in this UAT: review hedges Class-2 → plan-fixes consultation prompt preserves hedge (positive) → plan-fixes executor self-anchors on claimed knowledge → advisor accepts framing → plan output strips hedge. Same chain pattern as amendments 2 + 3 of 06-VERIFICATION.md but with self-confabulation as the laundering mechanism instead of "treat as authoritative."
+
+- **Finding E** (advisor refuse-or-flag) is reinforced. The plan-fixes advisor consultation source material had the hedge marker visible (`unverified` 4 hits, `Assuming` 1 hit, `before acting` 2 hits in session). The advisor's Strategic Direction did NOT contain "Unresolved hedge: X. Verify Y before acting" frame — it accepted the executor's confabulated pv-* claim without flagging. This is the first in-skill instance of E's advisor-side gap.
+
+- **G1+G2 empirical residual** interpretation is REFINED, not contradicted. The residual is real (3 fixtures FAIL) but the root-cause analysis must change: the failure is not "rule miss" but "rule bypass via self-anchor."
+
+**Failure surface.** Any plan-skill or execute-skill invocation where:
+- (a) input contains agent-generated source on a Class-2/3/4 question (trust-contract carve-out trigger);
+- (b) the question is in a domain where the executor has high confidence in claimed knowledge (Nx semantics, Storybook semantics, Angular framework conventions, common JS/TS patterns);
+- (c) the carve-out fires correctly (executor explicitly classifies the source as agent-generated);
+- (d) but the executor self-synthesizes a pv-* block from claimed knowledge instead of invoking ToolSearch / WebSearch / WebFetch.
+
+The pattern is general: any well-known framework topic where the executor's training-data confidence exceeds its calibration threshold for "needs verification" can produce this failure.
+
+**Proposed direction.** Two complementary surfaces (recommend bundling with B.2):
+
+- **Strengthen B.2's pv-* validation rule (in `references/context-packaging.md` Common Contract Rule 5):** make the "evidence MUST cite source path or URL the executor read AND tool-output excerpt" requirement structural, not advisory. Add a smoke-test fixture that fails the consultation packaging if any pv-* block has empty/claimed-knowledge `<evidence>` field. Specifically:
+  > "The `<evidence>` element of any `<pre_verified>` block MUST contain (a) a `source=` attribute referencing a file path read in the current skill execution OR a URL fetched in the current skill execution, AND (b) literal tool-output text content (the excerpt the executor extracted from the Read or WebFetch result). Empty `<evidence>` elements, `<evidence method='claimed knowledge'>` patterns, or `<evidence method='X semantics'>` patterns are non-conforming and MUST be rejected."
+
+- **Plan 06-05 G2 supplement (in 4 SKILL.md `<context_trust_contract>` blocks):** when the executor proposes a pv-* synthesis on a Class-2/3/4 question, the ToolSearch-availability rule MUST trigger BEFORE the synthesis lands in the consultation prompt. Currently the rule fires "before ranking" per the contract prose, but in practice the executor's self-anchor pathway is faster than ranking. New trigger: "Before packaging any pv-* block on a Class-2/3/4 question, verify either (a) the block's `<evidence>` field cites a Read or WebFetch tool output from this skill execution, OR (b) ToolSearch availability has been invoked. If neither, the synthesis is non-conforming."
+
+**Effort:** Medium. References doc edit + 4 SKILL.md edits (byte-identical canon contract) + smoke test fixture. Possibly merge with B.2's existing proposed direction into a single "pv-* discipline" plan in Phase 7. Estimated cost: bundles cleanly with B.2 + E + Finding G into a unified Phase 7 plan covering execute discipline + verification anchors + advisor refuse-or-flag.
+
+**Cross-evidence.** This is the FIRST UAT to demonstrate the trust-contract carve-out firing correctly while the executor still bypasses verification. Prior plan-fixes UATs (0.8.9 + 0.9.0 rerun) had the carve-out either not present (0.8.9) or not behaviorally selected (0.9.0 rerun). This UAT confirms the carve-out's prose-classification step works AND identifies the self-anchor pathway as the actual residual root cause.
+
+**Priority vs other findings.** **High.** Finding H is the empirical refutation of amendment 5's "rule miss" interpretation. Without H, Phase 7 plans for the G1+G2 residual could fixate on the wrong mechanism (e.g., moving the rule earlier in SKILL.md prose). With H, Phase 7 has the correct target: the self-anchor pathway + B.2's pv-* validation. This is the highest-leverage finding from this UAT cycle.
+
+**Open question for Phase 7 design.** Should B.2 + H be merged into a single "pv-* synthesis discipline" finding? Pro: cleaner plan, single fix surface (Common Contract Rule 5 strengthening covers both). Con: B.2's primary symptom (plain-bullet vs XML) is structural-shape; H's primary symptom (XML-compliant but evidence-free) is content-shape. They share root cause but distinct symptoms; keep separate in candidates, merge into a single Phase 7 plan if a unified `<pv_synthesis_discipline>` block makes sense.
 
 ---
 

@@ -25,8 +25,13 @@ sessions:
     output: 4 reviewer findings + Cross-Cutting Patterns (rendered to user)
     tests: 18-24
     status: complete
+  - skill: lz-advisor.plan (plan-fixes against review findings)
+    log: c:/Users/LarsGyrupBrinkNielse/.claude/projects/D--projects-github-LayZeeDK-ngx-smart-components/fc44ddc9-a7fb-4153-9cd4-755db416c1eb.jsonl
+    output: D:/projects/github/LayZeeDK/ngx-smart-components/plans/address-compodoc-review-findings.plan.md
+    tests: 25-32
+    status: complete
 started: 2026-04-30T09:07:30Z
-updated: 2026-04-30T13:10:00Z
+updated: 2026-04-30T14:30:00Z
 ---
 
 ## Current Test
@@ -257,11 +262,105 @@ evidence: |
   - **Reviewer agent does not have web tools (Test 20 evidence) AND was not given the execute session log** as input — only the commit range. The reviewer can detect the empty-stub `documentation.json` as a code-quality artifact, but cannot detect "the executor never ran Compodoc to verify the signal classification before committing" because that information lives in the execute session log, not in the diff or working tree.
   - The review skill IS supposed to provide a safety net per its scan criteria ("logic errors, bugs, clear correctness problems, edge cases not handled"), and an unverified claim shipped to a commit IS a correctness-edge-case, but the reviewer's mandate as currently scoped focuses on code shape rather than provenance/verification chain. **NEW gap: review skill does not inspect provenance / verification status of changed code.**
 
+---
+
+## Plan-Fixes UAT (Tests 25-32)
+
+**Load-bearing question:** This is the canonical Plan 06-05 G1 carve-out test on a 3rd review-content fixture. Plan 06-05's `<context_trust_contract>` block prescribes that agent-generated source material (review files, plan files, prior consultation transcripts) should NOT suppress Pattern D's web-first prescription on Class-2/3/4 questions. Prior plan-fixes UATs:
+- Plugin 0.8.9 original (`uat-plan-skill-fixes`, session `26868ae7-...`): FAIL — 0 web tools; Pattern D suppressed by review-file authoritative-source treatment.
+- Plugin 0.9.0 rerun (`uat-plan-skill-fixes-rerun`, session `0c6698fd-...`): FAIL — 0 web tools / 0 ToolSearch; structural surface present, behavior unchanged from 0.8.9 baseline.
+- This UAT (3rd run on plugin 0.9.0): question whether the Compodoc/Storybook review-content (Class-2 questions present in Findings 4 + Cross-Cutting Patterns) flips behavior from prior fixtures.
+
+The reviewer's Finding 4 already contains a verify-first hedge marker (`Verify cache behavior for continuous targets in node_modules/nx/PLUGIN.md or Nx docs before acting`) — exactly the shape Plan 06-05 G1 was designed to handle. Whether the plan-fixes executor preserves the hedge, fires Pattern D on the underlying Class-2 question, and produces a plan with empirical verification anchored in pv-* blocks is the test.
+
+**Plan-fixes session log:** `c:/Users/LarsGyrupBrinkNielse/.claude/projects/D--projects-github-LayZeeDK-ngx-smart-components/fc44ddc9-a7fb-4153-9cd4-755db416c1eb.jsonl` (61 lines, 170 KB)
+
+**Plan output:** `D:/projects/github/LayZeeDK/ngx-smart-components/plans/address-compodoc-review-findings.plan.md`
+
+### 25. Plan-fixes skill activation on review findings input
+expected: Plan skill activates, executor begins orient phase, workflow runs end-to-end.
+result: pass
+evidence: 1 Agent (advisor) tool spawn observed: `description="Advisor consultation on addressing review findings"`. 1 Write to plan file `plans/address-compodoc-review-findings.plan.md`. Workflow ran end-to-end: orient (3 Bash + 8 Read covering reviewer-cited files), consult, produce.
+
+### 26. Trust-contract classifies review input as agent-generated source
+expected: SKILL.md `<context_trust_contract>` block loaded; carve-out should fire.
+result: pass
+evidence: |
+  - All 3 Plan 06-05 sentinels present in session context: `Vendor-doc authoritative source` (1), `Agent-generated source material` (1), `ToolSearch select:WebSearch,WebFetch` (1).
+  - **Executor explicitly REASONED about provenance classification.** Verbatim from session: "...so I proceed with verification. One framework-convention claim to note: `continuous: true` in Nx means the target is not cacheable (continuous targets run indefinitely as dev servers, so Nx never caches their output). I'll mark this as pre-verified from Nx semantics."
+  - The executor recognized the input as agent-generated and explicitly considered the carve-out path. **Test 26 PASSES on the prose-classification side** (Plan 06-05 G1 prose contract works).
+  - **CRITICAL CAVEAT:** the execution-side path the executor chose is NOT the prescribed one. Tests 27/28/30 below show the executor self-confabulated a pv-* block from "Nx semantics" knowledge rather than invoking Pattern D's web-first prescription. The carve-out fired AS REQUIRED, but the resulting behavior bypasses both web tools and hedge preservation.
+
+### 27. ToolSearch fires (Plan 06-05 G2 ToolSearch-availability rule)
+expected: At least 1 ToolSearch tool_use block in plan-fixes session.
+result: issue
+reported: "0 ToolSearch tool_use blocks. Plan 06-05 G2 ToolSearch-availability rule did NOT fire on review-file input despite Class-2 hedge marker present and trust-contract carve-out firing correctly (Test 26 PASS)."
+severity: major
+evidence: |
+  - `rg -c '"name":"ToolSearch"'` returns 0.
+  - **NEW failure mechanism vs prior plan-fixes UATs.** Prior interpretations:
+    - Plugin 0.8.9 original (`uat-plan-skill-fixes`, amendment 2): trust-contract classification didn't fire; Pattern D fully suppressed.
+    - Plugin 0.9.0 rerun amendment 5: trust-contract structural surface present but not selected; Pattern D suppression interpreted as "rule miss."
+    - Plugin 0.9.0 THIS UAT: **trust-contract classification DID fire (Test 26 PASS — executor explicitly reasoned about provenance), AND ToolSearch availability rule still did not fire.** The empirical residual root cause is NOT "G2 rule miss" — it is "executor self-anchors on claimed framework knowledge instead of invoking ToolSearch."
+  - This is the 3rd plan-fixes fixture FAILing the same surface but with a refined understanding of WHY: the executor's self-confabulation pathway (Test 30 evidence) bypasses both G2's structural availability rule and the carve-out's behavioral routing.
+
+### 28. WebSearch / WebFetch fires on Class-2 questions surfaced in review
+expected: WebSearch/WebFetch >= 1 in plan-fixes session.
+result: issue
+reported: "0 WebSearch + 0 WebFetch in plan-fixes session. Same root cause as Test 27: executor self-confabulated pv-* anchor from claimed Nx-semantics knowledge instead of invoking Pattern D's web-first prescription."
+severity: major
+evidence: |
+  - `rg -c '"name":"WebSearch"'` returns 0; `rg -c '"name":"WebFetch"'` returns 0.
+  - Bash invocations: 3 (rg, git grep, ls — local search only). Read invocations: 8 (project files). No web-side verification of `continuous: true` behavior, `@storybook/angular@10.3.5` autodocs, or any Class-2 surface.
+  - Same defect surface as Test 27. Together they demonstrate the G1+G2 empirical residual on a 3rd plan-fixes fixture (Compodoc/Storybook review content), with a refined failure mechanism: self-confabulation pathway.
+
+### 29. Hedge markers from review preserved verbatim into plan output
+expected: Reviewer's Finding 4 hedge markers survive verbatim into plan output `## Source Material` OR plan step rationale; NOT stripped or promoted into Pre-verified Claims.
+result: pass
+evidence: |
+  - In session context: `unverified` 4 hits, `Assuming` 1 hit, `before acting` 2 hits, `Verify cache behavior` 1 hit, `continuous: true` 8 hits.
+  - The reviewer's exact hedge phrase appears verbatim in the consultation source material: "Assuming `continuous: true` disables caching for this target (mitigating the staleness risk -- unverified against the installed Nx version), so practical impact may be limited to output tracking hygiene. Verify cache be[havior...]"
+  - **Plan 06-05 prompt-construction layer rule WORKS:** the hedge marker survived into the consultation prompt. Test 29 PASS on the prompt layer.
+  - **Caveat (covered by Test 30):** the hedge survived the prompt layer but was stripped at the plan-output layer; see Test 30.
+
+### 30. Plan addresses Finding 4 hedge with verification step (not as stripped fact)
+expected: Plan step on Finding 4 includes verification step OR preserves hedge frame OR cites empirically resolved pv-*. Test FAILS if plan step asserts continuous:true behavior as a fact without verification or hedge preservation.
+result: issue
+reported: "Plan STRIPS the hedge and asserts unverified `continuous: true` claim as fact. Reviewer hedged with 'Assuming X (unverified) ... Verify cache behavior in node_modules/nx/PLUGIN.md or Nx docs before acting'; Plan asserts 'continuous: true makes the storybook target non-cacheable (Nx never replays continuous targets from cache)' as a Key Decision. Synthesizes a `<pre_verified>` block on the same claim with no empirical evidence — pure self-confabulation from claimed Nx-semantics knowledge."
+severity: major
+evidence: |
+  - Strategic Direction step 4 verbatim: "Skip the dedicated `compodoc` target refactor -- not warranted given `continuous: true` neutralizes Finding 4 and `build-storybook` already declares `documentation.json` in `outputs`."
+  - Key Decision verbatim: "**Finding 4 closed without code change**: Once `.gitignore` is updated and the stub committed (Step 1), the staleness scenario described in Finding 4 is moot for `storybook` (non-cacheable) and already correctly handled for `build-storybook` (outputs declared). No changes needed to `project.json` for this finding beyond Step 3."
+  - Plan asserts: "`continuous: true` makes the `storybook` target non-cacheable (Nx never replays continuous targets from cache)."
+  - Synthesized pv-* block in advisor consultation: `<claim>continuous: true on an Nx target marks it as a long-running process (dev server); Nx does not cache continuous targets and never replays their output from cache.</claim>` with `<evidence method=...>` referring to "Nx semantics" rather than empirical verification (no node_modules/nx Read, no Nx docs WebFetch, no nx command Bash invocation against an actual continuous target).
+  - **Hedge markers stripped from plan output:** `(unverified)` and `Verify ... before acting` do not appear in plan steps, key decisions, OR the rendered Strategic Direction. Confidence laundering on the same axis as Phase 7 Finding C: hedge stripped between consultation source material and plan output.
+  - **NEW failure pattern: self-confabulation despite carve-out firing.** This is distinct from prior Findings:
+    - **Adjacent to Finding B.2** (confabulation under Pre-verified header): plan synthesizes a `<pre_verified>` block without empirical evidence. B.2's Common Contract Rule 5 mitigation (every pv-* block MUST cite a source path/URL the executor read AND a tool-output excerpt as evidence) would have blocked this.
+    - **Adjacent to Finding C** (cross-skill confidence laundering): hedge stripping at the review→plan boundary.
+    - **Adjacent to Finding E** (advisor refuse-or-flag): the advisor consultation accepted the framing without flagging the unresolved hedge.
+    - **NEW Finding H candidate**: "Trust-contract carve-out fires correctly (Test 26 PASS) but executor self-confabulates pv-* anchor from claimed knowledge, bypassing G2's web-first prescription." Distinct from B.2 in that the failure mechanism is execution-side self-confidence rather than packaging discipline; distinct from G1+G2 residual in that the carve-out DID fire — the failure is downstream of the carve-out's prose-classification step.
+  - Word-budget side observation: Strategic Direction = 109 words (~9% over 100w cap). Mild reinforcement for Finding D word-budget regression on the advisor side. 4th data point on plugin 0.9.0 (plan-skill 120w + plan-fixes 109w + reviewer 411w/300w cap; security-reviewer not measured this UAT).
+
+### 31. Plan addresses all 4 reviewer findings
+expected: All 4 findings addressed as plan steps OR explicit non-action decisions; no silent drops.
+result: pass
+evidence: |
+  - Finding 1 (Important: TypeScript can't find documentation.json) → Plan Step 1 — commit stub `{}` + remove from .gitignore. ADDRESSED.
+  - Finding 2 (Suggestion: --disableSourceCode tradeoff) → Plan Step 3 — remove from storybook target only; keep on build-storybook. ADDRESSED.
+  - Finding 3 (Suggestion-borderline-Important: signal output unreachable) → Plan Step 2 — add button with click handler firing sampleOutput.emit(). ADDRESSED.
+  - Finding 4 (Important: Nx outputs + continuous:true) → "Closed without code change" Key Decision + Strategic Direction step 4 (skip refactor). Structurally addressed BUT via the stripped-hedge assertion path (Test 30 issue). PASS-with-caveat: no finding silently dropped, but Finding 4's resolution is empirically un-anchored.
+  - Plan ships 4 explicit steps (1 install, 2 template change, 3 args change, 4 validation) covering Findings 1-3 with code changes + Finding 4 closed via assertion. Validation step (Step 4: `pnpm nx storybook ngx-smart-components` + observe Docs tab) is present but does NOT verify Finding 4's continuous:true cache claim — it only verifies the visible Docs tab outcome.
+
+### 32. Class 2-S does not fire in plan skill
+expected: 0 npm audit invocations, 0 GHSA URLs, 0 Class 2-S refs, 0 pv-no-known-cves blocks.
+result: pass
+evidence: 0 of each. Class 2-S correctly stayed scoped to security-review skill per Plan 06-06 cross-reference discipline.
+
 ## Summary
 
-total: 24
-passed: 17
-issues: 7
+total: 32
+passed: 22
+issues: 10
 pending: 0
 skipped: 0
 blocked: 0
@@ -405,6 +504,67 @@ blocked: 0
     Adjacent to Finding E (verify-before-commit) but on a different surface: Finding E is "executor must verify before commit"; this finding is "reviewer should catch unverified commits as a safety net." Finding E owns the upstream prevention; this owns the downstream detection.
   routing: |
     NEW Phase 7 candidate; recommend extending Finding E with a "downstream safety net" sub-section in PHASE-7-CANDIDATES.md, OR adding a separate Finding G (review-skill safety net for verify-skip patterns). Fix surface = review SKILL.md scan criteria + reviewer agent prompt directive. Cleaner if folded under Finding E since both surfaces address the same load-bearing concern (verify-before-commit shipping unverified work).
+
+- truth: "Plan 06-05 G2 ToolSearch-availability rule fires on review-file input (3rd plan-fixes fixture)"
+  status: failed
+  reason: "0 ToolSearch invocations on plan-fixes session despite trust-contract carve-out firing correctly (Test 26 PASS — executor explicitly classified review as agent-generated). Same defect surface as amendment 5 G1+G2 empirical residual but with REFINED root cause: not 'rule miss' but 'executor self-confabulates pv-* anchor from claimed framework knowledge, bypassing both ToolSearch and web tools.'"
+  severity: major
+  test: 27
+  skill: lz-advisor.plan (plan-fixes)
+  artifacts:
+    - "plugins/lz-advisor/skills/lz-advisor.plan/SKILL.md (<context_trust_contract> ToolSearch-availability rule)"
+    - "c:/Users/LarsGyrupBrinkNielse/.claude/projects/D--projects-github-LayZeeDK-ngx-smart-components/fc44ddc9-a7fb-4153-9cd4-755db416c1eb.jsonl"
+  missing:
+    - "Mechanism that prevents executor from synthesizing pv-* blocks on Class-2/3 questions without empirical evidence (Finding B.2 mitigation strengthening)"
+    - "Stronger upstream trigger for ToolSearch-availability rule that fires regardless of executor's self-confidence in claimed knowledge"
+  diagnosis_refined: |
+    3rd plan-fixes fixture FAILing the same ToolSearch surface, but with a QUALITATIVELY DIFFERENT failure mechanism than amendments 2 + 5 documented:
+    - Plugin 0.8.9 (amendment 2): trust-contract didn't fire; Pattern D fully suppressed.
+    - Plugin 0.9.0 rerun (amendment 5): trust-contract structural surface present but not selected; "rule miss" interpretation.
+    - Plugin 0.9.0 THIS UAT: trust-contract DID fire (executor explicitly reasoned about provenance classification), AND ToolSearch availability rule still did not fire because executor self-anchored on "Nx semantics" knowledge instead.
+    
+    The G1+G2 empirical residual root cause IS NOT the rule's structural availability but the executor's bypass via self-confabulation. The ToolSearch-availability rule fires "BEFORE ranking" per the contract prose, but in practice the executor short-circuits with self-claimed knowledge before ranking even runs.
+  routing: |
+    Reinforces existing Phase 7 G1+G2 empirical residual. Phase 7 plan must address the self-confabulation pathway, not just the rule placement. See proposed Finding H in PHASE-7-CANDIDATES.md update.
+
+- truth: "Pattern D web-first prescription fires when input is review file with Class-2 hedge"
+  status: failed
+  reason: "0 WebSearch + 0 WebFetch in plan-fixes session. Same root cause as Test 27."
+  severity: major
+  test: 28
+  skill: lz-advisor.plan (plan-fixes)
+  artifacts: (same as Test 27)
+  missing: (same as Test 27)
+  routing: |
+    Paired with Test 27 — single fix surface in Phase 7. Reinforces G1+G2 empirical residual on 3rd fixture.
+
+- truth: "Plan addresses reviewer's Class-2 hedge with verification step (not stripped assertion)"
+  status: failed
+  reason: "Plan STRIPS reviewer's hedge (`Assuming continuous: true disables caching ... unverified ... Verify before acting`) and asserts `continuous: true makes the storybook target non-cacheable` as a Key Decision. Synthesizes a `<pre_verified>` block on the same claim with no empirical evidence — pure self-confabulation from claimed Nx-semantics knowledge."
+  severity: major
+  test: 30
+  skill: lz-advisor.plan (plan-fixes)
+  artifacts:
+    - "plugins/lz-advisor/references/context-packaging.md (Common Contract Rule 5 -- pv-* synthesis discipline)"
+    - "plugins/lz-advisor/agents/advisor.md (advisor refuse-or-flag rule on unresolved hedges)"
+    - "c:/Users/LarsGyrupBrinkNielse/.claude/projects/D--projects-github-LayZeeDK-ngx-smart-components/fc44ddc9-a7fb-4153-9cd4-755db416c1eb.jsonl (confabulated pv-* block, stripped hedge)"
+    - "D:/projects/github/LayZeeDK/ngx-smart-components/plans/address-compodoc-review-findings.plan.md (Strategic Direction step 4 + Key Decision: Finding 4 closed without code change)"
+  missing:
+    - "B.2 mitigation enforcement: every pv-* block MUST cite a source path/URL the executor read AND a tool-output excerpt as evidence; inferred claims from claimed framework knowledge MUST NOT be packaged as pv-*"
+    - "Advisor refuse-or-flag rule (Finding E proposed surface): advisor MUST flag unresolved hedges in source material with literal 'Unresolved hedge: X. Verify Y before acting.' frame"
+    - "Plan-skill output convention: hedge markers from agent-generated source MUST survive into plan step rationale unless empirically resolved"
+  diagnosis_new: |
+    NEW failure pattern observed for the first time: **trust-contract carve-out fires correctly (Test 26 PASS) but executor self-confabulates pv-* anchor from claimed knowledge.** The carve-out's prose-classification step routes the executor away from "trust the agent-generated source" but does NOT route it TOWARD "do empirical verification" — the executor has a third path (self-anchor on framework knowledge) that the carve-out doesn't close.
+    
+    Cross-evidence with multiple existing findings:
+    - **Finding B.2 (confabulation under Pre-verified header):** plan synthesized `<pre_verified>` block on `continuous: true` non-cacheability with `<evidence method="...">` referring to "Nx semantics" rather than empirical verification. This is the most direct B.2 instance to date — strong reinforcement.
+    - **Finding C (cross-skill confidence laundering):** review→plan boundary stripped the hedge. Same pattern as amendments 2 + 3 of 06-VERIFICATION.md but with a new mechanism: not "treat as authoritative" but "self-anchor on claimed knowledge."
+    - **Finding E (advisor refuse-or-flag):** advisor consultation accepted the framing without flagging the unresolved hedge. The hedge marker was visible in source material context (`unverified` 4 hits, `Assuming` 1 hit, `before acting` 2 hits) but the advisor's Strategic Direction did not contain "Unresolved hedge: X" frame.
+    - **NEW Finding H candidate:** "Trust-contract carve-out fires correctly but executor self-confabulates pv-* from claimed knowledge, bypassing G2's web-first prescription." Distinct from B.2 in failure mechanism (execution-side self-confidence vs packaging discipline) and distinct from G1+G2 residual (which interpreted the failure as "rule miss" rather than "rule bypass via self-anchor").
+    
+    Side observation: Strategic Direction = 109 words (4th data point on advisor word-budget regression: plan-skill 120w + plan-fixes 109w + reviewer 411w/300w cap; supports Finding D).
+  routing: |
+    NEW Phase 7 candidate (Finding H) recommended; OR fold into B.2 + C + E as a triple-cross-reference observation. Fix surface candidates: (a) enforce B.2's "pv-* requires source path + tool-output excerpt" rule structurally (not just in references doc prose); (b) advisor refuse-or-flag rule (Finding E candidate); (c) Plan 06-05 G2 supplement: when carve-out fires AND executor proposes pv-* synthesis, ToolSearch-availability rule MUST still trigger (currently the rule's "BEFORE ranking" trigger is bypassed by self-confidence). Recommend bundling H with B.2 + E in a unified Phase 7 plan.
 ```
 
 ## Phase 6 Empirical Result on Canonical D-04 Scenario (plugin 0.9.0)
