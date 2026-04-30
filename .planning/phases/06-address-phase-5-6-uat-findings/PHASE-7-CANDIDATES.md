@@ -18,6 +18,7 @@ session_logs:
   - c:/Users/LarsGyrupBrinkNielse/.claude/projects/D--projects-github-LayZeeDK-ngx-smart-components/2d388e98-1e6a-4978-8290-115852470529.jsonl
   - c:/Users/LarsGyrupBrinkNielse/.claude/projects/D--projects-github-LayZeeDK-ngx-smart-components/a75fae2f-dc3f-45d2-a0aa-7d9e5f518b77.jsonl
   - c:/Users/LarsGyrupBrinkNielse/.claude/projects/D--projects-github-LayZeeDK-ngx-smart-components/bf522c6e-1001-4a6a-9cfb-7885f9276386.jsonl
+  - c:/Users/LarsGyrupBrinkNielse/.claude/projects/D--projects-github-LayZeeDK-ngx-smart-components/48bd9cc5-b1f0-4641-a4bc-8e7595f74758.jsonl
 ---
 
 # Phase 7 Candidates -- Advisor Consultation Discipline, Template Carry-Forward, and Confidence-Laundering Guards
@@ -43,15 +44,17 @@ Both Phase 6 gaps are captured in `06-VERIFICATION.md`, not in this file.
 
 ## Update 2026-04-30 -- Fresh Compodoc+Storybook UAT on plugin 0.9.0
 
-A fresh end-to-end Compodoc + Storybook + Angular signals integration UAT was run on plugin 0.9.0 against `ngx-smart-components` on `main` (no Compodoc pre-installed), exercising the plan-skill (session `a75fae2f-...`, plan output `compodoc-storybook-setup.plan.md`) and the execute-skill (session `bf522c6e-...`, 2 commits) end-to-end. Results captured in `06-UAT.md` Tests 1-17. Net effect on this candidates file:
+A fresh end-to-end Compodoc + Storybook + Angular signals integration UAT was run on plugin 0.9.0 against `ngx-smart-components` on `main` (no Compodoc pre-installed), exercising plan-skill (session `a75fae2f-...`, plan output `compodoc-storybook-setup.plan.md`), execute-skill (session `bf522c6e-...`, 2 commits on testbed branch), and review-skill (session `48bd9cc5-...`, 4 reviewer findings on commit range `b5b09739^..32e13522`) end-to-end. Results captured in `06-UAT.md` Tests 1-24. Net effect on this candidates file:
 
 | Finding | Cross-evidence type | Verdict |
 |---|---|---|
-| A (silent apply-then-revert) | No new override-acceptance scenarios surfaced; both UATs ran straight-through. | n=1 unchanged; still needs n>=3 trials. |
-| B.1 (pv-* synthesis mandate) | **Plan-skill: 15 pv-* synthesized fresh (D-05 closure exceeded 15x).** Execute-skill: 7 pv-* present (carried from plan input); 0 synthesized fresh from execute-phase empirical work (npm install, git status/diff). | Plan-skill side: positive evidence on 0.9.0. Execute-skill side: B.1's "synthesis mandate" sub-issue confirmed on 2nd fixture. |
-| C (cross-skill confidence-laundering chain) | **Plan-skill broke a vendor-API laundering attempt empirically:** nx.dev guide recommended `import { setCompodocJson } from '@storybook/addon-docs/angular'`; empirical Read of `node_modules/@storybook/addon-docs/angular/package.json` confirmed `setCompodocJson` is no longer exported in `@storybook/angular@10.3.5`; pv-* claim block synthesized this with `<evidence method=...>` anchor; plan correctly omitted the deprecated import. | **Positive evidence: Pattern D + pv-* synthesis successfully break Finding C's chain when Pattern D fires.** Reinforces the mechanism but does not resolve the broader chain-of-custody contract. |
-| D (word-budget regression) | **Plan-skill advisor SD: 120w on 0.9.0 vs 111w on 0.8.5** (slight regression continuing on advisor side). | 2nd 0.9.0 data point on advisor-side word-budget. Reinforces "regressions pervasive across agents" pattern. |
-| **E (NEW): apply-without-verify on surviving hedge markers** | Execute-skill UAT showed Plan 06-05 hedge-marker preservation rule WORKS at the prompt layer (marker survived verbatim into pre-execute consultation source material) BUT the executor proceeded past the unresolved hedge into commits without performing the verification action the hedge required. | NEW failure mode; see Finding E below. Adjacent to A and C but distinct fix surface. |
+| A (silent apply-then-revert) | No new override-acceptance scenarios surfaced; all 3 UATs ran straight-through. | n=1 unchanged; still needs n>=3 trials. |
+| B.1 (pv-* synthesis mandate) | **Plan-skill: 15 pv-* synthesized fresh (D-05 closure exceeded 15x).** Execute-skill: 7 pv-* present (carried from plan input); 0 synthesized fresh from execute-phase empirical work. **Review-skill: 6 pv-* synthesized in reviewer consultation** (positive evidence on review-skill side). | Plan-skill + review-skill: positive evidence on 0.9.0. Execute-skill: B.1's "synthesis mandate" sub-issue confirmed on 2nd fixture. |
+| C (cross-skill confidence-laundering chain) | **Plan-skill broke a vendor-API laundering attempt empirically:** nx.dev guide recommended `import { setCompodocJson } from '@storybook/addon-docs/angular'`; empirical Read of `node_modules/@storybook/addon-docs/angular/package.json` confirmed `setCompodocJson` is no longer exported in `@storybook/angular@10.3.5`; pv-* claim block synthesized with `<evidence>` anchor; plan correctly omitted the deprecated import. **Review-skill DID NOT extend the chain (positive on broken-chain axis) but DID NOT catch Finding E's verify-skip** (negative on safety-net axis — see Finding G). | Mixed: Pattern D + pv-* synthesis breaks the chain when Pattern D fires (positive); review-skill currently does not detect verify-skip patterns in changed code (gap, see Finding G). |
+| D (word-budget regression) | **Plan-skill advisor SD: 120w/100w cap on 0.9.0 (~20% over).** **Review-skill reviewer: ~411w/300w cap on 0.9.0 (~37% over -- IDENTICAL severity to security-reviewer's 412w on 0.8.9).** | **Strong reinforcement.** Evidence base promoted from "n=1 single agent (security-reviewer) on plugin 0.8.9" to "n=2 across both reviewer-class agents on different plugin versions"; the 37% overrun on 300w cap is consistent across reviewer + security-reviewer; advisor (100w cap) sees ~11-20% overrun. Class-level regression confirmed across all 3 agents. |
+| **E (NEW): apply-without-verify on surviving hedge markers** | Execute-skill: Plan 06-05 hedge-marker preservation rule WORKS at the prompt layer (marker survived verbatim into pre-execute consultation) BUT the executor proceeded past the unresolved hedge into commits without performing the verification action. | NEW failure mode; see Finding E below. Adjacent to A and C but distinct fix surface. |
+| **F (NEW): reviewer agent has no web-tool grant for self-verification** | Review-skill: reviewer's Finding 4 raised a Class-2 question (Nx `continuous: true` cache behavior) WITH proper hedge frames per system prompt, but reviewer agent has only `[Read, Glob]` tools and cannot invoke WebSearch/WebFetch. Executor's scan didn't anticipate the Class-2 surface (read project files only). 0 web tools in entire review session. | NEW design gap; see Finding F below. Distinct from A/B/C/D/E surfaces. |
+| **G (NEW): review skill does not provide safety net for verify-before-commit gaps** | Review-skill ran 4 findings on the execute commits but did NOT flag Finding E's verify-before-commit gap. Reviewer noticed the empty-stub `documentation.json` workaround (Finding 1) as a TypeScript-compile-time concern but did not connect it to a verify-skip pattern. Cross-Cutting Patterns covered artifact lifecycle + polish; no provenance / verification-status note. | NEW gap; see Finding G below. Tightly coupled with Finding E (downstream safety net for upstream prevention). |
 
 ## Candidate Findings
 
@@ -312,6 +315,109 @@ In all such cases, the current execute SKILL.md has no rule that requires the ex
 **Priority vs other findings.** Finding E is a NEW failure surface that compounds Findings A (verify-skip on Critical revert) and C (hedge stripping across skill boundaries). It is the within-skill complement to C's cross-skill chain, and the apply-and-keep complement to A's apply-and-revert. **Recommended priority: high** -- the fix surface is well-localized (one block in execute SKILL.md + one rule in advisor agent prompt + one smoke fixture), and the failure mode is general (any execute-skill invocation on a hedged plan).
 
 **Open question for Phase 7 design:** should Findings A + E be merged into a single "verify-skip discipline" finding with two sub-patterns? Pro: cleaner Phase 7 plan, single fix surface (execute SKILL.md verify-before-commit + advisor refuse-or-flag covers both). Con: the original Finding A surface (Reconciliation policy in Phase 3 / Phase 5 of execute SKILL.md) is structurally distinct from Finding E's surface (Phase 6 commit gate). Recommend: keep separate in candidates, merge into a single Phase 7 plan if a unified `<verify_skip_discipline>` block makes sense in the SKILL.md flow.
+
+---
+
+### F. NEW: Reviewer agent has no web-tool grant; Class-2 questions surfaced by reviewer cannot be self-verified (2026-04-30)
+
+**Observed (review-skill UAT 2026-04-30 on plugin 0.9.0, session `48bd9cc5-b1f0-4641-a4bc-8e7595f74758.jsonl`):**
+
+The reviewer agent's Finding 4 raised a Class-2 (API currency) question with proper hedge frames per the agent system prompt:
+
+> "More critically, `continuous: true` targets in Nx skip caching by default, which mitigates the staleness risk -- Assuming `continuous: true` disables caching for this target (unverified against the installed Nx version), the practical impact is limited to output tracking hygiene, do keep severity at Suggestion. Verify cache behavior for continuous targets in `node_modules/nx/PLUGIN.md` or Nx docs before acting."
+
+The hedge frames (`Assuming X (unverified)` + `Verify Y before acting`) are the canonical Plan 06-05 / agent-prompt patterns, properly applied. The reviewer agent's structural-discipline side works correctly. But:
+
+1. **Reviewer agent has only `["Read", "Glob"]` tools** per `agents/reviewer.md` and CLAUDE.md plugin design. It cannot invoke `WebSearch`, `WebFetch`, or `Bash` directly. Web-side verification is structurally impossible from within the reviewer agent.
+2. **Executor's scan phase** had 4 git Bash + 6 project file Reads + 0 web tools. The executor did NOT anticipate the Nx Class-2 question that the reviewer would surface — the executor scanned the diff for code-quality issues but did not pre-empt likely Class-2 surfaces (Nx version, framework version, library version) with WebSearch.
+3. **Net effect:** Class-2 hedge survives into the reviewer's output unstripped (positive — Plan 06-05 hedge-marker preservation works in review skill too) but no verification action ever fires within the skill execution. The user receives a hedged finding without the verification that would resolve the hedge.
+
+**Why it matters.** The review skill is designed as an independent quality check on completed work. When the reviewer surfaces a Class-2 question with proper hedge frames, the user receives information that is ACTIONABLE-but-UNRESOLVED. Compared to the plan-skill (which fires Pattern D in orient phase and synthesizes pv-* blocks before consulting the advisor), the review-skill has no equivalent verification phase. The reviewer's hedge propagates to the user as an open question rather than as a closed finding with empirical anchor.
+
+**Distinct from Findings C and E.**
+
+- **Finding C** (chain-of-custody) is cross-skill: hedge stripping at skill boundaries.
+- **Finding E** (apply-without-verify) is execute-skill-internal: verify-before-commit on hedged claims.
+- **Finding F** (this) is review-skill-internal: verify-before-output on hedged claims surfaced by the reviewer agent itself.
+
+All three address verification gaps but at different skill points. F's surface is uniquely "the reviewer agent surfaces a Class-2 question that the executor's scan did not anticipate."
+
+**Failure surface.** Any review-skill invocation where the reviewer's findings include Class-2 questions about library versions, framework behavior, or vendor APIs that the executor's scan-phase project-file reads cannot answer. Common patterns:
+
+- "Assuming `<framework feature>` works in `<installed version>` (unverified)..."
+- "Verify cache behavior / lifecycle / API shape in `<vendor docs>` before acting"
+- Nx version-conditional behavior (caching, executors, target dependencies)
+- Framework version-conditional behavior (Storybook 8 vs 10 patterns, Angular 17+ signals)
+- Library version-conditional API surfaces (any `package@version` API question)
+
+**Proposed direction:** Three options, prioritized by minimal change:
+
+- **Option 1 (low effort, low round-trip cost):** **Pre-emptive Class-2 scan in executor.** Update `lz-advisor.review/SKILL.md` Phase 1 (Scan) to add an explicit pre-emption step: "Before consulting the reviewer, identify likely Class-2 surfaces in the changed code (vendor library imports, framework version-conditional patterns, build-tool target configs) and pre-empt them with WebSearch / WebFetch + pv-* synthesis. The pre-empted answers anchor the reviewer's findings; the reviewer can then close hedges that the pre-emption resolved." Cost: 1-3 extra WebSearch calls per review invocation; benefits: most hedges resolved before reviewer even sees them.
+
+- **Option 2 (medium effort, requires re-architect):** **Reviewer escalation hook.** Update `agents/reviewer.md` system prompt to emit a structured `## Verification Requested` block (e.g., `<verify_request question="..." class="2" anchor_target="pv-..." />`) when the reviewer cannot resolve a Class-2 question. Update `lz-advisor.review/SKILL.md` Phase 3 (Output) to detect these blocks before final user output: if present, the executor performs the requested verification (WebSearch / WebFetch), synthesizes pv-* blocks, and re-invokes the reviewer ONCE with the new anchors so the reviewer can close the hedge. Cost: 2-3 SKILL.md edits + reviewer agent prompt edit + smoke test fixture; benefits: surgical — only fires when reviewer surfaces an unresolved Class-2.
+
+- **Option 3 (re-architecture):** **Extend reviewer agent tool grant** to include WebSearch + WebFetch + ToolSearch. Cost: changes principle-of-least-privilege design (reviewer was scoped to read-only by intent); benefits: simplest mechanism — reviewer self-verifies its own Class-2 questions inline.
+
+**Effort:** Low to Medium. Recommend Option 1 + Option 2 in tandem: Option 1 catches predictable Class-2 surfaces upfront; Option 2 handles the long tail of reviewer-surfaced surprises. Option 3 is held in reserve if Options 1+2 prove insufficient.
+
+**Cross-evidence.** This UAT is the first review-skill data point where a Class-2 question with hedge frames was surfaced by the reviewer (prior review-skill UAT in `uat-review-skill/session-notes.md` on plugin 0.8.9 produced a different finding mix). One data point; needs n>=2-3 trials to confirm pattern is robust across different review scenarios. But the structural design constraint (reviewer agent has no web tools by intent) is permanent under current plugin design and applies generally.
+
+**Priority vs other findings.** Finding F is a discrete design gap with well-localized fix surface. Lower load-bearing than E (which directly compromises commit correctness) but higher than D (which is cosmetic budget overrun). Recommend medium-high priority in Phase 7 plan; can be bundled with Findings A + E + G under a unified "verify-skip discipline" plan since all four address the same core concern (verification is missing at skill boundaries).
+
+---
+
+### G. NEW: Review skill does not provide safety net for verify-before-commit gaps in changed code (2026-04-30)
+
+**Observed (review-skill UAT 2026-04-30, same session `48bd9cc5-...` reviewing the execute-skill commits from session `bf522c6e-...`):**
+
+The execute-skill UAT shipped a verify-before-commit gap (Finding E): the executor committed signal `output()` path without empirically verifying Compodoc 1.2.1 supports it, despite a verify-first hedge marker preserved in the consultation prompt. The review skill was then run on the resulting commit range to test whether it would catch this verify-skip pattern as a downstream safety net.
+
+**Reviewer's 4 findings adjudicated against the verify-skip surface:**
+
+| Finding | Topic | Catches Finding E gap? |
+|---|---|---|
+| 1 (Important) | TypeScript can't find documentation.json before first compodoc run; recommend stub `{}` workaround | NO -- treats empty stub as a TypeScript-compile-time concern; misses that the stub IS the verify-skip signal |
+| 2 (Suggestion) | --disableSourceCode tradeoff | NO -- unrelated topic |
+| 3 (Suggestion-borderline-Important) | "The output is unreachable from the template" | ADJACENT -- about template event-binding (component template just has `<p>NgxSmartComponents works!</p>` with no `(sampleOutput)="..."` handler), NOT about whether Compodoc 1.2.1 supports signal `output()`. Doesn't catch Finding E. |
+| 4 (Important-revised-up) | Nx outputs declaration + continuous:true caching | NO -- unrelated topic; itself unverified per Finding F |
+
+The Cross-Cutting Patterns section synthesized findings 1+4 around `documentation.json` artifact lifecycle and findings 2+3 as polish items. **No verify-before-commit pattern note. No provenance / verification-status flag on the changed code.**
+
+**Why the review-skill missed it.**
+
+Two structural constraints prevent the review-skill from catching verify-skip patterns:
+
+1. **The reviewer does not have access to the execute session log** — it only sees the commit range. Information like "the executor never ran Compodoc to inspect signal classification" lives in the execute session JSONL, not in the diff or working tree. The reviewer can detect the empty-stub `documentation.json` as a code-shape signal (and Finding 1 did identify the TypeScript implication), but cannot trace the provenance back to a verify-skip.
+
+2. **The reviewer's mandate as currently scoped** focuses on code-shape concerns: logic errors, bugs, CLAUDE.md violations, security issues, correctness problems, edge cases not handled. "Did the upstream skill verify this hedged claim before committing?" is a provenance question, not a code-shape question; it falls outside the current scan criteria.
+
+**Why it matters.** Finding G is the downstream safety-net for Finding E's upstream prevention. Finding E says "executor must verify before commit"; Finding G says "reviewer should catch unverified commits as a safety net when E's prevention fails." Both rules are necessary because:
+
+- Even with Finding E's verify-before-commit rule, executors under context pressure or with weaker self-discipline may still skip verification (the failure mode that produced Finding E in the first place is exactly this).
+- Without Finding G's safety net, verify-skip commits flow through review-skill un-flagged, creating false confidence in the review pass.
+- The compounding effect (E + G both failing) is the same pattern as Finding C's cross-skill confidence laundering: unverified content propagates with positive feedback (review approved) at each hop.
+
+**Failure surface.** Any review-skill invocation where the changed code implements a hedged plan claim and the implementation lacks a corresponding verification commit / `Verified:` trailer / pv-* anchor in the commit body. The pattern is general:
+
+- Plan: "use signal `output()` (fall back to decorator if version Z doesn't support it)" → execute commits signal `output()` without verifying → review must flag the missing verification.
+- Plan: "Assuming feature flag X is on (unverified), do Y" → execute commits Y assuming X → review must flag the missing flag-state verification.
+- Plan: "Verify build passes after step N before committing" → execute commits without running build → review must flag the missing build-verification.
+
+**Proposed direction:** Three complementary surfaces:
+
+- **Review SKILL.md scan criteria entry (NEW):** Add to `lz-advisor.review/SKILL.md` Phase 1 (Scan) scan-criteria list:
+  > "**Verification gaps in implementation of hedged claims.** When changed code implements a load-bearing claim that an upstream artifact (plan, prior consultation) marked as hedged (`Assuming X (unverified)`, `Verify Y before acting`, `fall back to ... if ...`), check the commit body and any follow-up commits for a verification record (`Verified: <claim>` trailer, pv-* anchor, or empirical evidence). Flag the absence as a finding: 'Hedged claim X was implemented without verification record.'"
+
+- **Reviewer agent system prompt directive (NEW):** Add to `agents/reviewer.md`:
+  > "When the executor packages findings on changed code that implements a hedged upstream claim (visible in `## Source Material` or `## Prior Strategic Direction` blocks), and the commit body lacks a `Verified:` trailer or pv-* anchor for the hedged claim, surface the verification gap as an Important finding."
+
+- **Optional escalation: review skill takes execute session log as input.** When `/lz-advisor.review` is invoked with both a commit range AND an execute session log path, the executor scans the session log for unresolved hedges that did not receive a verification action before commit. This is the strongest mechanism but adds operational complexity (session log discovery + parsing). Recommend as a Phase 7+ enhancement, not a Phase 7 minimum.
+
+**Effort:** Low to Medium. Review SKILL.md text edit (~10 lines for new scan criterion) + reviewer agent prompt edit (~5 lines for new directive) + smoke test fixture that synthesizes a hedge-marker commit lacking a verification record and asserts the reviewer flags it. Bundling cost with Finding E (upstream prevention) makes a clean Phase 7 plan: "verify-before-commit + safety-net" as paired rules.
+
+**Relationship to Finding E.** Findings E and G are tightly coupled: E is upstream prevention, G is downstream detection. They should be designed and shipped together — addressing only E without G leaves the safety-net side unprotected; addressing only G without E forces the safety net to compensate for an upstream gap that the executor could close cheaply. Recommend: in Phase 7, plan E + G as a single multi-skill plan that touches `agents/advisor.md` (refuse-or-flag), `skills/lz-advisor.execute/SKILL.md` (verify-before-commit), `agents/reviewer.md` (catch-verify-skip), and `skills/lz-advisor.review/SKILL.md` (scan criterion). Smoke fixture exercises the full chain.
+
+**Priority vs other findings.** Lower individually than E (which directly compromises commit correctness) but the E + G pair is significantly more robust than E alone. Recommend grouping in Phase 7 as a unified "verification chain integrity" plan covering execute prevention + review detection.
 
 ---
 

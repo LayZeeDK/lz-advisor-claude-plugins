@@ -1,5 +1,5 @@
 ---
-status: complete
+status: testing
 phase: 06-address-phase-5-6-uat-findings
 source:
   - 06-05-SUMMARY.md
@@ -20,8 +20,13 @@ sessions:
     output: 2 commits on testbed branch (feat + fix)
     tests: 11-17
     status: complete
+  - skill: lz-advisor.review
+    log: c:/Users/LarsGyrupBrinkNielse/.claude/projects/D--projects-github-LayZeeDK-ngx-smart-components/48bd9cc5-b1f0-4641-a4bc-8e7595f74758.jsonl
+    output: 4 reviewer findings + Cross-Cutting Patterns (rendered to user)
+    tests: 18-24
+    status: complete
 started: 2026-04-30T09:07:30Z
-updated: 2026-04-30T11:50:00Z
+updated: 2026-04-30T13:10:00Z
 ---
 
 ## Current Test
@@ -168,11 +173,95 @@ evidence: |
   - 0 `pv-no-known-cves` blocks.
   - Class 2-S correctly stayed scoped to security-review skill per Plan 06-06 cross-reference discipline. No scope-creep regression.
 
+---
+
+## Review-Skill UAT (Tests 18-24)
+
+**Load-bearing question:** Does the review-skill provide a safety net for Finding E (apply-without-verify) by catching the unverified signal `output()` claim shipped in execute commit `feat(storybook): integrate Compodoc...`? Plus: does Pattern D fire on review-side Class-2 questions (e.g., "Is `tags: ['autodocs']` correct for Storybook 10?"), and does the J-narrative-isolation contract hold (review scope from git, not narrative)?
+
+**Review session log:** `c:/Users/LarsGyrupBrinkNielse/.claude/projects/D--projects-github-LayZeeDK-ngx-smart-components/48bd9cc5-b1f0-4641-a4bc-8e7595f74758.jsonl` (51 lines, 195 KB)
+
+**Commit range reviewed:** `b5b09739^..32e13522` (covers the 2 execute-skill commits: feat(storybook) integration + fix(storybook) advisor-driven correction)
+
+### 18. Review skill activation on testbed commits
+expected: Review skill activates, executor begins scan phase reading commits via git diff, follows review SKILL.md workflow (scan → consult reviewer → output Findings + Cross-Cutting Patterns).
+result: pass
+evidence: 1 Agent (reviewer) tool spawn observed: `description="Code review consultation for Compodoc+Storybook integration"`. Workflow ran end-to-end: scan (4 git diff/log Bash invocations + 6 project file Reads), consult (1 reviewer Agent spawn), output (reviewer response with `### Findings` + `### Cross-Cutting Patterns` headers rendered verbatim with `## Review Summary` prepend per Phase 3 output shape).
+
+### 19. Review scope derived from git, not narrative (J-narrative-isolation)
+expected: The review-skill executor reads git diff to determine review scope. Visible: git diff/log Bash invocations against the commit range; corresponding file Reads via the diff-derived file list.
+result: pass
+evidence: All 4 Bash invocations are `rtk git log/diff` against the explicit commit range `b5b09739eb871e38ac65ed462818b48b9f7c9356^..32e13522c1a4ba46297937cd64bf777bf69bfe79`:
+  1. `git log --oneline <range>` — identify commits in range
+  2. `git diff <range> --name-only` — derive file list mechanically
+  3. `git diff <range>` — full diff content
+  4. `git diff <range> -- package.json .gitignore` — targeted file diffs
+The 6 file Reads correspond to the diff-derived file list: preview.ts, tsconfig.doc.json, tsconfig.json, project.json, ngx-smart-components.stories.ts, ngx-smart-components.ts. Scope was derived mechanically from git per the J-narrative-isolation contract; no narrative-only files included.
+
+### 20. Pattern D fires on review-side Class-2 questions
+expected: Class-2 review questions trigger Pattern D's web-first prescription. OR: if all questions are Class-1, 0 web tools is acceptable. Test FAILS if a clear Class-2 question is present in reviewer findings AND no web tool fired.
+result: issue
+reported: "Reviewer's Finding 4 raises a Class-2 question (Nx `continuous: true` cache behavior across Nx versions) WITH proper hedge frames ('Assuming continuous: true disables caching for this target (unverified against the installed Nx version) ... Verify cache behavior for continuous targets in node_modules/nx/PLUGIN.md or Nx docs before acting'). 0 WebSearch + 0 WebFetch + 0 ToolSearch in the entire review session. The Class-2 question is present in the reviewer output but no web-tool verification was performed anywhere in the skill execution."
+severity: minor
+evidence: |
+  - 0 web tools / 0 ToolSearch in session.
+  - Reviewer's Finding 4 verbatim: "More critically, `continuous: true` targets in Nx skip caching by default, which mitigates the staleness risk -- Assuming `continuous: true` disables caching for this target (unverified against the installed Nx version), the practical impact is limited to output tracking hygiene, do keep severity at Suggestion. Verify cache behavior for continuous targets in `node_modules/nx/PLUGIN.md` or Nx docs before acting."
+  - This is a textbook Class-2 (API currency) question — Nx behavior depends on the installed version, which the reviewer correctly noted is unverified. The reviewer agent properly applied hedge frames per its system prompt ("Assuming X (unverified)" + "Verify ... before acting").
+  - **Structural design constraint:** The reviewer agent has only `["Read", "Glob"]` tools per `agents/reviewer.md` and CLAUDE.md plugin design. It CANNOT invoke WebSearch/WebFetch directly. The web-side verification responsibility falls on the EXECUTOR during scan phase.
+  - Executor's scan phase: 4 git Bash + 6 project file Reads + 0 web tools. The executor did NOT anticipate the Nx Class-2 question that the reviewer would surface; it scanned the diff for code-quality issues but did not pre-empt Class-2 surfaces with WebSearch.
+  - Result: Class-2 question hedged in reviewer output, no verification action ever fired. Hedge survives but is not resolved.
+  - **NOT a regression of Plan 06-05 G2** (this is not the agent-generated-source-input case); it is a NEW gap: review-skill orient phase cannot anticipate all Class-2 questions the reviewer will surface, AND the reviewer agent has no web-tool grant for self-verification.
+
+### 21. Reviewer agent structural compliance (Findings + Cross-Cutting Patterns)
+expected: Reviewer response contains both `### Findings` and `### Cross-Cutting Patterns` sections per Phase 5.4 Finding F.
+result: pass
+evidence: |
+  - Reviewer response contains `### Findings` (with 4 finding entries: Finding 1 Important, Finding 2 Suggestion, Finding 3 Suggestion-borderline-Important, Finding 4 Important-revised-up) and `### Cross-Cutting Patterns` section (synthesizing Findings 1+4 root cause around documentation.json artifact lifecycle, plus Findings 2+3 as polish items).
+  - Each finding includes: severity tag (Confirmed Important / Suggestion), validation note, technical reasoning, recommendation.
+  - `Relevant files:` list trailing the response.
+  - Phase 3 output shape preserved: `## Review Summary` scope line + reviewer verbatim block. F contract met.
+
+### 22. Reviewer agent word budget (300w cap)
+expected: Reviewer response stays at <= 300 words. **Note:** Phase 7 Finding D documents security-reviewer regressed to ~412w on plugin 0.8.9; this test measures the reviewer side on plugin 0.9.0.
+result: issue
+reported: "Reviewer response: ~411 words (excluding ## Review Summary scope prepend; including Findings 1-4 + Cross-Cutting Patterns + Relevant files trailer). 37% over 300w cap. Identical regression severity to Finding D's 412w security-reviewer measurement on plugin 0.8.9, but on a DIFFERENT agent (reviewer not security-reviewer) and DIFFERENT plugin version (0.9.0 not 0.8.9)."
+severity: major
+evidence: |
+  - Word count breakdown (whitespace-split):
+    - Finding 1: ~110 words (Important; documentation.json import resolution + IDE/CI failure mode + mitigation)
+    - Finding 2: ~28 words (Suggestion; --disableSourceCode tradeoff)
+    - Finding 3: ~67 words (Suggestion-borderline-Important; signal output unreachable from template)
+    - Finding 4: ~83 words (Important-revised-up; Nx outputs declaration + continuous:true caching)
+    - Cross-Cutting Patterns: ~123 words (artifact-lifecycle theme + polish items)
+    - Total: ~411 words
+  - Strong cross-evidence for Phase 7 Finding D: word-budget regression generalizes across (a) different agents (reviewer + security-reviewer) and (b) different plugin versions (0.8.9 + 0.9.0). Promotes Finding D's evidence base from n=1 single-agent to n=2 across both reviewer-class agents.
+  - Same root surface as Finding D's cross-cutting note: descriptive ("aim for X words") rather than imperative budget directives in agents/reviewer.md and agents/security-reviewer.md. Output is structurally compliant + qualitatively useful, but exceeds the prescribed cap by a load-bearing margin.
+
+### 23. Class 2-S does not fire in review skill
+expected: 0 npm audit invocations, 0 GHSA URL references, 0 Class 2-S text refs, 0 pv-no-known-cves blocks.
+result: pass
+evidence: 0 `npm audit` references (string OR command), 0 `github.com/advisories` URLs, 0 `Class 2-S` text refs, 0 `pv-no-known-cves` blocks. Class 2-S correctly stayed scoped to security-review skill per Plan 06-06 cross-reference discipline. No scope-creep regression.
+
+### 24. Reviewer catches Finding E's unverified output() claim
+expected: Reviewer flags the unverified signal `output()` decision OR performs empirical verification itself OR notes verify-before-commit pattern in Cross-Cutting Patterns. FAILS only if reviewer ships Findings without the load-bearing concern.
+result: issue
+reported: "Reviewer found 4 issues but did NOT flag the verify-before-commit gap from execute UAT (Test 15 / Finding E). Closest finding is Finding 3 (signal output unreachable from template) which is a different concern — about template event-binding, not about whether Compodoc 1.2.1 classifies signal `output()` correctly. The review skill found code-quality issues but did not provide a safety net for Finding E's verify-before-commit pattern."
+severity: minor
+evidence: |
+  - Reviewer's 4 findings adjudicated against Finding E's surface:
+    - Finding 1 (Important): TypeScript can't find documentation.json before first compodoc run → reviewer DID notice the empty-stub workaround (recommends "commit a stub documentation.json ({}) and let Compodoc overwrite it") but treats it as a TypeScript-compile-time concern, not as a verify-skip signal.
+    - Finding 2 (Suggestion): --disableSourceCode tradeoff → unrelated to Finding E.
+    - Finding 3 (Suggestion-borderline-Important): "The output is unreachable from the template" → about template event-binding (component template just renders `<p>NgxSmartComponents works!</p>` with no `(sampleOutput)="..."` binding), NOT about whether signal output() works in Compodoc 1.2.1. Adjacent topic; doesn't catch Finding E.
+    - Finding 4 (Important): Nx outputs declaration + continuous:true caching → unrelated to Finding E (and is itself unverified per Test 20).
+  - Cross-Cutting Patterns: artifact-lifecycle theme + polish items → no verify-before-commit pattern note.
+  - **Reviewer agent does not have web tools (Test 20 evidence) AND was not given the execute session log** as input — only the commit range. The reviewer can detect the empty-stub `documentation.json` as a code-quality artifact, but cannot detect "the executor never ran Compodoc to verify the signal classification before committing" because that information lives in the execute session log, not in the diff or working tree.
+  - The review skill IS supposed to provide a safety net per its scan criteria ("logic errors, bugs, clear correctness problems, edge cases not handled"), and an unverified claim shipped to a commit IS a correctness-edge-case, but the reviewer's mandate as currently scoped focuses on code shape rather than provenance/verification chain. **NEW gap: review skill does not inspect provenance / verification status of changed code.**
+
 ## Summary
 
-total: 17
-passed: 13
-issues: 4
+total: 24
+passed: 17
+issues: 7
 pending: 0
 skipped: 0
 blocked: 0
@@ -251,6 +340,71 @@ blocked: 0
     Root surface: execute SKILL.md lacks an explicit "verify-before-commit discipline" rule for surviving hedge markers. The trust-contract + ToolSearch-availability rule are orient-phase prescriptions; this gap is at the execute-phase verify-before-commit layer.
   routing: |
     NEW Phase 7 candidate. Recommend adding to PHASE-7-CANDIDATES.md as Finding E (or merging with Finding A as a sub-pattern if Finding A's scope can be broadened from "apply-then-revert" to "apply without verify"). Fix surface is `plugins/lz-advisor/skills/lz-advisor.execute/SKILL.md` execute-phase prose, plus possibly the advisor system prompt to make the advisor refuse-or-flag when source material contains unresolved hedges.
+
+- truth: "Reviewer agent verifies Class-2 questions it surfaces (web-tool grant or escalation back to executor)"
+  status: failed
+  reason: "Reviewer agent surfaced a Class-2 question (Nx continuous:true cache behavior) WITH proper hedge frames per its system prompt, but reviewer agent has only [Read, Glob] tools and cannot invoke WebSearch/WebFetch. Executor's scan phase didn't anticipate this Class-2 question (read project files only). Result: Class-2 hedge present in reviewer output, no verification action ever fires within the skill execution."
+  severity: minor
+  test: 20
+  skill: lz-advisor.review
+  artifacts:
+    - "plugins/lz-advisor/agents/reviewer.md (tool grant: [Read, Glob]; no web tools)"
+    - "plugins/lz-advisor/skills/lz-advisor.review/SKILL.md (scan phase orient ranking)"
+    - "c:/Users/LarsGyrupBrinkNielse/.claude/projects/D--projects-github-LayZeeDK-ngx-smart-components/48bd9cc5-b1f0-4641-a4bc-8e7595f74758.jsonl (0 web tools, Class-2 hedge in Finding 4)"
+  missing:
+    - "Mechanism for reviewer agent to escalate Class-2 questions back to executor for web-tool verification (e.g., reviewer emits a `## Verification Requested` block; review skill Phase 3 detects and re-runs scan with WebSearch on those questions before final output)"
+    - "Alternative: extend reviewer agent tool grant to include WebSearch/WebFetch (changes principle-of-least-privilege design but enables self-verification)"
+    - "Alternative: executor's scan phase pre-empts likely Class-2 surfaces (Nx version, framework version, library version) with WebSearch BEFORE consulting the reviewer"
+  diagnosis_new: |
+    NEW Phase 7 candidate. Distinct design gap: review-skill orient phase cannot anticipate all Class-2 questions the reviewer will surface, AND the reviewer agent has no web-tool grant for self-verification. The reviewer agent properly applied hedge frames ("Assuming X (unverified)" + "Verify Y before acting") per its system prompt — the structural-discipline side works. But there is no mechanism within the skill to RESOLVE the hedge before the review output reaches the user.
+    
+    Different from Finding C's chain-of-custody (cross-skill) and Finding E's verify-before-commit (execute-skill): Finding F (this) is review-skill-internal — the verification gap is between the reviewer's findings and the skill's user-visible output. Adjacent to Finding E in that both leave hedges unresolved at skill boundaries.
+  routing: |
+    NEW Phase 7 candidate (Finding F or merge into E). Recommend adding to PHASE-7-CANDIDATES.md. Fix surface candidates: (a) review-skill Phase 3 escalation hook for `## Verification Requested` blocks emitted by reviewer; (b) reviewer agent tool grant extension; (c) executor scan-phase Class-2 pre-emption. Choice depends on principle-of-least-privilege tradeoff vs round-trip cost.
+
+- truth: "Reviewer agent stays within 300-word cap"
+  status: failed
+  reason: "Reviewer response: ~411 words against 300-word cap — 37% over. Identical regression severity to Finding D's 412w security-reviewer measurement on plugin 0.8.9, but on a DIFFERENT agent (reviewer not security-reviewer) and DIFFERENT plugin version (0.9.0)."
+  severity: major
+  test: 22
+  skill: lz-advisor.review
+  artifacts:
+    - "plugins/lz-advisor/agents/reviewer.md (word-budget directive)"
+    - "c:/Users/LarsGyrupBrinkNielse/.claude/projects/D--projects-github-LayZeeDK-ngx-smart-components/48bd9cc5-b1f0-4641-a4bc-8e7595f74758.jsonl (reviewer response 411 words)"
+  missing: []
+  diagnosis_pre_existing: |
+    Strong cross-evidence for Phase 7 Finding D. Promotes Finding D's evidence base from "n=1 single agent (security-reviewer) on plugin 0.8.9" to "n=2 across both reviewer-class agents on different plugin versions":
+    - security-reviewer on plugin 0.8.9: 412w / 300w cap = ~37% over (Finding D primary observation)
+    - reviewer on plugin 0.9.0 (THIS UAT): 411w / 300w cap = ~37% over
+    - advisor on plugin 0.8.5: 111w / 100w cap = ~11% over
+    - advisor on plugin 0.9.0 (this UAT plan-skill): 120w / 100w cap = ~20% over
+    Pattern: word-budget regressions are pervasive across all 3 agents (advisor + reviewer + security-reviewer) on at least 3 plugin versions (0.8.5 + 0.8.9 + 0.9.0). The 37% overrun on the 300w cap is consistent across both reviewer agents; the regression severity is class-level, not agent-specific.
+    
+    Root surface remains as Finding D's primary observation: descriptive ("aim for X words") rather than imperative budget directives. Outputs are structurally compliant + qualitatively useful, but exceed cap by load-bearing margins.
+  routing: |
+    Already tracked under Finding D in PHASE-7-CANDIDATES.md. This UAT significantly reinforces the evidence base. Recommend Finding D in Phase 7 plan addresses ALL three agent prompts (advisor + reviewer + security-reviewer) in a single edit pass — the failure mode is class-level, not agent-specific.
+
+- truth: "Review skill provides a safety net for verify-before-commit gaps in changed code (Finding E surface)"
+  status: failed
+  reason: "Reviewer ran 4 findings on the execute commits but did NOT flag the verify-before-commit gap from execute UAT (Test 15 / Finding E). The reviewer noticed the empty-stub documentation.json workaround as a TypeScript-compile-time concern (Finding 1) but did not connect it to a verify-skip pattern. Cross-Cutting Patterns covered artifact-lifecycle theme + polish items; no verify-before-commit pattern note."
+  severity: minor
+  test: 24
+  skill: lz-advisor.review
+  artifacts:
+    - "plugins/lz-advisor/skills/lz-advisor.review/SKILL.md (scan criteria; what counts as a finding)"
+    - "plugins/lz-advisor/agents/reviewer.md (reviewer mandate)"
+    - "c:/Users/LarsGyrupBrinkNielse/.claude/projects/D--projects-github-LayZeeDK-ngx-smart-components/48bd9cc5-b1f0-4641-a4bc-8e7595f74758.jsonl (review session, 4 findings, no verify-before-commit flag)"
+    - "c:/Users/LarsGyrupBrinkNielse/.claude/projects/D--projects-github-LayZeeDK-ngx-smart-components/bf522c6e-1001-4a6a-9cfb-7885f9276386.jsonl (execute session showing the gap)"
+  missing:
+    - "Review skill scan criteria entry: 'Provenance / verification status of changed code -- if a hedged plan claim was implemented (e.g., signal output() in a library where output classification is hedged), verify the implementation has a corresponding verification commit / Verified: trailer / pv-* anchor in commit body'"
+    - "Reviewer agent system prompt directive: 'When changed code implements a hedged claim from upstream artifacts, flag the absence of empirical verification as a finding'"
+    - "Alternative: review skill takes execute session log as optional input; if provided, scan for unresolved hedges in the consultation prompt that did not receive a verification action before commit"
+  diagnosis_new: |
+    NEW Phase 7 candidate (or extension of Finding E). The reviewer agent does NOT have access to the execute session log — only the commit range — so it cannot detect "the executor never ran Compodoc to verify the signal classification before committing" purely from the diff. The empty-stub `{}` documentation.json IS a code-shape signal that the reviewer could weight as suspicious (and Finding 1 did identify the TypeScript implication), but the reviewer's mandate as currently scoped focuses on code shape rather than provenance.
+    
+    Adjacent to Finding E (verify-before-commit) but on a different surface: Finding E is "executor must verify before commit"; this finding is "reviewer should catch unverified commits as a safety net." Finding E owns the upstream prevention; this owns the downstream detection.
+  routing: |
+    NEW Phase 7 candidate; recommend extending Finding E with a "downstream safety net" sub-section in PHASE-7-CANDIDATES.md, OR adding a separate Finding G (review-skill safety net for verify-skip patterns). Fix surface = review SKILL.md scan criteria + reviewer agent prompt directive. Cleaner if folded under Finding E since both surfaces address the same load-bearing concern (verify-before-commit shipping unverified work).
 ```
 
 ## Phase 6 Empirical Result on Canonical D-04 Scenario (plugin 0.9.0)
