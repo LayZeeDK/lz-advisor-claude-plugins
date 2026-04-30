@@ -1,5 +1,5 @@
 ---
-source: "06 UAT observations (execute-skill, review-skill, plan-fixes, execute-fixes, and security-review manual UATs on plugin 0.8.9)"
+source: "06 UAT observations (execute-skill, review-skill, plan-fixes, execute-fixes, security-review manual UATs on plugin 0.8.9; plus 2026-04-30 fresh Compodoc+Storybook plan-skill + execute-skill UATs on plugin 0.9.0)"
 captured: 2026-04-29
 amended: 2026-04-30
 type: phase-7-candidates
@@ -9,12 +9,15 @@ related_artifacts:
   - .planning/phases/06-address-phase-5-6-uat-findings/uat-plan-skill-fixes/session-notes.md
   - .planning/phases/06-address-phase-5-6-uat-findings/uat-execute-skill-fixes/session-notes.md
   - .planning/phases/06-address-phase-5-6-uat-findings/uat-security-review-skill/session-notes.md
+  - .planning/phases/06-address-phase-5-6-uat-findings/06-UAT.md
 session_logs:
   - c:/Users/LarsGyrupBrinkNielse/.claude/projects/D--projects-github-LayZeeDK-ngx-smart-components/ff614de1-c25d-4e84-bee9-5de67de4b208.jsonl
   - c:/Users/LarsGyrupBrinkNielse/.claude/projects/D--projects-github-LayZeeDK-ngx-smart-components/5dbcc147-5119-439b-950e-f2bdac619598.jsonl
   - c:/Users/LarsGyrupBrinkNielse/.claude/projects/D--projects-github-LayZeeDK-ngx-smart-components/26868ae7-1f9a-4a71-a146-16e7781b74c6.jsonl
   - c:/Users/LarsGyrupBrinkNielse/.claude/projects/D--projects-github-LayZeeDK-ngx-smart-components/e4592a03-0cf4-4925-af93-fdf20c663a25.jsonl
   - c:/Users/LarsGyrupBrinkNielse/.claude/projects/D--projects-github-LayZeeDK-ngx-smart-components/2d388e98-1e6a-4978-8290-115852470529.jsonl
+  - c:/Users/LarsGyrupBrinkNielse/.claude/projects/D--projects-github-LayZeeDK-ngx-smart-components/a75fae2f-dc3f-45d2-a0aa-7d9e5f518b77.jsonl
+  - c:/Users/LarsGyrupBrinkNielse/.claude/projects/D--projects-github-LayZeeDK-ngx-smart-components/bf522c6e-1001-4a6a-9cfb-7885f9276386.jsonl
 ---
 
 # Phase 7 Candidates -- Advisor Consultation Discipline, Template Carry-Forward, and Confidence-Laundering Guards
@@ -37,6 +40,18 @@ Two separate Phase 6 gaps surfaced from the plan-fixes and execute-fixes UATs:
 - **Third amendment to 06-VERIFICATION.md (from execute-fixes UAT):** the carve-out scope extends to plan-file input, AND the suppression operates at the ToolSearch loading layer (executor never invokes `ToolSearch select:WebSearch,WebFetch`, so web tools are structurally unavailable when ranking runs). The fix surface should classify by source provenance (vendor-doc vs agent-generated) rather than by structural shape.
 
 Both Phase 6 gaps are captured in `06-VERIFICATION.md`, not in this file.
+
+## Update 2026-04-30 -- Fresh Compodoc+Storybook UAT on plugin 0.9.0
+
+A fresh end-to-end Compodoc + Storybook + Angular signals integration UAT was run on plugin 0.9.0 against `ngx-smart-components` on `main` (no Compodoc pre-installed), exercising the plan-skill (session `a75fae2f-...`, plan output `compodoc-storybook-setup.plan.md`) and the execute-skill (session `bf522c6e-...`, 2 commits) end-to-end. Results captured in `06-UAT.md` Tests 1-17. Net effect on this candidates file:
+
+| Finding | Cross-evidence type | Verdict |
+|---|---|---|
+| A (silent apply-then-revert) | No new override-acceptance scenarios surfaced; both UATs ran straight-through. | n=1 unchanged; still needs n>=3 trials. |
+| B.1 (pv-* synthesis mandate) | **Plan-skill: 15 pv-* synthesized fresh (D-05 closure exceeded 15x).** Execute-skill: 7 pv-* present (carried from plan input); 0 synthesized fresh from execute-phase empirical work (npm install, git status/diff). | Plan-skill side: positive evidence on 0.9.0. Execute-skill side: B.1's "synthesis mandate" sub-issue confirmed on 2nd fixture. |
+| C (cross-skill confidence-laundering chain) | **Plan-skill broke a vendor-API laundering attempt empirically:** nx.dev guide recommended `import { setCompodocJson } from '@storybook/addon-docs/angular'`; empirical Read of `node_modules/@storybook/addon-docs/angular/package.json` confirmed `setCompodocJson` is no longer exported in `@storybook/angular@10.3.5`; pv-* claim block synthesized this with `<evidence method=...>` anchor; plan correctly omitted the deprecated import. | **Positive evidence: Pattern D + pv-* synthesis successfully break Finding C's chain when Pattern D fires.** Reinforces the mechanism but does not resolve the broader chain-of-custody contract. |
+| D (word-budget regression) | **Plan-skill advisor SD: 120w on 0.9.0 vs 111w on 0.8.5** (slight regression continuing on advisor side). | 2nd 0.9.0 data point on advisor-side word-budget. Reinforces "regressions pervasive across agents" pattern. |
+| **E (NEW): apply-without-verify on surviving hedge markers** | Execute-skill UAT showed Plan 06-05 hedge-marker preservation rule WORKS at the prompt layer (marker survived verbatim into pre-execute consultation source material) BUT the executor proceeded past the unresolved hedge into commits without performing the verification action the hedge required. | NEW failure mode; see Finding E below. Adjacent to A and C but distinct fix surface. |
 
 ## Candidate Findings
 
@@ -230,6 +245,73 @@ The output is structurally compliant (Findings + Threat Patterns sections presen
 **Effort (D):** Low to medium. Recommend Option 1 + Option 2 in tandem -- the prompt change is cheap, and the smoke test prevents future regressions. Option 3 is a separate consideration about the contract itself.
 
 **Cross-cutting note.** Word-budget regressions across multiple agents (advisor SD, security-reviewer) suggest a class-level gap: the agents do not currently treat word-budget as a hard constraint the way they treat structural section presence. A Phase 7 / Phase 6.1 plan should consider whether word-budget belongs in the agent prompt's hard-rules layer (alongside `tool_uses` discipline) rather than the soft-style layer.
+
+**2026-04-30 cross-evidence (plan-skill UAT on plugin 0.9.0, session `a75fae2f-...`):** Advisor Strategic Direction on the canonical Compodoc+Storybook setup task ran 120 words against the 100-word cap (~20% over). 5 enumerated steps (~102w) + Critical line (~17w) = ~119-120w. Slight regression vs the 0.8.5 Stage 1 KCB-economics measurement (111w, ~11% over). Pattern: advisor-side word-budget regression persists across plugin versions on code-snippet-laden Strategic Directions. The 300w security-reviewer regression (Finding D primary observation) and the 100w advisor regression are likely shared root surface (descriptive vs imperative budget directives in the agent prompts).
+
+---
+
+### E. NEW: Apply-without-verify on surviving hedge markers in execute skill (2026-04-30)
+
+**Observed (execute-skill UAT 2026-04-30 on plugin 0.9.0, session `bf522c6e-1001-4a6a-9cfb-7885f9276386.jsonl`):**
+
+The plan input (`compodoc-storybook-setup.plan.md`) contained an explicit verify-first hedge marker:
+
+> "verify the Docs tab renders the output (fall back to `@Output() sampleOutput = new EventEmitter<void>()` if Compodoc 1.2.1 still skips `output()`)"
+
+This marker is exactly the shape Plan 06-05's hedge-marker preservation rule was designed to handle.
+
+Empirical sequence:
+
+1. **Plan 06-05 prompt-layer rule WORKED:** hedge marker survived verbatim into pre-execute consultation source material. (`fall back to` and `still skips output` both grep-positive in session JSONL; the pre-execute consultation prompt's `## Source Material > Plan Strategic Direction` block contains the marker unstripped.)
+2. **Pre-execute advisor saw the hedge but did NOT refuse-or-flag.** No literal "Unresolved hedge: X" frame in the advisor response; no "Verify before committing" instruction added to the Strategic Direction.
+3. **Executor wrote 2-byte stub `documentation.json` (`{}`)** per the plan's first-run TypeScript-import-resolution convention (plan line 121).
+4. **Executor never ran Compodoc.** 0 `compodoc` CLI Bash invocations; 0 `nx run *:storybook` or `nx build-storybook` invocations.
+5. **Executor never read `documentation.json`.** 0 Reads of `documentation.json` in the session.
+6. **Executor never inspected JSON for signal classification.** 0 references to `outputsClass`, `propertiesClass`, `inputsClass`, `methodsClass` in the session.
+7. **Executor committed signal `output()` path** (commit `feat(storybook): integrate Compodoc for Docs tab with signal inputs/outputs`) without verification. Commit body lists "Add JSDoc, sampleInput signal, and sampleOutput signal to NgxSmartComponents" -- chose signal `output()` (not the `@Output() EventEmitter` fallback).
+8. **Final advisor review caught a different issue** (`resolveJsonModule` misplacement on `tsconfig.doc.json`) but did NOT challenge the unverified signal `output()` claim, even though the same pre-execute hedge marker was visible in the consultation context.
+
+The hedge required "verify the Docs tab renders the output before committing"; the verification action was skipped, and the commit shipped the un-verified optimistic path.
+
+**Why it matters.** Phase 6's Plan 06-05 introduced the hedge-marker preservation rule at the **prompt layer**. The rule WORKS: markers survive into the consultation prompt, unstripped. But there is no corresponding **execute-phase rule** that says "if a hedge marker survived into source material, the corresponding verification action MUST be performed before the related commit." Result: prompt-layer preservation succeeds, but the executor still ships unverified work. The contract has two layers; only one is implemented.
+
+**Relationship to existing Findings.**
+
+- **Adjacent to Finding A** (silent apply-then-revert) but distinct failure mode:
+  - Finding A: applied -> reverted silently -> no verify (silent rollback of advisor Critical content)
+  - Finding E: applied -> committed -> never reverted -> still no verify (verify-first hedge ignored, optimistic path shipped)
+  - Both are "verify-skip" patterns; A's root surface is reconciliation policy on Critical content, E's root surface is execute-phase verify-before-commit discipline on surviving hedges. Could be merged in Phase 7 under a unified "verify-skip discipline" finding, or kept separate to preserve the distinct fix surfaces.
+
+- **Adjacent to Finding C** (7-hop confidence-laundering chain) but more localized:
+  - Finding C: cross-skill chain (review -> plan -> execute -> security-review) launders confidence via hedge stripping at skill boundaries
+  - Finding E: within-skill (execute) accepts an upstream hedge into its own consultation prompt verbatim (so C's "Hedge propagation rule" is satisfied), but then commits without resolving the hedge (so the verification anchor that should break the chain is absent)
+  - Finding C's "Hedge propagation rule" handles the prompt-construction side; Finding E's "verify-before-commit" rule handles the execute-side completion. Both rules are necessary.
+
+- **Reinforces Finding B.1's synthesis mandate.** The execute-skill UAT had 0 pv-* synthesis from execute-phase empirical work (npm install success, package.json grep, git status). Even a `pv-package-installed` block citing the npm install output would have anchored an empirical fact. The synthesis-mandate sub-issue of B.1 covers this; Finding E's verify-action requirement extends it: not only synthesize pv-* for empirical work that was done, but also DO the empirical work the surviving hedge requires.
+
+**Failure surface.** Any execute-skill invocation where the plan input contains a verify-first hedge marker on a load-bearing implementation choice. The pattern is general (not specific to Compodoc/Storybook):
+
+- Plan: "use signal X (fall back to decorator Y if signal X doesn't work in version Z)"
+- Plan: "Verify the build passes after step N before committing"
+- Plan: "Assuming API behavior is unchanged in version V (unverified), do the implementation; verify before merging"
+
+In all such cases, the current execute SKILL.md has no rule that requires the executor to perform the verification before the commit lands. The advisor consultation can see the hedge but is not instructed to flag it. The executor can choose the optimistic path silently.
+
+**Proposed direction:** Two complementary surfaces:
+
+- **Execute SKILL.md `<verify_before_commit>` block (NEW):** "When source material in your consultation prompt contains a verify-first marker (`Verify .+ before acting`, `Assuming .+ \(unverified\)`, `confirm .+ before`, `fall back to .+ if .+`, or similar shapes), and the marker concerns a load-bearing implementation choice, you MUST perform the verification action (run the relevant build/test, read the produced artifact, inspect output) BEFORE the commit that ships the choice. The verification result MUST be added to the commit body as a `Verified: <claim>` trailer OR a follow-up commit must record the verification with empirical evidence. If verification is impossible in the current session (missing tools, missing infrastructure), the commit MUST be marked WIP and a `## Outstanding Verification` section MUST be appended to the consultation's `<final>` output."
+
+- **Advisor agent prompt rule (refuse-or-flag):** Update `agents/advisor.md` (and possibly `agents/reviewer.md`, `agents/security-reviewer.md`) so that when consultation source material contains an unresolved verify-first marker on a load-bearing implementation choice, the advisor's Strategic Direction (or Critical block) MUST flag the unresolved hedge with a literal frame: "Unresolved hedge: <marker text>. Verify <action> before/after committing." This is the second-line guard: the advisor either trusts the executor performed verification (executor adds `Verified:` trailer), or the advisor signals the gap.
+
+**Effort:** Medium. Execute SKILL.md text edit (~30 lines for `<verify_before_commit>` block + smoke test) + advisor agent prompt edit (~10 lines for refuse-or-flag rule) + smoke test fixture in `uat-pattern-d-replay/` (or a new `verify-before-commit-replay/` infrastructure) that synthesizes a hedge-marker survival scenario and asserts: (a) the executor performs the verification action AND adds a `Verified:` trailer to the commit body, OR (b) the advisor flags the unresolved hedge with the canonical frame, OR (c) the executor produces a WIP commit + `## Outstanding Verification` section. Cost: roughly equivalent to Finding A's reconciliation-policy edit + smoke test.
+
+**Cross-evidence with Phase 6 Plan 06-05.** Plan 06-05's hedge-marker preservation rule is documented in 4 SKILL.md `<context_trust_contract>` blocks (sentinels: `Verify .+ before acting`, `Assuming .+ \(unverified\)`, `confirm .+ before`). The rule is structured as a **negative constraint** ("MUST NOT strip hedge markers from source material; MUST NOT promote them into Pre-verified Claims"). This UAT shows the negative constraint is necessary but NOT sufficient: it preserves the marker into the prompt but does not produce verification action downstream. Finding E adds the **positive counterpart**: not only "don't strip" but "if present, do the verification."
+
+**Empirical fact: implementation may have shipped correctly.** Compodoc 1.2.1 likely supports signal `output()` correctly (the executor's optimistic path was probably right; npm package metadata for `@compodoc/compodoc@1.2.1` mentions signal-input support added in 1.1.24, with output support implied by some changelog entries). Tests passing or storybook generating documentation.json correctly would confirm. But **the executor shipped the choice without verifying**, which is the failure mode regardless of whether the optimistic path happens to work. Same dynamic as Finding C: positive feedback (commit lands, no immediate failure) trains future executors to skip verification on similar questions.
+
+**Priority vs other findings.** Finding E is a NEW failure surface that compounds Findings A (verify-skip on Critical revert) and C (hedge stripping across skill boundaries). It is the within-skill complement to C's cross-skill chain, and the apply-and-keep complement to A's apply-and-revert. **Recommended priority: high** -- the fix surface is well-localized (one block in execute SKILL.md + one rule in advisor agent prompt + one smoke fixture), and the failure mode is general (any execute-skill invocation on a hedged plan).
+
+**Open question for Phase 7 design:** should Findings A + E be merged into a single "verify-skip discipline" finding with two sub-patterns? Pro: cleaner Phase 7 plan, single fix surface (execute SKILL.md verify-before-commit + advisor refuse-or-flag covers both). Con: the original Finding A surface (Reconciliation policy in Phase 3 / Phase 5 of execute SKILL.md) is structurally distinct from Finding E's surface (Phase 6 commit gate). Recommend: keep separate in candidates, merge into a single Phase 7 plan if a unified `<verify_skip_discipline>` block makes sense in the SKILL.md flow.
 
 ---
 
