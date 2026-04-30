@@ -124,3 +124,33 @@ Uncategorizable questions fall through to the standard ranking step 5
 (name the gap in the consultation Findings section and proceed). For
 the cross-cutting packaging contract on pre-verified claims, see
 `references/context-packaging.md` Rule 5.
+
+## Cross-Skill Hedge Tracking
+
+When a skill is invoked with input from another skill -- review file passed to plan-skill, plan file passed to execute-skill, commit range plus prior plan/review passed to security-review -- the upstream output may contain verify-first markers that the upstream skill placed deliberately. Sentinel patterns: `\b(unverified)\b`, `\bverify .+ before acting\b`, `\bAssuming .+ \(unverified\)\b`, `\bconfirm .+ before\b`, `\bfall back to .+ if .+\b`. These markers signal that the upstream skill could not resolve the hedged claim within its own scope and is asking the downstream skill (or the user) to either verify or carry the hedge forward.
+
+The downstream skill MUST NOT strip these markers silently. Stripping is the laundering pathway documented in the 7-hop confidence-laundering chain (Finding C hop 3): an upstream review's "Assuming X (unverified) ... Verify Y before acting" gets repackaged as "X" without the hedge by the downstream plan-fixes executor; the plan output asserts X as established fact; downstream execute and security-review propagate X with no verification anchor.
+
+### Tracking rule
+
+For every input artifact in the workflow context (file path supplied via @ mention, file referenced in the user prompt, prior consultation output cited in the source material), the executor MUST scan for sentinel patterns at the start of the orient phase. For each surviving marker, the executor takes ONE action per `references/context-packaging.md` Common Contract Rule 5c:
+
+- (a) Resolve empirically and synthesize a `<pre_verified>` block citing the verification source.
+- (b) Carry the marker verbatim into the consultation prompt's `## Source Material` section -- never under `## Pre-Verified Package Behavior Claims`.
+
+### Workflow-level note
+
+This rule applies WITHIN one user-driven workflow (a sequence of skill invocations on the same task). Across separate user invocations, the user may paste prior output manually, in which case the prior content is treated like any other source material and Rule 5c applies. The cross-skill propagation contract does not require persistent state -- it operates on the input artifacts the executor can see in its current invocation.
+
+### Multi-skill chain example
+
+A typical 4-skill workflow surfaces a hedge that must propagate intact:
+
+1. `/lz-advisor.review` flags Finding 4 with hedge: "Assuming `continuous: true` disables caching for this target (unverified against the installed Nx version), the practical impact is limited."
+2. User invokes `/lz-advisor.plan @review-output.md` to plan fixes. The plan-skill orient phase scans `review-output.md` for sentinels; the marker survives. Per Rule 5c, the marker either gets resolved (Read Nx docs / package.json + synthesize pv-* block) OR carries verbatim into the plan-skill consultation source material.
+3. The plan output preserves the marker in the plan-file's `## Findings Disposition` section (per Plan 07-02 silent-resolve fix) AND -- if unresolved -- in the plan rationale.
+4. User invokes `/lz-advisor.execute @plan-output.md` to apply fixes. The execute-skill orient phase scans `plan-output.md` for sentinels; the marker survives. Per Rule 5c + Plan 07-02 `<verify_before_commit>` block, the marker either triggers verification before commit OR carries forward into a `wip:` commit + `## Outstanding Verification` section.
+
+The marker survives all 4 hops or gets resolved at the first hop where empirical verification is available. The chain breaks only when stripping occurs without verification -- the failure mode this rule prohibits.
+
+For the agent-side counterpart (advisor / reviewer / security-reviewer flag unresolved hedges with the literal `Unresolved hedge:` frame), see `agents/{advisor,reviewer,security-reviewer}.md` `## Hedge Marker Discipline` section.
