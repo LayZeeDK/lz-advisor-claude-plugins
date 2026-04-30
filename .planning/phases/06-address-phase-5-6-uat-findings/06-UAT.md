@@ -30,8 +30,13 @@ sessions:
     output: D:/projects/github/LayZeeDK/ngx-smart-components/plans/address-compodoc-review-findings.plan.md
     tests: 25-32
     status: complete
+  - skill: lz-advisor.execute (execute-fixes against plan-fixes plan)
+    log: c:/Users/LarsGyrupBrinkNielse/.claude/projects/D--projects-github-LayZeeDK-ngx-smart-components/c28c99cb-82fb-438a-bae9-eafd7d4e66ec.jsonl
+    output: 1 commit (18728dd) on testbed branch
+    tests: 33-40
+    status: complete
 started: 2026-04-30T09:07:30Z
-updated: 2026-04-30T14:30:00Z
+updated: 2026-04-30T15:00:00Z
 ---
 
 ## Current Test
@@ -356,11 +361,85 @@ expected: 0 npm audit invocations, 0 GHSA URLs, 0 Class 2-S refs, 0 pv-no-known-
 result: pass
 evidence: 0 of each. Class 2-S correctly stayed scoped to security-review skill per Plan 06-06 cross-reference discipline.
 
+---
+
+## Execute-Fixes UAT (Tests 33-40)
+
+**Load-bearing question:** Does the execute-fixes skill catch the plan-fixes Finding H confabulation? The plan-fixes plan asserted `continuous: true makes the storybook target non-cacheable (Nx never replays continuous targets from cache)` as a Key Decision based on a confabulated pv-* claim with `<evidence method="Nx semantics">`. The plan also includes Step 4: validation via `pnpm nx storybook ngx-smart-components`. This UAT tests whether (a) the executor empirically verifies the confabulated claim by running the plan's validation step before committing, OR (b) inherits the confabulated claim and skips validation.
+
+**Execute-fixes session log:** `c:/Users/LarsGyrupBrinkNielse/.claude/projects/D--projects-github-LayZeeDK-ngx-smart-components/c28c99cb-82fb-438a-bae9-eafd7d4e66ec.jsonl` (116 lines, 221 KB)
+
+### 33. Execute-fixes skill activation on plan-fixes plan
+expected: Execute skill activates with the plan-fixes plan as input. Workflow runs end-to-end (orient → pre-execute consult → execute steps → final review consult).
+result: pass
+evidence: 2 Agent (advisor) tool spawns: `description="Pre-execute advisor consultation"` + `description="Final advisor review consultation"`. Workflow ran end-to-end: orient (5 Read + 16 Bash including git ops + stub creation), pre-execute consult, execute (1 Write + 3 Edit + git add + git commit), final consult. 1 commit landed: `18728dd`.
+
+### 34. Trust-contract carve-out fires on plan-file input
+expected: SKILL.md sentinels loaded; carve-out classifies plan as agent-generated source.
+result: pass
+evidence: All 3 Plan 06-05 sentinels present (`Vendor-doc authoritative source`, `Agent-generated source material`, `ToolSearch select:WebSearch,WebFetch` — 1 hit each). Same prose-classification path as plan-fixes Test 26 PASS.
+
+### 35. ToolSearch fires (Plan 06-05 G2 ToolSearch-availability rule)
+expected: At least 1 ToolSearch tool_use block in execute-fixes session.
+result: issue
+reported: "0 ToolSearch invocations on execute-fixes session despite plan input containing the confabulated `continuous: true` claim from prior plan-fixes UAT (Finding H). Same self-anchor failure mechanism as plan-fixes Test 27."
+severity: major
+evidence: |
+  - 0 ToolSearch tool_use blocks.
+  - 4th plan-file fixture FAILing G1+G2 surface (after `uat-plan-skill-fixes` 0.8.9 + `uat-plan-skill-fixes-rerun` 0.9.0 + plan-fixes 0.9.0 + this execute-fixes 0.9.0).
+  - Reinforces Finding H interpretation: rule bypass via self-anchor on claimed knowledge, not rule miss.
+
+### 36. Web tools fire on confabulated continuous:true claim
+expected: WebSearch/WebFetch >= 1 in execute-fixes session, OR equivalent empirical verification (Read of node_modules/nx, Bash invocation against actual continuous target).
+result: issue
+reported: "0 WebSearch + 0 WebFetch in execute-fixes session. Executor inherited the plan's confabulated `continuous: true non-cacheable` claim verbatim into its own consultation prompt (`continuous: true on the storybook target makes it non-cacheable, neutralizing any cache-staleness concern about the stub file`) without empirical verification. No Read of node_modules/nx for cache behavior, no nx CLI invocation against a continuous target."
+severity: major
+evidence: |
+  - `rg -c '"name":"WebSearch"'` returns 0; `rg -c '"name":"WebFetch"'` returns 0.
+  - Advisor `web_search_requests:0, web_fetch_requests:0` aggregates across all turns.
+  - Executor's pre-execute consultation prompt verbatim from session: "`continuous: true` on the `storybook` target makes it non-cacheable, neutralizing any cache-staleness concern about the stub file." — direct inheritance of plan-fixes Finding H confabulation.
+  - 16 Bash commands all local: `ls`, `printf` (stub creation), `git status`, `cat`, `find`, `rm`, `xxd`, `git diff`, `git add`, `git commit`, `git ls-files`, `git grep`. None probe Nx behavior or fetch documentation.
+  - **Confidence laundering chain extended to 5 hops:** review → plan-fixes (strip + confabulate) → execute-fixes pre-execute consultation (inherit verbatim) → execute-fixes implementation (commit) → execute-fixes final consultation (advisor accepts framing). Each hop preserves the confabulated claim without challenge.
+
+### 37. Hedge markers preserved into pre-execute consultation
+expected: Hedge markers from upstream plan + review survive verbatim into pre-execute consultation source material.
+result: pass
+evidence: |
+  - Hedge marker counts in session: `unverified` 1 hit, `Verify` 1 hit, `fall back` 8 hits (the original Compodoc 1.2.1 output() fallback hedge from plan-skill UAT Test 7).
+  - Plan 06-05 prompt-construction layer rule continues to work: hedge markers from plan input survived into the pre-execute consultation prompt's `## Source Material > Plan Strategic Direction` block.
+  - **Caveat (covered by Test 38):** the hedges survived the prompt layer but were not used as triggers for verification action; the executor proceeded past unresolved hedges into the commit.
+
+### 38. Plan Step 4 (validation) executed empirically before commit
+expected: The plan's Step 4 ("Run `pnpm nx storybook ngx-smart-components`; Verify: Storybook starts without TypeScript errors; the Docs tab renders Compodoc descriptions for sampleInput and sampleOutput; clicking 'Emit' fires the output in Actions panel") is executed BEFORE the commit lands. Observable: Bash invocation matching `(pnpm |^)nx (run |)storybook` OR equivalent storybook startup verification, with output captured and reasoned about.
+result: issue
+reported: "0 Bash invocations of `pnpm nx`, `nx run`, or `nx storybook` in execute-fixes session. The 1 commit landed (`18728dd`) before any storybook validation was attempted. The executor's final summary explicitly defers the validation: 'Next step: Run pnpm nx storybook ngx-smart-components and click Emit to confirm the Actions panel logs sampleOutput.' — treats the plan's Step 4 as user-facing instructions rather than executor-bound action items."
+severity: major
+evidence: |
+  - 0 `nx run` Bash invocations; 0 `pnpm nx` Bash invocations; 0 `nx storybook` Bash invocations. The plan's Step 4 was structured as `- Run: pnpm nx storybook ngx-smart-components` + `- Verify: ...` and the prior plan-skill UAT explicitly noted "verify the Docs tab renders the output (fall back to ... if Compodoc 1.2.1 still skips output())" — both load-bearing validation gates were skipped.
+  - Executor's final response verbatim: "**Summary -- commit `18728dd`:** Three changes implemented per the plan's Strategic Direction: ... **Next step:** Run `pnpm nx storybook ngx-smart-components` and click Emit to confirm the Actions panel logs `sampleOutput`. If Compodoc regenerates `documentation.json` with non-deterministic ordering after that run, the working tree will be dirty -- flag that if it happens." — the executor explicitly defers Step 4 to a "next step" AFTER commit.
+  - **NEW empirical observation about Finding E.** Even when the plan EXPLICITLY includes a numbered validation step (not just a hedge marker, but an executable `Run: <command>` step in the plan's Steps section), the executor may treat it as user-facing instructions rather than executor-bound action items. This refines Finding E's failure mode from "hedge skipped" to "explicit validation step skipped + reframed as user post-commit task."
+  - **Compounds Finding H.** The plan-fixes confabulated the `continuous: true` non-cacheability claim; the execute-fixes inherited it without challenge AND skipped the validation step that would have empirically tested whether the Compodoc artifact lifecycle works as the plan asserts. End result: a commit shipping two unverified claims (output() classification + continuous:true cache behavior) plus the verify-skip pattern Finding G says review-skill does not catch.
+
+### 39. Implementation correctness vs plan Steps 1-3
+expected: Plan Steps 1-3 (stub documentation.json + .gitignore + project.json + template button) are implemented correctly per plan specification.
+result: pass
+evidence: |
+  - Step 1 (stub documentation.json + remove from .gitignore): 1 Write to `documentation.json` (after some retries with `printf '{}\n' > path` + `xxd` byte verification — the executor verified the file content was exactly `{}\n` and not something else). 1 Edit to `.gitignore` removing the `documentation.json` line. PASS.
+  - Step 2 (template button binding): 1 Edit to `ngx-smart-components.ts` adding `<button type="button" (click)="sampleOutput.emit()">Emit</button>`. PASS.
+  - Step 3 (remove --disableSourceCode from storybook target only): 1 Edit to `project.json` removing the flag from storybook target's compodocArgs while preserving it on build-storybook. PASS.
+  - 1 commit landed (`18728dd`) covering all 3 code changes atomically.
+  - Caveat: implementation correctness here is at the FILE-CHANGE level, not the BEHAVIORAL level. The plan's intent ("Storybook starts without TypeScript errors; Docs tab renders Compodoc descriptions; Emit button fires sampleOutput in Actions panel") is structurally addressed but not empirically verified per Test 38.
+
+### 40. Class 2-S does not fire in execute skill
+expected: 0 actual npm audit Bash invocations, 0 GHSA URLs, 0 Class 2-S text refs, 0 pv-no-known-cves blocks.
+result: pass
+evidence: 0 of each in execute-fixes session. Class 2-S correctly stayed scoped to security-review skill per Plan 06-06 cross-reference discipline.
+
 ## Summary
 
-total: 32
-passed: 22
-issues: 10
+total: 40
+passed: 27
+issues: 13
 pending: 0
 skipped: 0
 blocked: 0
@@ -565,6 +644,72 @@ blocked: 0
     Side observation: Strategic Direction = 109 words (4th data point on advisor word-budget regression: plan-skill 120w + plan-fixes 109w + reviewer 411w/300w cap; supports Finding D).
   routing: |
     NEW Phase 7 candidate (Finding H) recommended; OR fold into B.2 + C + E as a triple-cross-reference observation. Fix surface candidates: (a) enforce B.2's "pv-* requires source path + tool-output excerpt" rule structurally (not just in references doc prose); (b) advisor refuse-or-flag rule (Finding E candidate); (c) Plan 06-05 G2 supplement: when carve-out fires AND executor proposes pv-* synthesis, ToolSearch-availability rule MUST still trigger (currently the rule's "BEFORE ranking" trigger is bypassed by self-confidence). Recommend bundling H with B.2 + E in a unified Phase 7 plan.
+
+- truth: "Plan 06-05 G2 ToolSearch-availability rule fires on plan-file input (4th plan-file fixture, execute-fixes)"
+  status: failed
+  reason: "0 ToolSearch invocations on execute-fixes session despite plan input containing the confabulated continuous:true claim from prior plan-fixes UAT (Finding H). Same self-anchor failure mechanism reaches the 4th plan-file fixture."
+  severity: major
+  test: 35
+  skill: lz-advisor.execute (execute-fixes)
+  artifacts:
+    - "plugins/lz-advisor/skills/lz-advisor.execute/SKILL.md (<context_trust_contract> ToolSearch-availability rule)"
+    - "c:/Users/LarsGyrupBrinkNielse/.claude/projects/D--projects-github-LayZeeDK-ngx-smart-components/c28c99cb-82fb-438a-bae9-eafd7d4e66ec.jsonl"
+  routing: |
+    Reinforces existing G1+G2 empirical residual + Finding H. 4th plan-file fixture FAILing same surface; failure mechanism (self-anchor on claimed knowledge) consistent across plan-skill + execute-skill on plan-file inputs.
+
+- truth: "Pattern D web-first prescription fires when plan input contains a confabulated pv-* claim"
+  status: failed
+  reason: "0 WebSearch + 0 WebFetch in execute-fixes session. Executor inherited the plan's confabulated `continuous: true non-cacheable` claim verbatim into its own consultation prompt without empirical verification. No Read of node_modules/nx, no nx CLI invocation, no docs WebFetch."
+  severity: major
+  test: 36
+  skill: lz-advisor.execute (execute-fixes)
+  artifacts: (same as Test 35)
+  diagnosis_new: |
+    **5-hop confidence-laundering chain** documented from this UAT session:
+    1. Review hedged Class-2 question (Verify cache behavior before acting)
+    2. Plan-fixes stripped hedge + confabulated `<pre_verified>` block (Finding H)
+    3. Execute-fixes pre-execute consultation INHERITED the confabulation verbatim
+    4. Execute-fixes implementation committed without verification
+    5. Execute-fixes final advisor accepted framing (no challenge)
+    
+    This extends Finding C's 7-hop chain (across review → plan → execute → security-review on the original `fn()` spy issue) to a NEW 5-hop chain on the `continuous: true` Nx claim. Unlike the original chain which was cross-skill, this chain is mostly within-skill (plan-fixes → execute-fixes) with the confabulated pv-* anchor as the load-bearing transmission mechanism.
+  routing: |
+    Paired with Test 35; same fix surface. Reinforces Finding H + G1+G2 empirical residual + Finding C with new chain pattern.
+
+- truth: "Executor empirically verifies hedged plan claims before commit (plan Step 4 validation executed)"
+  status: failed
+  reason: "0 Bash invocations of `nx run`, `pnpm nx`, or `nx storybook` in execute-fixes session. The 1 commit (18728dd) landed BEFORE any storybook validation was attempted. Executor's final summary explicitly defers Step 4: 'Next step: Run pnpm nx storybook ngx-smart-components and click Emit to confirm...' — treats the plan's numbered validation step as USER-FACING instructions rather than EXECUTOR-BOUND action items."
+  severity: major
+  test: 38
+  skill: lz-advisor.execute (execute-fixes)
+  artifacts:
+    - "plugins/lz-advisor/skills/lz-advisor.execute/SKILL.md (execute workflow; Phase 5 / Phase 6 commit gates)"
+    - "plugins/lz-advisor/agents/advisor.md (advisor refuse-or-flag rule on unresolved hedges)"
+    - "c:/Users/LarsGyrupBrinkNielse/.claude/projects/D--projects-github-LayZeeDK-ngx-smart-components/c28c99cb-82fb-438a-bae9-eafd7d4e66ec.jsonl (final summary text deferring validation)"
+    - "Testbed commit `18728dd` (3 file changes shipped without validation step running)"
+  missing:
+    - "Execute SKILL.md rule: numbered plan steps with `Run:` directives MUST be executed by the executor as Bash invocations (or the equivalent tool), not deferred to user-facing 'next step' instructions"
+    - "Execute SKILL.md rule: when a plan step is structured as `Run: <command>` + `Verify: <conditions>`, the executor MUST capture command output, reason about whether conditions are met, and document the verification result in the commit body or a follow-up commit BEFORE the related code-change commit lands"
+    - "Advisor refuse-or-flag rule: when source material contains a `Run: <command>` validation step that has not been executed at consult time, the advisor MUST flag this in Strategic Direction with literal frame: 'Unresolved validation: <step>. Run before committing.'"
+  diagnosis_new: |
+    NEW empirical observation about Finding E that REFINES its failure mode. Prior Finding E understanding (from execute-skill UAT Test 15): "executor commits past surviving hedge marker without performing the verification action the hedge implies." This UAT shows the failure extends to:
+    
+    **EXPLICIT validation steps in plan Steps section.** The plan-fixes plan structured Step 4 as:
+    > "**Validate**
+    >  - Run: `pnpm nx storybook ngx-smart-components`
+    >  - Verify: Storybook starts without TypeScript errors; the Docs tab renders Compodoc descriptions for `sampleInput` and `sampleOutput`; clicking "Emit" in the rendered component fires the output in the Actions panel."
+    
+    This is not a hedge marker buried in a step rationale; it is a NUMBERED, EXPLICIT, EXECUTABLE step in the plan's Steps section with literal `Run:` and `Verify:` directives. The executor still skipped it and reframed it as user-facing instructions in the final summary.
+    
+    This significantly expands Finding E's failure surface: not just "hedge markers in plan rationale" but ALSO "explicit validation steps in plan Steps section." Both fail the same execute-discipline gap: executor proceeds to commit without performing the verification the plan requires.
+    
+    **Compounds Finding G + Finding H.** Finding G says review-skill doesn't catch verify-skip; Finding H says plan-fixes confabulated the underlying claim; this UAT shows execute-fixes inherits the confabulation AND skips the validation step that would have caught it. The 5-hop chain through review → plan-fixes → execute-fixes ships:
+    - 1 confabulated pv-* claim (continuous:true non-cacheability)
+    - 1 stripped hedge (Verify cache behavior before acting)
+    - 1 unverified commit (`18728dd` shipping signal output() + continuous:true assumption + Compodoc 1.2.1 output() unconfirmed)
+    - 0 empirical verifications anywhere in the chain
+  routing: |
+    NEW empirical evidence STRONGLY reinforcing Finding E. Recommend folding this evidence into Finding E's failure surface description in PHASE-7-CANDIDATES.md: extend from "hedge markers in plan rationale" to "ANY plan step structured as `Run: <command>` + `Verify: <conditions>` MUST be executed empirically before the related commit." Same fix surface (execute SKILL.md verify-before-commit rule + advisor refuse-or-flag rule), but the rule's coverage scope expands.
 ```
 
 ## Phase 6 Empirical Result on Canonical D-04 Scenario (plugin 0.9.0)

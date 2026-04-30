@@ -20,6 +20,7 @@ session_logs:
   - c:/Users/LarsGyrupBrinkNielse/.claude/projects/D--projects-github-LayZeeDK-ngx-smart-components/bf522c6e-1001-4a6a-9cfb-7885f9276386.jsonl
   - c:/Users/LarsGyrupBrinkNielse/.claude/projects/D--projects-github-LayZeeDK-ngx-smart-components/48bd9cc5-b1f0-4641-a4bc-8e7595f74758.jsonl
   - c:/Users/LarsGyrupBrinkNielse/.claude/projects/D--projects-github-LayZeeDK-ngx-smart-components/fc44ddc9-a7fb-4153-9cd4-755db416c1eb.jsonl
+  - c:/Users/LarsGyrupBrinkNielse/.claude/projects/D--projects-github-LayZeeDK-ngx-smart-components/c28c99cb-82fb-438a-bae9-eafd7d4e66ec.jsonl
 ---
 
 # Phase 7 Candidates -- Advisor Consultation Discipline, Template Carry-Forward, and Confidence-Laundering Guards
@@ -69,6 +70,17 @@ A 4th UAT in the Compodoc+Storybook chain ran the plan-skill against the reviewe
 | E (advisor refuse-or-flag on unresolved hedges) | **Plan-fixes advisor consultation accepted the framing without flagging the unresolved hedge.** Hedge marker visible in source material context (`unverified` 4 hits, `Assuming` 1 hit, `before acting` 2 hits) but advisor's Strategic Direction did not contain "Unresolved hedge: X" frame. | **First in-skill instance of E's advisor-side gap.** Reinforces E's proposed direction (advisor refuse-or-flag rule). |
 | G1+G2 empirical residual | **3rd plan-fixes fixture FAIL** with QUALITATIVELY DIFFERENT failure mechanism: trust-contract carve-out FIRED correctly (executor explicitly classified review as agent-generated) but ToolSearch availability rule still didn't fire because executor self-anchored on "Nx semantics" knowledge. | **Refined root cause.** Prior interpretations ("rule miss") were empirically wrong; the residual root cause is "executor bypasses the rule via self-confabulation." See Finding H below. |
 | **H (NEW): Trust-contract carve-out fires but executor self-confabulates pv-* anchor from claimed knowledge** | Executor's orient verbatim: "I'll mark this as pre-verified from Nx semantics." Synthesized pv-* block on `continuous: true` non-cacheability with no empirical evidence. Carve-out routed away from "trust agent-generated source" but did NOT route toward "do empirical verification" — executor had a third path (self-anchor on framework knowledge) that the carve-out doesn't close. | NEW failure mode; see Finding H below. Distinct from B.2 (packaging discipline), G1+G2 (rule miss), and E (advisor side). |
+
+## Update 2026-04-30 (continued, 5th UAT) -- Execute-fixes UAT on plan-fixes plan
+
+A 5th UAT in the Compodoc+Storybook chain ran the execute-skill against the plan-fixes plan as input (session `c28c99cb-82fb-438a-bae9-eafd7d4e66ec.jsonl`, 1 commit `18728dd`). This is the 4th plan-file fixture for execute-skill (after the original execute-skill UAT against plan-skill output) and produces strong reinforcement evidence for Findings E + H + C and a NEW empirical observation refining Finding E's failure surface scope.
+
+| Finding | Cross-evidence type | Verdict |
+|---|---|---|
+| C (cross-skill confidence laundering) | **NEW 5-hop within-skill chain** documented: review hedged Class-2 → plan-fixes stripped+confabulated pv-* (Finding H) → execute-fixes pre-execute consultation INHERITED confabulation verbatim → execute-fixes implementation committed without verification → execute-fixes final advisor accepted framing. Different from original 7-hop cross-skill chain on `fn()` spy: this chain is mostly within-skill (plan-fixes → execute-fixes) with confabulated pv-* anchor as the load-bearing transmission mechanism. | **Strong reinforcement on a NEW chain pattern.** Confirms confidence laundering can compound within-skill, not just cross-skill. |
+| **E (apply-without-verify) — REFINED FAILURE SURFACE** | Plan-fixes plan structured Step 4 as `**Validate** - Run: pnpm nx storybook ngx-smart-components - Verify: Storybook starts without TypeScript errors; the Docs tab renders Compodoc descriptions; clicking "Emit" fires the output in Actions panel.` This is NOT a hedge marker buried in rationale — it is a NUMBERED, EXPLICIT, EXECUTABLE plan step. **Executor STILL skipped it.** Final summary verbatim: "Next step: Run pnpm nx storybook ngx-smart-components and click Emit to confirm..." (post-commit user-facing reframe). | **Significantly EXPANDS Finding E's failure surface scope.** Original Finding E targeted "hedge markers in plan rationale"; refined scope: ANY plan step structured as `Run: <command>` + `Verify: <conditions>` MUST be executed before commit. |
+| G1+G2 empirical residual + H | **4th plan-file fixture FAILing same surface.** 0 ToolSearch + 0 web tools in execute-fixes despite trust-contract sentinels present and plan input containing the confabulated `continuous: true` claim. Executor inherited the confabulation verbatim into its own consultation prompt. | Reinforces Finding H interpretation: rule bypass via self-anchor on claimed knowledge, not rule miss. Same failure mechanism reaches plan-skill + execute-skill on plan-file inputs, 4 fixtures total. |
+| Word-budget (D) | Execute-fixes advisor word count not extracted (final advisor used different output shape — no Strategic Direction header detected by analysis script). 5th data point pending. | Inconclusive on this UAT; D's evidence base unchanged from prior 4 data points. |
 
 ## Candidate Findings
 
@@ -306,13 +318,30 @@ The hedge required "verify the Docs tab renders the output before committing"; t
 
 - **Reinforces Finding B.1's synthesis mandate.** The execute-skill UAT had 0 pv-* synthesis from execute-phase empirical work (npm install success, package.json grep, git status). Even a `pv-package-installed` block citing the npm install output would have anchored an empirical fact. The synthesis-mandate sub-issue of B.1 covers this; Finding E's verify-action requirement extends it: not only synthesize pv-* for empirical work that was done, but also DO the empirical work the surviving hedge requires.
 
-**Failure surface.** Any execute-skill invocation where the plan input contains a verify-first hedge marker on a load-bearing implementation choice. The pattern is general (not specific to Compodoc/Storybook):
+**Failure surface (REFINED 2026-04-30 by execute-fixes UAT).** Two distinct sub-patterns:
+
+**E.1 -- Hedge markers in plan rationale (original Finding E surface).** Any execute-skill invocation where the plan input contains a verify-first hedge marker on a load-bearing implementation choice. The pattern is general (not specific to Compodoc/Storybook):
 
 - Plan: "use signal X (fall back to decorator Y if signal X doesn't work in version Z)"
 - Plan: "Verify the build passes after step N before committing"
 - Plan: "Assuming API behavior is unchanged in version V (unverified), do the implementation; verify before merging"
 
-In all such cases, the current execute SKILL.md has no rule that requires the executor to perform the verification before the commit lands. The advisor consultation can see the hedge but is not instructed to flag it. The executor can choose the optimistic path silently.
+**E.2 -- EXPLICIT validation steps in plan Steps section (NEW from execute-fixes UAT 2026-04-30).** Any execute-skill invocation where the plan input contains a numbered, executable plan step structured as:
+
+```
+N. **Validate** (or Verify, Test, Confirm)
+   - Run: `<command>`
+   - Verify: <observable conditions>
+```
+
+Empirical example from execute-fixes UAT (session `c28c99cb-...`, commit `18728dd`):
+- Plan-fixes plan Step 4: `**Validate** - Run: pnpm nx storybook ngx-smart-components - Verify: Storybook starts without TypeScript errors; the Docs tab renders Compodoc descriptions for sampleInput and sampleOutput; clicking "Emit" in the rendered component fires the output in the Actions panel.`
+- Executor's behavior: 0 Bash invocations of `pnpm nx`, `nx run`, `nx storybook`. Final summary verbatim: "**Next step:** Run `pnpm nx storybook ngx-smart-components` and click Emit to confirm..." — treats the plan's numbered validation step as USER-FACING instructions rather than EXECUTOR-BOUND action items, defers it to post-commit.
+- Net effect: the commit shipped 4 changes (3 code + 1 stub file) without ANY of the verification gates the plan structured into Step 4 actually firing.
+
+In both E.1 and E.2 cases, the current execute SKILL.md has no rule that requires the executor to perform the verification before the commit lands. The advisor consultation can see the hedge or validation step but is not instructed to flag it. The executor can choose the optimistic path silently.
+
+**Why E.2 matters more than E.1.** E.1 is about hedges (uncertain claims that need resolution); E.2 is about explicit, structured validation steps the plan author already decided are necessary. E.2 is the stronger failure mode because the plan has explicitly stated "this step is the load-bearing validation" and the executor still skipped it. The fix surface for E.2 is execute SKILL.md prose directing the executor to ALWAYS execute `Run:` directives in Steps section as Bash invocations, not user-facing instructions.
 
 **Proposed direction:** Two complementary surfaces:
 
