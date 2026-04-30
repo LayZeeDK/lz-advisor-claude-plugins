@@ -35,8 +35,13 @@ sessions:
     output: 1 commit (18728dd) on testbed branch
     tests: 33-40
     status: complete
+  - skill: lz-advisor.security-review
+    log: c:/Users/LarsGyrupBrinkNielse/.claude/projects/D--projects-github-LayZeeDK-ngx-smart-components/e01a5a7e-cbca-4c11-a907-b19232d34596.jsonl
+    output: 5 security findings + Threat Patterns (rendered to user)
+    tests: 41-48
+    status: complete
 started: 2026-04-30T09:07:30Z
-updated: 2026-04-30T15:00:00Z
+updated: 2026-04-30T15:30:00Z
 ---
 
 ## Current Test
@@ -435,11 +440,96 @@ expected: 0 actual npm audit Bash invocations, 0 GHSA URLs, 0 Class 2-S text ref
 result: pass
 evidence: 0 of each in execute-fixes session. Class 2-S correctly stayed scoped to security-review skill per Plan 06-06 cross-reference discipline.
 
+---
+
+## Security-Review Skill UAT (Tests 41-48)
+
+**Load-bearing question:** Does Plan 06-06's Class 2-S deliverable fire empirically on plugin 0.9.0 against a fresh fixture? Plan 06-06 (commit `b7ec018`) added the Class 2-S sub-pattern to `references/orient-exploration.md` and a cross-reference in `lz-advisor.security-review/SKILL.md` scan-phase guidance. Amendment 5's regression replay (`uat-security-review-skill-rerun`, session `db5e0511-...`) confirmed Class 2-S fired with 5 npm audit invocations on a 0.9.0 replay. This UAT is a fresh end-to-end test on the canonical Compodoc+Storybook commit range (3 testbed commits: `b5b09739^..18728dd`).
+
+**Security-review session log:** `c:/Users/LarsGyrupBrinkNielse/.claude/projects/D--projects-github-LayZeeDK-ngx-smart-components/e01a5a7e-cbca-4c11-a907-b19232d34596.jsonl` (75 lines, 230 KB)
+
+### 41. Security-review skill activation on testbed commits
+expected: Skill activates, scan→consult→output workflow runs end-to-end.
+result: pass
+evidence: 1 Agent (security-reviewer) tool spawn: `description="Security review of Compodoc+Storybook integration commits"`. Workflow ran end-to-end: scan (5 git diff/log Bash + 10 npm audit invocations + 5 rg -uu searches + 2 python3 advisory parsers + 2 Read), consult (1 security-reviewer Agent), output (5 findings + Threat Patterns rendered).
+
+### 42. Class 2-S fires (Plan 06-06 deliverable)
+expected: Class 2-S route fires per `references/orient-exploration.md` recommended sequence (npm audit first → GHSA URLs second → WebSearch CVE third). Visible: at least 1 `npm audit` Bash invocation OR Class 2-S sentinels in session.
+result: pass
+evidence: |
+  - **10 `npm audit --json` Bash invocations** (vs 5 in amendment 5's replay). Strongest empirical signal yet.
+  - **4 `github.com/advisories` URL references** in session.
+  - **6 GHSA-* advisory IDs** referenced (from npm audit JSON output; representative IDs in advisories surfaced).
+  - **1 `Class 2-S` text reference** in session context (loaded from `references/orient-exploration.md`).
+  - **Plan 06-06 deliverable EMPIRICALLY CONFIRMED on plugin 0.9.0 with a fresh Compodoc+Storybook fixture** — different from amendment 5's replay fixture, demonstrating the route is reproducible across question-shapes.
+
+### 43. npm audit invoked as Class 2-S route's first action
+expected: At least 1 standalone `npm audit` Bash invocation (not just string match in npm install output text).
+result: pass
+evidence: 10 `npm audit --json` Bash invocations, all standalone (piped through python3 for severity-bucket parsing). Each invocation captured advisory data, parsed severity counts (info/low/moderate/high/critical), and provided empirical anchor for findings. Plan 06-06 recommended sequence's first action fired correctly.
+
+### 44. CVE / advisory escalation via GHSA URLs OR npm audit JSON
+expected: GHSA advisory IDs surfaced (either via npm audit JSON output OR WebFetch against github.com/advisories OR equivalent escalation).
+result: pass
+evidence: 4 `github.com/advisories` URL refs + 6 GHSA-* IDs in npm audit output. The advisories surfaced via npm audit JSON (npm audit returns advisory URLs in its output structure), so WebFetch escalation was not strictly required per Plan 06-06's ordering ("npm audit first ... fallback to WebFetch GHSA"). 0 WebFetch invocations is acceptable when npm audit's first-step output provides sufficient anchor data.
+
+### 45. pv-no-known-cves OR pv-cve-list synthesized
+expected: At least 1 `pv-no-known-cves` OR `pv-cve-list` synthesizer block in consultation. D-05 closure signal MET via Class 2-S synthesis contract.
+result: pass
+evidence: 1 `pv-no-known-cves` block + 1 `pv-cve-list` block in session. Plus 6 `<pre_verified>` blocks total (D-05 closure signal exceeded). The pv-cve-list anchored Findings 1-3 (compodoc + picomatch + uuid advisories); pv-no-known-cves likely anchored Finding 4/5 areas where no advisory surfaced. Plan 06-06's pv-* synthesis contract empirically confirmed.
+
+### 46. Security-reviewer word budget (300w cap, Finding D regression test)
+expected: Security-reviewer response stays at <= 300 words. **Note:** Phase 7 Finding D documented 412w on plugin 0.8.9 (~37% over); this UAT measures plugin 0.9.0.
+result: issue
+reported: "Security-reviewer response: 438 words against 300w cap. ~46% over budget — WORSE than 0.8.9's 412w (37% over). Pattern: security-reviewer word-budget regression is WORSENING on plugin 0.9.0."
+severity: major
+evidence: |
+  - Word count breakdown (whitespace-split via Node script):
+    - Findings (5 entries): ~308 words (Finding 1 ~85 + Finding 2 ~85 + Finding 3 ~50 + Finding 4 ~55 + Finding 5 ~45 plus headers/labels)
+    - Threat Patterns: ~125 words
+    - "Adjacent surface not in scope" footer: ~25 words
+    - Total: 438 words
+  - **STRONG Finding D regression on security-reviewer specifically:**
+    - 0.8.9 (Finding D primary observation, Phase 7 amendment 5): 412w / 300w cap = ~37% over
+    - 0.9.0 THIS UAT: 438w / 300w cap = ~46% over
+    - **Regression worsening:** +26 words / +9 percentage points on the same agent across plugin versions.
+  - **Cumulative word-budget evidence base across all UATs:**
+    - security-reviewer on 0.8.9: 412w / 300w (37% over)
+    - security-reviewer on 0.9.0 (this UAT): 438w / 300w (46% over)
+    - reviewer on 0.9.0: 411w / 300w (37% over)
+    - advisor on 0.8.5: 111w / 100w (11% over)
+    - advisor on 0.9.0 plan-skill: 120w / 100w (20% over)
+    - advisor on 0.9.0 plan-fixes: 109w / 100w (9% over)
+  - 6 data points across 3 agents and 3 plugin versions; security-reviewer regression is STRONGEST and WORSENING. Output is qualitatively excellent (5 well-reasoned findings with severity revisions, OWASP categorization, hedge marker on Finding 1, threat-chain analysis in Threat Patterns) but exceeds budget by load-bearing margin.
+
+### 47. Security-reviewer structural compliance (Findings + Threat Patterns)
+expected: Response contains both `### Findings` and `### Threat Patterns` sections per agent system prompt.
+result: pass
+evidence: |
+  - `### Findings` section present with 5 finding entries (Finding 1-5), each including: severity tag (Medium/Low) with revision note (revised down from High / confirmed / etc.), file:line citation, OWASP category mapping (`[A08]`, `[A06]`, `[A01]`, etc.), technical reasoning, mitigation recommendation.
+  - `### Threat Patterns` section present with chained-finding analysis (F1 dominates F2+F4; F3 isolated; F4 collapses if F1 + F5 closed) + adjacent-surface note for follow-up.
+  - **Hedge marker preservation observed:** Finding 1 ends with "Verify CI install command before acting" — Plan 06-05 hedge-marker pattern correctly applied by the agent.
+
+### 48. No scope-creep into general code review
+expected: Security-reviewer findings focus on security threats (supply chain, vulnerabilities, integrity, AuthZ); does NOT flag general code-quality issues (style, tradeoffs, refactoring suggestions).
+result: pass
+evidence: All 5 findings are security-relevant:
+  - Finding 1: A08 Software Integrity (install-time RCE pathway)
+  - Finding 2: A06 Vulnerable Components (transitive picomatch ReDoS)
+  - Finding 3: A06 (uuid via http-auth — unreachable path noted)
+  - Finding 4: A08 Data Integrity (prototype pollution sink in preview.ts)
+  - Finding 5: A01 (gitignore + dev/prod symmetry hardening)
+  - No general code-quality complaints (no "this code is hard to read", "consider refactoring", "missing comment", etc.)
+  - Adjacent-surface note ("Storybook 8.x ReDoS history") is forward-looking security guidance, not scope-creep.
+
 ## Summary
 
-total: 40
-passed: 27
-issues: 13
+total: 48
+passed: 34
+issues: 14
+pending: 0
+skipped: 0
+blocked: 0
 pending: 0
 skipped: 0
 blocked: 0
@@ -710,6 +800,34 @@ blocked: 0
     - 0 empirical verifications anywhere in the chain
   routing: |
     NEW empirical evidence STRONGLY reinforcing Finding E. Recommend folding this evidence into Finding E's failure surface description in PHASE-7-CANDIDATES.md: extend from "hedge markers in plan rationale" to "ANY plan step structured as `Run: <command>` + `Verify: <conditions>` MUST be executed empirically before the related commit." Same fix surface (execute SKILL.md verify-before-commit rule + advisor refuse-or-flag rule), but the rule's coverage scope expands.
+
+- truth: "Security-reviewer agent stays within 300-word cap"
+  status: failed
+  reason: "Security-reviewer response: 438 words against 300w cap. ~46% over budget — WORSE than 0.8.9's 412w (37% over). Regression worsening on the same agent across plugin versions: +26 words / +9 percentage points."
+  severity: major
+  test: 46
+  skill: lz-advisor.security-review
+  artifacts:
+    - "plugins/lz-advisor/agents/security-reviewer.md (word-budget directive)"
+    - "c:/Users/LarsGyrupBrinkNielse/.claude/projects/D--projects-github-LayZeeDK-ngx-smart-components/e01a5a7e-cbca-4c11-a907-b19232d34596.jsonl (security-reviewer response 438 words)"
+  missing: []
+  diagnosis_pre_existing: |
+    **STRONGEST cross-evidence reinforcement for Finding D yet.** This UAT extends the regression evidence base on the security-reviewer specifically:
+    - 0.8.9 (Finding D primary observation): 412w / 300w (37% over)
+    - 0.9.0 THIS UAT: 438w / 300w (46% over)
+    - Net regression: +26 words / +9 percentage points on the SAME agent across plugin versions.
+    
+    Cumulative word-budget evidence base across ALL Phase 6 UAT cycles:
+    - security-reviewer on 0.8.9: 412w / 300w (37% over)
+    - security-reviewer on 0.9.0 (this UAT): 438w / 300w (46% over)
+    - reviewer on 0.9.0: 411w / 300w (37% over)
+    - advisor on 0.8.5 KCB: 111w / 100w (11% over)
+    - advisor on 0.9.0 plan-skill: 120w / 100w (20% over)
+    - advisor on 0.9.0 plan-fixes: 109w / 100w (9% over)
+    
+    6 data points, 3 agents, 3 plugin versions. Pattern: regressions are pervasive AND worsening on security-reviewer specifically. Recommend Phase 7 plan ELEVATES security-reviewer word-budget enforcement priority within Finding D's scope (the regression is largest AND worsening on this agent).
+  routing: |
+    Already tracked under Finding D in PHASE-7-CANDIDATES.md. This UAT significantly reinforces evidence base. Recommend Phase 7 plan addresses ALL three agent prompts (advisor + reviewer + security-reviewer) in a single edit pass with security-reviewer as priority target since the regression is strongest there.
 ```
 
 ## Phase 6 Empirical Result on Canonical D-04 Scenario (plugin 0.9.0)

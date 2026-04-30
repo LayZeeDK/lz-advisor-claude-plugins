@@ -21,6 +21,7 @@ session_logs:
   - c:/Users/LarsGyrupBrinkNielse/.claude/projects/D--projects-github-LayZeeDK-ngx-smart-components/48bd9cc5-b1f0-4641-a4bc-8e7595f74758.jsonl
   - c:/Users/LarsGyrupBrinkNielse/.claude/projects/D--projects-github-LayZeeDK-ngx-smart-components/fc44ddc9-a7fb-4153-9cd4-755db416c1eb.jsonl
   - c:/Users/LarsGyrupBrinkNielse/.claude/projects/D--projects-github-LayZeeDK-ngx-smart-components/c28c99cb-82fb-438a-bae9-eafd7d4e66ec.jsonl
+  - c:/Users/LarsGyrupBrinkNielse/.claude/projects/D--projects-github-LayZeeDK-ngx-smart-components/e01a5a7e-cbca-4c11-a907-b19232d34596.jsonl
 ---
 
 # Phase 7 Candidates -- Advisor Consultation Discipline, Template Carry-Forward, and Confidence-Laundering Guards
@@ -81,6 +82,18 @@ A 5th UAT in the Compodoc+Storybook chain ran the execute-skill against the plan
 | **E (apply-without-verify) — REFINED FAILURE SURFACE** | Plan-fixes plan structured Step 4 as `**Validate** - Run: pnpm nx storybook ngx-smart-components - Verify: Storybook starts without TypeScript errors; the Docs tab renders Compodoc descriptions; clicking "Emit" fires the output in Actions panel.` This is NOT a hedge marker buried in rationale — it is a NUMBERED, EXPLICIT, EXECUTABLE plan step. **Executor STILL skipped it.** Final summary verbatim: "Next step: Run pnpm nx storybook ngx-smart-components and click Emit to confirm..." (post-commit user-facing reframe). | **Significantly EXPANDS Finding E's failure surface scope.** Original Finding E targeted "hedge markers in plan rationale"; refined scope: ANY plan step structured as `Run: <command>` + `Verify: <conditions>` MUST be executed before commit. |
 | G1+G2 empirical residual + H | **4th plan-file fixture FAILing same surface.** 0 ToolSearch + 0 web tools in execute-fixes despite trust-contract sentinels present and plan input containing the confabulated `continuous: true` claim. Executor inherited the confabulation verbatim into its own consultation prompt. | Reinforces Finding H interpretation: rule bypass via self-anchor on claimed knowledge, not rule miss. Same failure mechanism reaches plan-skill + execute-skill on plan-file inputs, 4 fixtures total. |
 | Word-budget (D) | Execute-fixes advisor word count not extracted (final advisor used different output shape — no Strategic Direction header detected by analysis script). 5th data point pending. | Inconclusive on this UAT; D's evidence base unchanged from prior 4 data points. |
+
+## Update 2026-04-30 (continued, 6th UAT) -- Security-review UAT on testbed commits
+
+A 6th UAT in the Compodoc+Storybook chain ran the security-review skill on the 3 testbed commits (range `b5b09739^..18728dd`) on plugin 0.9.0 (session `e01a5a7e-...`). This UAT closes the 6-skill sweep started 2026-04-30. Net effect:
+
+| Finding | Cross-evidence type | Verdict |
+|---|---|---|
+| **Phase 6 Plan 06-06 (Class 2-S)** | **EMPIRICALLY CONFIRMED on a fresh fixture.** 10 npm audit invocations + 4 GHSA URL refs + 6 GHSA-* IDs surfaced + 1 pv-no-known-cves block + 1 pv-cve-list block. Stronger signal than amendment 5's replay (which had 5 npm audit invocations on the same plugin version). | **Strong positive evidence.** Plan 06-06 deliverable is reproducible across question-shapes, not just the amendment 5 replay fixture. |
+| **D (word-budget regression)** | **Security-reviewer on 0.9.0: 438 words / 300w cap = 46% over.** WORSE than 0.8.9's 412w (37% over). Regression worsening on the SAME agent across plugin versions: +26 words / +9 percentage points. | **Strongest D reinforcement to date.** Pattern: regressions are pervasive AND worsening on security-reviewer specifically. Phase 7 plan should ELEVATE security-reviewer word-budget enforcement priority within Finding D's scope. |
+| C (cross-skill confidence laundering) | Security-review properly stayed scoped (no engagement with the upstream confabulated `continuous: true` claim or signal output() unverified claim — those are non-security questions). Per amendment 4 of 06-VERIFICATION.md ("chain stalled but NOT broken on this axis | No change") this is correct behavior, NOT a Finding C extension. | No change to Finding C's evidence base. |
+| Plan 06-05 hedge-marker preservation | Security-reviewer's Finding 1 ends with "Verify CI install command before acting" — the agent correctly applied the Plan 06-05 hedge-marker pattern in its OWN findings, not just preserved it from upstream. | **Positive evidence on plugin 0.9.0:** Plan 06-05 hedge-marker pattern is empirically applied by the security-reviewer agent without being prompted. |
+| **No new Findings introduced.** This UAT's primary contributions are: (a) STRONG empirical confirmation of Plan 06-06 on a fresh fixture; (b) STRONGEST Finding D reinforcement on security-reviewer side specifically. | | |
 
 ## Candidate Findings
 
@@ -276,6 +289,25 @@ The output is structurally compliant (Findings + Threat Patterns sections presen
 **Cross-cutting note.** Word-budget regressions across multiple agents (advisor SD, security-reviewer) suggest a class-level gap: the agents do not currently treat word-budget as a hard constraint the way they treat structural section presence. A Phase 7 / Phase 6.1 plan should consider whether word-budget belongs in the agent prompt's hard-rules layer (alongside `tool_uses` discipline) rather than the soft-style layer.
 
 **2026-04-30 cross-evidence (plan-skill UAT on plugin 0.9.0, session `a75fae2f-...`):** Advisor Strategic Direction on the canonical Compodoc+Storybook setup task ran 120 words against the 100-word cap (~20% over). 5 enumerated steps (~102w) + Critical line (~17w) = ~119-120w. Slight regression vs the 0.8.5 Stage 1 KCB-economics measurement (111w, ~11% over). Pattern: advisor-side word-budget regression persists across plugin versions on code-snippet-laden Strategic Directions. The 300w security-reviewer regression (Finding D primary observation) and the 100w advisor regression are likely shared root surface (descriptive vs imperative budget directives in the agent prompts).
+
+**2026-04-30 cumulative evidence base (after 6 fresh UATs in the Compodoc+Storybook chain):** Word-budget regressions are pervasive across all 3 agents AND worsening on security-reviewer specifically. **Cumulative data points:**
+
+| Agent | Plugin version | Cap | Actual | % over | UAT |
+|---|---|---|---|---|---|
+| security-reviewer | 0.8.9 | 300w | 412w | 37% | Finding D primary observation |
+| **security-reviewer** | **0.9.0** | **300w** | **438w** | **46%** | **Test 46 — REGRESSION WORSENING** |
+| reviewer | 0.9.0 | 300w | 411w | 37% | Test 22 |
+| advisor | 0.8.5 | 100w | 111w | 11% | Stage 1 KCB-economics |
+| advisor | 0.9.0 plan-skill | 100w | 120w | 20% | Test 8 |
+| advisor | 0.9.0 plan-fixes | 100w | 109w | 9% | Test 30 (side observation) |
+
+**Refined direction.** With 6 data points across 3 agents and 3 plugin versions, the original cross-cutting note is empirically validated: word-budget regressions are class-level. Recommended Phase 7 priority order:
+
+1. **security-reviewer** — strongest regression (+46% over), worsening across versions (+9 percentage points 0.8.9 → 0.9.0). Highest-leverage target.
+2. **reviewer** — same severity as security-reviewer's prior baseline (+37% over). Same fix surface (300w cap, similar agent prompt structure).
+3. **advisor** — milder regression (+9-20% over depending on task) but more frequent invocations per workflow. Lower per-call savings but higher total cost impact.
+
+Bundling all 3 agents in a single Phase 7 plan is more efficient than per-agent plans since the fix surface is consistent (descriptive → imperative + worked example + smoke fixture).
 
 ---
 
