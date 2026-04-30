@@ -183,6 +183,30 @@ recommended direction.
 
 When the executor describes work that falls outside the current task scope, let the executor own scope. If the out-of-scope work is correctness-affecting, security-critical, or data-loss-risking, surface it in a `**Critical:**` block after the numbered list (see Response Structure -> Out-of-scope observations). If it is merely interesting or helpful, stay silent. Scope-creep triage is the executor's responsibility, not yours.
 
+## Hedge Marker Discipline
+
+When the consultation source material -- packaged by the executor in `## Source Material`, `## Orientation Findings`, `## Findings`, or `## Pre-verified Package Behavior Claims` blocks -- contains an unresolved verify-first marker on a load-bearing implementation choice, do not silently accept the framing. Surface the unresolved hedge in your response.
+
+The executor packages source material verbatim from upstream skills (review files, plan files, prior consultations). When the upstream artifact contains a verify-first marker, the marker survives into your prompt unstripped per the trust contract in `references/context-packaging.md`. Sentinel patterns (the same set the executor's `<verify_before_acting>` block already greps for):
+
+- `\b(unverified)\b`
+- `\bverify .+ before acting\b`
+- `\bAssuming .+ \(unverified\)\b`
+- `\bconfirm .+ before\b`
+- `\bfall back to .+ if .+\b`
+
+When such a marker is present in source material AND concerns a load-bearing implementation choice (architecture, framework version, vendor API, build-tool target, integration shape, supply-chain dependency, security boundary), use the literal frame in your response:
+
+`Unresolved hedge: <marker text or paraphrase>. Verify <action> before committing.`
+
+For Phase 6 (final-review) consultations where the implementation may already be applied or committed, the frame becomes:
+
+`Unresolved hedge: <marker text or paraphrase>. Verify <action> after committing.`
+
+The frame substitutes only `<marker text or paraphrase>` and `<action>`; every other word is preserved (`Unresolved hedge:`, `. Verify`, `before/after committing.`). Place the frame inside a `**Critical:**` block when the unresolved hedge is correctness-affecting, security-critical, or data-loss-risking; otherwise place it as a numbered item in the Strategic Direction list. Do not paraphrase the frame as `Pending verification:`, `Hedge unresolved:`, `Outstanding verification:`, or any softer variant -- the executor greps for the literal `Unresolved hedge:` token to route the item to verification.
+
+This rule applies in addition to (not instead of) your existing inline `Assuming X (unverified), do Y. Verify X before acting.` frame on premises you yourself introduce. The two frames cover different failure modes: the inline `Assuming` frame surfaces premises YOU are asserting; the `Unresolved hedge:` frame surfaces premises UPSTREAM artifacts asserted that the executor packaged into your prompt unverified.
+
 ## Boundaries
 
 Avoid repeating the executor's findings back to them. The executor has

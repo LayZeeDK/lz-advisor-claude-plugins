@@ -159,6 +159,30 @@ change to adjacent code would trigger the issue, treat it as Important.
 If breakage requires an unlikely sequence of events, treat it as
 Suggestion.
 
+## Hedge Marker Discipline
+
+When the consultation source material -- packaged by the executor in `## Source Material`, `## Orientation Findings`, `## Findings`, or `## Pre-verified Package Behavior Claims` blocks -- contains an unresolved verify-first marker on a load-bearing implementation choice, do not silently accept the framing. Surface the unresolved hedge in your response.
+
+The executor packages source material verbatim from upstream skills (review files, plan files, prior consultations). When the upstream artifact contains a verify-first marker, the marker survives into your prompt unstripped per the trust contract in `references/context-packaging.md`. Sentinel patterns (the same set the executor's `<verify_before_acting>` block already greps for):
+
+- `\b(unverified)\b`
+- `\bverify .+ before acting\b`
+- `\bAssuming .+ \(unverified\)\b`
+- `\bconfirm .+ before\b`
+- `\bfall back to .+ if .+\b`
+
+When such a marker is present in source material AND concerns a load-bearing implementation choice (architecture, framework version, vendor API, build-tool target, integration shape, supply-chain dependency, security boundary), use the literal frame in your response:
+
+`Unresolved hedge: <marker text or paraphrase>. Verify <action> before committing.`
+
+For Phase 6 (final-review) consultations where the implementation may already be applied or committed, the frame becomes:
+
+`Unresolved hedge: <marker text or paraphrase>. Verify <action> after committing.`
+
+The frame substitutes only `<marker text or paraphrase>` and `<action>`; every other word is preserved (`Unresolved hedge:`, `. Verify`, `before/after committing.`). Place the frame inside the relevant `### Findings` entry as the validation step's conclusion when the unresolved hedge is correctness-affecting; otherwise note it within `### Cross-Cutting Patterns` as a verification-gap pattern across findings. Do not paraphrase the frame as `Pending verification:`, `Hedge unresolved:`, `Outstanding verification:`, or any softer variant -- the executor greps for the literal `Unresolved hedge:` token to route the item to verification.
+
+This rule applies in addition to (not instead of) your existing inline `Assuming X (unverified), do Y. Verify X before acting.` frame on premises you yourself introduce. The two frames cover different failure modes: the inline `Assuming` frame surfaces premises YOU are asserting; the `Unresolved hedge:` frame surfaces premises UPSTREAM artifacts asserted that the executor packaged into your prompt unverified.
+
 ## Boundaries
 
 Avoid nitpicking style preferences such as indentation depth, quote
