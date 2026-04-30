@@ -45,8 +45,13 @@ sessions:
     output: D:/projects/github/LayZeeDK/ngx-smart-components/plans/compodoc-storybook-security-findings.plan.md
     tests: 49-56
     status: complete
+  - skill: lz-advisor.execute (execute-fixes-2 against security-findings plan)
+    log: c:/Users/LarsGyrupBrinkNielse/.claude/projects/D--projects-github-LayZeeDK-ngx-smart-components/188bac4f-51c3-40d8-84a3-f5dfe78e5aa2.jsonl
+    output: 2 commits on testbed branch (c71c430 security hardening + 6b6a417 README documentation)
+    tests: 57-64
+    status: complete
 started: 2026-04-30T09:07:30Z
-updated: 2026-04-30T16:00:00Z
+updated: 2026-04-30T16:30:00Z
 ---
 
 ## Current Test
@@ -614,11 +619,94 @@ expected: Plan skill orient does NOT invoke npm audit or GHSA URLs. 0 of each se
 result: pass
 evidence: 0 `npm audit` Bash invocations, 0 `github.com/advisories` URL refs, 0 `Class 2-S` text refs, 0 `pv-no-known-cves` blocks. Plan skill correctly stayed scoped — the security-reviewer already ran the security checks (10 npm audit invocations in Tests 41-48); the plan skill's job is to PLAN remediation, not re-run the checks. Plan 06-06 cross-reference discipline upheld.
 
+---
+
+## Execute-Fixes-2 UAT (Tests 57-64)
+
+**Load-bearing question:** This is the FINAL UAT in the 8-skill Compodoc+Storybook chain. Two orthogonal load-bearing tests:
+
+1. **Finding E.2 confirmation:** plan-fixes-2 plan has TWO numbered Steps with explicit `Run:` directives (Step 3: `npm install` to refresh lockfile; Step 6: `npm install` + `npx nx storybook ngx-smart-components` + `git status` for verification). Will the executor execute these as Bash commands BEFORE commit, or defer them to user-facing "Next step" instructions per the prior execute-fixes UAT Test 38 pattern? This is the strongest E.2 test yet.
+
+2. **Risk-hedge resolution:** plan output contains a NEW Risk hedge: "Verify no current packages depend on postinstall scripts for binary extraction before merging." This is a load-bearing concern about `.npmrc` `ignore-scripts=true` side effects. Will the executor empirically verify postinstall script dependencies (e.g., grep package.json for `postinstall`/`preinstall`/`install` scripts in node_modules), or commit the .npmrc without resolving the hedge?
+
+**Execute-fixes-2 session log:** `c:/Users/LarsGyrupBrinkNielse/.claude/projects/D--projects-github-LayZeeDK-ngx-smart-components/188bac4f-51c3-40d8-84a3-f5dfe78e5aa2.jsonl` (116 lines, 251 KB)
+
+### 57. Execute-fixes-2 skill activation on security-findings plan
+expected: Execute skill activates, workflow runs end-to-end.
+result: pass
+evidence: 2 Agent (advisor) tool spawns: `description="Pre-execute advisor consultation"` + `description="Final verification advisor consultation"`. Workflow ran end-to-end: orient (6 Read + 1 Glob + 10 Bash including npm install + git ops + npm ls + git check-ignore), pre-execute consult, execute (1 Write + 4 Edit covering 5 plan deliverables), final consult. 2 commits landed: `c71c430` (security hardening, 5 files) + `6b6a417` (README documentation).
+
+### 58. Trust-contract carve-out fires on plan-file input (6th plan-file fixture)
+expected: All 3 Plan 06-05 sentinels in session context.
+result: pass
+evidence: All 3 sentinels present (`Vendor-doc authoritative source`, `Agent-generated source material`, `ToolSearch select:WebSearch,WebFetch` — 1 hit each). Same prose-classification path as prior UATs.
+
+### 59. ToolSearch fires (Plan 06-05 G2 + Finding H 6th fixture)
+expected: At least 1 ToolSearch invocation.
+result: issue
+reported: "0 ToolSearch invocations on execute-fixes-2 session. 6th plan-file fixture FAILing G2 surface across the Compodoc+Storybook chain."
+severity: major
+evidence: |
+  - 0 ToolSearch tool_use blocks.
+  - 6th plan-file fixture FAILing G1+G2 surface in the Compodoc+Storybook UAT chain (across plan-skill + execute-skill on plan-file inputs of varying content shapes: review files, plan-skill output, plan-fixes output, security-review findings, plan-fixes-2 output).
+  - Robust failure pattern: the self-anchor pathway (Finding H) consistently bypasses ToolSearch on plan-file inputs regardless of question domain.
+  - **CAVEAT (positive):** Test 60 PASSES via empirical verification — the executor DID perform substantive verification, just not via web tools. This UAT shows ToolSearch is the structural rule that doesn't fire, but empirical verification CAN fire through other channels when the advisor's Critical block triggers it (see Test 60 evidence).
+
+### 60. Web tools fire on inherited self-anchored npm claims OR Risk hedge resolution
+expected: WebSearch/WebFetch >= 1, OR equivalent empirical verification (npm CLI invocation, Read of node_modules postinstall scripts, etc.) for inherited Class-2 claims OR Risk-hedge verification.
+result: pass
+evidence: |
+  **STRONG empirical verification fired via multiple non-web channels — substantially better than prior execute-fixes UAT:**
+  - **`npm install 2>&1` Bash invocation:** captured actual install output. Final summary verbatim: "`npm install` confirmed all 25 resolutions moved to `4.0.4`." This is empirical verification of the inherited Class-2 claim "overrides syntax `^4.0.3` enforces forward floor on future npm install resolutions" — actual npm behavior observed.
+  - **`npm ls husky 2>&1` Bash invocation:** empirical resolution of the Risk hedge ("Verify no current packages depend on postinstall scripts for binary extraction before merging"). Confirmed Husky NOT installed in workspace.
+  - **`git grep -l` for postinstall scripts:** broader empirical scan of repo for postinstall dependencies. The executor reasoned about postinstall side effects 11 times in session.
+  - **`git check-ignore -v packages/ngx-smart-components/documentation.json`:** empirical verification of .gitignore rule effectiveness.
+  - **`npm ls picomatch 2>&1 | rg ...`:** empirical verification of picomatch versions resolved post-install.
+  - **PROACTIVE scope expansion:** the executor discovered that Playwright has a postinstall step suppressed by `.npmrc ignore-scripts=true`, then added `npx playwright install` to README "Getting started" as commit `6b6a417`. This is verification-driven discovery: the empirical scan found a real package needing the workaround documented.
+  - **Risk-hedge resolution = clause (b) of Test 60 expected = MET.** Inherited Class-2 claims about overrides forward-floor = clause (a) partially met via observed npm behavior.
+  - 0 WebSearch + 0 WebFetch (FAIL on the literal web-first prescription) but **the spirit of empirical verification fired strongly through alternative channels.**
+
+### 61. Risk-hedge marker preserved into pre-execute consultation
+expected: Plan-fixes-2's Risk hedge survives verbatim into pre-execute consultation source material.
+result: pass
+evidence: |
+  - Hedge marker counts in session: `Verify no current packages` 3 hits + `before merging` 3 hits + `before acting` 2 hits + `unverified` 2 hits + `Assuming` 2 hits + `postinstall` 11 hits.
+  - The Risk hedge survived verbatim into the pre-execute consultation source material AND drove substantive empirical reasoning (11 postinstall references throughout the session).
+  - **8th UAT confirming Plan 06-05 prompt-construction layer rule.**
+
+### 62. Plan Step 3 (npm install) executed empirically (Finding E.2 test, part 1)
+expected: Plan Step 3 (`Run: npm install` to refresh lockfile) executed by executor as Bash invocation BEFORE commit.
+result: pass
+evidence: |
+  - **1 `npm install 2>&1` Bash invocation** observed in session, captured actual install output.
+  - Output reasoned about: final summary cites "`npm install` confirmed all 25 resolutions moved to `4.0.4`" — the executor extracted the empirical fact (overrides forward-floor enforcement worked) from the install output and incorporated it into the verification narrative.
+  - **STRONGLY DIFFERENT from prior execute-fixes UAT** (Test 38, session `c28c99cb-...`) where 0 nx/npm commands executed. This UAT shows the executor CAN execute explicit `Run:` directives when they're clearly load-bearing.
+  - **Refines Finding E.2 understanding:** the executor's behavior on `Run:` directives may depend on (a) directive specificity (this plan's `Run: npm install to refresh lockfile` is more explicit than prior plan's `Run: pnpm nx storybook ngx-smart-components`); (b) advisor flagging (the pre-execute advisor's Critical concern about Husky may have triggered the verification mindset); (c) directive cost (npm install is cheap and synchronous; nx storybook is long-running and can't complete in single-shot); (d) verification-driven discovery (npm install output anchors the picomatch resolution claim, providing positive feedback that the directive was useful).
+
+### 63. Plan Step 6 (verification) executed empirically (Finding E.2 test, part 2)
+expected: Plan Step 6 (npm install + npx nx storybook + git status + verify documentation.json untracked) executed BEFORE commit.
+result: issue
+reported: "Plan Step 6 PARTIALLY executed. 3 of 4 explicit Run directives ran: `npm install` (also covered by Test 62 PASS), `git status` ✓, `git check-ignore -v packages/ngx-smart-components/documentation.json` ✓ (verified .gitignore rule). MISSING: `npx nx storybook ngx-smart-components` was NOT executed. Test fails strictly on the AND clause requiring nx storybook startup verification."
+severity: minor
+evidence: |
+  - 1 `npm install` Bash invocation: PASS (covered by Test 62).
+  - 1 `git status` Bash invocation: PASS.
+  - 1 `git check-ignore -v packages/ngx-smart-components/documentation.json` Bash invocation: PASS (verified .gitignore rule fires).
+  - **0 `npx nx`, `pnpm nx`, or `nx storybook` Bash invocations: FAIL.** The most expensive Step 6 validation (long-running storybook startup) was NOT executed.
+  - **Significantly better than execute-fixes UAT (Test 38)** which had 0 of 4 Step 6 directives running. This UAT achieves 3 of 4. The skipped one is the most expensive; the cheap ones all ran.
+  - **Refines Finding E.2 with a NEW sub-pattern observation:** when explicit Run directives are present in plan Steps section, the executor MAY execute them, but the cost-cliff at long-running tools (storybook startup, full test suites) creates a skip threshold. The pattern is not binary "skip everything" — it's "skip the expensive ones."
+  - Severity: MINOR rather than major because (a) the cheap verifications fired, (b) the load-bearing concerns (gitignore rule, npm install behavior, postinstall script dependencies) WERE empirically verified, (c) the storybook startup is intrinsically hard to verify in single-shot context.
+
+### 64. Class 2-S does NOT fire in execute skill
+expected: 0 standalone npm audit invocations, 0 GHSA URLs, 0 Class 2-S refs, 0 pv-no-known-cves blocks.
+result: pass
+evidence: 0 standalone `npm audit` invocations (the npm install output may have contained "run `npm audit` for details" string but no standalone `npm audit` Bash command was issued by executor). 0 `github.com/advisories` URL refs. 0 `Class 2-S` text refs. 0 `pv-no-known-cves` blocks. Class 2-S correctly stayed scoped to security-review skill per Plan 06-06 cross-reference discipline.
+
 ## Summary
 
-total: 56
-passed: 39
-issues: 17
+total: 64
+passed: 45
+issues: 19
 pending: 0
 skipped: 0
 blocked: 0
@@ -967,6 +1055,48 @@ blocked: 0
     Could be addressed as a sub-rule of Plan 06-05 hedge-marker preservation: extend the rule from "hedge markers MUST survive" to "ALL numbered findings from input MUST receive explicit disposition in plan output."
   routing: |
     NEW minor Phase 7 candidate. Recommend folding under Plan 06-05's hedge-marker preservation contract OR adding to Finding G's scope as a "scope discipline" parallel. Fix surface = plan SKILL.md Phase 3 output contract + smoke fixture asserting all input findings have plan-output disposition. Low priority (severity minor; both dropped findings were Low+no-action) but cheap to add to Phase 7 plan since the rule is a 1-line addition to SKILL.md.
+
+- truth: "Plan 06-05 G2 ToolSearch-availability rule fires on plan-file input (6th plan-file fixture)"
+  status: failed
+  reason: "0 ToolSearch invocations on execute-fixes-2 session. 6th plan-file fixture FAILing G2 surface. Pattern is robust across plan-skill + execute-skill on plan-file inputs of varying content shapes (review files, plan-skill output, plan-fixes output, security-review findings, plan-fixes-2 output)."
+  severity: major
+  test: 59
+  skill: lz-advisor.execute (execute-fixes-2)
+  artifacts:
+    - "plugins/lz-advisor/skills/lz-advisor.execute/SKILL.md (<context_trust_contract> ToolSearch-availability rule)"
+    - "c:/Users/LarsGyrupBrinkNielse/.claude/projects/D--projects-github-LayZeeDK-ngx-smart-components/188bac4f-51c3-40d8-84a3-f5dfe78e5aa2.jsonl"
+  diagnosis_refined: |
+    6th plan-file fixture FAIL on the same G2 surface. **Important caveat:** while ToolSearch did NOT fire, Test 60 PASSES via empirical verification through alternative channels (npm install output capture + npm ls husky + git check-ignore + git grep for postinstall scripts). This UAT shows ToolSearch is the structural rule that doesn't fire, but empirical verification CAN fire reliably when the advisor's Critical block triggers it.
+    
+    **NEW empirical observation about Finding E proposed direction:** the advisor's Critical block on Husky (visible in pre-execute consultation) TRIGGERED the executor's empirical verification. Final summary verbatim: "The advisor's Critical concern (Husky) was verified as non-applicable -- Husky is not installed in this workspace." This is the FIRST empirical instance of Finding E's proposed advisor refuse-or-flag direction working in spirit: when the advisor explicitly flags a concern as Critical, the executor performs empirical verification before commit.
+  routing: |
+    Reinforces existing G1+G2 + Finding H. 6th plan-file fixture. Phase 7 fix surface confirmed across the entire UAT chain.
+    
+    POSITIVE evidence for Finding E proposed direction: the advisor refuse-or-flag mechanism (Critical block) TRIGGERED executor verification empirically. Recommend Phase 7 plan for Finding E adopt this empirical pattern: when source material contains unresolved hedges, advisor MUST flag as Critical, which empirically triggers executor verification.
+
+- truth: "Plan Step 6 verification (npm install + npx nx storybook + git status) executed empirically before commit"
+  status: failed
+  reason: "Plan Step 6 PARTIALLY executed. 3 of 4 explicit Run directives ran (npm install ✓, git status ✓, git check-ignore ✓ verifying .gitignore rule). MISSING: npx nx storybook ngx-smart-components NOT executed."
+  severity: minor
+  test: 63
+  skill: lz-advisor.execute (execute-fixes-2)
+  artifacts:
+    - "plugins/lz-advisor/skills/lz-advisor.execute/SKILL.md (Phase 6 commit gate; verify-before-commit discipline for explicit Run directives)"
+    - "c:/Users/LarsGyrupBrinkNielse/.claude/projects/D--projects-github-LayZeeDK-ngx-smart-components/188bac4f-51c3-40d8-84a3-f5dfe78e5aa2.jsonl (3 of 4 Step 6 Run directives executed)"
+  missing:
+    - "Execute SKILL.md rule: when a plan Step has multiple Run directives, ALL MUST be executed before commit (not just cheap ones)"
+    - "Alternative if expensive verification is impractical in single-shot context: WIP commit with `## Outstanding Verification` section listing skipped Run directives"
+  diagnosis_refined: |
+    **Significantly better than execute-fixes UAT (Test 38)** which had 0 of 4 Step 6 directives running. This UAT achieves 3 of 4. The skipped one is the most expensive (long-running storybook startup). The cheap directives (npm install, git status, git check-ignore) all ran AND captured load-bearing empirical anchors.
+    
+    **REFINES Finding E.2 with a NEW sub-pattern observation:** The failure mode is NOT binary "skip everything" — it's "skip the expensive ones." The executor's behavior on `Run:` directives appears to depend on:
+    - **Cost cliff:** cheap synchronous commands (npm install, git status, git check-ignore) get executed; long-running async commands (storybook startup, full test suites) get skipped.
+    - **Verification value:** when the directive's output anchors a load-bearing empirical fact (e.g., "25 resolutions moved to 4.0.4" verifying picomatch overrides), the executor extracts the fact into the verification narrative.
+    - **Advisor flagging:** when the advisor flags a concern as Critical (Husky postinstall risk), empirical verification fires. This empirically validates Finding E's proposed direction.
+    
+    The combination suggests Finding E.2 is partially mitigated already (cheap Run directives DO run when advisor flags or empirical value is high), but the long-running validation gap remains.
+  routing: |
+    Reinforces existing Finding E.2. Refined sub-pattern: cost cliff at expensive directives. Phase 7 fix surface candidates: (a) WIP commit pattern for skipped-due-to-cost validation; (b) advisor refuse-or-flag rule for any unverified Run directive at commit time; (c) execute SKILL.md prose explicitly listing the cost-cliff threshold and prescribing WIP commit for above-threshold validations.
 ```
 
 ## Phase 6 Empirical Result on Canonical D-04 Scenario (plugin 0.9.0)

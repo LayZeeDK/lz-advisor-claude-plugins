@@ -23,6 +23,7 @@ session_logs:
   - c:/Users/LarsGyrupBrinkNielse/.claude/projects/D--projects-github-LayZeeDK-ngx-smart-components/c28c99cb-82fb-438a-bae9-eafd7d4e66ec.jsonl
   - c:/Users/LarsGyrupBrinkNielse/.claude/projects/D--projects-github-LayZeeDK-ngx-smart-components/e01a5a7e-cbca-4c11-a907-b19232d34596.jsonl
   - c:/Users/LarsGyrupBrinkNielse/.claude/projects/D--projects-github-LayZeeDK-ngx-smart-components/5cb44a72-bbd7-4359-8c83-0a5658397e85.jsonl
+  - c:/Users/LarsGyrupBrinkNielse/.claude/projects/D--projects-github-LayZeeDK-ngx-smart-components/188bac4f-51c3-40d8-84a3-f5dfe78e5aa2.jsonl
 ---
 
 # Phase 7 Candidates -- Advisor Consultation Discipline, Template Carry-Forward, and Confidence-Laundering Guards
@@ -108,6 +109,52 @@ A 7th UAT ran the plan-skill against the security-review's 5 findings as input (
 | **NEW pattern: silent-resolve-without-acknowledge** | **Plan addresses 3 of 5 findings (F1, F2, F5) with code changes; SILENTLY DROPS F3 and F4** even though both were Low+no-action per security-reviewer disposition. F3 ("uuid via http-auth — note only") and F4 ("preview.ts — Acceptable as documented integration pattern") receive NO acknowledgment in plan steps, Key Decisions, or rationale. | **NEW Phase 7 sub-pattern.** Different from Findings A/E/H (apply-without-verify): "silently-resolve-without-acknowledge" — close enough to violate "no silent drops" contract but not load-bearing for correctness. Adjacent to Finding G's safety-net theme. Could fold under Plan 06-05 hedge-marker preservation by extending: "ALL numbered input findings MUST receive explicit disposition in plan output." |
 | Class 2-S scope discipline | **0 npm audit / 0 GHSA URLs / 0 Class 2-S in plan-fixes-2.** Plan 06-06 cross-reference scoping discipline upheld: plan skill correctly does NOT re-run security checks (security-reviewer already ran 10 npm audit invocations in Tests 41-48). | **Positive evidence on plugin 0.9.0.** Plan 06-06's amendment 4 scoping discipline is robust across UAT cycles. |
 | Word-budget (D) — advisor side | Plan-fixes-2 advisor SD ~121 words (5th data point on advisor, 21% over 100w cap). Consistent with prior plan-skill measurement (120w on Test 8). | Mild reinforcement for D advisor side; cumulative advisor data: 111w (0.8.5) → 120w (plan-skill) → 109w (plan-fixes) → 121w (plan-fixes-2) → ~10-21% over cap, generally stable. |
+
+## Update 2026-04-30 (continued, 8th UAT, FINAL) -- Execute-fixes-2 UAT on security-findings plan
+
+The 8th and FINAL UAT in the Compodoc+Storybook chain ran the execute-skill against the plan-fixes-2 plan as input (session `188bac4f-...`, 2 commits: `c71c430` security hardening + `6b6a417` README documentation). This is the 6th plan-file fixture overall and provides STRONG positive evidence on Findings E.2 + E proposed direction working in spirit, alongside expected G1+G2 + H reinforcement.
+
+| Finding | Cross-evidence type | Verdict |
+|---|---|---|
+| **E.2 (apply-without-verify on EXPLICIT Run directives)** | **STRONG POSITIVE: 1 `npm install` Bash invocation executed Plan Step 3 with output captured ("25 resolutions moved to 4.0.4"). 3 of 4 Step 6 verification directives ran (npm install ✓, git status ✓, git check-ignore ✓). Only the long-running `npx nx storybook` (1 of 4) was skipped.** | **Significantly DIFFERENT from prior execute-fixes UAT (Test 38)** which had 0 of 4 Step 6 directives running. **REFINES Finding E.2:** failure mode is NOT binary "skip everything" — it's "skip the expensive ones." Cost cliff at long-running validation tools. Cheap synchronous Run directives DO run when (a) advisor flags a concern as Critical, (b) directive output anchors a load-bearing empirical fact. |
+| **E (advisor refuse-or-flag on unresolved hedges)** | **STRONG POSITIVE: FIRST empirical instance of Finding E's proposed direction working in spirit.** Pre-execute advisor's Critical block flagged Husky as a load-bearing risk; executor responded with `npm ls husky` empirical verification + git grep for postinstall scripts; final summary verbatim: "The advisor's Critical concern (Husky) was verified as non-applicable -- Husky is not installed in this workspace." | **Empirical validation of proposed Phase 7 fix surface.** When the advisor explicitly flags a concern as Critical, the executor performs empirical verification before commit. Phase 7 plan for Finding E should adopt this empirical pattern: hedge markers in source material → advisor MUST flag as Critical → empirically triggers executor verification. |
+| Verification-driven discovery (NEW positive observation) | Executor empirically discovered that Playwright has a postinstall step suppressed by `.npmrc ignore-scripts=true`, then added a NEW commit (`6b6a417`) updating README "Getting started" with `npx playwright install` workaround. Proactive scope expansion driven by empirical verification. | **Strong positive evidence on execute-skill discipline.** When verification fires (Test 60 + 62), the executor not only validates the planned changes but proactively addresses side effects discovered. This is the spirit of "verify before commit" producing better outcomes, not just safer ones. |
+| G1+G2 empirical residual + H | **6th plan-file fixture FAIL on ToolSearch surface.** 0 ToolSearch + 0 web tools (literal G2 prescription). | **Caveat:** Test 60 PASSES via empirical verification through alternative channels (npm install + npm ls + git check-ignore). Phase 7 plan for G1+G2 should NOT obsess over ToolSearch invocation specifically — the empirical-verification-via-alternative-channels pathway is robust when the advisor triggers it. ToolSearch fix surface is one option among several. |
+| Plan 06-05 hedge-marker preservation | **8th UAT confirming prompt-layer rule.** Risk hedge ("Verify no current packages depend on postinstall scripts before merging") survived verbatim into pre-execute consultation source material AND drove substantive empirical reasoning (11 postinstall references in session). | **Positive: prompt-layer rule continues to work consistently across the entire UAT chain.** |
+| Class 2-S scope discipline | **0 npm audit / 0 GHSA URLs / 0 Class 2-S in execute-fixes-2.** | **Positive evidence on plugin 0.9.0.** Plan 06-06 amendment 4 scoping discipline robust across all 8 UATs. |
+
+### Synthesis: 8-skill UAT chain summary
+
+**Comprehensive empirical evidence base across the Compodoc+Storybook UAT chain on plugin 0.9.0:**
+
+| # | Skill | Tests | Pass | Issues | Key contribution |
+|---|-------|-------|------|--------|------------------|
+| 1 | plan | 1-10 | 9 | 1 | Pattern D + pv-* fires correctly on fresh prompts |
+| 2 | execute | 11-17 | 4 | 3 | Finding E (verify-before-commit) + G1+G2 residual on plan-file input |
+| 3 | review | 18-24 | 4 | 3 | Findings F (no web tools) + G (safety net) + D reinforcement |
+| 4 | plan-fixes | 25-32 | 5 | 3 | Finding H (self-confabulation despite carve-out) |
+| 5 | execute-fixes | 33-40 | 5 | 3 | Finding E refined: E.1 + E.2 sub-patterns |
+| 6 | security-review | 41-48 | 7 | 1 | Plan 06-06 EMPIRICAL CONFIRMATION + strongest D reinforcement |
+| 7 | plan-fixes-2 | 49-56 | 5 | 3 | Finding H 6th fixture + silent-resolve sub-pattern + Class-1/2 nuance |
+| 8 | **execute-fixes-2** | **57-64** | **6** | **2** | **STRONG POSITIVE on Finding E proposed direction (Critical-flag triggers verification) + E.2 cost-cliff refinement** |
+
+**Total: 64 tests, 45 PASS (70%), 19 ISSUES (30%).**
+
+**8 candidate findings (A-H) with empirical evidence from 8 fresh UATs on plugin 0.9.0 + 5 prior on 0.8.9 = 13 UAT cycles total.**
+
+### Phase 7 design implications (refined from 8-UAT chain)
+
+1. **Finding E proposed direction WORKS empirically** when implemented (advisor Critical block triggers executor verification). Phase 7 plan for E should make this RELIABLE: any unresolved hedge in source material → advisor MUST flag as Critical → executor verifies before commit. The 8th UAT shows the mechanism works when triggered; the gap is making it trigger reliably.
+
+2. **Finding E.2 has a cost-cliff sub-pattern** (NEW from 8th UAT). Cheap synchronous Run directives DO run when advisor flags or empirical value is high. Long-running async Run directives (storybook startup, full test suites) get skipped. Fix surface: WIP commit pattern with `## Outstanding Verification` section for above-threshold validations.
+
+3. **G1+G2 empirical residual root cause is NOT "rule miss"** (refined from 8 fixtures). The trust-contract carve-out fires correctly; ToolSearch availability rule does not fire because the executor self-anchors on claimed knowledge (Finding H). **Caveat:** alternative empirical verification channels DO fire when the advisor triggers them. Phase 7 plan should focus on making advisor flagging reliable, not on moving the ToolSearch rule earlier in SKILL.md prose.
+
+4. **Finding D regression is class-level and worsening on security-reviewer.** 6 data points across 3 agents and 3 plugin versions; security-reviewer trajectory is +37% (0.8.9) → +46% (0.9.0). Phase 7 priority: security-reviewer first, then reviewer (both 300w cap with 37-46% overrun), then advisor (100w cap with 9-21% overrun).
+
+5. **Plan 06-06 (Class 2-S) is empirically confirmed and robust** across UAT cycles. Phase 6 deliverable is sound; no Phase 7 work needed on this surface.
+
+6. **Plan 06-05 prompt-layer rule (hedge-marker preservation) is empirically confirmed and robust.** 8 UATs all show hedge markers survive into consultation prompts unstripped. The execute-side completion (Findings E + H) is the gap, not the prompt-construction layer.
 
 ## Candidate Findings
 
