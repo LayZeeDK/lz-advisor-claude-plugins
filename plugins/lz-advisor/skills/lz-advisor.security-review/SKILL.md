@@ -158,6 +158,16 @@ Do NOT:
 If the security-reviewer rejected a finding the executor packaged, that rejection appears within the security-reviewer's `### Findings` body (validation step). The executor does not second-guess: pass the full `### Findings` and `### Threat Patterns` content through.
 
 If no security issues were found during scanning (Phase 1 produced zero findings), skip Phase 2 consultation and report directly: "No security vulnerabilities identified in the reviewed scope. Reviewed: [scope]." Note briefly what was examined. Do not invoke the security-reviewer agent with an empty Findings packet.
+
+### Verdict scope marker
+
+After the security-reviewer's verbatim response, append a single line:
+
+`**Verdict scope:** scope: security-threats`
+
+The default scope for security reviews is `security-threats`. The security-reviewer focuses on OWASP Top 10 vulnerabilities, supply-chain risk, attack surfaces, and threat modeling -- the security-threats axis. API correctness on non-security axes is out of scope (e.g., a review's verdict on framework integration shape does NOT extend to a security clearance, and vice versa).
+
+Per `references/context-packaging.md` "Scope-Disambiguated Provenance Markers", downstream consumers reading the security-review verdict MUST check scope-match before treating it as authoritative for non-security questions. Specifically: a `scope: security-threats` verdict does NOT vouch for the API correctness of the changes being reviewed; that is the review skill's domain.
 </output>
 
 Present the security review findings to the user following the Phase 3 output shape.

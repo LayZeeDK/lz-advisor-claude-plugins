@@ -285,6 +285,17 @@ If the advisor flagged concerns in the final consultation -- including any conte
 If the advisor confirmed the approach is sound, present the completed work to
 the user: summarize what was built, what files were created or changed, and
 what tests pass.
+
+### Completion Verdict (scope-disambiguated)
+
+When summarizing the completed work to the user, include a `**Verdict scope:**` line stating the axis of correctness the verification covers:
+
+- For most coding tasks: `**Verdict scope:** scope: api-correctness`
+- For security-focused execute invocations (rare; usually security-review handles those): `**Verdict scope:** scope: security-threats`
+- For performance-focused execute invocations: `**Verdict scope:** scope: performance`
+- For accessibility-focused execute invocations: `**Verdict scope:** scope: accessibility`
+
+Default to `scope: api-correctness` unless the task explicitly named a different axis. Per `references/context-packaging.md` "Scope-Disambiguated Provenance Markers", downstream consumers MUST check scope-match before treating the verdict as authoritative.
 </complete>
 
 After completing the task, present a summary to the user. If the work was

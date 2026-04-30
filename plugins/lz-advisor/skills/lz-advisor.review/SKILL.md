@@ -153,6 +153,16 @@ Do NOT:
 If the reviewer rejected a finding the executor packaged, that rejection appears within the reviewer's `### Findings` body (validation step). The executor does not second-guess: pass the full `### Findings` and `### Cross-Cutting Patterns` content through.
 
 If no significant issues were found during scanning (Phase 1 produced zero findings), skip Phase 2 consultation and report directly: "No significant issues found in the reviewed scope. Reviewed: [scope]." Note briefly what was examined. Do not invoke the reviewer agent with an empty Findings packet.
+
+### Verdict scope marker
+
+After the reviewer's verbatim response, append a single line:
+
+`**Verdict scope:** scope: api-correctness`
+
+The default scope for code-quality reviews is `api-correctness`. Reviewers focus on correctness, edge cases, maintainability, and CLAUDE.md violations -- the API-correctness axis. Security threats are out of scope (use `/lz-advisor.security-review`); performance and accessibility are out of scope (no scope tag for those; none implied).
+
+Per `references/context-packaging.md` "Scope-Disambiguated Provenance Markers", downstream consumers reading the review verdict MUST check scope-match before treating it as authoritative for non-correctness questions.
 </output>
 
 Present the review findings to the user following the Phase 3 output shape.
