@@ -351,3 +351,60 @@ Each skill's user-visible output (plan file body, execute completion summary, re
 When a downstream skill reads an upstream skill's verdict (e.g., execute reads plan file's verdict; security-review reads execute's commit-body verdict), the downstream skill MUST check `scope:` match BEFORE treating the verdict as authoritative for the question being asked. If scopes differ (e.g., security-review verdict has `scope: security-threats`, execute is asking about `scope: api-correctness`), the upstream verdict is NOT authoritative for the downstream question. Either re-verify on the relevant axis OR explicitly note the scope-mismatch in the consultation prompt's `## Source Material` section.
 
 This rule closes Finding C hop 8b: the security-review's `scope: security-threats` verdict cannot be reused as evidence that the upstream API claims are correct, regardless of how confident the security-review's prose appeared.
+
+## Verify Request Schema
+
+The reviewer and security-reviewer agents emit `<verify_request>` blocks when they encounter a Class-2 (or Class 2-S) question that they cannot resolve from `[Read, Glob]` tool access alone AND that the executor's Phase 1 pre-emption did not anticipate. This schema defines the block's required and optional fields; the corresponding executor-side flow is documented in each skill's `<output>` block (see `lz-advisor.review/SKILL.md` "Reviewer Escalation Hook" and `lz-advisor.security-review/SKILL.md` -- not yet wired in current scope; reviewer-side wiring lands in Plan 07-05).
+
+### Schema
+
+```
+<verify_request question="<one-sentence Class-2 question>" class="<2|2-S|3|4>" anchor_target="pv-<id-suggestion>" severity="<critical|important|suggestion|high|medium>">
+  <context>
+    <one-line snippet from changed code or configuration that triggered the question>
+  </context>
+</verify_request>
+```
+
+### Field definitions
+
+- **`question`** (REQUIRED): one-sentence question shaped so a `WebSearch` query or `WebFetch` URL can produce a definitive answer. Bad: "What about Storybook?" Good: "Does `@storybook/angular@10.3.5` still export `setCompodocJson` from `@storybook/addon-docs/angular`?"
+- **`class`** (REQUIRED): one of `"2"` (API currency / configuration / recommended pattern), `"2-S"` (security currency / CVE / advisory; security-reviewer only), `"3"` (migration / deprecation), `"4"` (language semantics). Per `references/orient-exploration.md` Class 1-4 + Class 2-S taxonomy.
+- **`anchor_target`** (OPTIONAL): kebab-case suggestion for the resulting `<pre_verified>` block's `claim_id` attribute. Allows the agent to anticipate the anchor name so its re-invocation prose can reference it. Format: `pv-<short-descriptor>`, e.g., `pv-storybook-10-args-fn-spy`. If omitted, the executor generates a fresh `pv-N` claim_id.
+- **`severity`** (OPTIONAL): matches the affected finding's severity (Critical / Important / Suggestion for reviewer; Critical / High / Medium for security-reviewer). Helps the executor prioritize verification effort when multiple verify_request blocks are emitted.
+- **`<context>`** (OPTIONAL): one-line snippet from changed code or configuration that triggered the question. Useful when the question would be ambiguous without surrounding code context.
+
+### Worked example
+
+```
+### Findings
+
+1. ...
+
+2. ...
+
+<verify_request question="Does @compodoc/compodoc@1.2.1 support signal output() in component documentation generation?" class="2" anchor_target="pv-compodoc-signal-output-support" severity="important">
+  <context>
+    @sampleOutput = output<void>();
+  </context>
+</verify_request>
+
+3. ...
+```
+
+The reviewer's `### Findings` entry references the verify_request via the same anchor_target value: "Pending verification of pv-compodoc-signal-output-support: signal output() may or may not render in Docs tab depending on Compodoc 1.2.1 support."
+
+### Executor-side handling (cross-reference)
+
+The executor's flow on receiving verify_request blocks is documented in:
+
+- `lz-advisor.review/SKILL.md` Phase 3 "Reviewer Escalation Hook" section
+- `lz-advisor.security-review/SKILL.md` (when wired in a future phase -- Plan 07-05 scope is reviewer only)
+
+The flow is one-shot: parse all verify_request blocks, perform all verifications in a single pre-pass (WebSearch + WebFetch + npm audit per class), synthesize pv-* blocks per Common Contract Rule 5b, re-invoke the reviewer (or security-reviewer) ONCE with the new anchors. Multi-round verification is forbidden per Spotify Honk one-shot principle.
+
+### Why structured output instead of tool-grant extension
+
+Extending the reviewer (or security-reviewer) tool grant to include WebSearch / WebFetch / Bash is the simplest mechanism but is REJECTED per OWASP AI Agent Security Cheat Sheet, arXiv 2601.11893 (formal treatment of agent privilege escalation), and Claude Code Issue #20264 (subagent privilege inheritance escalation concern). The verify_request hook preserves principle of least privilege: the agent emits a structured request; the executor (which already has full tool access in its profile) performs the verification on the agent's behalf.
+
+This is the same architectural pattern used by InfoQ's Least-Privilege AI Agent Gateway (MCP discovery + JSON-RPC structured calls + OPA authorization): higher-privilege gateway components handle network operations on behalf of lower-privilege agents that emit structured requests.
