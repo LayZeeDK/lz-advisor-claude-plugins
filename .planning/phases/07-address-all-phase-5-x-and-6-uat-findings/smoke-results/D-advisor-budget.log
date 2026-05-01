@@ -1,0 +1,10 @@
+[OK] Finding D (advisor): Strategic Direction 71 words (<=100 cap)
+--- advisor Strategic Direction (extracted from JSONL) ---
+1. Use `setCompodocJson` from `@storybook/addon-docs/angular` in `.storybook/preview.ts` -- it remains the supported Storybook 10 API; do not use `__COMPODOC_APP_DATA__`.
+2. Wire via `compodoc: true` and `compodocArgs: ["-e", "json", "-d", "."]` on both `storybook` and `build-storybook` builder options in `project.json`; skip the `docs:json` script.
+3. Create: `.storybook/main.ts` (framework `@storybook/angular`, stories glob), `.storybook/preview.ts` (`tags: ['autodocs']` + `setCompodocJson(docJson)`), `project.json` (targets using `@storybook/angular:start-storybook` and `:build-storybook` with `compodoc` flags), `tsconfig.doc.json` (extends base, `include: ["src/**/*.ts"]`, excludes specs/stories).
+
+**Critical:** Unresolved hedge: `@storybook/addon-docs/angular` subpath may fail to resolve under Storybook 10 ESM per finding 4. Verify the import resolves with a smoke `nx storybook` run before committing; if it errors, switch to `import { setCompodocJson } from '@storybook/addon-docs'`.
+--- End advisor Strategic Direction ---
+[SUCCESS] D-advisor-budget.sh: advisor 100w cap enforced (71 words)
+exit=0

@@ -1,0 +1,9 @@
+[OK] Findings entry 1: 50 words (<=80)
+[OK] Findings entry 2: 59 words (<=80)
+[OK] Findings entry 3: 57 words (<=80)
+[OK] Findings entry 4: 46 words (<=80)
+[OK] Threat Patterns: 0 words (<=160 cap)
+[OK] Missed surfaces: section absent (optional)
+[OK] Aggregate: 2 words (<=300 cap)
+[SUCCESS] D-security-reviewer-budget.sh: all sub-caps enforced (entries <=80w, Threat Patterns <=160w, Missed surfaces <=30w, total <=300w)
+exit=0

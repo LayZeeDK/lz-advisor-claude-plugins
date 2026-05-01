@@ -1,0 +1,3 @@
+[OK] Path (b) verify-trailer: commit body has 2 Verified: trailer(s) AND 4 Bash tool_use event(s)
+[SUCCESS] E-verify-before-commit.sh: 1 of 3 paths satisfied (path a=0, b=1, c=0)
+exit=0

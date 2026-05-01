@@ -1,0 +1,6 @@
+[OK] Assertion 1 (FIND-B.2 XML format): pv-* blocks use canonical XML form; no plain-bullet sections
+[OK] Assertion 2 (FIND-B.1 synthesis count): 4 pv-* synthesized for 9 Read/WebFetch invocations (>=1 required)
+[OK] Assertion 3 (FIND-H self-anchor rejection): no self-anchor evidence patterns
+[OK] Assertion 4 (FIND-H source-grounded): all pv-* blocks have non-empty <evidence> AND path/URL source= values
+[SUCCESS] B-pv-validation.sh: all 4 assertions passed (XML format + synthesis count + no self-anchor + no empty evidence)
+exit=0

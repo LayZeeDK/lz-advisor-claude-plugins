@@ -1,0 +1,9 @@
+[OK] Findings entry 1: 68 words (<=80)
+[OK] Findings entry 2: 68 words (<=80)
+[OK] Findings entry 3: 62 words (<=80)
+[OK] Findings entry 4: 57 words (<=80)
+[OK] Cross-Cutting Patterns: 0 words (<=160 cap)
+[OK] Missed surfaces: 0 words (<=30 cap)
+[OK] Aggregate: 2 words (<=300 cap)
+[SUCCESS] D-reviewer-budget.sh: all sub-caps enforced (entries <=80w, CCP <=160w, Missed surfaces <=30w, total <=300w)
+exit=0
