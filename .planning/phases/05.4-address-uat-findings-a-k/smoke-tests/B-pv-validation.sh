@@ -4,6 +4,7 @@
 #   B.1: synthesis count >= 1 per material orient-phase tool invocation (carry-forward + synthesis mandate)
 #   H:   no self-anchor evidence (method= must name a concrete tool, not claimed knowledge)
 #   H:   no empty <evidence> blocks; every source= attribute resolves to path or URL token
+#   GAP-G1-firing: default-on ToolSearch fires on agent-generated input (Plan 07-07 closure)
 set -eu
 
 PLUGIN_DIR="$(git rev-parse --show-toplevel)/plugins/lz-advisor"
@@ -26,6 +27,31 @@ claude --model sonnet --effort medium --plugin-dir "$PLUGIN_DIR" \
   --dangerously-skip-permissions \
   -p "/lz-advisor.plan Verify whether @storybook/addon-docs/angular still exports setCompodocJson in Storybook 10.3.5 and document the canonical Compodoc integration pattern." \
   --verbose --output-format stream-json > "$OUT" 2>&1 || true
+
+# Second scenario: agent-generated input path (empirical session 4 / 7 UAT shape).
+# Seed a fresh scratch repo containing a synthesized review file with hedged
+# claims about Storybook 10 + Compodoc behavior. The plan-skill invocation
+# against the @-mentioned review file MUST trigger the default-on ToolSearch
+# rule per the reframed <context_trust_contract> block (Plan 07-07 Task 1).
+SCRATCH2="$(mktemp -d -t lz-advisor-bpv-2-XXXX)"
+trap 'rm -rf "$SCRATCH" "$SCRATCH2"' EXIT
+cd "$SCRATCH2"
+git init -q
+git config user.email "smoke@test.local"
+git config user.name "Smoke Test"
+git commit -q --allow-empty -m "seed"
+mkdir -p plans
+printf '# Review: Storybook 10 + Compodoc integration\n\n## Findings\n\n1. **Hedged**: setCompodocJson may or may not still be exported from @storybook/addon-docs/angular in 10.3.5; Verify the export before acting (unverified against the installed Storybook version).\n\n2. **Hedged**: Compodoc 1.2.1 may or may not support signal output() in component documentation; confirm signal-output rendering before acting.\n\n3. Confirm @storybook/angular@10.3.5 ships an autodocs-compatible tags configuration before acting.\n' > plans/upstream-review.md
+git add plans/upstream-review.md
+git commit -q -m "seed upstream-review.md fixture"
+
+OUT2="$SCRATCH2/B2-output.jsonl"
+claude --model sonnet --effort medium --plugin-dir "$PLUGIN_DIR" \
+  --dangerously-skip-permissions \
+  -p "/lz-advisor.plan Address findings in @plans/upstream-review.md" \
+  --verbose --output-format stream-json > "$OUT2" 2>&1 || true
+
+cd "$SCRATCH"
 
 FAIL=0
 
@@ -78,10 +104,35 @@ else
   fi
 fi
 
+# Assertion 5 (GAP-G1-firing default-on enforcement, Plan 07-07 Gap 1 closure):
+# When the input contains agent-generated source signals (@plans/, @.planning/,
+# or filename containing review/consultation/session-notes/plan), the JSONL
+# trace MUST contain a ToolSearch tool_use event BEFORE any pv-* block
+# synthesis on Class 2/3/4 surfaces. The default-on framing requires that
+# ToolSearch fires unconditionally on the agent-generated-source signal.
+# This assertion runs against the SECOND scenario ($OUT2) which seeds an
+# agent-generated review file as the @-mentioned input.
+TOOLSEARCH_COUNT=$(rg -c '"name":"ToolSearch"' "$OUT2" || echo 0)
+AGENT_INPUT_DETECTED=$(rg -c -e '@plans/' -e '@\.planning/' -e '"path":"[^"]*review[^"]*"' -e '"path":"[^"]*plan[^"]*\.md"' "$OUT2" || echo 0)
+if [ "$AGENT_INPUT_DETECTED" -ge 1 ]; then
+  if [ "$TOOLSEARCH_COUNT" -ge 1 ]; then
+    echo "[OK] Assertion 5 (GAP-G1-firing default-on): ToolSearch fired on agent-generated input (TOOLSEARCH_COUNT=$TOOLSEARCH_COUNT, AGENT_INPUT_DETECTED=$AGENT_INPUT_DETECTED)"
+  else
+    echo "[ERROR] Assertion 5 (GAP-G1-firing default-on): agent-generated input detected (AGENT_INPUT_DETECTED=$AGENT_INPUT_DETECTED) but ToolSearch NOT invoked (TOOLSEARCH_COUNT=0); default-on rule failed"
+    echo "  This is the empirical Gap 1 regression: per Plan 07-07 reframed <context_trust_contract>,"
+    echo "  ToolSearch MUST fire as Phase 1 first action when agent-generated source signals are present."
+    FAIL=1
+  fi
+else
+  echo "[SKIP] Assertion 5 (GAP-G1-firing default-on): no agent-generated input signals detected in second-scenario fixture; assertion N/A (fixture-shape unexpected)"
+fi
+
 if [ "$FAIL" -ne 0 ]; then
-  echo "--- trace excerpt (last 200 lines) ---"
+  echo "--- scenario 1 trace excerpt (last 200 lines of \$OUT) ---"
   tail -n 200 "$OUT"
+  echo "--- scenario 2 trace excerpt (last 100 lines of \$OUT2) ---"
+  tail -n 100 "$OUT2"
   exit 1
 fi
 
-echo "[SUCCESS] B-pv-validation.sh: all 4 assertions passed (XML format + synthesis count + no self-anchor + no empty evidence)"
+echo "[SUCCESS] B-pv-validation.sh: all 5 assertions passed (XML format + synthesis count + no self-anchor + no empty evidence + GAP-G1-firing default-on)"
