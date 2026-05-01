@@ -78,7 +78,7 @@ If no cross-cutting patterns apply to the packaged findings (for example, a sing
 
 If you noticed adjacent attack surfaces, code paths, or files outside the scoped findings that warrant attention, add a one-paragraph note <=30 words at the end of your response (after `### Cross-Cutting Patterns`). This slot is optional -- omit when no missed surfaces apply.
 
-Total across the three slots: <=300 words aggregate. Each slot is independently budgeted; the per-entry Findings cap (80w) and the per-section caps (160w CCP, 30w Missed surfaces) compose to the 300w aggregate. The smoke fixture `D-reviewer-budget.sh` parses by section header and asserts each sub-cap. Observed overruns of approximately 37% on plugin 0.9.0 are the empirical baseline this fixture catches.
+Total: <=300 words aggregate (binding cap). The per-section caps (250w Findings, 160w CCP, 30w Missed surfaces) are loose upper bounds; the 300w aggregate constrains usage in practice -- a maximally-used Findings section (250w) leaves only 50w for CCP + Missed surfaces combined. The smoke fixture `D-reviewer-budget.sh` parses by section header and asserts the per-entry Findings cap (80w), the per-section CCP cap (160w), the per-section Missed-surfaces cap (30w), and the 300w aggregate. Observed overruns of approximately 37% on plugin 0.9.0 are the empirical baseline this fixture catches.
 
 ## Severity Classification
 
