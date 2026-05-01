@@ -68,6 +68,8 @@ Requirements for initial release. Each maps to roadmap phases.
 
 - [ ] **GAP-G1-firing**: ToolSearch availability rule fires on agent-generated source signal as default-on Phase 1 first action (firing rate >= 8 of 8 UAT sessions where signal is present). Phase 7 gap-closure follow-up to FIND-H rule-bypass-via-self-anchor. Detected by `B-pv-validation.sh` Assertion 5 (default-on ToolSearch firing on agent-generated input). Documented in 4 SKILL.md `<context_trust_contract>` blocks (default-on rule + 2 worked examples) and `plugins/lz-advisor/references/context-packaging.md` Rule 5b ToolSearch precondition sub-rule.
 
+- [ ] **GAP-G2-wip-scope**: When commit body contains `## Outstanding Verification`, subject MUST use `wip:` prefix (or `wip(<scope>):` / `chore(wip):` variants per shared regex `^wip(\(.+\))?:|^chore\(wip\):`) UNLESS the commit ONLY records additional `Verified:` trailers with zero file changes (per `git diff --stat HEAD~1..HEAD`). Phase 7 gap-closure follow-up to FIND-E.2 cost-cliff allowance scope ambiguity. Detected by `E-verify-before-commit.sh` path-d assertion. Documented in `lz-advisor.execute/SKILL.md` `<verify_before_commit>` Phase 3.5 Subject-prefix discipline subsection.
+
 ## v2 Requirements
 
 Deferred to future release. Tracked but not in current roadmap.
@@ -141,10 +143,11 @@ Which phases cover which requirements. Updated during roadmap creation.
 | SECR-06 | Phase 4 | Pending |
 | SECR-07 | Phase 4 | Pending |
 | GAP-G1-firing | Phase 7 | Pending |
+| GAP-G2-wip-scope | Phase 7 | Pending |
 
 **Coverage:**
-- v1 requirements: 40 total
-- Mapped to phases: 40
+- v1 requirements: 41 total
+- Mapped to phases: 41
 - Unmapped: 0
 
 ---
