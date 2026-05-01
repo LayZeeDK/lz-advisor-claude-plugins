@@ -221,7 +221,69 @@ wip: <subject describing partial deliverable>
 Verified: <any cheap-validation claim already executed>
 ```
 
-Convert the `wip:` commit to a regular commit (or follow up with a non-wip commit) once the Outstanding Verification items have been executed. The conversion records the verification outcomes either as additional `Verified:` trailers OR as a new commit body section `## Verified Outstanding`.
+### Subject-prefix discipline when Outstanding Verification is populated
+
+When a commit body contains a `## Outstanding Verification` section listing one or more pending `Run:` directives, the commit subject MUST use the `wip:` prefix (canonical form `wip:` lowercase; `chore(wip):` and `wip(<scope>):` also accepted by the smoke fixture regex `^wip(\(.+\))?:|^chore\(wip\):`). This rule applies to every commit -- the parent commit that introduced the Outstanding Verification, AND every follow-up commit that ships while ANY entry in the section remains pending.
+
+The rule's purpose is BRANCH-STATE preservation, not per-commit narrative. While even one Outstanding Verification entry remains pending, the branch is in a known-incomplete state regardless of whether your latest commit's own claim is verified. Shipping a non-`wip:` follow-up (e.g., `fix:` or `feat:`) while Outstanding Verification is populated masks the incomplete state from `git log --oneline` audit and from the `E-verify-before-commit.sh` smoke fixture's path-d gate.
+
+Carve-out: when a follow-up commit ONLY records additional `Verified: <claim>` trailers for items already listed in the parent's Outstanding Verification section -- with ZERO file changes (`git diff --stat HEAD~1..HEAD` shows no files modified) -- the subject MAY drop the `wip:` prefix and use `docs(wip-resolve):` or simply close the wip parent via `git commit --amend` after the verification runs. A trailer-only follow-up is a documentation update of the parent's verification status, not new substantive work, so it does not extend the wip state.
+
+Convert the `wip:` chain to a regular commit (or follow up with a non-wip commit body that omits the `## Outstanding Verification` section entirely) once ALL Outstanding Verification entries from the parent have been executed. The conversion records verification outcomes either as additional `Verified:` trailers OR as a new commit body section `## Verified Outstanding`.
+
+The motivation: branch-state semantics ensure that a reviewer auditing `git log --oneline` can immediately see "the last 3 commits are still `wip:`, so the long-running validation hasn't completed yet" without reading every commit body. Per-commit semantics break this audit by allowing a `fix:` or `feat:` to appear mid-chain while Outstanding Verification is pending, falsely signaling completion.
+
+### Worked example: wip subject + Outstanding Verification
+
+Three commit shapes in sequence, exercising the rule and its carve-out:
+
+**Shape 1 (CORRECT): Parent wip commit with Outstanding Verification.**
+
+```
+wip: set up Compodoc + Storybook integration with signal-based component API
+
+Implements pv-1 contract from the plan (`@storybook/angular@10.3.5` `compodoc: true` executor + signal-based label/clicked symbols on the demo component).
+
+## Outstanding Verification
+
+- Run: `nx build-storybook ngx-smart-components` -- verify documentation.json is generated and Storybook bundle includes it
+- Run: `nx reset` -- verify Nx cache invalidation does not break the Compodoc target
+
+Verified: @compodoc/compodoc 1.2.1 is present as a transitive dep (rg confirmed in node_modules)
+Verified: documentation.json added to .gitignore before first build (per advisor Critical block)
+```
+
+**Shape 2 (INCORRECT, per-commit reading): Follow-up fix while parent's Outstanding Verification is still pending.**
+
+```
+fix(storybook): add type declaration for generated documentation.json
+
+Adds a `documentation.d.ts` ambient declaration so the IDE stops flagging `import docJson from '../documentation.json'` as a TS2307 missing-module error.
+
+## Outstanding Verification
+
+- Run: `nx build-storybook ngx-smart-components` -- verify documentation.json is generated and Storybook bundle includes it
+- Run: `nx reset` -- verify Nx cache invalidation does not break the Compodoc target
+
+Verified: tsc --noEmit on .storybook/tsconfig.json exits clean after the .d.ts addition
+```
+
+This shape is the per-commit reading: the follow-up's OWN claim (the .d.ts addition) is verified, so the executor reasons "my subject can be `fix:`". The reading breaks branch-state semantics: a reviewer scanning `git log --oneline` sees `wip: ... / fix(storybook): ...` and infers the long-running validation completed between the two commits, when in fact `nx build-storybook` and `nx reset` are still pending. The `## Outstanding Verification` section is duplicated into the follow-up because the entries remain pending, but the subject lies about branch state.
+
+The CORRECT subject for this commit is `wip(storybook): add type declaration for generated documentation.json` (or `wip: ...`). The body's Outstanding Verification section stays populated until the long-running validations actually run.
+
+**Shape 3 (CORRECT carve-out): Trailer-only follow-up closes Outstanding Verification entries.**
+
+```
+docs(wip-resolve): record nx build-storybook + nx reset verifications
+
+Verified: nx build-storybook ngx-smart-components produced documentation.json (4.2 KB) and Storybook bundle includes the Compodoc JSON load
+Verified: nx reset cleared the Nx cache cleanly; subsequent build-storybook re-ran the Compodoc target without stale artifacts
+```
+
+This commit ships ZERO file changes (`git diff --stat HEAD~1..HEAD` returns no files); its sole content is two `Verified:` trailers closing out the parent's Outstanding Verification entries. The subject drops the `wip:` prefix per the carve-out: a trailer-only follow-up records the verification outcome but does not introduce new substantive work, so it does not extend the wip state. After this commit, a subsequent commit may use `fix:` or `feat:` because the Outstanding Verification entries have been documented as completed.
+
+Equivalent alternative: amend the parent wip commit via `git commit --amend` to add the trailers and rewrite the subject from `wip:` to `feat:` or `fix:`. The amend approach loses the verification-outcome timestamp but consolidates the wip chain into a single final commit. Both approaches are acceptable; pick based on whether downstream consumers (CI, code review tooling) prefer a clean linear history (amend) or an auditable verification trail (separate trailer-only commit).
 
 ### `Verified:` trailer convention
 
