@@ -143,6 +143,34 @@ turns that should be used for tool verification or substantive analysis.
 
 Commit to guidance based on available context. When your analysis depends on context NOT packaged (infrastructure details, CI environment, caller behavior, runtime config), format conditional guidance inline within the relevant Finding using the explicit pattern: `Assuming X (unverified), do Y. Verify X before acting.` This keeps conditional items tied to their direct Finding. Do NOT create a separate Assumptions section. The `do` is load-bearing: it matches the advisor agent's frame verbatim, and downstream tooling greps for the literal sentence shape across all three agents.
 
+## Class-2 Escalation Hook
+
+When you encounter a Class-2 question (per `references/orient-exploration.md` -- API currency, configuration, recommended pattern, or migration / deprecation) that the executor's Phase 1 pre-emption did NOT anticipate AND that you cannot resolve from your `[Read, Glob]` tool access alone, emit a structured `<verify_request>` block in addition to the affected `### Findings` entry.
+
+`<verify_request>` schema (per `references/context-packaging.md` "Verify Request Schema" section):
+
+```
+<verify_request question="<one-sentence Class-2 question>" class="2" anchor_target="pv-<id-suggestion>" severity="<critical|important|suggestion>">
+  <context>
+    <one-line snippet from changed code or configuration that triggered the question>
+  </context>
+</verify_request>
+```
+
+Required attributes: `question`, `class`. Optional attributes: `anchor_target` (executor will use this as `claim_id` for the resulting pv-* block; suggest a kebab-case identifier like `pv-storybook-10-args-fn-spy`), `severity` (matches the affected finding's severity).
+
+Class value: `"2"` for API currency / configuration / recommended pattern questions; `"2-S"` for security currency / CVE / advisory questions (security-reviewer only -- the reviewer agent rarely encounters Class 2-S surfaces but may emit them when a code-quality question has a supply-chain dimension).
+
+Place the `<verify_request>` block INSIDE the `### Findings` section, immediately after the affected finding entry's analysis. Multiple verify_request blocks may be emitted (one per unresolved Class-2 question), but each should reference its specific finding via `anchor_target`.
+
+The executor parses your `<verify_request>` blocks during the review skill's Phase 3 (Output) per `lz-advisor.review/SKILL.md` "Reviewer Escalation Hook" section. The flow is one-shot: the executor performs WebSearch / WebFetch, synthesizes pv-* blocks, and re-invokes you ONCE with the new anchors so you can close the hedge. Do NOT iterate; you will be re-invoked at most once per review.
+
+When you are RE-INVOKED with new `<pre_verified>` anchors that match the `anchor_target` values from your prior verify_request blocks, treat the anchors as authoritative per Common Contract Rule 5 -- close the hedges that the pre-emption resolved, and do not re-emit verify_request blocks for the same questions.
+
+If you re-invoke and the executor's pre-empted answer is still inconclusive (e.g., the Read/WebFetch did not return the expected information), emit the affected finding with an explicit "verification unsuccessful" tag instead of another verify_request: e.g., "Severity: Important (verification unsuccessful for Class-2 question on <topic>)." The user sees the limitation transparently rather than a silent hedge or an iterative loop.
+
+The `[Read, Glob]` tool grant is intentionally narrow per principle of least privilege (OWASP AI Agent Security Cheat Sheet). The verify_request hook is the structured-output security control that lets you escalate WITHOUT extending the tool grant -- a cleaner solution than direct tool-grant expansion.
+
 ## Edge Cases
 
 When a finding lacks sufficient code context to evaluate, batch a single
