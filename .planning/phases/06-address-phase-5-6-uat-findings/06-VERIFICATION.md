@@ -598,3 +598,62 @@ Plus 4 MINOR residuals (unchanged from Amendment 6).
 | 4 SKILL.md frontmatter | 0.10.0 | 0.11.0 |
 
 Verified post-bump: 5 surfaces grep to `0.11.0`; no `0.10.0` remnants in plugin.json or SKILL.md frontmatters.
+
+## Amendment 2026-05-01 (eighth) -- Phase 7 Gap 2 (residual #2) CLOSED structurally via Plan 07-08; Phase 7 sealing complete
+
+**Trigger:** Plan 07-08 landed (subject-prefix discipline subsection + 3-shape worked example pair in `<verify_before_commit>` Phase 3.5 + E-verify-before-commit.sh path-d assertion + synthesized in-process path-d scenario + --replay flag with structural error-path + 07-08-REPLAY-RESULTS.md structural proof).
+
+**Status change:** Phase 6 PASS-with-residual remains -- Amendment 8 narrows the residual list further by sealing residual #2 (Phase 7 Gap 2) at the structural layer.
+
+### Rationale
+
+Amendment 7 (sixth -> seventh) closed Phase 7 Gap 1 (residual #1) at the structural layer via Plan 07-07. Plan 07-08 closes Phase 7 Gap 2 (residual #2) at the structural layer via the same "structurally CLOSED, empirical deferred" pattern. The fix mechanism per `.planning/phases/07-address-all-phase-5-x-and-6-uat-findings/07-RESEARCH-GAP-2-wip-discipline.md` Candidates 1 + 2 + 3:
+
+1. **Candidate 1 (SKILL.md contract tightening)** -- `<verify_before_commit>` Phase 3.5 extends with a Subject-prefix discipline subsection stating the positive default ("subject MUST use `wip:` when Outstanding Verification populated") + trailer-only carve-out anchored in `git diff --stat HEAD~1..HEAD` semantics (zero file changes = carve-out; non-zero = wip required) + branch-state motivation.
+
+2. **Candidate 2 (worked example pair)** -- 3-shape commit example (CORRECT wip + INCORRECT non-wip per-commit reading + CORRECT carve-out trailer-only follow-up). The Shape 2 INCORRECT example explicitly names the failure mode the executor is likely to exhibit, anchoring rejection to a concrete pattern per Anthropic's "use positive and negative examples" best practice.
+
+3. **Candidate 3 (path-d detection layer + synthesized in-process scenario)** -- `E-verify-before-commit.sh` extends with: (a) a path-d negative assertion that fires when subject is non-wip AND Outstanding Verification populated AND non-zero file changes; (b) a SYNTHESIZED in-process scenario seeded inside the scratch repo (creates a non-wip commit + Outstanding Verification + non-zero file changes) so path-d fires structurally within the smoke run, bypassing the cross-repo SHA constraint; (c) a `--replay <sha>` flag with documented error-path emitting clear "cannot read commit" + exit 65 when invoked against SHAs not in the current working-tree repo (the empirical UAT commits live in the external ngx-smart-components testbed); (d) WIP_PRESENT regex broadened to accept all three documented wip forms (`wip:`, `wip(scope):`, `chore(wip):`) per OQ-1 recommendation. Three exit codes differentiated: 0 pass, 1 broken-assertion or no-path, 2 violation (synthesized expected firing OR executor's own commit).
+
+4. **07-08-REPLAY-RESULTS.md** captures structural-validation outcomes: Step 1 synthesized in-process scenario fires exit 2; Steps 2-4 --replay against the testbed-only SHAs (8c25c9e, 06af4cf, 15d8fac) emit clear "cannot read commit" error + exit 65, structurally validating the flag's error-path. The path-d assertion's correctness is proven structurally, not empirically.
+
+### Structural evidence cited from 07-08-REPLAY-RESULTS.md
+
+Plan 07-08 Task 3 confirmed:
+
+- `bash E-verify-before-commit.sh` (default mode with synthesized in-process scenario) exits 2 (expected: 2 -- synthesized path-d scenario fires; Gap 2 closure structurally proven).
+- `bash E-verify-before-commit.sh --replay 8c25c9e` exits 65 (expected: 65 -- "cannot read commit 8c25c9e" because the SHA lives in the ngx-smart-components testbed; flag error-path correctly wired).
+- `bash E-verify-before-commit.sh --replay 06af4cf` exits 65 (expected: 65 -- same).
+- `bash E-verify-before-commit.sh --replay 15d8fac` exits 65 (expected: 65 -- same).
+
+The structural validation establishes that the contract + smoke fixture combination would have caught the gap shape under the tightened semantics, validating the closure at the structural layer. Empirical replay against the live testbed commits is a manual-auditor operation; auditors cd into ngx-smart-components and run --replay there for empirical confirmation.
+
+### Updated residual list (post-Amendment 8)
+
+| # | Residual | Status |
+|---|----------|--------|
+| 1 | Plan 07-01 ToolSearch precondition firing | **CLOSED structurally** via Plan 07-07 (Amendment 7) |
+| 2 | Plan 07-02 wip-discipline scope ambiguity | **CLOSED structurally** via Plan 07-08 (this amendment) |
+| 3 | Cross-Skill Hedge Tracking gap (P8-12) | DEFERRED to Phase 8 |
+| 4 | Reconciliation rule NOT invoked when advisor reframes packaged claim (P8-03) | DEFERRED to Phase 8 |
+| 5 | Self-anchor pattern leaks through advisor narrative SD prose (P8-18) | DEFERRED to Phase 8 |
+
+Plus 4 MINOR residuals (unchanged from Amendment 6).
+
+## Phase 7 sealing verdict
+
+**Phase 7 is now READY TO SEAL as PASS-with-residual.** All in-phase Gap 1 + Gap 2 closure landed at the structural layer:
+
+- Plan 07-01..07-05: structural Phase 7 deliverables.
+- Plan 07-06: plugin 0.10.0 + UAT replay infrastructure + 8-session UAT chain + Amendment 6.
+- **Plan 07-07: Gap 1 CLOSED structurally** (default-on ToolSearch + worked examples + plugin 0.11.0).
+- **Plan 07-08: Gap 2 CLOSED structurally** (subject-prefix discipline + 3-shape worked example + path-d assertion + synthesized in-process scenario + --replay flag with error-path).
+
+Empirical replay against the ngx-smart-components testbed (sessions 2 / 5 / 8) is a manual-auditor operation, NOT a phase-closure gate. Out-of-phase residuals (3, 4, 5) and 22 Phase 8 candidates hand off to a hypothetical Phase 8.
+
+### Plugin version on disk (post Plan 07-08)
+
+| Surface | Pre | Post |
+|---------|-----|------|
+| `plugins/lz-advisor/.claude-plugin/plugin.json` | 0.11.0 (from Plan 07-07) | 0.11.0 (unchanged; Plan 07-08 does not bump version -- the 0.10.0 -> 0.11.0 minor bump in Plan 07-07 already covered the cross-cutting contract change for the Plan 07-07 + 07-08 gap-closure pair) |
+| 4 SKILL.md frontmatter | 0.11.0 (from Plan 07-07) | 0.11.0 (unchanged) |

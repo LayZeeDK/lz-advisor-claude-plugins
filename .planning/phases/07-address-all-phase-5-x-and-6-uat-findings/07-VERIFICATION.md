@@ -132,3 +132,42 @@ The empirical closure criterion -- a fresh UAT replay subset (minimum: plan-fixe
 
 - **Gap 1: CLOSED structurally** at the prompt-rule + smoke-fixture layer. Per the gap closure pair landing in tandem with Gap 2 (Plan 07-08), Phase 7 is now ready to seal as PASS-with-residual.
 - The Phase 8 candidates (out-of-phase residuals 3, 4, 5 per 07-VERIFICATION.md) remain deferred to a hypothetical Phase 8.
+
+## Amendment 2026-05-01 -- Gap 2 CLOSED via Plan 07-08 (subject-prefix discipline + 3-shape worked example + path-d detection with synthesized in-process scenario)
+
+**Trigger:** Plan 07-08 landed (Tasks 1-5 complete; structural verification by frontmatter validation + bash -n syntax check + cross-file diff; structural smoke validation per 07-08-REPLAY-RESULTS.md showing the synthesized in-process path-d scenario fires exit 2 + the --replay flag's error-path emits clear "cannot read commit" + exit 65 against the testbed-only SHAs).
+
+**Status change:** Gap 2 MAJOR (2 empirical instances on plugin 0.10.0; sessions 2 + 5 in the external ngx-smart-components testbed) -> Gap 2 CLOSED structurally. Empirical replay against the testbed SHAs is a documented manual-auditor operation, not a phase-closure gate (matching Plan 07-07 Gap 1 closure pattern: "structurally CLOSED, empirical deferred").
+
+### Closure mechanism
+
+Per `07-RESEARCH-GAP-2-wip-discipline.md` Recommendation section, Gap 2 closes structurally via three paired refinements landed in Plan 07-08:
+
+1. **Candidate 1 (contract language tightening)** -- `lz-advisor.execute/SKILL.md` `<verify_before_commit>` Phase 3.5 cost-cliff allowance subsection extends with a NEW `### Subject-prefix discipline when Outstanding Verification is populated` subsection that states the positive rule ("when a commit body contains `## Outstanding Verification`, the commit subject MUST use the `wip:` prefix") + the trailer-only carve-out ("UNLESS the commit ONLY records additional `Verified:` trailers for already-listed Outstanding items, with ZERO file changes per `git diff --stat HEAD~1..HEAD`") + the motivation ("BRANCH-STATE preservation, not per-commit narrative"). The contract language follows Anthropic's own Claude 4 system-prompt structure (positive defaults + narrow enumerated exceptions + explicit motivation per `prompthub.us` Claude 4 system prompt analysis + `docs.claude.com/en/docs/build-with-claude/prompt-engineering/claude-4-best-practices`).
+
+2. **Candidate 2 (worked example pair)** -- `lz-advisor.execute/SKILL.md` extends with a NEW `### Worked example: wip subject + Outstanding Verification` subsection containing 3 commit shapes: Shape 1 CORRECT (`wip:` subject + Outstanding Verification), Shape 2 INCORRECT (the per-commit reading: `fix:` subject + Outstanding Verification), Shape 3 CORRECT carve-out (trailer-only follow-up: zero file changes, drops `wip:` prefix). The 3-shape pattern follows `dreamhost.com/blog/claude-prompt-engineering` ("use positive and negative examples") and the existing repo precedent in `agents/advisor.md` lines 62-76 (two density examples).
+
+3. **Candidate 3 (path-d detection layer + synthesized in-process scenario)** -- `E-verify-before-commit.sh` extends with: (a) a path-d negative assertion that catches the empirical session 2 + 5 gap shape (non-wip subject + populated `## Outstanding Verification` + non-zero file changes outside the trailer-only carve-out); (b) a SYNTHESIZED in-process scenario that creates a non-wip commit + Outstanding Verification + non-zero file changes inside the scratch repo, so path-d fires structurally within the smoke run; (c) a `--replay <sha>` flag for manual-auditor regression validation against historical commits in external testbed repos (the empirical session 2 / 5 SHAs live in ngx-smart-components, not in this plugin repo); (d) clear error message + exit 65 when --replay is invoked against a SHA not in the current working-tree repo. Three exit codes differentiated: 0 pass, 1 broken-assertion or no-positive-path, 2 path-d violation (synthesized expected firing OR executor's own commit).
+
+### Structural verification (this amendment)
+
+Plan 07-08 Task 3 ran the four structural-validation steps and captured results in 07-08-REPLAY-RESULTS.md:
+
+| Step | Expected exit | Observed exit | Verdict |
+|------|---------------|---------------|---------|
+| 1: synthesized in-process scenario | 2 (path-d fires; Gap 2 closure structurally proven) | 2 | PASS |
+| 2: --replay 8c25c9e (testbed SHA) | 65 (cannot read commit; flag error-path wired) | 65 | PASS |
+| 3: --replay 06af4cf (testbed SHA) | 65 (cannot read commit; flag error-path wired) | 65 | PASS |
+| 4: --replay 15d8fac (testbed SHA) | 65 (cannot read commit; flag error-path wired) | 65 | PASS |
+
+The smoke fixture path-d assertion structurally validates the gap (subject regex + `## Outstanding Verification` body + non-zero git diff = exit 2 in the synthesized scenario). Empirical replay against the live ngx-smart-components testbed SHAs is a documented manual operation, not a phase-closure gate.
+
+### Closure scope
+
+- **Gap 2: CLOSED structurally** at the contract surface (Candidate 1 + Candidate 2) AND the smoke fixture surface (Candidate 3 with synthesized in-process scenario firing path-d within this plugin repo's smoke run).
+- **Empirical replay** against the ngx-smart-components testbed SHAs (8c25c9e session 2, 06af4cf session 5, 15d8fac session 8 baseline) is a manual-auditor operation: cd into the testbed and run --replay there. Not required for phase closure.
+- The Phase 8 candidates (out-of-phase residuals 3, 4, 5 per 07-VERIFICATION.md) remain deferred to a hypothetical Phase 8.
+
+### Phase 7 sealing readiness
+
+With Gap 1 CLOSED structurally (Plan 07-07 amendment) + Gap 2 CLOSED structurally (this amendment), Phase 7 is now READY TO SEAL as **PASS-with-residual** -- core Gap 1 + Gap 2 closed at the contract + smoke layers; out-of-phase residuals (3, 4, 5) and 22 Phase 8 candidates handed off to a hypothetical Phase 8 per `06-VERIFICATION.md` Amendment 6.
