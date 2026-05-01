@@ -64,6 +64,10 @@ Requirements for initial release. Each maps to roadmap phases.
 - [ ] **SECR-06**: Skill can review specific files, directories, or recent changes
 - [ ] **SECR-07**: Skill inherits session model for executor (no model override)
 
+### Gap-Closure Requirements (Phase 7)
+
+- [ ] **GAP-G1-firing**: ToolSearch availability rule fires on agent-generated source signal as default-on Phase 1 first action (firing rate >= 8 of 8 UAT sessions where signal is present). Phase 7 gap-closure follow-up to FIND-H rule-bypass-via-self-anchor. Detected by `B-pv-validation.sh` Assertion 5 (default-on ToolSearch firing on agent-generated input). Documented in 4 SKILL.md `<context_trust_contract>` blocks (default-on rule + 2 worked examples) and `plugins/lz-advisor/references/context-packaging.md` Rule 5b ToolSearch precondition sub-rule.
+
 ## v2 Requirements
 
 Deferred to future release. Tracked but not in current roadmap.
@@ -136,10 +140,11 @@ Which phases cover which requirements. Updated during roadmap creation.
 | SECR-05 | Phase 4 | Pending |
 | SECR-06 | Phase 4 | Pending |
 | SECR-07 | Phase 4 | Pending |
+| GAP-G1-firing | Phase 7 | Pending |
 
 **Coverage:**
-- v1 requirements: 39 total
-- Mapped to phases: 39
+- v1 requirements: 40 total
+- Mapped to phases: 40
 - Unmapped: 0
 
 ---
