@@ -101,3 +101,34 @@ Full Phase 8 candidate list: `uat-replay/session-notes.md` Phase 7 Closure Verdi
 ## Recommended next action
 
 Run `/gsd-plan-phase 7 --gaps` to create gap-closure plans for the two within-Phase-7 gaps (07-07 ToolSearch rule strengthening, 07-08 wip-discipline language tightening). After gap closure, mark Phase 7 complete (PASS-with-residual; residuals 3, 4, 5 + 22 candidates handed off to hypothetical Phase 8).
+
+## Amendment 2026-05-01 -- Gap 1 CLOSED via Plan 07-07 (default-on ToolSearch + worked examples)
+
+**Trigger:** Plan 07-07 landed (Tasks 1-5 complete; structural verification by frontmatter validation + B-pv-validation.sh syntax check + cross-file diff).
+
+**Status change:** Gap 1 MAJOR (recurring across 6 of 8 UAT sessions) -> Gap 1 CLOSED structurally.
+
+### Closure mechanism
+
+Per `07-RESEARCH-GAP-1-toolsearch.md` Recommendation section, Gap 1 closes via two paired refinements landed in Plan 07-07:
+
+1. **Candidate B (default-on conversion)** -- the ToolSearch availability rule in the 4-skill byte-identical `<context_trust_contract>` block was reframed from precondition-with-AND-conjunction ("WHEN agent-generated source AND Class 2/3/4 THEN invoke ToolSearch BEFORE ranking") to default-on Phase 1 first action ("WHEN agent-generated source THEN invoke ToolSearch as Phase 1 first action, regardless of question class"). The cost-asymmetry framing ("one redundant ToolSearch is much cheaper than confabulated pv-* synthesis") provides the user-visible WHY that Anthropic's prompting best practices identify as load-bearing for tool-use steering on Sonnet 4.6 / Opus 4.7.
+
+2. **Candidate A (worked examples)** -- two `<example>` blocks added immediately after the reframed rule: a positive example (agent-generated review file with Class-2 question fires ToolSearch) and a boundary example (vendor-doc authoritative source does NOT fire ToolSearch). The worked examples close the gap that Plan 07-01 left open (the rule had no `<example>` block; Anthropic's documented best practice is 3-5 examples wrapped in `<example>` tags).
+
+### Structural verification (this amendment)
+
+- 4 SKILL.md `<context_trust_contract>` blocks contain the reframed `ToolSearch availability rule (default-on Phase 1 first action).` paragraph + 2 `<example>` blocks.
+- 4 SKILL.md blocks remain byte-identical to each other (3 cross-file diffs against plan SKILL.md baseline exit 0).
+- `references/context-packaging.md` Rule 5b ToolSearch precondition sub-rule reframed to align with the default-on framing.
+- `B-pv-validation.sh` extended with Assertion 5 + a second scratch-repo scenario exercising the agent-generated-input path; bash -n syntax check passes.
+- Plugin version bumped 0.10.0 -> 0.11.0 across 5 surfaces.
+
+### Empirical verification (deferred)
+
+The empirical closure criterion -- a fresh UAT replay subset (minimum: plan-fixes + execute-fixes + security-review per Phase 6 amendment 5 precedent) on plugin 0.11.0 confirming ToolSearch firing in 8 of 8 sessions where agent-generated source is present -- is OUT of Plan 07-07 scope. The structural surfaces are in place; behavioral confirmation lands in the next phase's UAT replay if Phase 7 is sealed before then, or in a follow-up empirical-validation cycle.
+
+### Closure scope
+
+- **Gap 1: CLOSED structurally** at the prompt-rule + smoke-fixture layer. Per the gap closure pair landing in tandem with Gap 2 (Plan 07-08), Phase 7 is now ready to seal as PASS-with-residual.
+- The Phase 8 candidates (out-of-phase residuals 3, 4, 5 per 07-VERIFICATION.md) remain deferred to a hypothetical Phase 8.

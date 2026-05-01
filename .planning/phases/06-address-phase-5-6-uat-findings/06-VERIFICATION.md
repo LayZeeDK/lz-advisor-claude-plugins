@@ -549,3 +549,52 @@ Per Plan 07-06 Task 4 Step 1 (`.planning/phases/07-address-all-phase-5-x-and-6-u
 | 4 SKILL.md frontmatter | 0.9.0 | 0.10.0 |
 
 Verified post-bump: 5 surfaces grep to `0.10.0`; no `0.9.0` remnants in plugin.json or SKILL.md frontmatters.
+
+## Amendment 2026-05-01 (seventh) -- Phase 7 Gap 1 (residual #1) CLOSED via Plan 07-07; plugin 0.11.0 published
+
+**Trigger:** Plan 07-07 landed (default-on ToolSearch conversion + worked examples in 4-skill byte-identical canon + Rule 5b alignment + B-pv-validation.sh Assertion 5 + plugin version 0.11.0).
+
+**Status change:** Phase 6 PASS-with-residual remains -- Amendment 7 narrows the residual list by sealing residual #1 (Phase 7 Gap 1).
+
+### Rationale
+
+Amendment 6 closed GAP-G1+G2-empirical at the milestone-audit layer per Phase 7 Plans 07-01..07-05 + 07-06 UAT replay, but flagged 5 MAJOR residuals (3 in-phase Gap 1 + Gap 2; 3 out-of-phase Phase 8 candidates). Plan 07-07 closes residual #1 (Phase 7 in-phase Gap 1: ToolSearch precondition firing rate 2 of 8 on plugin 0.10.0) at the structural layer.
+
+The fix mechanism per `.planning/phases/07-address-all-phase-5-x-and-6-uat-findings/07-RESEARCH-GAP-1-toolsearch.md` Candidates B + A:
+
+1. **Candidate B (default-on conversion)** -- the ToolSearch availability rule in the 4-skill byte-identical `<context_trust_contract>` block reframed from text-steered precondition ("WHEN agent-generated source AND Class 2/3/4 THEN invoke ToolSearch BEFORE ranking") to default-on Phase 1 first action ("WHEN agent-generated source THEN invoke ToolSearch as Phase 1 first action, regardless of question class"). Anchored in Anthropic's published prompting best practices for Sonnet 4.6 / Opus 4.7: clear WHY (cost-asymmetry framing) overrides the documented "less tool use, more reasoning" model bias.
+
+2. **Candidate A (worked examples)** -- two `<example>` blocks added: a positive (agent-generated review file fires ToolSearch) and a boundary (vendor-doc authoritative source does NOT fire ToolSearch).
+
+3. **`references/context-packaging.md` Rule 5b ToolSearch precondition** sub-rule aligned with default-on framing; cost-asymmetry phrasing matches between the two surfaces.
+
+4. **`B-pv-validation.sh` Assertion 5** detects the empirical regression: when agent-generated input is in the JSONL trace, the trace MUST contain a ToolSearch tool_use event before any pv-* block synthesis. The fixture extends the 4-assertion pv-validation suite to 5 assertions; second scratch-repo scenario seeds an agent-generated review file as the @-mentioned input.
+
+5. **Plugin version bumped 0.10.0 -> 0.11.0** (minor; cross-cutting contract change matching Phase 6 -> Phase 7 0.9.0 -> 0.10.0 precedent).
+
+### Empirical evidence cited from session-notes.md (Plan 07-06 UAT replay on plugin 0.10.0)
+
+- Sessions 1 + 3 fired ToolSearch (the rule worked when trigger was technically NOT met -- proactive Class-2 disambiguation by the executor, NOT the rule).
+- Sessions 2, 4, 5, 6, 7, 8 SKIPPED ToolSearch despite agent-generated source being the @-mentioned input (the rule failure mode -- inverse correlation between trigger condition and firing).
+- The reframed default-on rule eliminates the AND-conjunction that allowed Sonnet 4.6 to short-circuit on Class-1 sub-questions; the cost-asymmetry framing addresses the "I have enough context, no need to ToolSearch" adaptive-thinking pattern documented in [github.com/anthropics/claude-code/issues/46935 + 41217 + 32290].
+
+### Updated residual list (post-Amendment 7)
+
+| # | Residual | Status |
+|---|----------|--------|
+| 1 | Plan 07-01 ToolSearch precondition firing | **CLOSED structurally** via Plan 07-07 |
+| 2 | Plan 07-02 wip-discipline scope ambiguity | OPEN -- closing via Plan 07-08 (in-flight wave 5) |
+| 3 | Cross-Skill Hedge Tracking gap (P8-12) | DEFERRED to Phase 8 |
+| 4 | Reconciliation rule NOT invoked when advisor reframes packaged claim (P8-03) | DEFERRED to Phase 8 |
+| 5 | Self-anchor pattern leaks through advisor narrative SD prose (P8-18) | DEFERRED to Phase 8 |
+
+Plus 4 MINOR residuals (unchanged from Amendment 6).
+
+### Plugin version on disk (post Plan 07-07)
+
+| Surface | Pre | Post |
+|---------|-----|------|
+| `plugins/lz-advisor/.claude-plugin/plugin.json` | 0.10.0 | 0.11.0 |
+| 4 SKILL.md frontmatter | 0.10.0 | 0.11.0 |
+
+Verified post-bump: 5 surfaces grep to `0.11.0`; no `0.10.0` remnants in plugin.json or SKILL.md frontmatters.
