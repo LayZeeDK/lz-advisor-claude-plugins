@@ -145,12 +145,12 @@ Commit to guidance based on available context. When your analysis depends on con
 
 ## Class-2 Escalation Hook
 
-When you encounter a Class-2 question (per `references/orient-exploration.md` -- API currency, configuration, recommended pattern, or migration / deprecation) that the executor's Phase 1 pre-emption did NOT anticipate AND that you cannot resolve from your `[Read, Glob]` tool access alone, emit a structured `<verify_request>` block in addition to the affected `### Findings` entry.
+When you encounter a Class-2 question (per `references/orient-exploration.md` -- API currency, configuration, recommended pattern) or a Class-3 question (migration / deprecation) that the executor's Phase 1 pre-emption did NOT anticipate AND that you cannot resolve from your `[Read, Glob]` tool access alone, emit a structured `<verify_request>` block in addition to the affected `### Findings` entry.
 
 `<verify_request>` schema (per `references/context-packaging.md` "Verify Request Schema" section):
 
 ```
-<verify_request question="<one-sentence Class-2 question>" class="2" anchor_target="pv-<id-suggestion>" severity="<critical|important|suggestion>">
+<verify_request question="<one-sentence Class-2 or Class-3 question>" class="<2|3|2-S>" anchor_target="pv-<id-suggestion>" severity="<critical|important|suggestion>">
   <context>
     <one-line snippet from changed code or configuration that triggered the question>
   </context>
@@ -159,9 +159,9 @@ When you encounter a Class-2 question (per `references/orient-exploration.md` --
 
 Required attributes: `question`, `class`. Optional attributes: `anchor_target` (executor will use this as `claim_id` for the resulting pv-* block; suggest a kebab-case identifier like `pv-storybook-10-args-fn-spy`), `severity` (matches the affected finding's severity).
 
-Class value: `"2"` for API currency / configuration / recommended pattern questions; `"2-S"` for security currency / CVE / advisory questions (security-reviewer only -- the reviewer agent rarely encounters Class 2-S surfaces but may emit them when a code-quality question has a supply-chain dimension).
+Class value: `"2"` for API currency / configuration / recommended pattern questions; `"3"` for migration / deprecation questions (whether a symbol was removed, deprecated, or replaced between versions); `"2-S"` for security currency / CVE / advisory questions (security-reviewer only -- the reviewer agent rarely encounters Class 2-S surfaces but may emit them when a code-quality question has a supply-chain dimension).
 
-Place the `<verify_request>` block INSIDE the `### Findings` section, immediately after the affected finding entry's analysis. Multiple verify_request blocks may be emitted (one per unresolved Class-2 question), but each should reference its specific finding via `anchor_target`.
+Place the `<verify_request>` block INSIDE the `### Findings` section, immediately after the affected finding entry's analysis. Multiple verify_request blocks may be emitted (one per unresolved Class-2 or Class-3 question), but each should reference its specific finding via `anchor_target`.
 
 The executor parses your `<verify_request>` blocks during the review skill's Phase 3 (Output) per `lz-advisor.review/SKILL.md` "Reviewer Escalation Hook" section. The flow is one-shot: the executor performs WebSearch / WebFetch, synthesizes pv-* blocks, and re-invokes you ONCE with the new anchors so you can close the hedge. Do NOT iterate; you will be re-invoked at most once per review.
 
