@@ -171,3 +171,59 @@ The smoke fixture path-d assertion structurally validates the gap (subject regex
 ### Phase 7 sealing readiness
 
 With Gap 1 CLOSED structurally (Plan 07-07 amendment) + Gap 2 CLOSED structurally (this amendment), Phase 7 is now READY TO SEAL as **PASS-with-residual** -- core Gap 1 + Gap 2 closed at the contract + smoke layers; out-of-phase residuals (3, 4, 5) and 22 Phase 8 candidates handed off to a hypothetical Phase 8 per `06-VERIFICATION.md` Amendment 6.
+
+## Amendment 2026-05-02 -- GAP-D-budget-empirical CLOSED via Plan 07-09 (fragment-grammar emit template + effort de-escalation + smoke fixture parser update + plugin 0.12.0)
+
+**Trigger:** Plan 07-09 landed (Tasks 1-4 complete; structural verification by frontmatter validation + bash -n syntax check on both D-{reviewer,security-reviewer}-budget.sh fixtures + cross-file diff confirming no non-ASCII bytes in modified surfaces).
+
+**Status change:** GAP-D-budget-empirical (3 failed gaps from 07-UAT.md: reviewer 396w / 32% over, security-reviewer 414w / 38% over, security-reviewer Missed surfaces 33w / 10% over) -> GAP-D-budget-empirical CLOSED structurally.
+
+### Closure mechanism
+
+Per `07-RESEARCH-WORDBUDGET.md` Recommendation section, GAP-D-budget-empirical closes structurally via two paired refinements landed together in Plan 07-09:
+
+1. **Candidate A (Fragment-Grammar Output Template)** -- the descriptive sub-cap prose in `agents/reviewer.md` and `agents/security-reviewer.md` `## Output Constraint` sections is replaced with an explicit one-line-per-finding output template (`<file>:<line>: <severity>: <problem>. <fix>.`) + ASCII severity prefixes (`crit:` / `imp:` / `sug:` / `q:` mapped to existing Severity Classification) + explicit DROP / KEEP lists + 3 worked example pairs (verbose INCORRECT vs fragment CORRECT) per Anthropic Best Practices "positive examples beat negative instructions." Anchored in caveman empirical baseline (`D:\projects\JuliusBrussee\caveman` benchmarks/run.py + evals/snapshots/results.json: 65% mean output reduction across 10 prompts x 3 trials on `claude-sonnet-4-20250514` + `claude-opus-4-6`; range 22-87%). The fragment-grammar shape BINDS output length structurally rather than describing it; the per-section caps Plan 07-04 chose were mathematically incompatible with the 300w aggregate (5x80 + 160 + 30 = 590w upper bound).
+
+2. **Candidate B (Effort De-escalation)** -- reviewer + security-reviewer frontmatter changes from `effort: xhigh` to `effort: medium`. Anchored in Anthropic Best Practices "Calibrating effort and thinking depth" section: "Good for cost-sensitive use cases that need to reduce token usage while trading off intelligence." Per Anthropic April 23, 2026 postmortem, Opus 4.7 at xhigh produces verbose justification chains by design ("notable behavioral quirk: tends to be quite verbose"); fighting verbosity in prose is fighting the model's training. CONTEXT.md D-04 amended with 2026-05-02 amendment block + binding reversion criterion (15% Class-1 recall drop on empirical UAT replay; otherwise revert to xhigh + Candidate A alone).
+
+### Smoke fixture parser updates (Plan 07-09 Task 3)
+
+`D-reviewer-budget.sh` and `D-security-reviewer-budget.sh` `ENTRY_CHECK_SCRIPT` heredocs replaced with a fragment-grammar parser:
+
+- Per-line word target: <=20 words for reviewer (problem + fix; excludes `<file>:<line>: <severity>:` prefix); <=22 for security-reviewer (slightly higher to accommodate OWASP tag `[A0N]` which adds ~2-4 words to the line length budget).
+- Outlier soft cap: 25w / 28w respectively.
+- Backward-compat fallback regex (`^(?:\d+\.\s+|\*\*Finding\s+\d+:?\s*\*?\*?\s*)`) handles transitional Plan 07-04 numbered-section shape with `[WARN]` signaling preferred fragment shape.
+- Aggregate <=300w assertion PRESERVED BYTE-IDENTICALLY -- this is the load-bearing gate that closes the gap.
+- Section-presence assertions for `### Findings` + `### Cross-Cutting Patterns` / `### Threat Patterns` + `### Missed surfaces` PRESERVED.
+
+### Structural verification (this amendment)
+
+| Surface | Expected | Observed | Verdict |
+|---------|----------|----------|---------|
+| reviewer.md fragment-grammar template present | `Format: <file>:<line>: <severity>: <problem>. <fix>.` literal text | landed | PASS |
+| security-reviewer.md fragment-grammar template present (with OWASP tag) | `Format: <file>:<line>: <severity>: [<OWASP-tag>] <threat>. <fix>.` literal text | landed | PASS |
+| reviewer.md effort: medium | frontmatter `effort: medium` (single line) | landed | PASS |
+| security-reviewer.md effort: medium | frontmatter `effort: medium` (single line) | landed | PASS |
+| advisor.md effort UNCHANGED (control) | frontmatter `effort: high` | unchanged | PASS |
+| CONTEXT.md D-04 amendment 2026-05-02 | block citing Anthropic Best Practices + April 23 postmortem + reversion criterion | landed | PASS |
+| D-reviewer-budget.sh bash -n | exits 0 | exits 0 | PASS |
+| D-security-reviewer-budget.sh bash -n | exits 0 | exits 0 | PASS |
+| Plugin version 0.12.0 across 5 surfaces | plugin.json + 4 SKILL.md frontmatter | landed | PASS |
+| REQUIREMENTS.md GAP-D-budget-empirical row | new row + traceability entry | landed | PASS |
+| No non-ASCII bytes in any modified surface | rg `[\x80-\xff]` returns 0 | 0 | PASS |
+| No emoji severity prefixes leaked | `git grep -F "..."` returns 0 for each emoji | 0 | PASS |
+
+The smoke fixture path-d-equivalent assertion (aggregate <=300w against agent output on canonical scenario) structurally validates the gap closure path: when the agent emits aggregate <=300w, FAIL=0 and exit 0 (PASS).
+
+### Empirical verification (deferred)
+
+The empirical closure criterion -- a fresh UAT replay subset (minimum: review skill + security-review skill on canonical Compodoc + Storybook scenario per Phase 6 amendment 5 + Phase 7 Plan 07-07/07-08 deferred-empirical precedent) on plugin 0.12.0 confirming aggregate <=300w in 8 of 8 sessions AND <=15% Class-1 recall drop vs xhigh baseline -- is OUT of Plan 07-09 scope. The structural surfaces are in place; behavioral confirmation lands in the next phase's UAT replay if Phase 7 is sealed before then, or in a follow-up empirical-validation cycle. If empirical recall drop exceeds 15%, REVERT D-04 amendment 2026-05-02 per the binding reversion criterion (revert effort to xhigh, keep Candidate A fragment grammar).
+
+### Closure scope
+
+- **GAP-D-budget-empirical: CLOSED structurally** at the contract surface (Candidates A + B) AND the smoke fixture surface (Task 3 parser update) AND the version-bump surface (Task 4 plugin 0.12.0).
+- The Phase 8 candidates (out-of-phase residuals 3, 4, 5 per 07-VERIFICATION.md) remain deferred to a hypothetical Phase 8.
+
+### Phase 7 sealing readiness (updated)
+
+With Gap 1 CLOSED structurally (Plan 07-07 amendment) + Gap 2 CLOSED structurally (Plan 07-08 amendment) + GAP-D-budget-empirical CLOSED structurally (this amendment), Phase 7 is now READY TO SEAL as **PASS-with-residual** -- core within-phase gaps (1 + 2 + D-budget-empirical) closed at the contract + smoke + version layers; out-of-phase residuals (3, 4, 5) and 22 Phase 8 candidates handed off to a hypothetical Phase 8 per `06-VERIFICATION.md` Amendment 6.

@@ -70,6 +70,8 @@ Requirements for initial release. Each maps to roadmap phases.
 
 - [ ] **GAP-G2-wip-scope**: When commit body contains `## Outstanding Verification`, subject MUST use `wip:` prefix (or `wip(<scope>):` / `chore(wip):` variants per shared regex `^wip(\(.+\))?:|^chore\(wip\):`) UNLESS the commit ONLY records additional `Verified:` trailers with zero file changes (per `git diff --stat HEAD~1..HEAD`). Phase 7 gap-closure follow-up to FIND-E.2 cost-cliff allowance scope ambiguity. Detected by `E-verify-before-commit.sh` path-d assertion. Documented in `lz-advisor.execute/SKILL.md` `<verify_before_commit>` Phase 3.5 Subject-prefix discipline subsection.
 
+- [ ] **GAP-D-budget-empirical**: Reviewer + security-reviewer agents emit aggregate output <=300 words across Findings + Cross-Cutting Patterns / Threat Patterns + Missed surfaces sections on canonical D-reviewer-budget.sh / D-security-reviewer-budget.sh scenarios. Phase 7 gap-closure follow-up to FIND-D word-budget regression (Plan 07-04 descriptive sub-cap prose was empirically insufficient on plugin 0.11.0: reviewer 396w / 32% over, security-reviewer 414w / 38% over). Detected by `D-reviewer-budget.sh` and `D-security-reviewer-budget.sh` per-line + aggregate assertions. Documented in `agents/reviewer.md` and `agents/security-reviewer.md` `## Output Constraint` sections (fragment-grammar emit template + DROP/KEEP lists + 3 worked example pairs + auto-clarity carve-out) AND `agents/{reviewer,security-reviewer}.md` frontmatter `effort: medium` (CONTEXT.md D-04 amendment 2026-05-02).
+
 ## v2 Requirements
 
 Deferred to future release. Tracked but not in current roadmap.
@@ -144,10 +146,11 @@ Which phases cover which requirements. Updated during roadmap creation.
 | SECR-07 | Phase 4 | Pending |
 | GAP-G1-firing | Phase 7 | Pending |
 | GAP-G2-wip-scope | Phase 7 | Pending |
+| GAP-D-budget-empirical | Phase 7 | Pending |
 
 **Coverage:**
-- v1 requirements: 41 total
-- Mapped to phases: 41
+- v1 requirements: 42 total
+- Mapped to phases: 42
 - Unmapped: 0
 
 ---
