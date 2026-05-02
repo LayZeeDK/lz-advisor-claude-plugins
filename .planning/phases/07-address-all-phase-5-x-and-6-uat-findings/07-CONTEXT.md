@@ -82,6 +82,30 @@ Phase 7 also folds Phase 6 G1+G2 empirical residuals into Plan 07-01 as acceptan
   - **Option 2 (reviewer escalation hook):** `agents/reviewer.md` system prompt gains a directive to emit a structured `<verify_request question="..." class="2" anchor_target="pv-..."/>` block when the reviewer cannot resolve a Class-2 question. `lz-advisor.review/SKILL.md` Phase 3 (Output) detects these blocks before final user output: if present, the executor performs the requested verification (WebSearch / WebFetch), synthesizes pv-* blocks, and re-invokes the reviewer **once** with the new anchors so the reviewer can close the hedge. **One-shot only** (Spotify Honk principle); no iterative loop.
   - **Anchored in:** OWASP AI Agent Security Cheat Sheet (structured-output as security control) + InfoQ Least-Privilege AI Agent Gateway (gateway architecture, MCP-style discovery + JSON-RPC structured calls) + Spotify Honk one-shot pass/fail principle.
 
+#### Amendment 2026-05-02 -- D-04 effort de-escalation (Plan 07-09 Gap closure for FIND-D + GAP-D-budget-empirical)
+
+**Trigger:** 07-UAT.md gaps (reviewer aggregate 396w / 32% over, security-reviewer aggregate 414w / 38% over, security-reviewer Missed surfaces 33w / 10% over) on plugin 0.11.0 after the smoke-fixture extraction defects were repaired in commit `0065425`. Plan 07-04 landed structural sub-cap PROSE; the prose alone does not bind output length on Sonnet 4.6 / Opus 4.7 with `effort: xhigh`.
+
+**Amendment:** Reviewer + security-reviewer effort frontmatter changes from `xhigh` to `medium`. Advisor stays at `effort: high` (passing per 88w empirical baseline; same descriptive-prose technique works at high).
+
+**Rationale anchored in Anthropic Best Practices ([Calibrating effort and thinking depth](https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/claude-4-best-practices)):**
+
+> "Good for cost-sensitive use cases that need to reduce token usage while trading off intelligence."
+
+Lz-advisor reviewer + security-reviewer roles per CONTEXT.md (Plan 07-05 D-04) are synthesis-of-packaged-findings: the executor's Phase 1 already did the exploration; Plan 07-05 Class-2 escalation hook handles the genuinely-hard cases via Option 1 (pre-emptive scan in executor) + Option 2 (`<verify_request>` re-invocation). The base-case reviewer is doing synthesis-and-validation, not exploration. Per Anthropic's Apr 23, 2026 postmortem ([engineering/april-23-postmortem](https://www.anthropic.com/engineering/april-23-postmortem)), Opus 4.7 at xhigh produces verbose justification chains by design ("notable behavioral quirk: tends to be quite verbose"); fighting this verbosity in prose is fighting the model's training. Effort calibration is the documented Anthropic-preferred lever.
+
+**Reversion criterion (binding):** Empirical UAT replay on plugin 0.12.0 must show the reviewer + security-reviewer code-quality recall does NOT drop more than 15% on Class-1 (API-correctness) findings vs the prior xhigh baseline. Recall is measured by:
+
+- Number of confirmed-true bugs identified per finding-set, against a curated answer key from Phase 6 / Phase 7 UAT scenarios (e.g., the ngx-smart-components testbed's known-bug set from sessions 1-8)
+- Severity assessment accuracy (does medium-effort reviewer correctly tag Critical bugs as Critical, vs xhigh baseline)
+- OWASP category mapping accuracy (security-reviewer specific)
+
+If recall drops more than 15% on any of these axes empirically, REVERT to `effort: xhigh` and use Candidate A (fragment grammar) ALONE; Candidate A's empirical 65% mean output reduction (caveman benchmarks on Sonnet 4 + Opus 4.6) may be sufficient without effort calibration. The intermediate value `effort: high` is also acceptable as a compromise revert target.
+
+**Composition with Candidate A (Plan 07-09 Task 1 fragment-grammar emit template):** Candidates A and B compose additively. A is the structural change (binds shape); B is the model-tuning change (reduces verbose justification chain depth). Per `07-RESEARCH-WORDBUDGET.md` Recommendation: ship A first as the primary intervention, then B in tandem to reach the 300w aggregate cap with margin. If A alone overshoots (well under 300w on UAT replay), B may be reverted to `high` while keeping A.
+
+**Plan 07-09** lands the amendment + the reviewer.md and security-reviewer.md frontmatter changes atomically. The original D-04 decision (Option 1 + Option 2 reviewer web-tool design) remains in force; this amendment ONLY adds the effort component.
+
 ### Verify-before-commit pattern (Finding E.1+E.2, Plan 07-02)
 
 - **D-05:** **Cost-cliff aware 4-element pattern.** Research-backed; no contention. Anchored in 8th UAT empirical evidence (advisor Critical-flag triggered verification reliably; cheap synchronous Run directives executed 3/4; long-running async skipped 1/4) + Cursor TDD anchor + outcome-based verification 5-check + Spotify Honk one-shot.

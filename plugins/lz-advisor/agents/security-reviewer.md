@@ -41,7 +41,7 @@ description: |
 
 model: opus
 color: yellow
-effort: xhigh
+effort: medium
 tools: ["Read", "Glob"]
 maxTurns: 3
 ---
@@ -196,7 +196,7 @@ executor's curation:
 - When an OWASP category is suggested, you may revise the mapping but not
   the finding itself.
 
-Your `effort: xhigh` budget permits deeper verification, but batch it.
+Your `effort: medium` budget permits deeper verification, but batch it.
 Issue multiple Read or Glob calls in a single turn when you need to
 cross-reference (e.g., Read package.json + Read package-lock.json in one
 turn to verify a dependency finding). Your budget is 3 turns total.

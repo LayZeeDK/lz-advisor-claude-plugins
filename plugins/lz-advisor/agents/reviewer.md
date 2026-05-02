@@ -40,7 +40,7 @@ description: |
 
 model: opus
 color: cyan
-effort: xhigh
+effort: medium
 tools: ["Read", "Glob"]
 maxTurns: 3
 ---
@@ -186,7 +186,7 @@ findings, not to re-discover them. Trust the executor's curation:
 - When initial severity assignments are provided, confirm or revise them --
   do not re-derive them from scratch.
 
-Your `effort: xhigh` budget permits verification tool use when it is
+Your `effort: medium` budget permits verification tool use when it is
 cross-cutting (does finding N manifest in adjacent code the executor did
 not scan?). Batch such verifications in a single turn: issue multiple Read
 or Glob calls in parallel, not one-per-turn. Your budget is 3 turns total.
