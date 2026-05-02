@@ -51,6 +51,8 @@ if rg -q "^### Threat Patterns" "$OUT"; then HAS_TP=1; fi
 if [ "$HAS_FINDINGS" -ne 1 ] || [ "$HAS_TP" -ne 1 ]; then
   echo "[ERROR] Security-reviewer output missing required sections: Findings=$HAS_FINDINGS TP=$HAS_TP"
   FAIL=1
+else
+  echo "[OK] Security-reviewer output sections present: Findings=1 TP=1"
 fi
 
 # Extract Findings section body (between '### Findings' and '### Threat Patterns')
@@ -63,7 +65,14 @@ ENTRY_CHECK_SCRIPT="$SCRATCH/check-entries.mjs"
 cat > "$ENTRY_CHECK_SCRIPT" << 'EOF'
 import { readFileSync } from 'node:fs';
 const body = readFileSync(process.argv[2], 'utf8');
-const entries = body.split(/^\d+\.\s/m).slice(1);
+// Support both numbered ('1. <title>') and bold-Finding ('**Finding 1: <title>**') shapes.
+// The security-reviewer agent contract permits either; older fixtures only matched the numbered form.
+const SPLIT_RE = /^(?:\d+\.\s+|\*\*Finding\s+\d+:?\s*\*?\*?\s*)/m;
+const entries = body.split(SPLIT_RE).slice(1);
+if (entries.length === 0) {
+  console.log('[ERROR] No Findings entries detected (neither "N. " nor "**Finding N:**" shape matched)');
+  process.exit(1);
+}
 let bad = 0;
 entries.forEach((entry, idx) => {
   const wc = entry.trim().split(/\s+/).filter(Boolean).length;
@@ -81,9 +90,17 @@ if ! node "$ENTRY_CHECK_SCRIPT" "$FINDINGS_BODY"; then
   FAIL=1
 fi
 
-# Threat Patterns word count <=160w
+# Threat Patterns word count <=160w.
+# Awk pattern terminates on real section boundaries: next ### heading, ---,
+# **Missed surface: inline marker, **Verdict scope: inline marker. Markdown
+# blank line (^$) is NOT a terminator since it appears immediately after every
+# ### heading per markdown idiom.
 TP_BODY="$SCRATCH/tp-body.txt"
-awk '/^### Threat Patterns/,/^### Missed surfaces|^---|^$/' "$OUT" | sed '1d' > "$TP_BODY" || true
+awk '
+  /^### Threat Patterns/ {flag=1; next}
+  flag && /^\*\*Missed surface|^\*\*Verdict scope|^### |^---/ {flag=0}
+  flag {print}
+' "$OUT" > "$TP_BODY" || true
 TP_WC=$(wc -w < "$TP_BODY" | tr -d ' ')
 if [ "$TP_WC" -le 160 ]; then
   echo "[OK] Threat Patterns: $TP_WC words (<=160 cap)"
@@ -92,10 +109,16 @@ else
   FAIL=1
 fi
 
-# Missed surfaces (optional) word count <=30w if present
-if rg -q "^### Missed surfaces" "$OUT"; then
+# Missed surfaces (optional) word count <=30w if present.
+# Support both shapes: '### Missed surfaces' heading OR '**Missed surface:' inline bold marker.
+if rg -q '^### Missed surfaces|^\*\*Missed surface:' "$OUT"; then
   MS_BODY="$SCRATCH/ms-body.txt"
-  awk '/^### Missed surfaces/,/^---|^$/' "$OUT" | sed '1d' > "$MS_BODY" || true
+  awk '
+    /^### Missed surfaces/ {flag=1; next}
+    /^\*\*Missed surface:/ {flag=1}
+    flag && /^\*\*Verdict scope|^### |^---/ {flag=0}
+    flag {print}
+  ' "$OUT" > "$MS_BODY" || true
   MS_WC=$(wc -w < "$MS_BODY" | tr -d ' ')
   if [ "$MS_WC" -le 30 ]; then
     echo "[OK] Missed surfaces: $MS_WC words (<=30 cap)"
@@ -107,9 +130,16 @@ else
   echo "[OK] Missed surfaces: section absent (optional)"
 fi
 
-# Aggregate <=300w total across all security-reviewer-emitted sections
+# Aggregate <=300w total across all security-reviewer-emitted sections (Findings +
+# Threat Patterns + optional Missed surfaces). Terminates on **Verdict scope: inline
+# marker or ---. The ^$ terminator was previously buggy because markdown convention
+# puts a blank line right after every ### heading, prematurely ending the range.
 AGG_BODY="$SCRATCH/aggregate-body.txt"
-awk '/^### Findings/,/^---|^$/' "$OUT" | sed '/^---/,$d' > "$AGG_BODY" || true
+awk '
+  /^### Findings/ {flag=1}
+  flag && /^\*\*Verdict scope|^---/ {flag=0}
+  flag {print}
+' "$OUT" > "$AGG_BODY" || true
 AGG_WC=$(wc -w < "$AGG_BODY" | tr -d ' ')
 if [ "$AGG_WC" -le 300 ]; then
   echo "[OK] Aggregate: $AGG_WC words (<=300 cap)"
