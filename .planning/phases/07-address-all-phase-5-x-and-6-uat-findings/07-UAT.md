@@ -1,5 +1,5 @@
 ---
-status: partial
+status: gaps_found
 phase: 07-address-all-phase-5-x-and-6-uat-findings
 source:
   - 07-01-SUMMARY.md
@@ -11,7 +11,7 @@ source:
   - 07-07-SUMMARY.md
   - 07-08-SUMMARY.md
 started: 2026-05-01T22:56:29Z
-updated: 2026-05-02T22:05:00Z
+updated: 2026-05-02T23:00:00Z
 ---
 
 ## Current Test
@@ -146,11 +146,67 @@ blocked: 0
 ## Gaps
 
 - truth: Smoke fixture suite runs cleanly on operator's local environment (current operator: Windows arm64 + Git Bash)
-  status: failed
-  reason: Windows Git Bash POSIX path translation incompatibility with rg.exe Windows-native path resolution. Pre-existing infrastructure defect inherited from Phase 5.4 canonical fixture pattern (mktemp -d + rg.exe). Counter-evidence in JSONL trace shows Plan 07-07 + Plan 07-01 deliverables firing correctly at runtime.
+  status: resolved
+  resolved_by: commit 6efd8c4 (fix(smoke) -- adds MSYS_NO_PATHCONV=1 + cygpath -w shim across all 5 fixtures; verified by re-runs all exiting 0/1/2 correctly)
+  reason: Windows Git Bash POSIX path translation incompatibility with rg.exe Windows-native path resolution. Pre-existing infrastructure defect inherited from Phase 5.4 canonical fixture pattern (mktemp -d + rg.exe).
   severity: major
   test: 1
-  artifacts: []
+  artifacts: [plugins/lz-advisor/../smoke-tests/B-pv-validation.sh, D-advisor-budget.sh, D-reviewer-budget.sh, D-security-reviewer-budget.sh, E-verify-before-commit.sh]
+
+- truth: Reviewer agent emits <=300 words aggregate across Findings + Cross-Cutting Patterns + Missed surfaces sections (Plan 07-04 sub-cap)
+  status: failed
+  reason: |
+    Empirical baseline on plugin 0.11.0 with the now-fixed D-reviewer-budget.sh extraction:
+    aggregate 396 words, 32% over the 300w cap. Per-entry caps hold (entries 52-63w each,
+    well under 80w cap), Cross-Cutting Patterns 132w (under 160w cap), but the aggregate
+    exceeds the cap by adding all section bodies together. Plan 07-04 landed structural
+    sub-cap PROSE in agents/reviewer.md but the prose alone does not constrain Sonnet 4.6
+    enough to meet the 300w aggregate. The vacuous-pass extraction defect (commit 0065425
+    fixed it) had been masking this regression empirically since Plan 07-04 shipped.
+    Matches the Plan 07-04 fixture-comment baseline (411w on plugin 0.9.0).
+  severity: major
+  test: 1
+  artifacts:
+    - plugins/lz-advisor/agents/reviewer.md (prose sub-caps)
+    - .planning/phases/05.4-address-uat-findings-a-k/smoke-tests/D-reviewer-budget.sh (now correctly enforces)
   missing:
-    - Windows-compat shim in smoke fixture infrastructure (cygpath -w wrapping for rg.exe path args, OR mktemp -d on $LOCALAPPDATA/Temp)
-    - Or alternatively: documented requirement that fixture suite runs only under Linux/WSL/macOS, with CI matrix explicit
+    - Stronger compliance mechanism than descriptive prose (e.g., ALL-CAPS hard rule + worked example showing 300w-compliant output, or a different prompt structure)
+    - Web research on Anthropic-recommended techniques for output-length constraints on Sonnet 4.6 / Opus 4.7
+
+- truth: Security-reviewer agent emits <=300 words aggregate across Findings + Threat Patterns + Missed surfaces sections (Plan 07-04 sub-cap)
+  status: failed
+  reason: |
+    Empirical baseline on plugin 0.11.0 with the now-fixed D-security-reviewer-budget.sh
+    extraction: aggregate 414 words, 38% over the 300w cap. Per-entry caps hold (entries
+    52-67w each), Threat Patterns 130w (under 160w cap), but the aggregate plus
+    Missed surfaces (33w / 30w cap) compounds. Plan 07-04 noted security-reviewer is
+    the "WORST regression among the 3 agents" (412-438w on 0.9.0); current 414w confirms
+    the regression persists. Vacuous-pass masked this since Plan 07-04 shipped.
+  severity: major
+  test: 1
+  artifacts:
+    - plugins/lz-advisor/agents/security-reviewer.md (prose sub-caps + WORST-regression note)
+    - .planning/phases/05.4-address-uat-findings-a-k/smoke-tests/D-security-reviewer-budget.sh (now correctly enforces)
+  missing:
+    - Same as reviewer gap above plus security-reviewer-specific reinforcement
+    - Possible model behaviour: Opus 4.7 effort xhigh may inherently emit more words in justification chains; investigate whether to lower effort for word-count-bound output OR introduce a post-emission self-trim pass
+
+- truth: Security-reviewer "Missed surface:" inline section <=30 words
+  status: failed
+  reason: 33 words, 10% over the 30w cap (D-security-reviewer-budget.sh after extraction fix). Minor compared to aggregate but still a budget violation. The reviewer/security-reviewer agents emit Missed surfaces as inline `**Missed surface:**` bold prose rather than a `### Missed surfaces` heading -- the contract didn't anticipate this shape.
+  severity: minor
+  test: 1
+  artifacts:
+    - plugins/lz-advisor/agents/security-reviewer.md
+  missing:
+    - Tighter prose budget OR explicit "approximately 25 words" target with worked example
+
+- truth: D-reviewer/D-security-reviewer-budget.sh extraction patterns correctly parse current reviewer output shape
+  status: resolved
+  resolved_by: commit 0065425 (fix(smoke) -- repair extraction patterns; awk ^$ replaced with explicit boundaries; per-entry split now accepts both `N. ` and `**Finding N:**` shapes; Missed-surface detection accepts inline bold marker)
+  reason: Three defects were causing vacuous PASS verdicts -- awk ^$ terminator, per-entry regex shape mismatch, Missed-surface heading-vs-inline mismatch. Once fixed, the budget regressions above became visible.
+  severity: major
+  test: 1
+  artifacts:
+    - .planning/phases/05.4-address-uat-findings-a-k/smoke-tests/D-reviewer-budget.sh
+    - .planning/phases/05.4-address-uat-findings-a-k/smoke-tests/D-security-reviewer-budget.sh
