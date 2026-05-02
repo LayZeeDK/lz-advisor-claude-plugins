@@ -63,24 +63,58 @@ ENTRY_CHECK_SCRIPT="$SCRATCH/check-entries.mjs"
 cat > "$ENTRY_CHECK_SCRIPT" << 'EOF'
 import { readFileSync } from 'node:fs';
 const body = readFileSync(process.argv[2], 'utf8');
-// Support both numbered ('1. <title>') and bold-Finding ('**Finding 1: <title>**') shapes.
-// The reviewer agent contract permits either; older fixtures only matched the numbered form.
-const SPLIT_RE = /^(?:\d+\.\s+|\*\*Finding\s+\d+:?\s*\*?\*?\s*)/m;
-const entries = body.split(SPLIT_RE).slice(1);
-if (entries.length === 0) {
-  console.log('[ERROR] No Findings entries detected (neither "N. " nor "**Finding N:**" shape matched)');
-  process.exit(1);
-}
+
+// Plan 07-09 fragment-grammar shape: each finding emits as a single line
+//   `<file>:<line>: <severity>: <problem>. <fix>.` (or `<file>:<start>-<end>: ...`)
+// Severity prefixes: crit | imp | sug | q
+// Per-finding-line word target: <=20 words for problem + fix combined (excludes
+// the file:line: severity: prefix). Soft target; occasional 25w outliers OK.
+const FRAGMENT_RE = /^[^:\s]+:\d+(?:-\d+)?:\s+(?:crit|imp|sug|q):\s+(.+)$/gm;
+
+// Backward-compat: Plan 07-04 numbered-section shape (1. ..., **Finding 1:**)
+const LEGACY_RE = /^(?:\d+\.\s+|\*\*Finding\s+\d+:?\s*\*?\*?\s*)/m;
+
+const fragmentMatches = [...body.matchAll(FRAGMENT_RE)];
 let bad = 0;
-entries.forEach((entry, idx) => {
-  const wc = entry.trim().split(/\s+/).filter(Boolean).length;
-  if (wc > 80) {
-    console.log(`[ERROR] Findings entry ${idx + 1}: ${wc} words (>80 cap)`);
-    bad++;
-  } else {
-    console.log(`[OK] Findings entry ${idx + 1}: ${wc} words (<=80)`);
+let total = 0;
+
+if (fragmentMatches.length > 0) {
+  // Fragment-grammar shape detected (Plan 07-09 contract).
+  console.log(`[INFO] Fragment-grammar shape detected: ${fragmentMatches.length} finding line(s)`);
+  fragmentMatches.forEach((m, idx) => {
+    const fixClause = m[1].trim();
+    const wc = fixClause.split(/\s+/).filter(Boolean).length;
+    total++;
+    if (wc > 25) {
+      console.log(`[ERROR] Finding line ${idx + 1}: ${wc} words (>25 outlier soft cap; target <=20w)`);
+      bad++;
+    } else if (wc > 20) {
+      console.log(`[WARN] Finding line ${idx + 1}: ${wc} words (>20 target but <=25 outlier; acceptable)`);
+    } else {
+      console.log(`[OK] Finding line ${idx + 1}: ${wc} words (<=20 target)`);
+    }
+  });
+} else {
+  // Fallback: Plan 07-04 numbered-section legacy shape.
+  console.log('[WARN] Fragment-grammar shape NOT detected; falling back to Plan 07-04 numbered-section parser. New fragment-grammar shape is preferred per Plan 07-09.');
+  const entries = body.split(LEGACY_RE).slice(1);
+  if (entries.length === 0) {
+    console.log('[ERROR] No Findings entries detected (neither fragment-grammar nor Plan 07-04 numbered shape matched)');
+    process.exit(1);
   }
-});
+  entries.forEach((entry, idx) => {
+    const wc = entry.trim().split(/\s+/).filter(Boolean).length;
+    total++;
+    if (wc > 80) {
+      console.log(`[ERROR] Findings entry ${idx + 1}: ${wc} words (>80 legacy cap)`);
+      bad++;
+    } else {
+      console.log(`[OK] Findings entry ${idx + 1}: ${wc} words (<=80 legacy)`);
+    }
+  });
+}
+
+console.log(`[INFO] Total findings: ${total}; bad: ${bad}`);
 process.exit(bad === 0 ? 0 : 1);
 EOF
 
