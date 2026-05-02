@@ -1,152 +1,215 @@
 ---
 phase: 07-address-all-phase-5-x-and-6-uat-findings
-reviewed: 2026-05-01T00:00:00Z
+reviewed: 2026-05-02T22:30:04Z
 depth: standard
-files_reviewed: 10
+files_reviewed: 8
 files_reviewed_list:
   - plugins/lz-advisor/.claude-plugin/plugin.json
-  - plugins/lz-advisor/agents/advisor.md
   - plugins/lz-advisor/agents/reviewer.md
   - plugins/lz-advisor/agents/security-reviewer.md
   - plugins/lz-advisor/references/context-packaging.md
-  - plugins/lz-advisor/references/orient-exploration.md
   - plugins/lz-advisor/skills/lz-advisor.execute/SKILL.md
   - plugins/lz-advisor/skills/lz-advisor.plan/SKILL.md
   - plugins/lz-advisor/skills/lz-advisor.review/SKILL.md
   - plugins/lz-advisor/skills/lz-advisor.security-review/SKILL.md
 findings:
   critical: 0
-  warning: 2
+  warning: 4
   info: 3
-  total: 5
+  total: 7
 status: issues_found
 ---
 
 # Phase 7: Code Review Report
 
-**Reviewed:** 2026-05-01T00:00:00Z
+**Reviewed:** 2026-05-02T22:30:04Z
 **Depth:** standard
-**Files Reviewed:** 10
+**Files Reviewed:** 8
 **Status:** issues_found
 
 ## Summary
 
-Phase 7 landed prompt-engineering changes across the lz-advisor marketplace plugin. The reviewed surface is markdown prompts (4 SKILL.md, 3 agents/*.md, 2 references/*.md) plus one JSON manifest. Internal-consistency checks performed:
+Reviewed Plan 07-09 changes plus byte-identical version-stamp bumps (0.11.0 -> 0.12.0) across plugin.json and the four SKILL.md files. The core substantive changes live in `agents/reviewer.md` and `agents/security-reviewer.md`: a fragment-grammar emit template (Pillar / Issue / Severity / Fragment / Rationale shape) was added under `## Output Constraint`, and `effort` was de-escalated from `xhigh` to `medium`. References (`context-packaging.md`) and the four SKILL.md files were not substantively modified at the prose level for this plan; their role here is the version-stamp bump.
 
-- **Byte-identity canon (4 SKILL.md).** The `<context_trust_contract>` block and the `<orient_exploration_ranking>` block are byte-identical across all four SKILL.md files (verified via `diff` pairwise against execute/SKILL.md). No drift.
-- **ASCII-only constraint.** All 10 files are ASCII-clean (verified via `rg -P '[^\x00-\x7F]'`). No em dashes, en dashes, curly quotes, ellipsis, emojis, or box-drawing characters.
-- **YAML frontmatter.** All agent and SKILL frontmatter blocks parse cleanly; required fields (`name`, `description`, `model`, `color`, `tools`, `version`, `allowed-tools`) are present and well-formed.
-- **Version consistency.** plugin.json (`0.11.0`) matches all four SKILL.md `version:` fields. No skew across surfaces.
-- **Tool-grant least-privilege.** All three agents (advisor, reviewer, security-reviewer) declare `tools: ["Read", "Glob"]`. The verify_request escalation hook (Plan 07-05) preserves this grant rather than expanding it.
-- **Word-budget calibration.** Both advisor density examples (full-context and thin-context) measure exactly 100 and 95 words respectively, matching the 95-100 word claim in the surrounding prose.
-
-Two warnings flag internal-consistency defects in the reviewer/security-reviewer agent prose: an arithmetic inconsistency in the word-budget composition claim, and a Class taxonomy slip in the reviewer's Class-2 Escalation Hook description. Three info items capture minor self-contradictions and a duplicate-prose opportunity.
-
-No security regressions, prompt-injection vectors, broken JSON, or missing required frontmatter fields detected.
+The fragment-grammar rewrite is structurally sound and the smoke fixture `D-reviewer-budget.log` shows enforcement passes (Findings <=80w per entry, aggregate <=300w). The substantive concerns surfaced below are all about cross-file consistency drift introduced by the rewrite -- specifically severity-vocabulary divergence between the security-reviewer agent and the security-review skill, and inter-file structural asymmetry (security-reviewer.md misses the `## Class-2 Escalation Hook` section reviewer.md owns). No security vulnerabilities, no broken contract semantics that would crash a run -- the issues degrade output coherence but do not block phase closure.
 
 ## Warnings
 
-### WR-01: Reviewer/security-reviewer aggregate word-budget arithmetic is inconsistent with per-section caps
+### WR-01: security-reviewer severity vocabulary internally inconsistent
 
-**File:** `plugins/lz-advisor/agents/reviewer.md:81` and `plugins/lz-advisor/agents/security-reviewer.md:83`
-
-**Issue:** Both agent files claim three independent per-section caps that "compose to the 300w aggregate":
-
-- Findings section: aggregate `<=250 words`
-- Cross-Cutting Patterns / Threat Patterns: `<=160 words`
-- Missed surfaces: `<=30 words`
-
-The arithmetic is `250 + 160 + 30 = 440`, not 300. The prose "the per-entry Findings cap (80w) and the per-section caps (160w CCP, 30w Missed surfaces) compose to the 300w aggregate" mixes the per-entry Findings cap (80w, applies to a single finding) with the per-section CCP and Missed-surfaces caps, which is also internally inconsistent (the Findings section can hold up to 5 entries of 80w each = 400w by the per-entry rule, capped at 250w by the per-section rule).
-
-The 300w aggregate is non-recoverable from the per-section caps as stated. Either:
-- (a) The aggregate is the binding cap and the per-section caps are loose upper bounds that the aggregate constrains in practice (e.g., a 250w Findings section leaves only 50w for CCP + Missed surfaces). The prose should say so.
-- (b) The aggregate is wrong and should be 440w (the sum of per-section caps).
-- (c) One or more per-section caps need to come down so they sum to 300w.
-
-The smoke fixtures `D-reviewer-budget.sh` and `D-security-reviewer-budget.sh` (per the agent prose, "parses by section header and asserts each sub-cap") presumably enforce the per-section caps individually but the aggregate claim has no consistent reading.
-
-**Fix:** Decide which cap is binding and rewrite the closing paragraph for clarity. If interpretation (a) is intended:
-
+**File:** `plugins/lz-advisor/agents/security-reviewer.md:66-67, 284`
+**Issue:** Lines 66-67 rename the per-finding severity prefix vocabulary: `imp:` is annotated "Important (formerly High)" and `sug:` is "Suggestion (formerly Medium)". The fragment-grammar examples (lines 100, 108, 116, 123, 127) and the holistic worked example (lines 135-141) all use the new `crit:` / `imp:` / `sug:` / `q:` prefixes consistently. However, line 284 (in the `## Hedge Marker Discipline` section, security-clearance carve-out) still references the legacy vocabulary verbatim: `'Severity: Medium pending verification of <hedge action>.' Severity escalates if verification confirms the threat; until then, the hedge prevents premature high-severity classification.` An agent reading the file end-to-end sees two different severity ladders: the new one in `## Output Constraint`, the old one in `## Hedge Marker Discipline`. The agent is told to emit `sug:` (Suggestion / formerly Medium) but also told to write "Severity: Medium" in security-clearance hedge cases.
+**Fix:**
 ```
-Total: <=300 words aggregate (binding cap). Per-section caps (250w Findings, 160w CCP, 30w Missed surfaces) are loose upper bounds; the aggregate cap constrains usage in practice -- a maximally-used Findings section (250w) leaves only 50w for CCP + Missed surfaces combined. The smoke fixture `D-reviewer-budget.sh` enforces the aggregate cap and the per-entry Findings cap (80w); per-section caps are advisory.
+Replace line 284's literal severity strings:
+- "Severity: Medium" -> "Severity: Suggestion" (or "Severity: imp:" if the
+  intended ladder rung is Important; the original "Medium" in the legacy
+  ladder mapped to today's "Suggestion" per line 67's rename annotation)
+- "premature high-severity classification" -> "premature important-severity classification"
+
+Concretely, line 284 becomes:
+  When the unresolved hedge concerns a security-clearance question (CVE /
+  supply-chain / advisory / authentication / authorization), the frame
+  attaches to the corresponding `### Findings` entry as a severity
+  downgrade rationale: 'Severity: Suggestion pending verification of
+  <hedge action>.' Severity escalates if verification confirms the
+  threat; until then, the hedge prevents premature important-severity
+  classification.
 ```
 
-Apply the equivalent edit to `security-reviewer.md` line 83 (substituting "Threat Patterns" for "CCP").
+### WR-02: security-reviewer severity ladder mismatched with security-review SKILL.md and context-packaging.md
 
----
+**File:** `plugins/lz-advisor/skills/lz-advisor.security-review/SKILL.md:126, 164`; `plugins/lz-advisor/references/context-packaging.md:275, 374`
+**Issue:** The security-reviewer agent (`agents/security-reviewer.md` lines 65-68) renamed the severity ladder from `Critical / High / Medium` to `Critical / Important / Suggestion` (matching the reviewer agent's ladder). The downstream skill and reference files were NOT updated. `lz-advisor.security-review/SKILL.md:126` still tells the executor to "include an initial severity assessment (Critical / High / Medium)". `SKILL.md:164` still tells the user the agent emits "severity groups (Critical / High / Medium)". `references/context-packaging.md:275` (Verification template) still labels security-review's initial severity slot "Critical/High/Medium". `references/context-packaging.md:374` (verify_request severity attribute) still defines security-reviewer values as "Critical / High / Medium". Net effect: the executor packages findings with `severity: "High"` but the agent emits `imp:` and labels them "Important"; downstream tooling and humans see inconsistent severity labels for the same finding. This was NOT touched by Plan 07-09 (which scoped the rewrite to the agent file only) but is a contract-shape mismatch the rewrite introduced.
+**Fix:**
+```
+Either:
+(a) Update the 4 SKILL.md / context-packaging.md occurrences to match the
+    new ladder (Critical / Important / Suggestion), OR
+(b) Roll back the rename in agents/security-reviewer.md lines 66-67 (drop
+    the "(formerly High)" / "(formerly Medium)" annotations and align the
+    `imp:` and `sug:` keys back to High / Medium severity descriptors).
 
-### WR-02: Reviewer Class-2 Escalation Hook description bundles "migration / deprecation" under Class-2
+Concrete edits for option (a) (preserves the rewrite's intent):
 
-**File:** `plugins/lz-advisor/agents/reviewer.md:148`
+- SKILL.md:126: "(Critical / High / Medium)" -> "(Critical / Important / Suggestion)"
+- SKILL.md:164: "(Critical / High / Medium)" -> "(Critical / Important / Suggestion)"
+- context-packaging.md:275: "Critical/High/Medium for security-review" ->
+                            "Critical/Important/Suggestion for security-review"
+- context-packaging.md:374: "Critical / High / Medium for security-reviewer" ->
+                            "Critical / Important / Suggestion for security-reviewer"
 
-**Issue:** The reviewer agent's Class-2 Escalation Hook prose says:
-
-> When you encounter a Class-2 question (per `references/orient-exploration.md` -- API currency, configuration, recommended pattern, **or migration / deprecation**) ...
-
-Per `references/orient-exploration.md:83`, "Migration / deprecation" is **Class 3**, not Class 2. Class 2 is API currency / configuration / recommended pattern only (line 29). The reviewer agent's parenthetical mis-attributes Class 3 to Class 2.
-
-This matters because the schema's `class=` attribute encodes the question class; the reviewer agent's instruction tells it to emit `class="2"` even for migration / deprecation questions, which would tag a Class-3 question as Class-2 in the executor's downstream routing. Per context-packaging.md "Verify Request Schema" (line 372), the `class` field accepts `"2"|"2-S"|"3"|"4"`, so the canonical schema supports Class 3 explicitly.
-
-**Fix:** Either narrow the parenthetical to remove "or migration / deprecation" and instruct the reviewer to emit `class="3"` for those questions, OR broaden the heading to "Class-2/3 Escalation Hook" and document both class values in the schema example. The narrower fix:
-
-```diff
--When you encounter a Class-2 question (per `references/orient-exploration.md` -- API currency, configuration, recommended pattern, or migration / deprecation) that the executor's Phase 1 pre-emption did NOT anticipate AND that you cannot resolve from your `[Read, Glob]` tool access alone, emit a structured `<verify_request>` block in addition to the affected `### Findings` entry.
-+When you encounter a Class-2 question (per `references/orient-exploration.md` -- API currency, configuration, recommended pattern) or a Class-3 question (migration / deprecation) that the executor's Phase 1 pre-emption did NOT anticipate AND that you cannot resolve from your `[Read, Glob]` tool access alone, emit a structured `<verify_request>` block in addition to the affected `### Findings` entry.
+Recommendation: option (a) -- the rewrite is the load-bearing change and
+aligning the auxiliary surfaces is cheaper than reverting the agent.
 ```
 
-And update the schema example on line 153 to show `class="<2|3|2-S>"` instead of `class="2"` so the reviewer knows Class-3 is also valid for the hook.
+### WR-03: security-reviewer.md references reviewer.md for the `## Class-2 Escalation Hook` protocol
+
+**File:** `plugins/lz-advisor/agents/security-reviewer.md:119, 129`
+**Issue:** Line 119 of security-reviewer.md says `The <verify_request> block (Plan 07-05 Class-2 escalation hook, see ## Class-2 Escalation Hook in reviewer.md and adapted here for Class 2-S security questions) trails the affected finding line as a separate line, as shown in example 3 above.` The cross-file reference assumes the security-reviewer agent has reviewer.md in context, but agents are stateless: each agent invocation only loads its own file. Worse, line 129's carve-out enumerates which sections it "preserves byte-identically": `## OWASP Top 10 Lens`, `## Context Trust Contract`, `## Threat Modeling`, `## Hedge Marker Discipline`, `## Boundaries`. The list omits any equivalent of reviewer.md's `## Class-2 Escalation Hook` section, even though the security-reviewer agent IS expected to emit Class-2 / 2-S / 3 verify_request blocks (the worked example on line 117 emits one). The agent has the verify_request schema example but no canonical instructions on when to emit, where to place inside `### Findings`, what classes are valid, or the one-shot re-invocation expectation.
+**Fix:**
+```
+Add a `## Class-2 Escalation Hook` section to security-reviewer.md (after
+the existing `## Threat Modeling` section, before `## Final Response
+Discipline` -- mirroring reviewer.md's structure). Adapt reviewer.md's
+canonical text:
+
+  - Replace "Class-2" / "Class-3" with "Class-2 / 2-S / 3" since
+    security-reviewer is the primary emitter of `class="2-S"` blocks.
+  - Reference references/context-packaging.md "Verify Request Schema"
+    and `lz-advisor.security-review/SKILL.md` Phase 3 for the executor-
+    side flow (note: lz-advisor.security-review/SKILL.md does not yet
+    have a `### Reviewer Escalation Hook` analog; this gap is a
+    separate finding -- IN-02 below).
+  - Drop the cross-file `see ## Class-2 Escalation Hook in reviewer.md`
+    pointer on line 119; replace with `see ## Class-2 Escalation Hook
+    below`.
+
+Alternatively (less preferred), inline a self-contained 5-line summary
+of the verify_request emit protocol on line 119+ in lieu of a full
+section. The full-section approach matches reviewer.md's structure and
+is more discoverable to the agent.
+```
+
+### WR-04: per-section sub-caps inside the 300w aggregate are over-allocated
+
+**File:** `plugins/lz-advisor/agents/reviewer.md:69, 158`; `plugins/lz-advisor/agents/security-reviewer.md:72, 163`
+**Issue:** Both agents declare "Aggregate Findings section <=250 words" (reviewer line 69, security-reviewer line 72) AND "Aggregate cap: <=300 words across `### Findings` + `### Cross-Cutting Patterns` + `### Missed surfaces` combined" (reviewer line 158, security-reviewer line 163). Combined, these constraints leave only 50w for Cross-Cutting Patterns + Missed surfaces. Yet the holistic worked example in reviewer.md line 144 shows `Cross-Cutting Patterns ~85w, Missed surfaces ~25w` (110w combined; over the 50w residual budget). The security-reviewer worked example on line 151 shows `Threat Patterns ~90w, Missed surfaces ~20w` (110w combined; same overage). The example "fits" only because Findings stayed at 110-155w (well below the 250w sub-cap), but the agent receiving this guidance could correctly maximize Findings to 250w and then over-budget the aggregate. The smoke fixture `D-reviewer-budget.log` confirms the empirical contract is per-entry <=80w + Cross-Cutting <=160w + Missed surfaces <=30w + aggregate <=300w -- so the runtime contract differs from the agent prose. The 250w Findings cap in agent prose is unused / contradicts the smoke fixture.
+**Fix:**
+```
+Either align the agent prose to the smoke fixture (preferred -- smoke
+fixture is the executable contract):
+
+- reviewer.md line 69: drop "Aggregate Findings section <=250 words"
+  trailing sentence. Replace with "Per-finding entry word target: <=20
+  words for the problem + fix combined; per-entry hard cap: <=80 words
+  (smoke-fixture-enforced)."
+- reviewer.md line 158 already states the aggregate <=300w cap and
+  references the smoke fixture; expand to surface the per-section
+  sub-caps the smoke fixture actually enforces:
+  "Aggregate cap: <=300 words across `### Findings` + `### Cross-Cutting
+   Patterns` + `### Missed surfaces` combined. Per-section sub-caps
+  enforced by D-reviewer-budget.sh: each Findings entry <=80w,
+  Cross-Cutting Patterns <=160w, Missed surfaces <=30w."
+- security-reviewer.md lines 72 and 163: apply the same edit pattern
+  with the security-reviewer's smoke fixture
+  (D-security-reviewer-budget.sh) and section names (Threat Patterns).
+
+Or if the 250w Findings sub-cap is intentional and the smoke fixture is
+the wrong shape: update D-reviewer-budget.sh and
+D-security-reviewer-budget.sh to assert <=250w on Findings and <=50w
+on Cross-Cutting + Missed combined. (Less preferred -- the worked
+examples already overshoot 50w.)
+```
 
 ## Info
 
-### IN-01: Reviewer agent contradicts itself on Class 2-S scope ("security-reviewer only" vs "reviewer agent rarely encounters... but may emit them")
+### IN-01: 4 SKILL.md files share ~50 lines of byte-identical `<context_trust_contract>` block
 
-**File:** `plugins/lz-advisor/agents/reviewer.md:162`
+**File:** `plugins/lz-advisor/skills/lz-advisor.execute/SKILL.md:40-73`; `plugins/lz-advisor/skills/lz-advisor.plan/SKILL.md:37-70`; `plugins/lz-advisor/skills/lz-advisor.review/SKILL.md:38-71`; `plugins/lz-advisor/skills/lz-advisor.security-review/SKILL.md:39-72`
+**Issue:** The `<context_trust_contract>` block (~50 lines including the ToolSearch availability rule, the two worked examples, and the pv-* synthesis precondition) is byte-identical across all four SKILL.md files. Same for the `<orient_exploration_ranking>` block (~17 lines, lines 75-89 in execute / 72-86 in plan / 73-87 in review / 74-88 in security-review). Each version-stamp bump (0.11.0 -> 0.12.0 here) requires touching all four files; future edits to the trust contract risk drift. This is a duplication smell (~250 lines of byte-identical content across 4 files), not a bug.
+**Fix:**
+```
+Extract the shared blocks into references/orient-trust-contract.md and
+have each SKILL.md include via @${CLAUDE_PLUGIN_ROOT} reference, mirroring
+the existing pattern with references/context-packaging.md and
+references/advisor-timing.md. The trade-off: SKILL.md descriptions are
+already long, but Claude Code resolves @ references at load time, so the
+agent's effective prompt size is unchanged. The benefit is single-source-
+of-truth for trust-contract edits -- one version bump touch point instead
+of four.
 
-**Issue:** The reviewer agent's Class value documentation says:
+Defer to the user; this is a maintenance hygiene improvement, not a
+runtime issue.
+```
 
-> Class value: `"2"` for API currency / configuration / recommended pattern questions; `"2-S"` for security currency / CVE / advisory questions (security-reviewer only -- the reviewer agent rarely encounters Class 2-S surfaces but may emit them when a code-quality question has a supply-chain dimension).
+### IN-02: lz-advisor.security-review/SKILL.md has no `### Reviewer Escalation Hook` analog
 
-The parenthetical "(security-reviewer only ... but may emit them when a code-quality question has a supply-chain dimension)" contradicts itself within the same sentence. If the reviewer "may emit them", it is not "security-reviewer only".
+**File:** `plugins/lz-advisor/skills/lz-advisor.security-review/SKILL.md:148-183`
+**Issue:** lz-advisor.review/SKILL.md (lines 188-204) defines a `### Reviewer Escalation Hook` section in its Phase 3 output that parses `<verify_request>` blocks emitted by the reviewer agent, performs the verifications, synthesizes pv-* anchors, and re-invokes once. lz-advisor.security-review/SKILL.md has no equivalent section. The security-reviewer agent CAN emit `<verify_request class="2-S">` blocks (per security-reviewer.md line 117 worked example, and per references/context-packaging.md:357 cross-reference), but the security-review skill has no documented executor-side handling protocol. The reference's own line 357 acknowledges this gap: `the corresponding executor-side flow is documented in each skill's <output> block (see lz-advisor.review/SKILL.md "Reviewer Escalation Hook" and lz-advisor.security-review/SKILL.md -- not yet wired in current scope; reviewer-side wiring lands in Plan 07-05).` Plan 07-05 closed reviewer-side; security-review is the documented gap.
+**Fix:**
+```
+Add a `### Security-Reviewer Escalation Hook` section to
+lz-advisor.security-review/SKILL.md Phase 3, mirroring the reviewer
+skill's structure. Differences:
 
-**Fix:** Remove the absolute "security-reviewer only" qualifier and rely on the rare-but-permitted framing:
+- Step 2 verification: for class="2-S" requests, run `npm audit --json`
+  + WebFetch https://github.com/advisories?query=<package>` (per
+  context-packaging.md:195 already-documented sub-pattern).
+- Reference references/context-packaging.md "Verify Request Schema" for
+  the block shape.
+- Same one-shot re-invocation rule as the reviewer skill.
 
-```diff
--Class value: `"2"` for API currency / configuration / recommended pattern questions; `"2-S"` for security currency / CVE / advisory questions (security-reviewer only -- the reviewer agent rarely encounters Class 2-S surfaces but may emit them when a code-quality question has a supply-chain dimension).
-+Class value: `"2"` for API currency / configuration / recommended pattern questions; `"2-S"` for security currency / CVE / advisory questions (primarily security-reviewer surface; the reviewer agent rarely encounters Class 2-S but may emit it when a code-quality question has a supply-chain dimension).
+This is OUT OF SCOPE for the Plan 07-09 word-budget regression closure
+but should be tracked as a follow-up. The security-reviewer agent's
+Phase 7 changes (effort de-escalation + fragment-grammar rewrite) make
+this gap more salient because the agent now has fewer turns to resolve
+Class-2 ambiguity itself, increasing the rate at which it will emit
+verify_request blocks the executor cannot handle.
+```
+
+### IN-03: caveman empirical baseline cited via absolute Windows path
+
+**File:** `plugins/lz-advisor/agents/reviewer.md:158`; `plugins/lz-advisor/agents/security-reviewer.md:163`
+**Issue:** Both agent files reference `D:\projects\JuliusBrussee\caveman` as the empirical baseline source for the 65% mean output reduction claim. This is a hard-coded developer-machine absolute path that other contributors cannot resolve, and that ships in the published plugin (the agent file is the agent's actual prompt content). Users of the plugin will see this path in their agent's system prompt with no way to access the cited source. The cross-reference adds no actionable value to a non-author agent invocation -- the agent does not need to validate the empirical claim; it just needs to follow the budget.
+**Fix:**
+```
+Either:
+(a) Drop the parenthetical entirely: "the fragment-grammar shape binds
+    output length structurally rather than describing it." (cleanest --
+    the empirical justification belongs in the plan/research artifacts,
+    not the agent's running prompt).
+(b) Replace with a public/portable reference: "(see Plan 07-09 for the
+    fragment-grammar rationale and empirical baseline)."
+(c) If the public baseline matters, link to a published artifact (npm
+    package, GitHub repo, blog post) rather than a local checkout path.
+
+Recommendation: option (b). It preserves the empirical-grounding signal
+while keeping the agent prompt portable.
 ```
 
 ---
 
-### IN-02: ToolSearch worked example references `/lz-advisor.plan` in all four SKILL.md files
-
-**File:** `plugins/lz-advisor/skills/lz-advisor.execute/SKILL.md:59`, `plugins/lz-advisor/skills/lz-advisor.review/SKILL.md:57`, `plugins/lz-advisor/skills/lz-advisor.security-review/SKILL.md:58` (also present in the canonical plan SKILL.md)
-
-**Issue:** The `<example>` blocks inside `<context_trust_contract>` use `/lz-advisor.plan Address findings in @plans/upstream-review.md` as the worked-example input across all four SKILL.md files. This is intentional byte-identity (the canon block must be identical for the diff-zero invariant), but a reader of `lz-advisor.execute/SKILL.md` sees an example that invokes `/lz-advisor.plan`, which is a different skill. The example is correct from the canonical-block perspective but slightly confusing in-context for readers of the non-plan SKILL files.
-
-This is NOT a defect to fix mechanically -- breaking byte-identity to vary the slug-name per skill would defeat the canon-invariant the smoke fixtures enforce. Documenting the intentional choice (e.g., a one-line comment "Example uses `/lz-advisor.plan` as the canonical agent-generated-source trigger; the rule applies to all four skills uniformly") inside the canonical block would clarify, but it would also bloat the canon.
-
-**Fix:** Optional. Either accept as-is (recommended -- byte-identity > per-skill clarity for canonical blocks) or add a single explanatory sentence inside the canonical block before the first `<example>`:
-
-```
-The example below uses `/lz-advisor.plan` as the trigger skill; the rule and example apply identically to lz-advisor.execute, lz-advisor.review, and lz-advisor.security-review when their inputs match the agent-generated-source signal.
-```
-
-If applied, this addition must land in all four SKILL.md files in the same byte-identical position to preserve the canon invariant.
-
----
-
-### IN-03: Density example word-counts are exact at the boundaries (100 and 95) -- consider broader spread for empirical realism
-
-**File:** `plugins/lz-advisor/agents/advisor.md:62-68` (full-context example) and `:70-76` (thin-context example)
-
-**Issue:** The full-context density example is exactly 100 words; the thin-context example is exactly 95 words. The advisor's Output Constraint says "Respond in under 100 words" (line 53) and the surrounding prose calls the 100-word ceiling a "soft cap" and tells the executor "Aim to match the density: every numbered item earns its words". A 100-word example sits exactly on the ceiling -- the soft-cap framing implies the typical advisor output should be <100 words, not at the cap.
-
-This is a calibration nuance, not a defect: the density examples are explicitly labeled "(95-100 words)" so the reader knows they're at the upper boundary. The risk is that the advisor anchor-effects on the 100-word example and routinely emits 99-100 word responses where 80-90 words would be denser.
-
-**Fix:** Optional. Consider adding one shorter example (e.g., 60-70 words) labeled "Density example (terse, 60-70 words)" to anchor the lower end of the budget and reinforce that under-cap is the intent, not the limit. Not load-bearing; the existing examples are correct on the upper boundary.
-
----
-
-_Reviewed: 2026-05-01T00:00:00Z_
+_Reviewed: 2026-05-02T22:30:04Z_
 _Reviewer: Claude (gsd-code-reviewer)_
 _Depth: standard_
