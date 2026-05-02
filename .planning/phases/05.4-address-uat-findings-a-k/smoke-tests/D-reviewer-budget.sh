@@ -6,8 +6,19 @@
 # Empirical baseline (plugin 0.9.0): observed 411 words total, 37% over 300w cap.
 set -eu
 
-PLUGIN_DIR="$(git rev-parse --show-toplevel)/plugins/lz-advisor"
-SCRATCH="$(mktemp -d -t lz-advisor-d-reviewer-XXXX)"
+# Windows Git Bash compat: suppress argv path translation for native binaries
+# (claude.exe, rg.exe, node.exe) and convert POSIX paths to Windows form so
+# rg.exe can resolve them. No-op on Linux / macOS (cygpath unavailable).
+if command -v cygpath >/dev/null 2>&1; then
+  export MSYS_NO_PATHCONV=1
+  export MSYS2_ARG_CONV_EXCL='*'
+  to_native() { cygpath -w "$1"; }
+else
+  to_native() { printf '%s' "$1"; }
+fi
+
+PLUGIN_DIR="$(to_native "$(git rev-parse --show-toplevel)/plugins/lz-advisor")"
+SCRATCH="$(to_native "$(mktemp -d -t lz-advisor-d-reviewer-XXXX)")"
 trap 'rm -rf "$SCRATCH"' EXIT
 
 cd "$SCRATCH"

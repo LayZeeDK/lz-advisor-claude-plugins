@@ -26,6 +26,17 @@
 
 set -eu
 
+# Windows Git Bash compat: suppress argv path translation for native binaries
+# (claude.exe, rg.exe, node.exe) and convert POSIX paths to Windows form so
+# rg.exe can resolve them. No-op on Linux / macOS (cygpath unavailable).
+if command -v cygpath >/dev/null 2>&1; then
+  export MSYS_NO_PATHCONV=1
+  export MSYS2_ARG_CONV_EXCL='*'
+  to_native() { cygpath -w "$1"; }
+else
+  to_native() { printf '%s' "$1"; }
+fi
+
 # --replay mode: re-check historical commits against the path-d assertion
 # without seeding a scratch repo. See header block above for documentation.
 if [ "${1:-}" = "--replay" ]; then
@@ -69,9 +80,9 @@ if [ "${1:-}" = "--replay" ]; then
   fi
 fi
 
-PLUGIN_DIR="$(git rev-parse --show-toplevel)/plugins/lz-advisor"
-REPO_ROOT="$(git rev-parse --show-toplevel)"
-SCRATCH="$(mktemp -d -t lz-advisor-e-verify-XXXX)"
+REPO_ROOT="$(to_native "$(git rev-parse --show-toplevel)")"
+PLUGIN_DIR="$REPO_ROOT/plugins/lz-advisor"
+SCRATCH="$(to_native "$(mktemp -d -t lz-advisor-e-verify-XXXX)")"
 trap 'rm -rf "$SCRATCH"' EXIT
 
 cd "$SCRATCH"

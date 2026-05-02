@@ -7,8 +7,19 @@
 #   GAP-G1-firing: default-on ToolSearch fires on agent-generated input (Plan 07-07 closure)
 set -eu
 
-PLUGIN_DIR="$(git rev-parse --show-toplevel)/plugins/lz-advisor"
-SCRATCH="$(mktemp -d -t lz-advisor-bpv-XXXX)"
+# Windows Git Bash compat: suppress argv path translation for native binaries
+# (claude.exe, rg.exe, node.exe) and convert POSIX paths to Windows form so
+# rg.exe can resolve them. No-op on Linux / macOS (cygpath unavailable).
+if command -v cygpath >/dev/null 2>&1; then
+  export MSYS_NO_PATHCONV=1
+  export MSYS2_ARG_CONV_EXCL='*'
+  to_native() { cygpath -w "$1"; }
+else
+  to_native() { printf '%s' "$1"; }
+fi
+
+PLUGIN_DIR="$(to_native "$(git rev-parse --show-toplevel)/plugins/lz-advisor")"
+SCRATCH="$(to_native "$(mktemp -d -t lz-advisor-bpv-XXXX)")"
 trap 'rm -rf "$SCRATCH"' EXIT
 
 cd "$SCRATCH"
@@ -33,7 +44,7 @@ claude --model sonnet --effort medium --plugin-dir "$PLUGIN_DIR" \
 # claims about Storybook 10 + Compodoc behavior. The plan-skill invocation
 # against the @-mentioned review file MUST trigger the default-on ToolSearch
 # rule per the reframed <context_trust_contract> block (Plan 07-07 Task 1).
-SCRATCH2="$(mktemp -d -t lz-advisor-bpv-2-XXXX)"
+SCRATCH2="$(to_native "$(mktemp -d -t lz-advisor-bpv-2-XXXX)")"
 trap 'rm -rf "$SCRATCH" "$SCRATCH2"' EXIT
 cd "$SCRATCH2"
 git init -q

@@ -5,8 +5,20 @@
 # This fixture catches regressions when descriptive sub-cap prose slips.
 set -eu
 
-PLUGIN_DIR="$(git rev-parse --show-toplevel)/plugins/lz-advisor"
-SCRATCH="$(mktemp -d -t lz-advisor-d-advisor-XXXX)"
+# Windows Git Bash compat: suppress argv path translation for native binaries
+# (claude.exe, rg.exe, node.exe) and convert POSIX paths to Windows form so
+# rg.exe can resolve them. No-op on Linux / macOS (cygpath unavailable).
+if command -v cygpath >/dev/null 2>&1; then
+  export MSYS_NO_PATHCONV=1
+  export MSYS2_ARG_CONV_EXCL='*'
+  to_native() { cygpath -w "$1"; }
+else
+  to_native() { printf '%s' "$1"; }
+fi
+
+REPO_ROOT="$(to_native "$(git rev-parse --show-toplevel)")"
+PLUGIN_DIR="$REPO_ROOT/plugins/lz-advisor"
+SCRATCH="$(to_native "$(mktemp -d -t lz-advisor-d-advisor-XXXX)")"
 trap 'rm -rf "$SCRATCH"' EXIT
 
 cd "$SCRATCH"
@@ -40,7 +52,7 @@ claude --model sonnet --effort medium --plugin-dir "$PLUGIN_DIR" \
   --verbose --output-format stream-json > "$OUT_JSONL" 2>&1 || true
 
 # Extract advisor Strategic Direction from JSONL using existing extractor.
-EXTRACTOR="$(git -C "$PLUGIN_DIR" rev-parse --show-toplevel)/.planning/phases/05.4-address-uat-findings-a-k/smoke-tests/extract-advisor-sd.mjs"
+EXTRACTOR="$REPO_ROOT/.planning/phases/05.4-address-uat-findings-a-k/smoke-tests/extract-advisor-sd.mjs"
 SD_FILE="$SCRATCH/advisor-sd.txt"
 node "$EXTRACTOR" "$OUT_JSONL" > "$SD_FILE" 2>/dev/null || true
 
