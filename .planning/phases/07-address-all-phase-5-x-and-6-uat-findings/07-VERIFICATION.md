@@ -1,8 +1,9 @@
 ---
 phase: 07-address-all-phase-5-x-and-6-uat-findings
 verified: 2026-05-03T00:00:00Z
-status: human_needed
-score: 15/15 must-haves structurally verified; 1 deferred empirical UAT replay required for full closure
+updated: 2026-05-03T00:55:00Z
+status: passed_with_residual
+score: 15/15 must-haves structurally verified; Plan 07-09 gap closure empirically verified on plugin 0.12.0; 2 out-of-Plan-07-09-scope residuals tracked for Phase 8
 plugin_version: 0.12.0
 plans: [07-01, 07-02, 07-03, 07-04, 07-05, 07-06, 07-07, 07-08, 07-09]
 verification_basis:
@@ -64,6 +65,19 @@ deferred:
       07-VERIFICATION.md original out-of-phase residual #5. Plan 07-01 Rule 5b applies to <pre_verified> XML blocks;
       advisor narrative claims aren't pv-* shaped. Mixed: could refine Rule 5b OR add new rule. Defer until empirical
       investigation of advisor narrative-SD self-anchor frequency.
+empirical_subverification_2026_05_03:
+  context: |
+    Sub-verification on plugin 0.12.0 against ngx-smart-components testbed, executed 2026-05-03 to validate Plan 07-09
+    gap closure before sealing Phase 7. Plan 07-09 is the load-bearing artifact (the gap-closure plan addressing
+    GAP-D-budget-empirical); other within-phase gap closures (Plans 07-07, 07-08) were structurally verified upstream
+    and remain candidates for full 8-session empirical replay in a follow-up cycle.
+  d_reviewer_budget_fixture: PASSED (aggregate 275w / 300 cap; fragment-grammar shape detected with 4 finding lines 12-17w each; CCP 100w / 160 cap; Missed surfaces 28w / 30 cap; exit 0)
+  d_security_reviewer_budget_fixture: PASSED (exit 0; all sub-caps including aggregate <= 300w)
+  compodoc_uat_session_1_plan: PASSED (ToolSearch fired 1x; WebSearch 4x; WebFetch 5x; Agent 1x; orient phase used 9 Read + 5 Glob + 46 Bash on actual project files; plan artifact written to D:\projects\github\LayZeeDK\ngx-smart-components\plans\storybook-compodoc-signal-inputs.plan.md; verdict scope marker present "scope: api-correctness"; reconciliation rule fired in Strategic Direction section)
+  plan_07_09_closure_empirically_verified: true
+  residual_findings_outside_07_09_scope:
+    - residual-advisor-budget: advisor agent at 118w / 100 cap on plugin 0.12.0 plan session (FIND-D residual covering advisor; Plan 07-09 explicitly excluded advisor; consider extending fragment-grammar template to advisor.md in Phase 8)
+    - residual-pre-verified-format: no <pre_verified> XML blocks in plan artifact body despite 3 Class 2/3/4 load-bearing claims; empirical verification work happened (executor read installed framework source, WebSearch+WebFetch fired) but recorded as prose in "Key Decisions" section instead. Schema clarification needed in Phase 8 plan SKILL.md and re-verify B-pv-validation.sh
 gaps: []
 ---
 
@@ -71,7 +85,7 @@ gaps: []
 
 **Phase Goal:** Close all Phase 5.x + 6 UAT findings (Findings A, B.1+B.2, C, D, E, F, H + GAP-G1+G2-empirical from Phase 6 amendment 5) plus the in-phase Gap 1 (ToolSearch precondition firing) + Gap 2 (wip-discipline scope ambiguity) surfaced by 8-session UAT replay on plugin 0.10.0.
 
-**Status:** human_needed -- structural closure verified across all 15 requirement IDs and the prior 8-session UAT replay on plugin 0.10.0; empirical UAT replay on plugin 0.12.0 is required to confirm Plan 07-07, 07-08, 07-09 closures hold behaviorally.
+**Status:** passed_with_residual -- 15 requirement IDs structurally verified; Plan 07-09 (the load-bearing within-phase gap closure) empirically verified on plugin 0.12.0 via D-reviewer-budget.sh + D-security-reviewer-budget.sh fixtures (both exit 0; reviewer aggregate 275w / 300 cap) AND Compodoc UAT plan session (ToolSearch + WebSearch + WebFetch firing per Plan 07-07; reconciliation rule fires per Plan 07-02 / 07-03). Two out-of-Plan-07-09-scope residuals tracked for Phase 8 (advisor word budget at 118w / 100 cap; pv-* schema clarification on plan-artifact-body format).
 
 **Plugin version:** 0.12.0 (across 5 surfaces: plugin.json + 4 SKILL.md frontmatter; zero 0.11.0 / 0.10.0 / 0.9.0 remnants).
 
