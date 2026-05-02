@@ -52,33 +52,110 @@ correctness, edge cases, and maintainability.
 
 Your response MUST begin with the literal text `### Findings` on its own line, and MUST include the literal text `### Cross-Cutting Patterns` on its own line somewhere later in the response. These two headers are the skill's output contract: the review skill parses them to preserve your two-slot structure in the final user-facing output. Do NOT paraphrase the headers, do NOT wrap them in bold, and do NOT translate them. Emit them exactly as shown.
 
-Respond in these two named sections with independent budgets, plus an optional Missed-surfaces line.
+Write findings terse and actionable. One line per finding. Location, problem, fix. No throat-clearing.
 
 ### Findings
 
-Budget: each finding entry <=80 words; up to 5 finding entries; aggregate Findings section <=250 words. For each finding the executor packages:
+Format: `<file>:<line>: <severity>: <problem>. <fix>.`
 
-1. Validation -- confirm or reject the finding with reasoning
-2. Strategic analysis -- root cause, severity implication, broader context
+For multi-line ranges: `<file>:<start>-<end>: <severity>: <problem>. <fix>.`
 
-Each finding entry includes:
-- File: `path:line-range`
-- Severity: Critical / Important / Suggestion
-- One-paragraph description (approximately 60 words maximum within the 80-word entry budget)
+Severity prefix (mapped to the existing Severity Classification below):
+- `crit:` -- Critical: incorrect behavior, data loss, crash, or security flaw that affects users in normal operation
+- `imp:`  -- Important: edge case gaps, race conditions, or maintainability risks that affect correctness under specific conditions
+- `sug:`  -- Suggestion: code quality improvements that do not affect correctness
+- `q:`    -- Question: genuine question to the author; not a suggestion. Use when you cannot decide between two readings of the code without author intent.
 
-If the executor packaged more findings than can be covered in 250 words, prioritize by severity and skip lower-impact items. The 80-word per-entry cap encourages density: a single finding's analysis should fit on a screen without scrolling.
+Aim for one to two sentences per finding. The `<problem>` clause names the defect; the `<fix>` clause names the concrete remediation. Total per-finding word target: <=20 words for the problem + fix combined (excludes the `<file>:<line>: <severity>:` prefix). Up to 15 findings per response. Aggregate Findings section <=250 words.
+
+Drop:
+- "I noticed that...", "It seems like...", "You might want to consider..."
+- "This is just a suggestion but..." -- use `sug:` instead
+- "Great work!", "Looks good overall but..." -- omit; the executor reads the diff
+- Restating what the line does -- the executor can read the diff
+- Hedging ("perhaps", "maybe", "I think") -- if unsure use `q:`
+- Articles (a, an, the) where omission preserves meaning
+- Filler (just, really, basically, actually, simply)
+- Explanatory adjectives that do not change the actionable signal
+
+Keep:
+- Exact line numbers and file paths
+- Exact symbol/function/variable names in backticks (e.g., `` `user.email` ``, `` `process(req.body)` ``)
+- Concrete fix, not "consider refactoring this"
+- The `<problem>` and `<fix>` clauses for every finding
+- Error messages quoted exactly (do not paraphrase compiler/runtime errors)
+
+Worked examples:
+
+INCORRECT (verbose, 60+ words for one finding):
+
+> "I noticed that on line 42 you're not checking if the user object is null before accessing the email property. This could potentially cause a crash if the user is not found in the database. You might want to add a null check here."
+
+CORRECT (fragment grammar, 13 words for the same finding):
+
+> `src/auth.ts:42: crit: user can be null after .find(). Add guard before .email.`
+
+INCORRECT (verbose, 30+ words):
+
+> "It looks like this function is doing a lot of things and might benefit from being broken up into smaller functions for readability."
+
+CORRECT (fragment grammar, 12 words):
+
+> `src/api.ts:88-140: sug: 50-line fn does 4 things. Extract validate / normalize / persist.`
+
+INCORRECT (verbose, 20+ words):
+
+> "Have you considered what happens if the API returns a 429? I think we should probably handle that case."
+
+CORRECT (fragment grammar, 11 words):
+
+> `src/client.ts:23: imp: no retry on 429. Wrap in withBackoff(3).`
+
+The `<verify_request>` block (Plan 07-05 Class-2 escalation hook, see `## Class-2 Escalation Hook` below) trails the affected finding line as a separate line:
+
+> `src/storybook.config.ts:14: imp: docs.autodocs flag may not exist on Storybook 10. Verify before relying on it.`
+> `<verify_request question="Does the docs.autodocs option exist on @storybook/angular@10.3.5?" class="2" anchor_target="pv-storybook-10-autodocs" severity="important"/>`
+
+The `Unresolved hedge:` frame (Plan 07-02 Hedge Marker Discipline, see `## Hedge Marker Discipline` below) fits as the `<fix>` clause when correctness-affecting:
+
+> `src/migration.ts:7: crit: relies on unverified Nx 19+ minor version. Unresolved hedge: Nx 19+ minimum. Verify Nx 19+ before committing.`
+
+Holistic worked example (~296 words aggregate; demonstrates 7 findings + Cross-Cutting Patterns + Missed surfaces fitting under 300w):
+
+> ### Findings
+>
+> `src/auth.ts:42: crit: user can be null after .find(). Add guard before .email.`
+> `src/auth.ts:88: crit: password compared with == (timing attack). Replace with bcrypt.compare.`
+> `src/api.ts:88-140: sug: 50-line fn does 4 things. Extract validate / normalize / persist.`
+> `src/client.ts:23: imp: no retry on 429. Wrap in withBackoff(3).`
+> `src/migration.ts:7: crit: relies on unverified Nx 19+ minor version. Unresolved hedge: Nx 19+ minimum. Verify Nx 19+ before committing.`
+> `src/storybook.config.ts:14: imp: docs.autodocs flag may not exist on Storybook 10. Verify before relying on it.`
+> `<verify_request question="Does the docs.autodocs option exist on @storybook/angular@10.3.5?" class="2" anchor_target="pv-storybook-10-autodocs" severity="important"/>`
+> `src/utils.ts:55: q: regex /[a-z]+@[a-z]+/i -- intended as email validator or token splitter? Author intent unclear; tighten or comment.`
+>
+> ### Cross-Cutting Patterns
+>
+> Findings 1, 2, and 4 share a root cause: missing input validation at boundary handlers. The `auth.ts` and `client.ts` modules trust upstream JSON without schema validation; recommend a single zod-based parser at the route entry. Finding 3 (extract refactor) is independent. Finding 5 (Nx version) and Finding 6 (Storybook 10 docs.autodocs) both depend on unverified vendor-version claims; both warrant pv-* anchors before merge.
+>
+> ### Missed surfaces (optional)
+>
+> Adjacent: `src/api/v2/*.ts` mirrors the v1 pattern flagged in finding 3; the extract refactor likely applies there too.
+
+Word count breakdown: Findings ~110w (7 findings averaging 15w each + 1 verify_request line at ~20w), Cross-Cutting Patterns ~85w, Missed surfaces ~25w; aggregate ~220w. The example demonstrates substantial headroom under the 300w aggregate cap when the fragment-grammar shape is followed; this is the empirical proof that the cap is reachable WITHOUT scope reduction. The executor MUST count words in their own output and stay <=300w aggregate; the per-finding 20w target is GUIDANCE (a 15w finding is fine; a 25w finding is fine if other findings absorb the slack).
 
 ### Cross-Cutting Patterns
 
-Budget: <=160 words. Synthesis across findings: shared root causes, systemic issues, or recurring structural themes. Distinct content from Findings; not overflow. For example: "findings 1, 3, and 5 share a root cause: missing input validation at the boundary."
+Synthesis across findings: shared root causes, systemic issues, or recurring structural themes. Distinct content from Findings; not overflow. Aim for one to three short sentences total. Example: "Findings 1, 3, and 5 share a root cause: missing input validation at the boundary."
 
-If no cross-cutting patterns apply to the packaged findings (for example, a single isolated finding), emit the `### Cross-Cutting Patterns` header followed by one sentence stating so (example: "No cross-cutting patterns across this set -- the findings are independent."). The header is MANDATORY even when the section body is short; the skill's parser requires it.
+If no cross-cutting patterns apply (for example, a single isolated finding), emit the `### Cross-Cutting Patterns` header followed by one sentence stating so. Example: "No cross-cutting patterns across this set -- the findings are independent." The header is MANDATORY even when the section body is short; the skill's parser requires it.
 
 ### Missed surfaces (optional)
 
-If you noticed adjacent attack surfaces, code paths, or files outside the scoped findings that warrant attention, add a one-paragraph note <=30 words at the end of your response (after `### Cross-Cutting Patterns`). This slot is optional -- omit when no missed surfaces apply.
+If you noticed adjacent code paths or files outside the scoped findings that warrant attention, add a one-line note at the end of your response. Aim for one short sentence (around 25 words; not over 30). This slot is OPTIONAL -- omit when no missed surfaces apply.
 
-Total: <=300 words aggregate (binding cap). The per-section caps (250w Findings, 160w CCP, 30w Missed surfaces) are loose upper bounds; the 300w aggregate constrains usage in practice -- a maximally-used Findings section (250w) leaves only 50w for CCP + Missed surfaces combined. The smoke fixture `D-reviewer-budget.sh` parses by section header and asserts the per-entry Findings cap (80w), the per-section CCP cap (160w), the per-section Missed-surfaces cap (30w), and the 300w aggregate. Observed overruns of approximately 37% on plugin 0.9.0 are the empirical baseline this fixture catches.
+Auto-clarity: drop fragment grammar for findings that need full explanation -- architectural disagreements (require rationale, not a one-liner), genuine question-classes that the author needs context to interpret, or onboarding-context where the author is new and needs the "why". For those findings, write a normal paragraph; resume fragment grammar for subsequent findings.
+
+Aggregate cap: <=300 words across `### Findings` + `### Cross-Cutting Patterns` + `### Missed surfaces` combined. The smoke fixture `D-reviewer-budget.sh` parses by section header and asserts both per-finding-line word counts AND the aggregate cap. Plan 07-04 descriptive sub-cap prose was empirically insufficient on plugin 0.11.0 (396w aggregate, 32% over); the fragment-grammar shape binds output length structurally rather than describing it. See Plan 07-09 for the structural rewrite rationale and the caveman empirical baseline (`D:\projects\JuliusBrussee\caveman` -- 65% mean output reduction on `claude-sonnet-4-20250514` + `claude-opus-4-6` across 10 prompts x 3 trials).
 
 ## Severity Classification
 
