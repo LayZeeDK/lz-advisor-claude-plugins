@@ -214,9 +214,9 @@ Plans:
 ### Phase 7: Address all Phase 5.x and 6 UAT findings
 
 **Goal:** Close all Phase 5.x + 6 UAT findings (Findings A, B.1+B.2, C, D, E, F, H + GAP-G1+G2-empirical from Phase 6 amendment 5) plus the in-phase Gap 1 (ToolSearch precondition firing) + Gap 2 (wip-discipline scope ambiguity) surfaced by 8-session UAT replay on plugin 0.10.0.
-**Requirements**: FIND-A, FIND-B.1, FIND-B.2, FIND-C, FIND-D, FIND-E.1, FIND-E.2, FIND-F, FIND-G, FIND-H, FIND-silent-resolve, GAP-G1+G2-empirical, GAP-G1-firing, GAP-G2-wip-scope
+**Requirements**: FIND-A, FIND-B.1, FIND-B.2, FIND-C, FIND-D, FIND-E.1, FIND-E.2, FIND-F, FIND-G, FIND-H, FIND-silent-resolve, GAP-G1+G2-empirical, GAP-G1-firing, GAP-G2-wip-scope, GAP-D-budget-empirical
 **Depends on:** Phase 6
-**Plans:** 8 plans
+**Plans:** 9 plans
 
 Plans:
 - [x] 07-01-PLAN.md -- Strengthen Common Contract Rule 5 with pv-* validation (Rule 5b) + ToolSearch supplement in 4 SKILL.md byte-identical canon + B-pv-validation.sh smoke fixture (FIND-B.1, FIND-B.2, FIND-H, GAP-G1+G2-empirical)
@@ -227,3 +227,4 @@ Plans:
 - [x] 07-06-PLAN.md -- Plugin 0.10.0 + E-verify-before-commit.sh + UAT replay infrastructure + 8-session UAT chain + Amendment 6
 - [x] 07-07-PLAN.md -- Gap 1 closure: default-on ToolSearch + worked examples in 4 SKILL.md byte-identical canon + Rule 5b alignment + B-pv-validation.sh Assertion 5 + plugin 0.11.0 + 07-VERIFICATION amendment + 06-VERIFICATION amendment 7 (GAP-G1-firing)
 - [x] 07-08-PLAN.md -- Gap 2 closure: subject-prefix discipline + 3-shape worked example pair in lz-advisor.execute/SKILL.md + E-verify-before-commit.sh path-d assertion fired by synthesized in-process scenario + --replay flag (manual auditor tool, structural error-path) + GAP-G2-wip-scope registration + 07-VERIFICATION amendment + 06-VERIFICATION amendment 8 + Phase 7 sealing verdict (GAP-G2-wip-scope)
+- [ ] 07-09-PLAN.md -- Gap closure for FIND-D word-budget regression: fragment-grammar emit template + effort de-escalation (xhigh -> medium) on reviewer + security-reviewer + smoke fixture parser update + plugin 0.12.0 + REQUIREMENTS.md GAP-D-budget-empirical registration + 07-VERIFICATION amendment 2026-05-02 + Phase 7 sealing readiness update (FIND-D, GAP-D-budget-empirical)
