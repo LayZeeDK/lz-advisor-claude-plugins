@@ -65,9 +65,109 @@ fi
 
 FAIL=0
 
-# Word-budget assertion: strip **Critical:** block (per DEF-response-structure.sh line 73-74)
-# then count words in the remaining SD body.
-WC=$(sed '/^\*\*Critical:\*\*/,$d' "$SD_FILE" | wc -w | tr -d ' ')
+# Strip **Critical:** block (it is uncounted per advisor.md ## Output Constraint rule).
+# Resulting body should be the numbered Strategic Direction list ONLY.
+SD_BODY="$SCRATCH/advisor-sd-body.txt"
+sed '/^\*\*Critical:\*\*/,$d' "$SD_FILE" > "$SD_BODY"
+
+# Plan 07-10 fragment-grammar shape: each numbered item emits as
+#   `<N>. <verb-led action>. <concrete object or path>. <one-clause rationale or Assuming-frame if needed>.`
+# Per-item word target: <=15 words (verb + object + clause; excludes the leading "N.").
+# Items using the literal Assuming-frame are accepted up to 22w because the frame substitutes
+# verbatim phrases that do not compress (Plan 07-02 verify-skip discipline grep contract).
+# Aggregate cap: <=100 words across all numbered items combined.
+
+ITEM_CHECK_SCRIPT="$SCRATCH/check-advisor-items.mjs"
+cat > "$ITEM_CHECK_SCRIPT" << 'EOF'
+import { readFileSync } from 'node:fs';
+const body = readFileSync(process.argv[2], 'utf8');
+
+// Per-item shape: numbered list, body ends at first sentence-final period followed by line end
+//   `^\d+\.\s+(.+?)\.\s*$`
+// Captures the body of each numbered item (without the leading "N." or trailing period).
+// Multiline mode: each item is a single line in the canonical shape.
+const ADVISOR_FRAGMENT_RE = /^\d+\.\s+(.+?)\.\s*$/gm;
+
+// Items using the literal Assuming-frame are inherently longer (verbatim phrase preservation).
+// Frame contract: `Assuming X (unverified), do Y. Verify X before acting.`
+// The frame consumes 7+ words alone (Assuming, (unverified), do, Verify, before, acting); X+Y add the rest.
+// Note: ADVISOR_FRAGMENT_RE consumes the line-final period; the captured itemBody therefore
+// lacks the trailing `.` of `before acting.` -- frame detection accepts both forms.
+const ASSUMING_FRAME_RE = /Assuming\s+.+?\s+\(unverified\),\s+do\s+.+?\.\s+Verify\s+.+?\s+before\s+acting\b/;
+
+const matches = [...body.matchAll(ADVISOR_FRAGMENT_RE)];
+
+if (matches.length === 0) {
+  console.log('[WARN] Fragment-grammar shape NOT detected; falling back to Plan 07-04 legacy whole-body word count. New fragment-grammar shape is preferred per Plan 07-10.');
+  // Signal fallback path; the bash caller will use the legacy aggregate-only assertion.
+  process.exit(2);
+}
+
+console.log(`[INFO] Fragment-grammar shape detected: ${matches.length} numbered item(s)`);
+
+let bad = 0;
+let total = 0;
+let aggregateWc = 0;
+
+matches.forEach((m, idx) => {
+  const itemBody = m[1].trim();
+  const wc = itemBody.split(/\s+/).filter(Boolean).length;
+  const isFrame = ASSUMING_FRAME_RE.test(itemBody);
+  total++;
+  aggregateWc += wc;
+
+  if (isFrame) {
+    if (wc > 22) {
+      console.log(`[ERROR] Item ${idx + 1} (Assuming-frame): ${wc} words (>22 outlier soft cap)`);
+      bad++;
+    } else if (wc > 18) {
+      console.log(`[INFO] Item ${idx + 1} (Assuming-frame): ${wc} words (>18 but <=22 outlier; acceptable for frame items)`);
+    } else {
+      console.log(`[OK] Item ${idx + 1} (Assuming-frame): ${wc} words`);
+    }
+  } else {
+    if (wc > 18) {
+      console.log(`[ERROR] Item ${idx + 1}: ${wc} words (>18 outlier; target <=15w)`);
+      bad++;
+    } else if (wc > 15) {
+      console.log(`[INFO] Item ${idx + 1}: ${wc} words (>15 target but <=18 outlier; acceptable)`);
+    } else {
+      console.log(`[OK] Item ${idx + 1}: ${wc} words (<=15 target)`);
+    }
+  }
+});
+
+console.log(`[INFO] Per-item check: ${total} items; ${bad} over-cap; aggregate ${aggregateWc} words`);
+process.exit(bad === 0 ? 0 : 1);
+EOF
+
+# Run the per-item check; exit codes:
+#   0 -- fragment-grammar detected AND all items within per-item target/outlier
+#   1 -- fragment-grammar detected BUT one or more items over per-item outlier limit
+#   2 -- fragment-grammar NOT detected (legacy prose shape; fall back to whole-body wc)
+ITEM_RC=0
+node "$ITEM_CHECK_SCRIPT" "$SD_BODY" || ITEM_RC=$?
+
+case "$ITEM_RC" in
+  0)
+    echo "[OK] Finding D (advisor) per-item check: all items within target"
+    ;;
+  1)
+    echo "[ERROR] Finding D (advisor) per-item check: one or more items over per-item outlier limit"
+    FAIL=1
+    ;;
+  2)
+    echo "[INFO] Finding D (advisor): legacy prose shape detected; aggregate-only assertion applies"
+    ;;
+  *)
+    echo "[ERROR] Finding D (advisor) per-item parser: unexpected exit code $ITEM_RC"
+    FAIL=1
+    ;;
+esac
+
+# Aggregate <=100w assertion (preserved from prior fixture; applies in BOTH fragment-grammar and legacy paths).
+LEGACY_WC=$(wc -w < "$SD_BODY" | tr -d ' ')
+WC="$LEGACY_WC"
 if [ "$WC" -le 100 ]; then
   echo "[OK] Finding D (advisor): Strategic Direction $WC words (<=100 cap)"
 else
