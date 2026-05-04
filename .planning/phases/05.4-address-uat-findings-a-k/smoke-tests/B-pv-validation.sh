@@ -138,6 +138,54 @@ else
   echo "[SKIP] Assertion 5 (GAP-G1-firing default-on): no agent-generated input signals detected in second-scenario fixture; assertion N/A (fixture-shape unexpected)"
 fi
 
+# Assertion 6 (FIND-B.2 dual-surface scope, Plan 07-11 D2 amendment):
+# User-facing token-form pv-* references in the trace MUST resolve back to
+# canonical <pre_verified> claim_id values present in the same session.
+# This enforces the structural integrity of Rule 5b's user-facing-surface
+# acceptance: token-form is permitted ONLY when paired with backing canonical
+# XML in the executor's internal prompt to the agent. Tokens that do NOT
+# resolve are potential confabulation indicators.
+#
+# Tight regex avoids false positives:
+#   pv-[a-z]{2,}-[a-z0-9-]{2,}   matches pv-storybook-10-autodocs
+#                                does NOT match pv-1, pvc, or random tokens
+#
+# Surface distinction is implicit in the JSONL structure: claim_id values
+# appear inside <pre_verified> opening tags (in tool_use prompts emitted by
+# the executor); user-facing tokens appear in the assistant's final text
+# content (which is also captured in the JSONL trace as the assistant's
+# message stream). Extracting all pv-* tokens from the WHOLE trace and
+# subtracting the claim_id set yields the user-facing-only tokens that need
+# to resolve. Any token in user-facing context that ALSO appears as a claim_id
+# trivially resolves; orphan tokens are the failure signal.
+#
+# Run against $OUT (Scenario 1 -- the primary plan-skill invocation that
+# typically synthesizes pv-* internally and may emit user-facing token-form
+# in the plan body). Vacuous PASS via [SKIP] when no user-facing tokens
+# observed (consistent with Assertion 5's [SKIP] at line 138).
+
+USER_FACING_TOKENS=$(rg -o 'pv-[a-z]{2,}-[a-z0-9-]{2,}' "$OUT" --pcre2 2>/dev/null | sort -u || true)
+INTERNAL_CLAIM_IDS=$(rg -o 'claim_id="(pv-[^"]+)"' --replace '$1' "$OUT" 2>/dev/null | sort -u || true)
+
+if [ -z "$USER_FACING_TOKENS" ]; then
+  echo "[SKIP] Assertion 6 (FIND-B.2 dual-surface resolution): no user-facing pv-* tokens detected in trace; assertion N/A (fixture-shape may be too thin to surface tokens)"
+else
+  # Compute orphan tokens: user-facing tokens NOT present in the internal claim_id set.
+  ORPHAN_TOKENS=$(comm -23 <(echo "$USER_FACING_TOKENS") <(echo "$INTERNAL_CLAIM_IDS") || true)
+  if [ -z "$ORPHAN_TOKENS" ]; then
+    USER_FACING_COUNT=$(echo "$USER_FACING_TOKENS" | rg -c . || echo 0)
+    INTERNAL_COUNT=$(echo "$INTERNAL_CLAIM_IDS" | rg -c . || echo 0)
+    echo "[OK] Assertion 6 (FIND-B.2 dual-surface resolution): all $USER_FACING_COUNT user-facing pv-* tokens resolve to canonical <pre_verified> claim_id values ($INTERNAL_COUNT distinct claim_ids in trace)"
+  else
+    echo "[ERROR] Assertion 6 (FIND-B.2 dual-surface resolution): orphan user-facing pv-* tokens (no backing canonical XML claim_id):"
+    echo "$ORPHAN_TOKENS" | sed 's/^/  - /'
+    echo "  Per Plan 07-11 Rule 5b D2 amendment, user-facing token-form pv-* references MUST resolve back to a"
+    echo "  claim_id value in a canonical <pre_verified> XML block elsewhere in the same session's executor flow."
+    echo "  Orphan tokens are potential confabulation indicators."
+    FAIL=1
+  fi
+fi
+
 if [ "$FAIL" -ne 0 ]; then
   echo "--- scenario 1 trace excerpt (last 200 lines of \$OUT) ---"
   tail -n 200 "$OUT"
@@ -146,4 +194,4 @@ if [ "$FAIL" -ne 0 ]; then
   exit 1
 fi
 
-echo "[SUCCESS] B-pv-validation.sh: all 5 assertions passed (XML format + synthesis count + no self-anchor + no empty evidence + GAP-G1-firing default-on)"
+echo "[SUCCESS] B-pv-validation.sh: all 6 assertions passed (XML format + synthesis count + no self-anchor + no empty evidence + GAP-G1-firing default-on + dual-surface token resolution)"
