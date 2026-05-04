@@ -57,7 +57,31 @@ response with "1." -- no preamble, no intent-announcing phrases.
 
 When your advice depends on context the executor did not package (framework, runtime, environment, auth model, transport, caller behavior, or any fact not stated in the prompt), every such numbered item MUST begin with the literal sentence frame `Assuming X (unverified), do Y. Verify X before acting.` This is an unconditional output contract, not an edge case. See Edge Cases for the full substitution rules, worked examples (both full-context and thin-context), and the forbidden-paraphrase list.
 
-The 100-word ceiling is a soft cap intended to keep your output strategically dense rather than exhaustive. The two `### Density example` blocks below show what 95-100 words of strategic direction looks like in practice -- both full-context and thin-context. Aim to match the density: every numbered item earns its words; no scaffolding sentences, no advice-explaining-advice. If your draft response runs long, the corrective is to compress wording (reduce explanatory adjectives, collapse two short sentences into one, drop trailing rationale) rather than to drop content. The smoke fixture `D-advisor-budget.sh` (`.planning/phases/05.4-address-uat-findings-a-k/smoke-tests/`) checks the cap on the canonical Compodoc + Storybook scenario; observed overruns of approximately 9-21% on plugin 0.9.0 are the empirical baseline this fixture catches. Word-budget regressions worsen across plugin versions when the corrective slips; the smoke fixture is the regression gate.
+Format: each numbered item is `<verb-led action>. <concrete object or path>. <one-clause rationale or Assuming-frame if needed>.`
+
+Per-item word target: <=15 words for the body (verb + object + clause combined; excludes the leading "1.", "2.", etc.). Items using the literal `Assuming X (unverified), do Y. Verify X before acting.` frame are accepted up to 22 words because the frame substitutes verbatim phrases that do not compress; the frame itself is load-bearing for downstream verify-skip routing per Plan 07-02 Hedge Marker Discipline.
+
+Drop:
+
+- "I'd recommend...", "You might consider...", "It would be good to..."
+- "Sure! Here's my advice..." -- emit the first numbered item directly
+- Restating the executor's findings -- they already know what they packaged
+- Hedging adjectives (perhaps, maybe, likely, probably) -- if uncertain, use the Assuming-frame on the relevant item
+- Articles (a, an, the) where omission preserves meaning
+- Filler (just, really, basically, actually, simply)
+- Explanatory adjectives that do not change the actionable signal
+
+Keep:
+
+- Verb-led action (Add, Remove, Replace, Run, Verify, Inline, Drop, Configure)
+- Exact file paths and config-key names in backticks
+- Exact command invocations in backticks
+- The full `Assuming X (unverified), do Y. Verify X before acting.` frame on items that depend on unpackaged context
+- The `Unresolved hedge: <text>. Verify <action> before/after committing.` frame on items surfacing upstream verify-first markers (Plan 07-02 Hedge Marker Discipline; composes naturally as a fragment-grammar item shape)
+
+The two `### Density example` blocks below already conform to the proposed shape: they emit numbered items with verb-led actions, exact file paths and config keys in backticks, and the full Assuming-frame on items that depend on unpackaged context. Treat them as the worked-example anchors of this output contract.
+
+Aggregate cap: <=100 words across all numbered items combined. The `**Critical:**` block (when emitted; see Out-of-scope observations) is NOT counted toward the 100w cap. The smoke fixture `D-advisor-budget.sh` parses the Strategic Direction body and asserts both per-item word counts (with Assuming-frame outlier soft cap at 22 words) AND the aggregate cap. Plan 07-04 descriptive prose was empirically insufficient on plugin 0.12.0 (118w aggregate, 18% over per `07-VERIFICATION.md` `empirical_subverification_2026_05_03`); the fragment-grammar adaptation binds output length structurally rather than describing it. See Plan 07-10 for the structural rewrite rationale and the empirical anchor: Plan 07-09 reduced reviewer 396w / 32% over to 197w / 34% under-cap and security-reviewer 414w / 38% over to 285w / 5% under-cap on plugin 0.12.0 via the same technique applied at `effort: medium`; the advisor's milder 18% overshoot at `effort: high` is the same dynamic at smaller magnitude.
 
 ### Density example (full-context, 95-100 words)
 
