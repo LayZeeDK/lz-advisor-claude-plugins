@@ -72,6 +72,8 @@ Requirements for initial release. Each maps to roadmap phases.
 
 - [ ] **GAP-D-budget-empirical**: Reviewer + security-reviewer agents emit aggregate output <=300 words across Findings + Cross-Cutting Patterns / Threat Patterns + Missed surfaces sections on canonical D-reviewer-budget.sh / D-security-reviewer-budget.sh scenarios. Phase 7 gap-closure follow-up to FIND-D word-budget regression (Plan 07-04 descriptive sub-cap prose was empirically insufficient on plugin 0.11.0: reviewer 396w / 32% over, security-reviewer 414w / 38% over). Detected by `D-reviewer-budget.sh` and `D-security-reviewer-budget.sh` per-line + aggregate assertions. Documented in `agents/reviewer.md` and `agents/security-reviewer.md` `## Output Constraint` sections (fragment-grammar emit template + DROP/KEEP lists + 3 worked example pairs + auto-clarity carve-out) AND `agents/{reviewer,security-reviewer}.md` frontmatter `effort: medium` (CONTEXT.md D-04 amendment 2026-05-02).
 
+- [ ] **FIND-B.2-format-scope**: Rule 5b "Format mandate" sub-rule (in `references/context-packaging.md`) explicitly differentiates two surfaces: **internal-prompt surface** (executor->agent CONTEXT block via Agent tool prompt) requires canonical `<pre_verified>...</pre_verified>` XML form; **user-facing artifact surface** (plan files, review/security-review output bodies, commit bodies, Strategic Direction blocks) permits token-form references when paired with concrete-source backing (3 acceptable shapes: token reference + Verified: trailer; token reference + prose citation; inline parenthetical token reference). Plan 07-11 D2 amendment closure (per `.planning/phases/07-address-all-phase-5-x-and-6-uat-findings/07-RESEARCH-GAPS.md` Gap 2 ranked recommendation). Trust contract preservation enforced via `B-pv-validation.sh` Assertion 6 (resolution check): every user-facing token MUST resolve to a `claim_id` value in a canonical `<pre_verified>` XML block in the same session's executor flow. Refines the original FIND-B.2 closure (Plan 07-01) without contradicting its intent (rejecting plain-bullets-without-evidence).
+
 ## v2 Requirements
 
 Deferred to future release. Tracked but not in current roadmap.
@@ -147,6 +149,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | GAP-G1-firing | Phase 7 | Pending |
 | GAP-G2-wip-scope | Phase 7 | Pending |
 | GAP-D-budget-empirical | Phase 7 | Pending |
+| FIND-B.2-format-scope | Phase 7 | Pending |
 
 **Coverage:**
 - v1 requirements: 42 total
