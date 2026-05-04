@@ -5,7 +5,7 @@ status: verified
 nyquist_compliant: true
 wave_0_complete: true
 created: 2026-04-30
-audited: 2026-05-01
+audited: 2026-05-05
 ---
 
 # Phase 07 -- Validation Strategy
@@ -55,6 +55,9 @@ audited: 2026-05-01
 | GAP-G1+G2-empirical | 07-01 + 07-06 | 1 + 3 | T-07-01-02 | Plan-fixes + execute-fixes UAT replay on plugin 0.10.0 produces EITHER non-zero ToolSearch invocation OR pv-* synthesis with session-grounded `<evidence>` on plan-file Class-2/3/4 input | UAT replay | UAT replay subset; tally.mjs verified_trailer_count + wip_commit_count columns | YES -- uat-replay/runners/{run-all.sh, run-session.sh, tally.mjs} all present (64 / 36 / 262 lines); session-notes.md captured 8-session evidence | PARTIAL -- structural closure achieved (sessions 1 + 3 + 6 produced source-grounded pv-* synthesis); empirical GAP-G1-firing residual surfaced (ToolSearch fired in only 2 of 8 sessions on 0.10.0) -> closed via Plan 07-07 (see GAP-G1-firing row below) |
 | GAP-G1-firing | 07-07 | 4 | T-07-07-01, T-07-07-02 | Default-on ToolSearch fires unconditionally on agent-generated source signal (firing rate >=8 of 8 UAT sessions); reframed `<context_trust_contract>` block + 2 worked examples + cost-asymmetry framing | smoke + UAT replay | `bash .planning/phases/05.4-address-uat-findings-a-k/smoke-tests/B-pv-validation.sh` (Assertion 5) | YES -- B-pv-validation.sh extended with Assertion 5 + second scratch-repo scenario seeding agent-generated review file | COVERED -- Assertion 5 grep-asserts ToolSearch tool_use event before pv-* synthesis on agent-generated input; structural closure confirmed via 4-skill byte-identical canon reframing (Plan 07-07 commit bd2d418) + plugin version 0.10.0 -> 0.11.0; empirical 8-of-8 firing rate verification deferred to next UAT cycle |
 | GAP-G2-wip-scope | 07-08 | 4 | T-07-08-01, T-07-08-02, T-07-08-03 | Subject-prefix discipline: when commit body contains `## Outstanding Verification`, subject MUST match `^wip(\(.+\))?:|^chore\(wip\):` UNLESS commit is trailer-only follow-up (zero file changes per `git diff --stat HEAD~1..HEAD`) | smoke + manual replay | `bash .planning/phases/05.4-address-uat-findings-a-k/smoke-tests/E-verify-before-commit.sh` (path-d synthesized in-process scenario; exit 2 = path-d violation expected); `bash E-verify-before-commit.sh --replay <sha>` for manual auditor mode | YES -- E-verify-before-commit.sh path-d negative assertion + synthesized in-process scenario + --replay flag with exit 65 error path on cross-repo SHAs | COVERED -- path-d synthesized in-process scenario provides structural firing proof (exit 2); --replay flag wired with documented error-path for manual replay against ngx-smart-components testbed SHAs (8c25c9e, 06af4cf, 15d8fac); 07-08-REPLAY-RESULTS.md confirms 4 of 4 expected exit codes match observed |
+| GAP-D-budget-empirical | 07-09 | 6 | T-07-09-01, T-07-09-02, T-07-09-03, T-07-09-04 | Reviewer + security-reviewer aggregate <=300w via fragment-grammar emit template (`<file>:<line>: <severity>: <problem>. <fix>.` shape with ASCII severity prefixes crit/imp/sug/q) + DROP/KEEP lists + 3 worked example pairs + holistic ~296w worked example + effort de-escalation xhigh -> medium (binding 15% Class-1 recall reversion criterion in CONTEXT.md D-04 amendment 2026-05-02) | smoke + UAT replay | `bash .planning/phases/05.4-address-uat-findings-a-k/smoke-tests/D-reviewer-budget.sh && bash .planning/phases/05.4-address-uat-findings-a-k/smoke-tests/D-security-reviewer-budget.sh` (per-line <=20w / <=22w + outlier soft cap 25w / 28w + aggregate <=300w preserved verbatim + LEGACY_RE backward-compat fallback for transitional Plan 07-04 numbered-section shape with `[WARN]` signaling preferred fragment shape) | YES -- both fixtures rewritten with fragment-grammar parser (D-reviewer-budget.sh 189 lines, D-security-reviewer-budget.sh 190 lines, both bash -n valid) | COVERED -- aggregate <=300w gate preserved byte-identically; fragment-grammar shape detection landed; structural closure on plugin 0.12.0 confirmed via 07-VERIFICATION.md Amendment 2026-05-02; empirical 15% Class-1 recall reversion-criterion verification deferred to next UAT cycle |
+| residual-advisor-budget | 07-10 | 7 | T-07-10-01, T-07-10-02, T-07-10-03, T-07-10-04, T-07-10-05, T-07-10-06 | Advisor SD aggregate <=100w via fragment-grammar emit template adapted to single-block 100w shape (`<verb-led action>. <concrete object or path>. <one-clause rationale or Assuming-frame if needed>.` per-item shape; preserve `effort: high` control case; preserve Assuming-frame contract + Hedge Marker Discipline + Critical-block uncounted rule byte-identically) | smoke + UAT replay | `bash .planning/phases/05.4-address-uat-findings-a-k/smoke-tests/D-advisor-budget.sh` (ADVISOR_FRAGMENT_RE per-item <=15w target / <=18w soft outlier + ASSUMING_FRAME_RE outlier branch <=22w on Assuming-frame items + Node ESM 3-way exit code 0/1/2 PASS/FAIL/LEGACY-FALLBACK + LEGACY_WC backward-compat aggregate <=100w fallback + Critical-block strip preserved) | YES -- D-advisor-budget.sh rewritten with fragment-grammar parser (189 lines, bash -n valid) | COVERED -- aggregate <=100w gate preserved verbatim via $LEGACY_WC; ADVISOR_FRAGMENT_RE + ASSUMING_FRAME_RE landed; structural closure on plugin 0.12.1 confirmed via 07-VERIFICATION.md closure_amendment_2026_05_04; canonical S1 plan-session UAT re-run on Compodoc + Storybook + Angular signals scenario deferred to next UAT cycle |
+| residual-pre-verified-format / FIND-B.2-format-scope | 07-11 | 7 | T-07-11-01, T-07-11-02, T-07-11-03, T-07-11-04, T-07-11-05, T-07-11-06 | Rule 5b dual-surface format mandate: canonical XML required on internal-prompt surface (executor->agent CONTEXT block via Agent tool prompt); markdown-natural token-form permitted on user-facing artifact surface IFF paired with concrete-source backing (3 acceptable shapes: token + Verified: trailer / token + prose citation / inline parenthetical token); plain-bullet "Pre-verified Claims" pattern remains forbidden on BOTH surfaces; trust contract preserved via orphan-token resolution check | smoke + UAT replay | `bash .planning/phases/05.4-address-uat-findings-a-k/smoke-tests/B-pv-validation.sh` (Assertion 6: `comm -23` set difference between user-facing pv-* tokens via tight `pv-[a-z]{2,}-[a-z0-9-]{2,}` regex MINUS internal `claim_id="pv-..."` extracts; orphan-empty == [OK] trust intact / orphan-nonempty == [ERROR] FAIL with explicit orphan-list dump / no tokens observed == [SKIP] vacuous pass) | YES -- B-pv-validation.sh extended with Assertion 6 (197 lines, bash -n valid) + Rule 5b dual-surface amendment in plugins/lz-advisor/references/context-packaging.md | COVERED -- 6-assertion gate ("all 6 assertions passed (... + dual-surface token resolution)") landed; structural closure on plugin 0.12.1 confirmed via 07-VERIFICATION.md closure_amendment_2026_05_04; empirical regression-gate replay with real claude `--output-format stream-json` traces deferred to next UAT cycle |
 
 *Status: COVERED (smoke fixture lands assertion + automated command verified) / PARTIAL (structural surface present + smoke or UAT deferred to /gsd-verify-work) / MISSING (no fixture or surface).*
 
@@ -80,13 +83,36 @@ The 8-session UAT replay against the ngx-smart-components testbed on plugin 0.10
 
 ---
 
+## Validation Audit 2026-05-05
+
+> Re-audit triggered by `/gsd-validate-phase 7 (gaps only)` after Plans 07-09, 07-10, 07-11 landed (post-2026-05-01 audit). All three are gap-closure plans that addressed empirical residuals surfaced during the canonical 6-session Compodoc UAT chain on plugin 0.12.0 (executed 2026-05-03). Smoke fixtures + assertions for the new requirements were shipped atomically with each plan; this audit pass formalizes their inclusion in the Per-Task Map.
+
+| Metric | Count |
+|--------|-------|
+| Total findings/gaps | 16 (13 prior + 3 added: GAP-D-budget-empirical, residual-advisor-budget, residual-pre-verified-format / FIND-B.2-format-scope) |
+| COVERED (smoke fixture green; assertion automated) | 11 (FIND-B.1, FIND-B.2, FIND-D, FIND-E.1, FIND-E.2, FIND-H, GAP-G1-firing, GAP-G2-wip-scope, GAP-D-budget-empirical, residual-advisor-budget, residual-pre-verified-format / FIND-B.2-format-scope) |
+| PARTIAL (structural landed; empirical UAT deferred) | 6 (FIND-A, FIND-C, FIND-F, FIND-G, FIND-silent-resolve, GAP-G1+G2-empirical) |
+| MISSING (no fixture and no surface) | 0 |
+| New rows added by this audit | 3 |
+| New fixtures generated by this audit | 0 (all 3 new requirements ship under their parent plans: D-reviewer-budget.sh + D-security-reviewer-budget.sh extended in 07-09 with fragment-grammar parser + LEGACY_RE fallback; D-advisor-budget.sh extended in 07-10 with ADVISOR_FRAGMENT_RE + ASSUMING_FRAME_RE + 3-way exit code; B-pv-validation.sh extended in 07-11 with Assertion 6 token-resolution check) |
+| Resolved gaps | 3 (documentation-only: validation map drift) |
+| Escalated gaps | 0 |
+
+**Audit conclusion:** The three gap-closure plans (07-09, 07-10, 07-11) each shipped paired smoke-fixture extensions atomically with their contract changes. There are zero MISSING rows; the previous audit's "no validation gaps in the auditor sense" verdict holds. The 3 new rows are all COVERED at the smoke layer with structural closure landed on plugin 0.12.0 (07-09) and 0.12.1 (07-10 + 07-11) per `07-VERIFICATION.md` `Amendment 2026-05-02` (GAP-D-budget-empirical) and `closure_amendment_2026_05_04` (Plan 07-10 + Plan 07-11). Empirical UAT re-runs are deferred per the standard PARTIAL/UAT-deferral pattern, but the smoke-layer assertions provide structural Nyquist compliance.
+
+**No frontmatter status change.** `status: verified` and `nyquist_compliant: true` are preserved; this audit is a pure documentation-drift correction (the three plans were tested per their own per-task verification blocks but were not folded into the Per-Task Map summary). `audited: 2026-05-01` -> `audited: 2026-05-05`.
+
+**Plugin version progression during the audit window:** 0.11.0 (post-2026-05-01) -> 0.12.0 (Plan 07-09) -> 0.12.1 (Plans 07-10 + 07-11 paired bundle). All 5 version-bump surfaces (plugin.json + 4 SKILL.md frontmatter) consistent at 0.12.1.
+
+---
+
 ## Wave 0 Requirements
 
-- [x] `.planning/phases/05.4-address-uat-findings-a-k/smoke-tests/D-advisor-budget.sh` -- covers FIND-D (advisor side); asserts advisor SD <=100w on representative Compodoc+Storybook scenario (Plan 07-04). EXISTS, 77 lines, bash -n valid.
-- [x] `.planning/phases/05.4-address-uat-findings-a-k/smoke-tests/D-reviewer-budget.sh` -- covers FIND-D (reviewer side); parses by section header; asserts each Findings <=80w, CCP <=160w, Missed-surfaces <=30w, total <=300w (Plan 07-04). EXISTS, 113 lines, bash -n valid.
-- [x] `.planning/phases/05.4-address-uat-findings-a-k/smoke-tests/D-security-reviewer-budget.sh` -- covers FIND-D (security-reviewer side); same shape as D-reviewer-budget.sh (Plan 07-04). EXISTS, 117 lines, bash -n valid.
-- [x] `.planning/phases/05.4-address-uat-findings-a-k/smoke-tests/E-verify-before-commit.sh` -- covers FIND-E.1 + FIND-E.2 + GAP-G2-wip-scope (4 paths: hedge-flag, verify-trailer, wip-commit, wip-discipline-violation negative assertion + --replay flag) (Plan 07-02 + 07-06 + 07-08). EXISTS, 290 lines, bash -n valid.
-- [x] `.planning/phases/05.4-address-uat-findings-a-k/smoke-tests/B-pv-validation.sh` -- covers FIND-B.1 + FIND-B.2 + FIND-H + GAP-G1-firing (5 assertions: XML format + synthesis count + no self-anchor + no empty evidence + default-on ToolSearch on agent-generated input) (Plan 07-01 + 07-07). EXISTS, 138 lines, bash -n valid.
+- [x] `.planning/phases/05.4-address-uat-findings-a-k/smoke-tests/D-advisor-budget.sh` -- covers FIND-D (advisor side) + residual-advisor-budget; asserts advisor SD aggregate <=100w preserved verbatim via $LEGACY_WC + per-item <=15w target via ADVISOR_FRAGMENT_RE + ASSUMING_FRAME_RE outlier branch <=22w + Critical-block strip preserved + Node ESM 3-way exit code 0/1/2 (PASS/FAIL/LEGACY-FALLBACK) (Plan 07-04 + Plan 07-10). EXISTS, 189 lines, bash -n valid.
+- [x] `.planning/phases/05.4-address-uat-findings-a-k/smoke-tests/D-reviewer-budget.sh` -- covers FIND-D (reviewer side) + GAP-D-budget-empirical; fragment-grammar parser per-line <=20w + outlier soft cap <=25w + aggregate <=300w preserved verbatim + LEGACY_RE backward-compat fallback for Plan 07-04 numbered-section transitional shape (Plan 07-04 + Plan 07-09). EXISTS, 189 lines, bash -n valid.
+- [x] `.planning/phases/05.4-address-uat-findings-a-k/smoke-tests/D-security-reviewer-budget.sh` -- covers FIND-D (security-reviewer side) + GAP-D-budget-empirical; fragment-grammar parser per-line <=22w (OWASP tag) + outlier soft cap <=28w + Threat Patterns header instead of CCP + aggregate <=300w preserved + LEGACY_RE fallback (Plan 07-04 + Plan 07-09). EXISTS, 190 lines, bash -n valid.
+- [x] `.planning/phases/05.4-address-uat-findings-a-k/smoke-tests/E-verify-before-commit.sh` -- covers FIND-E.1 + FIND-E.2 + GAP-G2-wip-scope (4 paths: hedge-flag, verify-trailer, wip-commit, wip-discipline-violation negative assertion + --replay flag) (Plan 07-02 + 07-06 + 07-08). EXISTS, 300 lines, bash -n valid.
+- [x] `.planning/phases/05.4-address-uat-findings-a-k/smoke-tests/B-pv-validation.sh` -- covers FIND-B.1 + FIND-B.2 + FIND-H + GAP-G1-firing + residual-pre-verified-format / FIND-B.2-format-scope (6 assertions: XML format + synthesis count + no self-anchor + no empty evidence + default-on ToolSearch on agent-generated input + dual-surface token resolution via `comm -23` orphan-set difference) (Plan 07-01 + 07-07 + 07-11). EXISTS, 197 lines, bash -n valid.
 - [x] `.planning/phases/07-address-all-phase-5-x-and-6-uat-findings/uat-replay/runners/` -- run-all.sh (64 lines) + run-session.sh (36 lines) + tally.mjs (262 lines) all present (Plan 07-06).
 - [x] `.planning/phases/07-address-all-phase-5-x-and-6-uat-findings/uat-replay/session-notes.md` -- 8-session UAT replay evidence captured (Plan 07-06).
 - [x] Framework install: none -- existing toolchain (Bash + `rg` + `claude` CLI + Node.js + Git Bash) already in place.
@@ -125,22 +151,25 @@ The 8-session UAT replay against the ngx-smart-components testbed on plugin 0.10
 | GAP-G1+G2-empirical | -- (regression-only; smoke is structural at-rest) | plan-fixes + execute-fixes UAT subset on plugin 0.10.0 | 06-VERIFICATION.md amendment 6 (Plan 07-06) |
 | GAP-G1-firing | B-pv-validation.sh Assertion 5 (default-on ToolSearch on agent-generated input) | future UAT cycle on plugin 0.11.0 confirming 8-of-8 firing rate | 06-VERIFICATION.md Amendment 7 (Plan 07-07) sealing residual #1 |
 | GAP-G2-wip-scope | E-verify-before-commit.sh path-d (synthesized in-process scenario; exit 2 expected) | manual `--replay <sha>` against ngx-smart-components testbed SHAs | 06-VERIFICATION.md Amendment 8 (Plan 07-08) sealing residual #2 + Phase 7 sealing verdict |
+| GAP-D-budget-empirical | D-reviewer-budget.sh + D-security-reviewer-budget.sh fragment-grammar parser (per-line <=20w/22w + outlier soft cap 25w/28w + aggregate <=300w preserved) | reviewer + security-reviewer UAT on canonical scenario; observed 197w + 285w on plugin 0.12.0 (07-VERIFICATION.md lines 82-83) | 07-VERIFICATION.md Amendment 2026-05-02 (Plan 07-09) marking GAP-D-budget-empirical CLOSED structurally |
+| residual-advisor-budget | D-advisor-budget.sh ADVISOR_FRAGMENT_RE per-item <=15w + ASSUMING_FRAME_RE outlier branch <=22w + aggregate <=100w preserved via $LEGACY_WC + Critical-block strip | canonical S1 plan-session re-run on Compodoc + Storybook + Angular signals scenario on plugin 0.12.1; expected ~85w aggregate per Plan 07-09 reduction-delta projection | 07-VERIFICATION.md closure_amendment_2026_05_04 (Plan 07-10) plan_07_10_closure: closed_structurally_on_0_12_1 |
+| residual-pre-verified-format / FIND-B.2-format-scope | B-pv-validation.sh Assertion 6 token-resolution check via `comm -23` orphan-set difference (3-path PASS/FAIL/SKIP semantics) | regression-gate replay on plugin 0.12.1 with real claude `--output-format stream-json` traces; optional 1-2 sessions from canonical 6-session UAT (S3 review + S4 security-review showed token-form most prominently) | 07-VERIFICATION.md closure_amendment_2026_05_04 (Plan 07-11) plan_07_11_closure: closed_structurally_on_0_12_1 |
 
 ---
 
 ## Tier 1 (smoke fixtures) acceptance criteria
 
-All fixtures exit code 0 (or expected-firing exit 2 for E-verify path-d synthesized scenario) on plugin 0.11.0:
+All fixtures exit code 0 (or expected-firing exit 2 for E-verify path-d synthesized scenario) on plugin 0.12.1:
 
 - `KCB-economics.sh`: K + C + B all `[OK]`
 - `DEF-response-structure.sh`: D + E + F + G+H + I + Word-budget all `[OK]`
 - `HIA-discipline.sh`: H + A + I all `[OK]`
 - `J-narrative-isolation.sh`: J `[OK]`
-- `D-advisor-budget.sh`: advisor SD <=100w on representative Compodoc+Storybook scenario `[OK]`
-- `D-reviewer-budget.sh`: each Findings <=80w, CCP <=160w, Missed-surfaces <=30w, total <=300w `[OK]`
-- `D-security-reviewer-budget.sh`: each Findings <=80w, Threat Patterns <=160w, Missed-surfaces <=30w, total <=300w `[OK]`
+- `D-advisor-budget.sh`: advisor SD aggregate <=100w preserved verbatim ($LEGACY_WC) + per-item <=15w via ADVISOR_FRAGMENT_RE + ASSUMING_FRAME_RE outlier <=22w + 3-way exit code 0/1/2 (PASS/FAIL/LEGACY-FALLBACK) `[OK]`
+- `D-reviewer-budget.sh`: fragment-grammar per-line <=20w + outlier soft cap <=25w + aggregate <=300w preserved verbatim + LEGACY_RE backward-compat fallback `[OK]`
+- `D-security-reviewer-budget.sh`: fragment-grammar per-line <=22w (OWASP tag) + outlier soft cap <=28w + Threat Patterns header + aggregate <=300w preserved + LEGACY_RE fallback `[OK]`
 - `E-verify-before-commit.sh`: at least one of (a) hedge-flag path OR (b) verify-trailer path OR (c) wip-commit path satisfied AND no path-d violation outside the synthesized scenario; with SYNTHESIZE_PATH_D=1 (default), path-d exit 2 is the expected firing
-- `B-pv-validation.sh`: Assertions 1-5 all `[OK]` (XML format + synthesis >=1 + no self-anchor + no empty evidence + default-on ToolSearch on agent-generated input)
+- `B-pv-validation.sh`: Assertions 1-6 all `[OK]` (XML format + synthesis >=1 + no self-anchor + no empty evidence + default-on ToolSearch on agent-generated input + dual-surface token resolution via `comm -23` orphan-set difference)
 
 ## Tier 2 (UAT replay) acceptance criteria
 
@@ -160,6 +189,8 @@ UAT replay subset on plugin 0.10.0 / 0.11.0 (per Phase 6 amendment 5 precedent: 
 - 06-VERIFICATION.md Amendment 7 written by Plan 07-07: seal residual #1 (Gap 1 CLOSED structurally) -- DONE
 - 06-VERIFICATION.md Amendment 8 written by Plan 07-08: seal residual #2 (Gap 2 CLOSED structurally) + Phase 7 sealing verdict enumerating Plans 07-01..07-08 -- DONE
 - 07-VERIFICATION.md produced by gsd-verifier: Phase 7 gate verdict captured (status: gaps_found -> Gap 1 + Gap 2 CLOSED amendments) -- DONE; final PASS-with-residual verdict pending milestone audit
+- 07-VERIFICATION.md Amendment 2026-05-02 written by Plan 07-09: GAP-D-budget-empirical CLOSED structurally on plugin 0.12.0 (12-row structural verification table + Candidate A + Candidate B mechanism citation + binding 15% Class-1 recall reversion criterion) -- DONE
+- 07-VERIFICATION.md closure_amendment_2026_05_04 written by Plans 07-10 + 07-11: plan_07_10_closure + plan_07_11_closure both closed_structurally_on_0_12_1; plugin_version: 0.12.1 with 5-surface enumeration; phase_7_status_after_07_10_07_11: passed_with_residual maintained; residual-wip-discipline-reversal explicitly OUT OF SCOPE per user directive 2026-05-03 (Phase 8 territory) -- DONE
 - ROADMAP.md / STATE.md updated to reflect Phase 6 closure + Phase 7 closure -- pending milestone audit
 
 ---
@@ -167,10 +198,10 @@ UAT replay subset on plugin 0.10.0 / 0.11.0 (per Phase 6 amendment 5 precedent: 
 ## Validation Sign-Off
 
 - [x] All findings mapped to Tier 1 / Tier 2 / Tier 3 with explicit acceptance criteria
-- [x] Sampling continuity: every fix plan (07-01..07-05) has paired smoke fixture in 07-06; gap-closure plans 07-07 + 07-08 extend existing fixtures with Assertion 5 + path-d
-- [x] Wave 0 covers all MISSING references (5 NEW smoke fixtures + UAT replay infrastructure all shipped)
+- [x] Sampling continuity: every fix plan (07-01..07-05) has paired smoke fixture in 07-06; gap-closure plans 07-07 + 07-08 extend existing fixtures with Assertion 5 + path-d; gap-closure plans 07-09 + 07-10 + 07-11 extend existing fixtures with fragment-grammar parsers + Assertion 6 (no NEW fixture files; surgical extensions of established fixtures)
+- [x] Wave 0 covers all MISSING references (5 smoke fixtures + UAT replay infrastructure all shipped; 4 of 5 fixtures extended in-place by Plans 07-09/10/11)
 - [x] No watch-mode flags (Bash + `rg` synchronous; no daemon dependencies)
 - [x] Feedback latency < 60s for smoke; < 15min per UAT replay session
-- [x] `nyquist_compliant: true` set in frontmatter (audited 2026-05-01; all 13 findings/gaps have COVERED smoke or PARTIAL structural + empirical UAT confirmation)
+- [x] `nyquist_compliant: true` preserved in frontmatter (re-audited 2026-05-05; all 16 findings/gaps -- 13 prior + 3 new -- have COVERED smoke or PARTIAL structural + empirical UAT confirmation)
 
-**Approval:** verified 2026-05-01 by gsd-nyquist-auditor
+**Approval:** verified 2026-05-01 by gsd-nyquist-auditor; re-audited 2026-05-05 by `/gsd-validate-phase 7 (gaps only)` -- 3 new rows folded into Per-Task Map (GAP-D-budget-empirical, residual-advisor-budget, residual-pre-verified-format / FIND-B.2-format-scope); zero MISSING; zero new fixtures; documentation-only drift correction.
