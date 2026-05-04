@@ -5,6 +5,7 @@ status: verified
 threats_open: 0
 asvs_level: 1
 created: 2026-05-01
+amended: 2026-05-05
 ---
 
 # Phase 7 -- Security
@@ -138,16 +139,95 @@ Cross-reference grep results (verified 2026-05-01) confirming each `mitigate` di
 | Audit Date | Threats Total | Closed | Open | Run By |
 |------------|---------------|--------|------|--------|
 | 2026-05-01 | 29 | 29 | 0 | gsd-security-auditor |
+| 2026-05-05 | 46 | 46 | 0 | gsd-security-auditor (gap delta: Plans 07-09, 07-10, 07-11) |
+
+---
+
+## Amendment 2026-05-05 -- Plans 07-09, 07-10, 07-11 Threat Delta
+
+After the 2026-05-01 audit, three additional plans landed (Plans 07-09, 07-10, 07-11) introducing 17 NEW STRIDE threats. This amendment audits those threats only; the 29 threats verified on 2026-05-01 are not re-audited.
+
+**Plans audited:**
+- Plan 07-09 (commits `00638bd`, `74929e1`, `5787a3c`, `24e80c6`; plugin 0.11.0 -> 0.12.0; reviewer + security-reviewer fragment-grammar emit template + effort xhigh -> medium)
+- Plan 07-10 (commits `a11834d`, `cd4e49b`; advisor fragment-grammar emit template; effort: high preserved)
+- Plan 07-11 (commits `fb872d9`, `3e03ed0`, `3ef407d`, `bf8a8db`, `c220fb4`; plugin 0.12.0 -> 0.12.1; Rule 5b dual-surface amendment + B-pv-validation Assertion 6)
+
+### Threat Register (Delta)
+
+| Threat ID | Category | Component | Disposition | Mitigation | Status |
+|-----------|----------|-----------|-------------|------------|--------|
+| T-07-09-01 | Information Disclosure / Tampering | reviewer / security-reviewer fragment-grammar silent truncation (false-negative on real bugs) | mitigate | Soft per-finding word target (20w / 22w with 25w / 28w outlier safety) + DROP/KEEP lists + auto-clarity carve-out for Class 2-S security findings + binding empirical recall gate | closed |
+| T-07-09-02 | Denial of Service (silent quality degradation) | reviewer + security-reviewer effort xhigh -> medium misses Class-1 bugs | mitigate (with binding reversion) | CONTEXT.md D-04 amendment 2026-05-02 names binding 15% Class-1 recall reversion criterion | closed |
+| T-07-09-03 | Tampering | smoke fixture vacuous pass on transitional Sonnet shape | mitigate | LEGACY_RE backward-compat fallback in D-{reviewer,security-reviewer}-budget.sh + section-presence + 4 distinct word-budget assertions per fixture | closed |
+| T-07-09-04 | Denial of Service (cost-cliff at borderline recall drop) | borderline below-15% recall drop ambiguity | accept | 15% threshold is binding line; below-threshold accepts trade-off as documented design intent | closed |
+| T-07-10-01 | Tampering | advisor.md ## Output Constraint surgical-edit boundaries | mitigate | Lines 53-56 (descriptive lead) + 58 (Assuming-frame contract) + 62-76 (Density examples) PRESERVED byte-identically; only line 60 REPLACED with Format declaration; 13 grep acceptance tests verified no unintended changes | closed |
+| T-07-10-02 | Information Disclosure | D-advisor-budget.sh parser scope | accept | Local file IO + Node ESM stdlib only; no network calls; reads SD body extracted from local JSONL trace | closed |
+| T-07-10-03 | Denial of Service | D-advisor-budget.sh `claude -p --dangerously-skip-permissions` invocation | accept | Existing fixture pattern (Phase 5.4+ precedent); matches AR-07-05 carry-forward | closed |
+| T-07-10-04 | Elevation of Privilege | advisor agent tool grant | mitigate | Frontmatter `tools: ["Read", "Glob"]` UNCHANGED (verified byte-identically); principle of least privilege preserved per OWASP AI Agent Security Cheat Sheet | closed |
+| T-07-10-05 | Spoofing | Plan 07-04 -> Plan 07-10 cross-link in advisor.md | mitigate | New Output Constraint prose explicitly cites `07-VERIFICATION.md` + `Plan 07-10` as rewrite-rationale anchors; downstream readers can grep `D-advisor-budget.sh` for empirical anchor | closed |
+| T-07-10-06 | Repudiation | smoke-fixture exit codes | mitigate | Node ESM 3-way exit code (0 PASS / 1 FAIL / 2 LEGACY-FALLBACK) + bash dispatch with [OK]/[ERROR]/[INFO]/[WARN] log lines + tail-100 dump on failure | closed |
+| T-07-11-01 | Spoofing | user-facing pv-* token without backing canonical XML (orphan / potential confabulation) | mitigate | B-pv-validation.sh Assertion 6 detects orphan tokens via `comm -23` set difference; orphan-nonempty fails fixture with explicit orphan-list dump | closed |
+| T-07-11-02 | Tampering | references/context-packaging.md Rule 5b surgical-edit boundary | mitigate | Line 50 ONLY edited (Format mandate sub-rule); Rules 5a / 5c / 5d / 6 / 7 + 4 other 5b sub-rules preserved byte-identically; 12 grep acceptance tests | closed |
+| T-07-11-03 | Information Disclosure | B-pv-validation.sh Assertion 6 token enumeration | accept | Tokens read from local JSONL fixture trace; no external network calls; `rg` + `comm` only | closed |
+| T-07-11-04 | Repudiation | 5-surface plugin version bump consistency 0.12.0 -> 0.12.1 | mitigate | All 5 surfaces atomically at 0.12.1 (plugin.json + 4 SKILL.md frontmatter); zero 0.12.0 / 0.11.0 / 0.10.0 / 0.9.0 remnants in version surfaces; valid JSON + valid YAML parsing | closed |
+| T-07-11-05 | Denial of Service | Plan 07-10 + Plan 07-11 concurrent in wave 7 | accept | Zero file overlap (07-10: advisor.md + D-advisor-budget.sh; 07-11: context-packaging.md + B-pv-validation.sh + REQUIREMENTS.md + 5 version surfaces + 07-VERIFICATION.md); no race condition | closed |
+| T-07-11-06 | Elevation of Privilege | SKILL.md byte-identical canon prose change | accept | Plan 07-11 modifies only frontmatter `version:` field; Rule 5b amendment lives in references/context-packaging.md and resolves via @-load; no per-skill prose surface gains new content | closed |
+| T-07-11-07 | Tampering | 07-VERIFICATION.md `closure_amendment_2026_05_04` block insertion | mitigate | Block inserts after `gaps: []` line and before closing `---`; existing `empirical_subverification_2026_05_03` block preserved byte-identically (single-occurrence grep); body of report (after frontmatter) byte-identical | closed |
+
+**Delta total: 17 threats. Closed: 17. Open: 0.**
+
+### Implementation Evidence (Delta)
+
+| Mitigation | File | Evidence |
+|------------|------|----------|
+| Reviewer fragment-grammar (T-07-09-01) | `plugins/lz-advisor/agents/reviewer.md` | `Format: <file>:<line>: <severity>: <problem>. <fix>.` (line 59); DROP / Keep lists; 3 worked example pairs; holistic ~296w example |
+| Security-reviewer fragment-grammar + auto-clarity (T-07-09-01) | `plugins/lz-advisor/agents/security-reviewer.md` | `[<OWASP-tag>]` format (line 60); `Auto-clarity (Class 2-S security carve-out)` (line 125) |
+| Reviewer + security-reviewer effort medium (T-07-09-02) | `plugins/lz-advisor/agents/{reviewer,security-reviewer}.md` | Frontmatter `effort: medium` (line 43 / 44); CONTEXT.md D-04 amendment 2026-05-02 binding 15% recall reversion criterion (line 97) |
+| Smoke fixture LEGACY_RE backward-compat (T-07-09-03) | `D-reviewer-budget.sh` + `D-security-reviewer-budget.sh` | LEGACY_RE present in both (count: 2 each); FRAGMENT_RE primary path; 4 distinct word-budget assertions per fixture |
+| Advisor fragment-grammar (T-07-10-01, T-07-10-04, T-07-10-05) | `plugins/lz-advisor/agents/advisor.md` | `Format: each numbered item is` (line 60); `effort: high` preserved (line 43); `tools: ["Read", "Glob"]` preserved (line 44); `07-VERIFICATION.md` + `Plan 07-10` cross-references (line 84); 2 Density example blocks preserved byte-identically (lines 86, 94); `## Hedge Marker Discipline` preserved |
+| D-advisor-budget.sh fragment-grammar parser (T-07-10-06) | `D-advisor-budget.sh` | ADVISOR_FRAGMENT_RE (3 occurrences); ASSUMING_FRAME_RE (2 occurrences); 3-way Node ESM exit code dispatch (case 0/1/2); LEGACY_WC fallback; Critical-block strip preserved |
+| Rule 5b dual-surface (T-07-11-02) | `plugins/lz-advisor/references/context-packaging.md` | `internal-prompt surface` (line 51); `user-facing artifact surface` (line 54); 3 acceptable shapes enumerated (lines 56, 58, 60); Rules 5a / 5c / 5d / 6 / 7 preserved |
+| B-pv-validation.sh Assertion 6 (T-07-11-01) | `B-pv-validation.sh` | `Assertion 6 (FIND-B.2 dual-surface scope, Plan 07-11 D2 amendment)` (line 141); `pv-[a-z]{2,}-[a-z0-9-]{2,}` token regex; `comm -23` orphan detection; 3-path PASS/SKIP/FAIL semantics |
+| Plugin 0.12.1 (T-07-11-04) | `plugin.json` + 4 `SKILL.md` | All 5 surfaces at `0.12.1`; zero 0.12.0 remnants in version-surface fields |
+| 07-VERIFICATION.md closure_amendment block (T-07-11-07) | `07-VERIFICATION.md` | `closure_amendment_2026_05_04:` (line 119); `empirical_subverification_2026_05_03:` preserved (line 89); `gaps: []` preserved (line 118) |
+
+### Smoke Fixture Regression Gates (Delta)
+
+The 5 fixtures from the 2026-05-01 audit retain bash -n syntax validity. The Plans 07-09 / 07-10 / 07-11 delta extends three of them:
+
+| Fixture | Delta | Threats Covered (delta) |
+|---------|-------|--------------------------|
+| `B-pv-validation.sh` | Assertion 6 added (token-form resolution check); 5 -> 6 assertions; SUCCESS message updated to "all 6 assertions passed" | T-07-11-01 |
+| `D-advisor-budget.sh` | ADVISOR_FRAGMENT_RE per-item parser + ASSUMING_FRAME_RE outlier branch + 3-way Node ESM exit code + LEGACY_WC fallback | T-07-10-06 |
+| `D-reviewer-budget.sh` + `D-security-reviewer-budget.sh` | Fragment-grammar FRAGMENT_RE primary + LEGACY_RE backward-compat + per-line word-budget assertions + section-presence + aggregate <=300w preserved | T-07-09-03 |
+
+### Accepted Risks Log (Delta)
+
+| Risk ID | Threat Ref | Rationale | Accepted By | Date |
+|---------|------------|-----------|-------------|------|
+| AR-07-10 | T-07-09-04 | Per CONTEXT.md D-04 amendment 2026-05-02, the trade is explicit: medium IS the cost-sensitive choice; the 15% Class-1 recall threshold is the binding reversion line; ambiguous below-threshold accepts the recall trade-off as the documented design intent. If empirical evidence shows the trade is unfavorable in practice (real Critical bugs missed at medium), the amendment reverts via the documented criterion. | gsd-planner | 2026-05-02 |
+| AR-07-11 | T-07-10-02 | D-advisor-budget.sh parser reads only the SD body (extracted from local JSONL trace via `extract-advisor-sd.mjs`); no external network calls; no secrets in scope. Local file IO + Node ESM stdlib only. Pattern matches AR-07-08 (Phase 6 UAT replay JSONL trace handling) carry-forward. | gsd-planner | 2026-05-04 |
+| AR-07-12 | T-07-10-03 | `--dangerously-skip-permissions` flag is required for non-interactive smoke runs (no terminal for permission prompts). Carries forward AR-07-05 rationale; matches Phase 5.4+ + Phase 6 + Phase 7 fixture pattern already validated. | gsd-planner | 2026-05-04 |
+| AR-07-13 | T-07-11-03 | B-pv-validation.sh Assertion 6 enumerates pv-* anchors INSIDE the test fixture's local JSONL trace via `rg` + `comm`; no external network calls; no secrets in scope. Same threat profile as Assertions 1-5 (already accepted in AR-07-05 + AR-07-08 carry-forward). | gsd-planner | 2026-05-04 |
+| AR-07-14 | T-07-11-05 | Plans 07-10 and 07-11 have ZERO file overlap (07-10: advisor.md + D-advisor-budget.sh; 07-11: context-packaging.md + B-pv-validation.sh + REQUIREMENTS.md + 5 version surfaces + 07-VERIFICATION.md). Both plans were ridden in wave 7 in parallel; no race condition. The orchestrator's atomic-commit per task convention prevents partial state. | gsd-planner | 2026-05-04 |
+| AR-07-15 | T-07-11-06 | Plan 07-11 does NOT modify SKILL.md prose; only the frontmatter `version:` field (Task 4). The Rule 5b amendment lives in `references/context-packaging.md` and resolves via existing @-load cross-references in each SKILL.md; no per-skill prose surface gains new content. The byte-identical canon contract (verified across 4 SKILL.md via 3 cross-file diffs exit 0) is preserved. | gsd-planner | 2026-05-04 |
+
+### Unregistered Flags (Delta)
+
+None. The 3 SUMMARY.md files (07-09-SUMMARY.md, 07-10-SUMMARY.md, 07-11-SUMMARY.md) contain no `## Threat Flags` section. They include `## Threat Model Compliance` sections that restate the structured threat IDs from the PLAN.md threat models -- informational restatements that map cleanly to the 17 IDs above; no unregistered attack surface detected.
 
 ---
 
 ## Sign-Off
 
 - [x] All threats have a disposition (mitigate / accept / transfer)
-- [x] Accepted risks documented in Accepted Risks Log (9 entries)
-- [x] `threats_open: 0` confirmed
-- [x] `status: verified` set in frontmatter
-- [x] Reviewer + security-reviewer least privilege preserved (`tools: ["Read", "Glob"]` verified byte-identically; Option 3 PERMANENTLY REJECTED)
-- [x] All 5 smoke fixture regression gates exist with valid Bash syntax
+- [x] Accepted risks documented in Accepted Risks Log (9 + 6 = 15 entries)
+- [x] `threats_open: 0` confirmed (29 + 17 = 46 closed)
+- [x] `status: verified` maintained in frontmatter (delta amended 2026-05-05)
+- [x] Reviewer + security-reviewer + advisor least privilege preserved (`tools: ["Read", "Glob"]` verified byte-identically across all 3 agents; Option 3 PERMANENTLY REJECTED)
+- [x] All 5 smoke fixture regression gates exist with valid Bash syntax (B-pv-validation.sh now 6 assertions; D-*-budget.sh fixtures now fragment-grammar-aware with backward-compat fallback)
+- [x] Plugin version 0.12.1 across 5 surfaces (zero version-drift remnants)
+- [x] CONTEXT.md D-04 amendment 2026-05-02 with binding 15% Class-1 recall reversion criterion present
+- [x] 07-VERIFICATION.md `closure_amendment_2026_05_04` block records both Plan 07-10 + Plan 07-11 closures structurally on 0.12.1; `empirical_subverification_2026_05_03` preserved byte-identically
 
-**Approval:** verified 2026-05-01
+**Approval:** verified 2026-05-01; amended 2026-05-05 (gap delta: 17 new threats from Plans 07-09, 07-10, 07-11 verified closed)
