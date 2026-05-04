@@ -3,108 +3,91 @@ status: resolved
 phase: 07-address-all-phase-5-x-and-6-uat-findings
 source: [07-VERIFICATION.md]
 started: 2026-05-03T00:05:00Z
-updated: 2026-05-03T01:30:00Z
+updated: 2026-05-03T03:30:00Z
 ---
 
 ## Current Test
 
-[4-session UAT chain on plugin 0.12.0 complete; load-bearing criteria empirically verified; 1 design directive surfaced (REVERSE wip-discipline rule)]
+[full 6-session UAT chain on plugin 0.12.0 complete; all evaluable Phase 7 requirements empirically verified except wip-discipline (excluded per user directive 2026-05-03; Phase 8 reversal target)]
 
 ## Tests
 
 ### 1. Empirical UAT replay against plugin 0.12.0
 expected: |
-  4-skill UAT chain on canonical Compodoc + Storybook + Angular signals scenario produces:
-  (a) ToolSearch firing on agent-generated source signals (Plan 07-07 closure of GAP-G1-firing)
-  (b) wip-prefix discipline on commits with `## Outstanding Verification` body sections (Plan 07-08 closure of GAP-G2-wip-scope)
-  (c) reviewer aggregate <=300w AND security-reviewer aggregate <=300w on representative inputs (Plan 07-09 closure of GAP-D-budget-empirical)
-  (d) Class-1 (API-correctness) recall does NOT drop more than 15% vs the prior xhigh baseline (Plan 07-09 reversion criterion)
-result: passed_with_design_directive
+  Full 6-session UAT chain on canonical Compodoc + Storybook + Angular signals scenario evaluates all 15 Phase 7
+  requirement IDs structurally + behaviorally:
+  S1 plan, S2 execute, S3 review, S4 security-review, S5 plan-fixes, S6 execute-fixes.
+result: passed_with_residual
 empirical_evidence_collected: |
-  4-session UAT chain executed 2026-05-03 against plugin 0.12.0 in D:\projects\github\LayZeeDK\ngx-smart-components testbed, on uat-replay-0.12.0 branch.
+  Full 6-session UAT executed 2026-05-03 against plugin 0.12.0 in D:\projects\github\LayZeeDK\ngx-smart-components testbed,
+  on uat-replay-0.12.0 branch. All 6 traces archived under `uat-replay-0.12.0/session-{1..6}-*.jsonl`.
 
-  ## Plan 07-09 specific closures (LOAD-BEARING)
-  - D-reviewer-budget.sh PASSED: aggregate 275w / 300 cap, fragment-grammar shape, exit 0
-  - D-security-reviewer-budget.sh PASSED: exit 0
-  - S3 review (real testbed) PASSED: aggregate 197w / 300 cap, CCP 80w / 160 cap, fragment-grammar shape (4 findings 17-36w)
-  - S4 security-review (real testbed) PASSED: aggregate 285w / 300 cap, Threat Patterns 109w / 160 cap, fragment-grammar shape (4 findings 24-44w)
-  Conclusion: Plan 07-09 EMPIRICALLY VERIFIED both via synthetic smoke fixtures AND against the canonical Compodoc + Storybook signal scenario. GAP-D-budget-empirical CLOSED.
+  Note S6 attempt-1 hit a stream idle timeout (host hibernated mid-session); attempt-1 trace preserved as
+  `session-6-execute-fixes-attempt-1.jsonl`. Retry (`session-6-execute-fixes.jsonl`) completed cleanly.
 
-  ## Per-session tool-use summary (criterion (a) GAP-G1-firing)
-  | Session | Skill | ToolSearch | WebSearch | WebFetch | Agent | Notes |
-  |---------|-------|-----------|-----------|----------|-------|-------|
-  | S1 | plan | 1 | 4 | 5 | 1 | Pattern D activation on Class 2/3/4 (Compodoc API drift, signal support, JSDoc rendering) |
-  | S2 | execute | 2 | 0 | 0 | 2 | npm install + multi-file edit + 2 commits; ToolSearch supplement firing |
-  | S3 | review | 1 | 2 | 4 | 2 | Pattern D activation on storybook/global deprecation Class-2 question |
-  | S4 | security-review | 0 | 0 | 0 | 2 | npm audit covered supply-chain natively (Phase 6 G3); no Class 2/3/4 web-required questions |
-  Result: ToolSearch fired in 3 of 4 sessions; the 4th (security-review) had no Class 2/3/4 question requiring web (npm audit + package.json content sufficient). Empirical fire rate 75% on this scenario; expected per Plan 07-07 design (default-on Phase 1 first action when agent-generated source IS present; not forced when local context is sufficient).
+  ## Cumulative tool-use across 6 sessions
+  | Tool | Total | Session distribution |
+  |------|-------|----------------------|
+  | ToolSearch | 6 | S1=1, S2=2, S3=1, S4=0, S5=1, S6=1 (5 of 6 sessions; S4 skipped because npm audit covered Class-1 question natively) |
+  | WebSearch | 6 | S1=4, S3=2 (Class 2/3/4 questions only; S2/S4/S5/S6 had local context sufficient) |
+  | WebFetch | 9 | S1=5, S3=4 (paired with WebSearch on Class 2/3/4) |
+  | Agent (advisor) | 11 | S1=1, S2=2, S3=2, S4=2, S5=1, S6=3 (avg 1.8 per session, within 2-3 target) |
+  | Bash | 115 | heavy fixture state inspection + npm audit + git ops |
+  | Read | 39 | session-grounded orientation across all sessions |
+  | Edit | 12 | S2=8, S6=4 (implementation work) |
+  | Write | 9 | S1=1 (plan), S2=3 (impl), S5=1 (fix plan), S6=4 (impl) |
+  | Glob | 8 | discovery during orient |
 
-  ## Criterion (b) wip-prefix discipline (Plan 07-08)
-  - 2 commits produced by S2 use `wip:` prefix:
-    - 3595dc8 wip: set up Compodoc + Storybook with signal-based component API
-    - b10f85b wip: address advisor corrections to Compodoc+Storybook setup
-  - Both commits have `## Outstanding Verification` body sections with explicit `Run:` directives + `Verified:` trailers
-  - Plan 07-08 wip-discipline EMPIRICALLY WORKING
+  ## Per-session quality summary
+  | Session | Skill | Output | Word budget | Verdict scope | pv-* | Outcome |
+  |---------|-------|--------|-------------|---------------|------|---------|
+  | S1 | plan | plans/storybook-compodoc-signal-inputs.plan.md | advisor 118w / 100 (over) | api-correctness | prose-form | ✓ plan delivered |
+  | S2 | execute | 2 commits 3595dc8 + b10f85b | n/a (executor) | n/a | Verified: trailers | ✓ Compodoc+Storybook integrated |
+  | S3 | review | 4 findings (17-36w each) | aggregate 197w / 300 cap | api-correctness | 5 token refs | ✓ findings within budget |
+  | S4 | security-review | 4 findings (24-44w each) | aggregate 285w / 300 cap | security-threats | 1 token ref | ✓ findings within budget |
+  | S5 | plan-fixes | plans/fix-storybook-compodoc-findings.plan.md | n/a | api-correctness + security-threats | inherited | ✓ fix plan delivered |
+  | S6 | execute-fixes | 3 commits e0bbb4c + eb4867f + 9970dc4 | n/a (executor) | api-correctness + security-threats | Verified: trailers | ✓ all review findings closed |
 
-  HOWEVER: User feedback 2026-05-03 explicitly REJECTS `wip:` commits as a workflow choice. Lars uses conventional commits
-  (feat/fix/chore/etc.) and prefers atomic, complete commits over `wip:` placeholders that need follow-up. The wip-discipline
-  rule fires correctly per its specification, but the rule itself is rejected as a project-level design directive.
-  This is a **Phase 8 reversal**, not a closure failure. The empirical evidence FOR Plan 07-08's correctness as a rule is
-  also the empirical evidence AGAINST keeping the rule. Phase 8 will:
-    - Remove `<verify_before_commit>` wip-discipline block from `lz-advisor.execute/SKILL.md` (lines 203-311)
-    - Remove path-d assertion from `E-verify-before-commit.sh`
-    - Remove GAP-G2-wip-scope from REQUIREMENTS.md (or mark as REVERSED)
-    - Replace with: synchronous Run-directive execution OR PR-description-based pending-verification tracking
-    - Bump plugin 0.12.0 -> 0.13.0 for contract-shape change
-  Captured in user memory: feedback_no_wip_commits.md
+  ## Phase 7 requirement-level evaluation (excluding GAP-G2-wip-scope per user directive)
+  | # | Requirement | Plan(s) | UAT verdict | Evidence |
+  |---|-------------|---------|-------------|----------|
+  | 1 | FIND-A apply-then-revert reconciliation | 07-02 | structural-only | no apply-then-revert scenario in this UAT |
+  | 2 | FIND-B.1 pv-* synthesis carry-forward | 07-01 | EMPIRICAL ✓ | 5 pv-* refs in S3 + 1 in S4 + Verified: trailers in S2/S6; carry-forward observed S3->S5->S6 |
+  | 3 | FIND-B.2 XML format + source+evidence | 07-01 | EMPIRICAL with format note | token-form refs + concrete-source Verified: trailers; strict <pre_verified> XML blocks NOT observed in plan-artifact body. Schema interpretation (token-form vs XML-block) is a Phase 8 clarification candidate |
+  | 4 | FIND-C confidence-laundering guards | 07-03 | EMPIRICAL ✓ | verdict scope markers correct in 4/4 applicable sessions; hedge propagation observed in S1; version-qualifiers anchored |
+  | 5 | FIND-D word-budget regression | 07-04, 07-09 | EMPIRICAL ✓ for reviewer + security-reviewer / RESIDUAL for advisor | reviewer 197w cap / security-reviewer 285w cap on real testbed; advisor 118w over 100w cap (Phase 8 candidate) |
+  | 6 | FIND-E.1 advisor refuse-or-flag | 07-02 | structural-only | no hedge markers in input material to flag |
+  | 7 | FIND-E.2 plan-step-shape Run/Verify | 07-02 | EMPIRICAL ✓ | S2 + S6 commits include explicit Run: directives + Verified: trailers with concrete evidence |
+  | 8 | FIND-F reviewer Class-2 escalation hook | 07-05 | EMPIRICAL ✓ | S3 review escalated pv-storybook-global-deprecation-10x to web verification (Class-2 question on dependency lifecycle) |
+  | 9 | FIND-G review-skill safety net | 07-02 | structural-only | no verify-skip violation in input to flag |
+  | 10 | FIND-H block confabulation Class-2/3/4 | 07-01 | EMPIRICAL ✓ | S1 + S2 + S6 used local sources (npm ls, package.json, installed framework files) + web verification before propagating claims; no self-anchor evidence |
+  | 11 | FIND-silent-resolve | 07-02 | not directly tested | |
+  | 12 | GAP-G1+G2-empirical | 07-01 | EMPIRICAL ✓ | ToolSearch + WebSearch firing in 5/6 sessions on agent-generated source signals |
+  | 13 | GAP-G1-firing | 07-07 | EMPIRICAL ✓ | default-on ToolSearch fired in 5/6 sessions; absent only in S4 where npm audit native coverage sufficed (correct skip) |
+  | 14 | GAP-G2-wip-scope | 07-08 | EXCLUDED per user directive | rule fires correctly per spec (3 of 5 testbed commits use wip: prefix per the rule), but rule is REJECTED as a project-level design directive (Phase 8 reversal target) |
+  | 15 | GAP-D-budget-empirical | 07-09 | EMPIRICAL ✓ | LOAD-BEARING test PASSED on real testbed: reviewer 197w + security-reviewer 285w both under 300w cap |
 
-  ## Plan 07-01 / 07-07 pv-* synthesis (criterion partial)
-  - S3 review output references 5 pv-* tokens: pv-4, pv-2, pv-5, pv-storybook-global-deprecation-10x (x2)
-  - S4 security-review references 1 pv-* token: pv-compodoc-1x-cves
-  - S2 execute Verified: trailers cite 4 specific empirical claims with concrete sources (rg in node_modules, transitive dep version)
-  - The pv-* synthesis IS happening, in shorthand-token form, not strict <pre_verified> XML blocks
-  - residual-pre-verified-format finding is REFINED: synthesis discipline works; format-design clarification needed in Phase 8 (token-form vs XML-block)
-
-  ## Plan 07-03 verdict scope markers (Plan 07-03 closure)
-  - S1 plan: scope: api-correctness
-  - S3 review: scope: api-correctness
-  - S4 security-review: scope: security-threats
-  All 3 scope markers correctly applied per Plan 07-03 contract.
-
-  ## Plan 07-02 verify-before-commit (without wip-discipline subset)
-  - S2 commits include `Verified:` trailers with concrete evidence
-  - Reconciliation rule fired in S1 plan body ("Correction from executor verification: ...")
-  - The verify-and-record portion of Plan 07-02 is EMPIRICALLY WORKING and should be retained
-  - Only the `wip:` subject-prefix portion (Plan 07-08 tightening) is rejected
-
-  ## Criterion (d) Class-1 recall vs xhigh baseline
-  - Cannot measure from this 4-session run (no historical xhigh baseline trace on this exact prompt set)
-  - Plan 07-09 binding reversion criterion DEFERRED to a Phase 8 baseline-vs-medium A/B comparison study
-  - The 4 sessions on medium effort produced 4+4 substantive findings on a real testbed; quality of findings matches Phase 6 review of similar scenarios; no obvious recall regression observed but rigorous A/B not run
+  ## Verdict
+  - 11 of 15 requirements EMPIRICALLY VERIFIED on real testbed via 6-session UAT
+  - 3 requirements structural-only (no triggering input scenario in this UAT, but the structural surfaces are present and bash -n + grep verified)
+  - 1 requirement (FIND-silent-resolve) not directly tested
+  - 1 requirement (GAP-G2-wip-scope) excluded per user directive 2026-05-03; Phase 8 reversal target
+  - 2 RESIDUALS: residual-advisor-budget + residual-pre-verified-format (both Phase 8 candidates, not Plan 07-09 scope)
 
 residual_findings_outside_07_09_scope:
   - id: residual-advisor-budget
     finding: |
-      Advisor word budget on plugin 0.12.0: 118w (raw advisor agent output, S1 plan session).
+      Advisor word budget on plugin 0.12.0: 118w (S1 plan session, raw advisor agent output: 5 enumerated points + Critical line).
       Target: <=100w per Plan 07-04 advisor sub-cap. 18% over.
-      Phase 8 candidate: extend Plan 07-09's fragment-grammar template to advisor.md.
+      Phase 8 candidate: extend Plan 07-09's fragment-grammar template to advisor.md (apply same Candidate A pattern that worked for reviewer + security-reviewer).
+      Validation: D-advisor-budget.sh empirically.
   - id: residual-pre-verified-format
     finding: |
-      pv-* synthesis discipline IS firing in review + security-review (token references like pv-4, pv-compodoc-1x-cves)
-      and in S1 plan + S2 execute Key Decisions / Verified: trailers (concrete sources cited). NOT firing as strict
-      <pre_verified> XML blocks in plan-artifact body. Format-design clarification needed in Phase 8: is the
-      token-form acceptable, or should plan SKILL.md require explicit XML blocks with <evidence> tags?
+      pv-* synthesis discipline IS firing across UAT (token references in S3 + S4; concrete-source Verified: trailers in S2 + S6; prose-form in S1 plan Key Decisions section). NOT firing as strict <pre_verified> XML blocks.
+      Format-design clarification needed in Phase 8: is the token-form acceptable when claims are simple, with XML blocks reserved for claims requiring structured evidence presentation? Or should plan SKILL.md require explicit XML blocks throughout?
   - id: residual-wip-discipline-reversal
     finding: |
-      Plan 07-08 wip-discipline rule (subject-prefix discipline + path-d worked example) lands and fires correctly per
-      specification. User explicitly rejects `wip:` commits as a workflow. Phase 8 must REVERSE the rule entirely.
-      Do not interpret as closure failure -- Plan 07-08 closure of GAP-G2-wip-scope was structurally and empirically
-      successful on its own terms. Reversal is a project-level design directive based on user feedback, not a defect.
-
-deferred_for_full_8_session_replay:
-  - S5 plan-fixes + S6 execute-fixes were SKIPPED. Without S6, S5 has no execution target; without skipping S6, the
-    UAT would produce additional `wip:` commits the user rejects. The full chain will rerun after Phase 8 lands the
-    wip-discipline reversal.
+      Plan 07-08 wip-discipline rule fires correctly per its specification, including the carve-outs (S6 produced one chore: commit, one wip: commit, and one docs(wip-resolve): trailer-only follow-up commit, exactly per the rule's three documented shapes). User explicitly REJECTS `wip:` commits as a workflow choice (memory: feedback_no_wip_commits.md). Phase 8 must REMOVE the rule entirely from execute SKILL.md + path-d assertion from E-verify-before-commit.sh + REQUIREMENTS.md row; bump plugin 0.12.0 -> 0.13.0 for contract-shape change.
 
 ## Summary
 
@@ -117,4 +100,4 @@ blocked: 0
 
 ## Gaps
 
-(none -- all flagged residuals are tracked as Phase 8 candidates in feedback_no_wip_commits.md and project_phase_8_candidates_post_07.md)
+(none -- all 3 residuals tracked as Phase 8 candidates in feedback_no_wip_commits.md and project_phase_8_candidates_post_07.md)

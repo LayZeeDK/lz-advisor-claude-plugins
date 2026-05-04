@@ -67,16 +67,22 @@ deferred:
       investigation of advisor narrative-SD self-anchor frequency.
 empirical_subverification_2026_05_03:
   context: |
-    4-session UAT chain on plugin 0.12.0 against ngx-smart-components testbed (uat-replay-0.12.0 branch),
-    executed 2026-05-03. S1 plan + S2 execute + S3 review + S4 security-review. S5 + S6 skipped (would
-    produce additional `wip:` commits the user explicitly rejects; full chain rerun after Phase 8 wip-discipline
-    reversal). All 4 traces archived under `uat-replay-0.12.0/session-{1..4}-*.jsonl`.
+    Full 6-session UAT chain on plugin 0.12.0 against ngx-smart-components testbed (uat-replay-0.12.0 branch),
+    executed 2026-05-03. S1 plan + S2 execute + S3 review + S4 security-review + S5 plan-fixes + S6 execute-fixes.
+    All 6 traces archived under `uat-replay-0.12.0/session-{1..6}-*.jsonl`. S6 attempt-1 hit a stream idle timeout
+    (host hibernated mid-session); attempt-1 trace preserved as `session-6-execute-fixes-attempt-1.jsonl`.
+
+    Per user directive 2026-05-03: GAP-G2-wip-scope (Plan 07-08 wip-discipline) is EXCLUDED from this evaluation
+    despite firing correctly per spec across S2 (2 wip: commits) and S6 (1 chore: + 1 wip: + 1 docs(wip-resolve):
+    demonstrating all 3 documented carve-outs). Rule REJECTED as project-level design directive; Phase 8 reversal target.
   d_reviewer_budget_fixture: PASSED (aggregate 275w / 300 cap; fragment-grammar shape detected with 4 finding lines 12-17w each; CCP 100w / 160 cap; Missed surfaces 28w / 30 cap; exit 0)
   d_security_reviewer_budget_fixture: PASSED (exit 0; all sub-caps including aggregate <= 300w)
   compodoc_uat_session_1_plan: PASSED (ToolSearch fired 1x; WebSearch 4x; WebFetch 5x; Agent 1x; orient phase used 9 Read + 5 Glob + 46 Bash on actual project files; plan artifact written; verdict scope marker present "scope: api-correctness"; reconciliation rule fired in Strategic Direction section)
   compodoc_uat_session_2_execute: PASSED-WITH-DESIGN-DIRECTIVE (ToolSearch 2x; Agent 2x; produced 2 commits 3595dc8 + b10f85b on uat-replay-0.12.0 branch; both use `wip:` prefix per Plan 07-08; both have `## Outstanding Verification` body sections with `Run:` directives + `Verified:` trailers citing concrete evidence -- empirical proof Plan 07-08 wip-discipline rule fires correctly. HOWEVER user feedback 2026-05-03 explicitly REJECTS `wip:` commits; Phase 8 must reverse the rule)
   compodoc_uat_session_3_review: PASSED (ToolSearch 1x; WebSearch 2x; WebFetch 4x; Agent 2x; aggregate 197w / 300 cap; CCP 80w / 160 cap; fragment-grammar shape with 4 findings 17-36w; verdict scope "scope: api-correctness"; 5 pv-* token references including pv-storybook-global-deprecation-10x)
   compodoc_uat_session_4_security_review: PASSED (Agent 2x; aggregate 285w / 300 cap; Threat Patterns 109w / 160 cap; fragment-grammar shape with 4 findings 24-44w; verdict scope "scope: security-threats"; 1 pv-* token reference pv-compodoc-1x-cves; npm audit Bash 6x covered supply-chain natively)
+  compodoc_uat_session_5_plan_fixes: PASSED (ToolSearch 1x; Agent 1x; Read 7x including review + security-review files; plan written to plans/fix-storybook-compodoc-findings.plan.md; addresses all 8 review + security-review findings sequenced by Cross-Cutting Patterns recommended order)
+  compodoc_uat_session_6_execute_fixes: PASSED-WITH-DESIGN-DIRECTIVE (ToolSearch 1x; Agent 3x; Edit 4x; Write 4x; produced 3 commits e0bbb4c chore: + eb4867f wip: + 9970dc4 docs(wip-resolve): demonstrating all 3 Plan 07-08 commit shapes; resolved all 8 review findings; one deviation noted in commit body re: missing .github/workflows -- diff-script approach used instead. S6 attempt-1 stream idle timeout from host hibernation; retry succeeded cleanly)
   plan_07_09_closure_empirically_verified: true
   plan_07_07_default_on_toolsearch_empirically_verified: true_in_3_of_4_sessions
   plan_07_08_wip_discipline_empirically_verified: true_but_rule_rejected_by_user
