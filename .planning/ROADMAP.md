@@ -216,7 +216,7 @@ Plans:
 **Goal:** Close all Phase 5.x + 6 UAT findings (Findings A, B.1+B.2, C, D, E, F, H + GAP-G1+G2-empirical from Phase 6 amendment 5) plus the in-phase Gap 1 (ToolSearch precondition firing) + Gap 2 (wip-discipline scope ambiguity) surfaced by 8-session UAT replay on plugin 0.10.0.
 **Requirements**: FIND-A, FIND-B.1, FIND-B.2, FIND-C, FIND-D, FIND-E.1, FIND-E.2, FIND-F, FIND-G, FIND-H, FIND-silent-resolve, GAP-G1+G2-empirical, GAP-G1-firing, GAP-G2-wip-scope, GAP-D-budget-empirical
 **Depends on:** Phase 6
-**Plans:** 9 plans
+**Plans:** 11 plans
 
 Plans:
 - [x] 07-01-PLAN.md -- Strengthen Common Contract Rule 5 with pv-* validation (Rule 5b) + ToolSearch supplement in 4 SKILL.md byte-identical canon + B-pv-validation.sh smoke fixture (FIND-B.1, FIND-B.2, FIND-H, GAP-G1+G2-empirical)
@@ -228,3 +228,5 @@ Plans:
 - [x] 07-07-PLAN.md -- Gap 1 closure: default-on ToolSearch + worked examples in 4 SKILL.md byte-identical canon + Rule 5b alignment + B-pv-validation.sh Assertion 5 + plugin 0.11.0 + 07-VERIFICATION amendment + 06-VERIFICATION amendment 7 (GAP-G1-firing)
 - [x] 07-08-PLAN.md -- Gap 2 closure: subject-prefix discipline + 3-shape worked example pair in lz-advisor.execute/SKILL.md + E-verify-before-commit.sh path-d assertion fired by synthesized in-process scenario + --replay flag (manual auditor tool, structural error-path) + GAP-G2-wip-scope registration + 07-VERIFICATION amendment + 06-VERIFICATION amendment 8 + Phase 7 sealing verdict (GAP-G2-wip-scope)
 - [x] 07-09-PLAN.md -- Gap closure for FIND-D word-budget regression: fragment-grammar emit template + effort de-escalation (xhigh -> medium) on reviewer + security-reviewer + smoke fixture parser update + plugin 0.12.0 + REQUIREMENTS.md GAP-D-budget-empirical registration + 07-VERIFICATION amendment 2026-05-02 + Phase 7 sealing readiness update (FIND-D, GAP-D-budget-empirical)
+- [ ] 07-10-PLAN.md -- Gap closure for residual-advisor-budget (Plan 07-09 control-case residual): extend fragment-grammar emit template to agents/advisor.md (Candidate A per 07-RESEARCH-GAPS.md Gap 1; reject Candidate B effort de-escalation; reject Candidate C ALL-CAPS imperative); D-advisor-budget.sh parser update with ADVISOR_FRAGMENT_RE + ASSUMING_FRAME_RE + per-item <=15w + aggregate <=100w + backward-compat fallback (FIND-D)
+- [ ] 07-11-PLAN.md -- Gap closure for residual-pre-verified-format (Plan 07-01 Rule 5b ambiguity surfaced empirically on plugin 0.12.0): D2 amendment in references/context-packaging.md (internal-prompt XML required; user-facing token-form permitted with concrete-source backing; 3 acceptable shapes enumerated; reject D1 enforcement; reject D3 status-quo) + B-pv-validation.sh Assertion 6 token-resolution check + REQUIREMENTS.md FIND-B.2 dual-surface scope amendment + plugin 0.12.0 -> 0.12.1 PATCH across 5 surfaces + 07-VERIFICATION closure_amendment_2026_05_04 closing both Plan 07-10 + Plan 07-11 (FIND-B.2)
