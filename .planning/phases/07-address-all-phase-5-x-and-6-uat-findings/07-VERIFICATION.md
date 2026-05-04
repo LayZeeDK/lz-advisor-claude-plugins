@@ -95,6 +95,42 @@ empirical_subverification_2026_05_03:
     - residual-pre-verified-format: pv-* synthesis fires as token references + Verified trailers, NOT as <pre_verified> XML blocks; format-design clarification needed in Phase 8 (is token-form acceptable?)
     - residual-wip-discipline-reversal: Plan 07-08 wip-discipline rule fires correctly per spec but user rejects `wip:` commits; Phase 8 must REMOVE rule from execute SKILL.md + path-d assertion from E-verify-before-commit.sh + REQUIREMENTS.md row; bump plugin 0.12.0 -> 0.13.0 for contract-shape change. Memory: feedback_no_wip_commits.md
 gaps: []
+closure_amendment_2026_05_04:
+  context: |
+    Plans 07-10 and 07-11 ship the in-phase closures for the two residuals identified in
+    empirical_subverification_2026_05_03 (residual-advisor-budget + residual-pre-verified-format).
+    Plan 07-10 extends Plan 07-09's fragment-grammar emit template to agents/advisor.md (Candidate A
+    per 07-RESEARCH-GAPS.md Gap 1 ranked recommendation). Plan 07-11 amends Rule 5b "Format mandate"
+    in references/context-packaging.md with dual-surface differentiation (Direction D2 per
+    07-RESEARCH-GAPS.md Gap 2 ranked recommendation). Plugin version bumped 0.12.0 -> 0.12.1 PATCH
+    atomically across 5 surfaces (plugin.json + 4 SKILL.md frontmatter) for the paired bundle.
+  plan_07_10_closure: closed_structurally_on_0_12_1
+  plan_07_10_artifacts:
+    - plugins/lz-advisor/agents/advisor.md (## Output Constraint rewritten with fragment-grammar emit template + DROP/KEEP lists; existing 2 Density example blocks preserved verbatim; frontmatter effort: high UNCHANGED -- Candidate B effort de-escalation explicitly rejected per research)
+    - .planning/phases/05.4-address-uat-findings-a-k/smoke-tests/D-advisor-budget.sh (parser updated with ADVISOR_FRAGMENT_RE per-item regex + ASSUMING_FRAME_RE outlier handling + 3-way exit code Node ESM check-script + bash dispatch + preserved aggregate <=100w + preserved Critical-block strip + LEGACY_WC backward-compat fallback)
+  plan_07_11_closure: closed_structurally_on_0_12_1
+  plan_07_11_artifacts:
+    - plugins/lz-advisor/references/context-packaging.md (Rule 5b "Format mandate" rewritten with dual-surface differentiation: internal-prompt surface XML required; user-facing artifact surface token-form permitted with concrete-source backing; trust contract preserved via Assertion 6 cross-reference)
+    - .planning/phases/05.4-address-uat-findings-a-k/smoke-tests/B-pv-validation.sh (Assertion 6 added; existing Assertions 1-5 preserved byte-identically; final SUCCESS message updated to reference 6 assertions)
+    - .planning/REQUIREMENTS.md (FIND-B.2 row description amended with dual-surface scope language)
+  plugin_version: 0.12.1
+  plugin_version_surfaces:
+    - plugins/lz-advisor/.claude-plugin/plugin.json
+    - plugins/lz-advisor/skills/lz-advisor.plan/SKILL.md (frontmatter version: field)
+    - plugins/lz-advisor/skills/lz-advisor.execute/SKILL.md (frontmatter version: field)
+    - plugins/lz-advisor/skills/lz-advisor.review/SKILL.md (frontmatter version: field)
+    - plugins/lz-advisor/skills/lz-advisor.security-review/SKILL.md (frontmatter version: field)
+  remaining_residual: residual-wip-discipline-reversal
+  remaining_residual_disposition: |
+    OUT OF SCOPE for in-phase Phase 7 closure per user directive 2026-05-03 (memory: feedback_no_wip_commits.md).
+    Phase 8 directive: REMOVE Plan 07-08 wip-discipline rule entirely from lz-advisor.execute/SKILL.md
+    + path-d assertion from E-verify-before-commit.sh + REQUIREMENTS.md GAP-G2-wip-scope row;
+    bump plugin 0.12.1 -> 0.13.0 MINOR for contract-shape change.
+  phase_7_status_after_07_10_07_11: |
+    passed_with_residual maintained (the out-of-scope residual-wip-discipline-reversal is Phase 8 territory).
+    The 2 in-phase residuals from empirical_subverification_2026_05_03 are now CLOSED structurally.
+    Empirical re-validation pending: run bash D-advisor-budget.sh + bash B-pv-validation.sh on plugin 0.12.1
+    in a follow-up regression-gate session.
 ---
 
 # Phase 7 Verification Report -- Consolidated Closure of 15 Requirement IDs
