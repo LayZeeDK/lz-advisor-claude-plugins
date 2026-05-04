@@ -67,17 +67,27 @@ deferred:
       investigation of advisor narrative-SD self-anchor frequency.
 empirical_subverification_2026_05_03:
   context: |
-    Sub-verification on plugin 0.12.0 against ngx-smart-components testbed, executed 2026-05-03 to validate Plan 07-09
-    gap closure before sealing Phase 7. Plan 07-09 is the load-bearing artifact (the gap-closure plan addressing
-    GAP-D-budget-empirical); other within-phase gap closures (Plans 07-07, 07-08) were structurally verified upstream
-    and remain candidates for full 8-session empirical replay in a follow-up cycle.
+    4-session UAT chain on plugin 0.12.0 against ngx-smart-components testbed (uat-replay-0.12.0 branch),
+    executed 2026-05-03. S1 plan + S2 execute + S3 review + S4 security-review. S5 + S6 skipped (would
+    produce additional `wip:` commits the user explicitly rejects; full chain rerun after Phase 8 wip-discipline
+    reversal). All 4 traces archived under `uat-replay-0.12.0/session-{1..4}-*.jsonl`.
   d_reviewer_budget_fixture: PASSED (aggregate 275w / 300 cap; fragment-grammar shape detected with 4 finding lines 12-17w each; CCP 100w / 160 cap; Missed surfaces 28w / 30 cap; exit 0)
   d_security_reviewer_budget_fixture: PASSED (exit 0; all sub-caps including aggregate <= 300w)
-  compodoc_uat_session_1_plan: PASSED (ToolSearch fired 1x; WebSearch 4x; WebFetch 5x; Agent 1x; orient phase used 9 Read + 5 Glob + 46 Bash on actual project files; plan artifact written to D:\projects\github\LayZeeDK\ngx-smart-components\plans\storybook-compodoc-signal-inputs.plan.md; verdict scope marker present "scope: api-correctness"; reconciliation rule fired in Strategic Direction section)
+  compodoc_uat_session_1_plan: PASSED (ToolSearch fired 1x; WebSearch 4x; WebFetch 5x; Agent 1x; orient phase used 9 Read + 5 Glob + 46 Bash on actual project files; plan artifact written; verdict scope marker present "scope: api-correctness"; reconciliation rule fired in Strategic Direction section)
+  compodoc_uat_session_2_execute: PASSED-WITH-DESIGN-DIRECTIVE (ToolSearch 2x; Agent 2x; produced 2 commits 3595dc8 + b10f85b on uat-replay-0.12.0 branch; both use `wip:` prefix per Plan 07-08; both have `## Outstanding Verification` body sections with `Run:` directives + `Verified:` trailers citing concrete evidence -- empirical proof Plan 07-08 wip-discipline rule fires correctly. HOWEVER user feedback 2026-05-03 explicitly REJECTS `wip:` commits; Phase 8 must reverse the rule)
+  compodoc_uat_session_3_review: PASSED (ToolSearch 1x; WebSearch 2x; WebFetch 4x; Agent 2x; aggregate 197w / 300 cap; CCP 80w / 160 cap; fragment-grammar shape with 4 findings 17-36w; verdict scope "scope: api-correctness"; 5 pv-* token references including pv-storybook-global-deprecation-10x)
+  compodoc_uat_session_4_security_review: PASSED (Agent 2x; aggregate 285w / 300 cap; Threat Patterns 109w / 160 cap; fragment-grammar shape with 4 findings 24-44w; verdict scope "scope: security-threats"; 1 pv-* token reference pv-compodoc-1x-cves; npm audit Bash 6x covered supply-chain natively)
   plan_07_09_closure_empirically_verified: true
-  residual_findings_outside_07_09_scope:
-    - residual-advisor-budget: advisor agent at 118w / 100 cap on plugin 0.12.0 plan session (FIND-D residual covering advisor; Plan 07-09 explicitly excluded advisor; consider extending fragment-grammar template to advisor.md in Phase 8)
-    - residual-pre-verified-format: no <pre_verified> XML blocks in plan artifact body despite 3 Class 2/3/4 load-bearing claims; empirical verification work happened (executor read installed framework source, WebSearch+WebFetch fired) but recorded as prose in "Key Decisions" section instead. Schema clarification needed in Phase 8 plan SKILL.md and re-verify B-pv-validation.sh
+  plan_07_07_default_on_toolsearch_empirically_verified: true_in_3_of_4_sessions
+  plan_07_08_wip_discipline_empirically_verified: true_but_rule_rejected_by_user
+  plan_07_03_verdict_scope_markers_empirically_verified: true_in_3_of_3_applicable_sessions
+  plan_07_02_verify_before_commit_empirically_verified: true_for_verified_trailer_subset
+  pv_synthesis_format_observed: token_references_in_review_security_review; concrete_evidence_citations_in_execute_Verified_trailers; prose_in_plan_Key_Decisions_section; NOT strict_pre_verified_xml_blocks
+  class_1_recall_vs_xhigh_baseline: not_measurable_from_4_sessions; deferred_to_phase_8_a_b_comparison_study
+  residual_findings_phase_8_candidates:
+    - residual-advisor-budget: advisor agent at 118w / 100 cap on plugin 0.12.0 plan session (FIND-D residual covering advisor; Plan 07-09 explicitly excluded advisor; extend fragment-grammar template to advisor.md in Phase 8)
+    - residual-pre-verified-format: pv-* synthesis fires as token references + Verified trailers, NOT as <pre_verified> XML blocks; format-design clarification needed in Phase 8 (is token-form acceptable?)
+    - residual-wip-discipline-reversal: Plan 07-08 wip-discipline rule fires correctly per spec but user rejects `wip:` commits; Phase 8 must REMOVE rule from execute SKILL.md + path-d assertion from E-verify-before-commit.sh + REQUIREMENTS.md row; bump plugin 0.12.0 -> 0.13.0 for contract-shape change. Memory: feedback_no_wip_commits.md
 gaps: []
 ---
 
