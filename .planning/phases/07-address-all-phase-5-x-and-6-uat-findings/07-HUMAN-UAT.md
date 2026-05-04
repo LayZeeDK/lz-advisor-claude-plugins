@@ -1,14 +1,14 @@
 ---
-status: resolved
+status: partial
 phase: 07-address-all-phase-5-x-and-6-uat-findings
 source: [07-VERIFICATION.md]
 started: 2026-05-03T00:05:00Z
-updated: 2026-05-03T03:30:00Z
+updated: 2026-05-04T23:55:00Z
 ---
 
 ## Current Test
 
-[full 6-session UAT chain on plugin 0.12.0 complete; all evaluable Phase 7 requirements empirically verified except wip-discipline (excluded per user directive 2026-05-03; Phase 8 reversal target)]
+[plugin 0.12.0 UAT complete (Test 1 PASSED with residuals); plugin 0.12.1 empirical regression-gate pending (Test 2 + Test 3 — added 2026-05-04 after Plans 07-10 + 07-11 structural closure of the 2 in-phase 0.12.0 residuals)]
 
 ## Tests
 
@@ -74,30 +74,59 @@ empirical_evidence_collected: |
   - 1 requirement (GAP-G2-wip-scope) excluded per user directive 2026-05-03; Phase 8 reversal target
   - 2 RESIDUALS: residual-advisor-budget + residual-pre-verified-format (both Phase 8 candidates, not Plan 07-09 scope)
 
+### 2. Plugin 0.12.1 empirical regression-gate (advisor budget + dual-surface resolution check)
+expected: |
+  Two smoke fixtures pass cleanly on plugin 0.12.1 against the canonical Compodoc + Storybook + Angular signals scenario:
+  (a) `bash D-advisor-budget.sh` PASSES with exit 0 -- advisor aggregate <=100w on canonical S1 plan session (Plan 07-10 closure of residual-advisor-budget); fragment-grammar shape detected; per-item <=15w (or <=22w if Assuming-frame); aggregate cap enforced.
+  (b) `bash B-pv-validation.sh` PASSES all 6 assertions -- Assertion 6 (resolution check) confirms every user-facing pv-* token resolves to a canonical claim_id value in a `<pre_verified>` XML block in the same session's executor flow (Plan 07-11 closure of residual-pre-verified-format); structural integrity preserved without surface uniformity.
+result: pending
+why_human: |
+  Plugin 0.12.1 was published by Plan 07-11 commit `bf8a8db` (5-surface atomic version bump for the paired Plan 07-10 + Plan 07-11 bundle). Per CLAUDE.md "Skill Verification with claude -p" convention, this can be auto-tested via `claude -p "/lz-advisor.<skill> <prompt>"` against the canonical fixture in a follow-up session.
+  Step 1: Run `bash D-advisor-budget.sh` against a fresh `claude -p "/lz-advisor.plan ..."` JSONL trace seeded with the canonical Compodoc S1 plan prompt (memory: project_compodoc_uat_initial_plan_prompt.md).
+  Step 2: Run `bash B-pv-validation.sh` against the same JSONL trace plus an S3 review trace for cross-surface token resolution coverage.
+  Step 3: If either fixture FAILs, the closure is not behaviorally durable; re-open the residual entry. If both PASS, mark this Test 2 resolved.
+
+### 3. Optional canonical 6-session UAT replay subset on plugin 0.12.1 (S1 plan + S3 review + S4 security-review)
+expected: |
+  The 3 sessions that exercised dual-surface pv-* most prominently on plugin 0.12.0 (S1 plan = prose-form citation in Key Decisions; S3 review = token references in Findings; S4 security-review = token reference in Findings) re-run cleanly on plugin 0.12.1 with:
+  (a) advisor aggregate <=100w on S1 plan session (Plan 07-10 fragment-grammar binding)
+  (b) reviewer aggregate <=300w on S3 review (Plan 07-09 fragment-grammar binding maintained)
+  (c) security-reviewer aggregate <=300w on S4 security-review (Plan 07-09 binding maintained)
+  (d) Assertion 6 token-resolution check passes on all 3 traces (Plan 07-11 dual-surface binding)
+result: pending
+why_human: |
+  Per `07-RESEARCH-GAPS.md` Gap 2 validation strategy: "Re-run any 1-2 sessions from the canonical 6-session UAT (preferably S3 review + S4 security-review since they showed token-form most prominently)." This is OPTIONAL but recommended after Test 2 above passes; it provides end-to-end behavioral confirmation that the 0.12.0 -> 0.12.1 PATCH bundle did not introduce regressions on adjacent surfaces (reviewer/security-reviewer fragment-grammar that landed in 0.12.0 stays bound; pv-* synthesis discipline still fires the dual-surface pattern; ToolSearch + WebSearch + WebFetch tool-use distribution stays consistent with the 0.12.0 baseline).
+  Skip if Test 2 (regression-gate) already passes cleanly and a full UAT replay is not warranted by the cost-benefit at this stage.
+
 residual_findings_outside_07_09_scope:
   - id: residual-advisor-budget
+    status: closed_structurally_2026_05_04
+    closed_by: Plan 07-10 (commits a11834d + cd4e49b + 0d86491)
     finding: |
       Advisor word budget on plugin 0.12.0: 118w (S1 plan session, raw advisor agent output: 5 enumerated points + Critical line).
       Target: <=100w per Plan 07-04 advisor sub-cap. 18% over.
-      Phase 8 candidate: extend Plan 07-09's fragment-grammar template to advisor.md (apply same Candidate A pattern that worked for reviewer + security-reviewer).
-      Validation: D-advisor-budget.sh empirically.
+      CLOSED 2026-05-04 by Plan 07-10: extended Plan 07-09's fragment-grammar emit template to advisor.md (DROP/KEEP lists adapted to single-block 100w shape; Density examples preserved byte-identically; effort: high UNCHANGED). D-advisor-budget.sh parser updated with ADVISOR_FRAGMENT_RE + ASSUMING_FRAME_RE.
+      Empirical re-validation against plugin 0.12.1 pending: see Test 2 below.
   - id: residual-pre-verified-format
+    status: closed_structurally_2026_05_04
+    closed_by: Plan 07-11 (commits fb872d9 + 3e03ed0 + 3ef407d + bf8a8db + c220fb4 + c56de23)
     finding: |
       pv-* synthesis discipline IS firing across UAT (token references in S3 + S4; concrete-source Verified: trailers in S2 + S6; prose-form in S1 plan Key Decisions section). NOT firing as strict <pre_verified> XML blocks.
-      Format-design clarification needed in Phase 8: is the token-form acceptable when claims are simple, with XML blocks reserved for claims requiring structured evidence presentation? Or should plan SKILL.md require explicit XML blocks throughout?
+      CLOSED 2026-05-04 by Plan 07-11 D2 amendment: Rule 5b in references/context-packaging.md now differentiates internal-prompt surface (canonical XML required) from user-facing artifact surface (token-form permitted with concrete-source backing). B-pv-validation.sh Assertion 6 (token resolution check) added. Plugin 0.12.0 -> 0.12.1 PATCH bump across 5 surfaces.
+      Empirical re-validation against plugin 0.12.1 pending: see Test 3 below.
   - id: residual-wip-discipline-reversal
     finding: |
       Plan 07-08 wip-discipline rule fires correctly per its specification, including the carve-outs (S6 produced one chore: commit, one wip: commit, and one docs(wip-resolve): trailer-only follow-up commit, exactly per the rule's three documented shapes). User explicitly REJECTS `wip:` commits as a workflow choice (memory: feedback_no_wip_commits.md). Phase 8 must REMOVE the rule entirely from execute SKILL.md + path-d assertion from E-verify-before-commit.sh + REQUIREMENTS.md row; bump plugin 0.12.0 -> 0.13.0 for contract-shape change.
 
 ## Summary
 
-total: 1
+total: 3
 passed: 1
 issues: 0
-pending: 0
+pending: 2
 skipped: 0
 blocked: 0
 
 ## Gaps
 
-(none -- all 3 residuals tracked as Phase 8 candidates in feedback_no_wip_commits.md and project_phase_8_candidates_post_07.md)
+(none -- in-phase residuals residual-advisor-budget + residual-pre-verified-format CLOSED structurally 2026-05-04 by Plans 07-10 + 07-11; remaining residual-wip-discipline-reversal explicitly Phase 8 reversal target per user directive 2026-05-03 / memory feedback_no_wip_commits.md)

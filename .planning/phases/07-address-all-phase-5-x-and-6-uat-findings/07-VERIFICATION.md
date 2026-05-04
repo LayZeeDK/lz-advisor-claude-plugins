@@ -1,45 +1,56 @@
 ---
 phase: 07-address-all-phase-5-x-and-6-uat-findings
 verified: 2026-05-03T00:00:00Z
-updated: 2026-05-03T00:55:00Z
+updated: 2026-05-04T23:55:00Z
 status: passed_with_residual
-score: 15/15 must-haves structurally verified; Plan 07-09 gap closure empirically verified on plugin 0.12.0; 2 out-of-Plan-07-09-scope residuals tracked for Phase 8
-plugin_version: 0.12.0
-plans: [07-01, 07-02, 07-03, 07-04, 07-05, 07-06, 07-07, 07-08, 07-09]
+score: 15 of 15 must-haves structurally verified across 11 plans (07-01..07-11); the 2 in-phase residuals from `empirical_subverification_2026_05_03` (residual-advisor-budget + residual-pre-verified-format) are now CLOSED structurally on plugin 0.12.1 by Plans 07-10 and 07-11; only the OUT-OF-SCOPE `residual-wip-discipline-reversal` remains (Phase 8 reversal target per user directive 2026-05-03)
+plugin_version: 0.12.1
+plugin_version_milestone_trail:
+  - 0.9.0  -- pre-Phase 7 baseline (Phase 6 sealed)
+  - 0.10.0 -- Plan 07-06 (Phase 1 + Phase 2 of byte-identical canon synthesis discipline + 8-session UAT replay basis)
+  - 0.11.0 -- Plan 07-07 (default-on ToolSearch precondition + 2 worked examples)
+  - 0.12.0 -- Plan 07-09 (reviewer + security-reviewer fragment-grammar emit template + effort medium)
+  - 0.12.1 -- Plans 07-10 + 07-11 PATCH bundle (advisor fragment-grammar adaptation + Rule 5b dual-surface differentiation)
+plans: [07-01, 07-02, 07-03, 07-04, 07-05, 07-06, 07-07, 07-08, 07-09, 07-10, 07-11]
 verification_basis:
   structural: file-content checks via Read + git grep + bash -n on plugins/, references/, smoke-tests/, REQUIREMENTS.md
   empirical_07_01_07_06: 8-session UAT replay on plugin 0.10.0 against ngx-smart-components testbed (uat-replay/session-notes.md)
-  empirical_07_07_07_09: deferred per plan scope (binding reversion criterion documented in 07-CONTEXT.md D-04 amendment 2026-05-02 for 07-09)
+  empirical_07_07_07_09: 6-session UAT chain on plugin 0.12.0 against ngx-smart-components testbed (uat-replay-0.12.0/session-{1..6}-*.jsonl) per `empirical_subverification_2026_05_03` block below
+  empirical_07_10_07_11: deferred per plan scope -- structural closure complete; empirical D-advisor-budget.sh + B-pv-validation.sh re-runs against plugin 0.12.1 + optional canonical UAT replay subset are the load-bearing pending items
 re_verification:
-  previous_status: gaps_found
-  previous_score: structural plans landed (6/6); empirical residuals on 2 of 5 plans require gap-closure
+  previous_status: passed_with_residual
+  previous_score: 15/15 structural; Plan 07-09 empirically verified on plugin 0.12.0; 2 out-of-Plan-07-09-scope residuals tracked
+  current_score: 15/15 must-haves structurally verified; 2 residuals from empirical_subverification_2026_05_03 NOW CLOSED structurally on 0.12.1
   gaps_closed:
-    - "Gap 1: Plan 07-01 ToolSearch precondition rule does not reliably fire (closed structurally by Plan 07-07: default-on conversion + 2 worked examples)"
-    - "Gap 2: Plan 07-02 wip-discipline scope ambiguity (closed structurally by Plan 07-08: subject-prefix discipline + 3-shape worked example + path-d detection)"
-    - "GAP-D-budget-empirical: reviewer 396w / security-reviewer 414w over 300w cap on plugin 0.11.0 (closed structurally by Plan 07-09: fragment-grammar emit template + effort xhigh -> medium)"
+    - "Gap 1: Plan 07-01 ToolSearch precondition rule does not reliably fire (closed structurally by Plan 07-07: default-on conversion + 2 worked examples; empirically VERIFIED in 5 of 6 sessions on plugin 0.12.0 per 07-HUMAN-UAT.md)"
+    - "Gap 2: Plan 07-02 wip-discipline scope ambiguity (closed structurally by Plan 07-08: subject-prefix discipline + 3-shape worked example + path-d detection; empirically VERIFIED to fire correctly per spec on plugin 0.12.0 per 07-HUMAN-UAT.md, BUT rule rejected by user directive 2026-05-03 -- Phase 8 reversal target)"
+    - "GAP-D-budget-empirical: reviewer 396w / security-reviewer 414w over 300w cap on plugin 0.11.0 (closed structurally by Plan 07-09: fragment-grammar emit template + effort xhigh -> medium; empirically VERIFIED on plugin 0.12.0 -- reviewer 197w + security-reviewer 285w both under 300w cap per 07-HUMAN-UAT.md)"
+    - "residual-advisor-budget: advisor 118w / 100w cap = 18% over on plugin 0.12.0 S1 plan session (closed structurally by Plan 07-10: fragment-grammar emit template + DROP/KEEP lists adapted to single-block 100w shape + Density examples preserved + frontmatter effort: high UNCHANGED + D-advisor-budget.sh parser updated with ADVISOR_FRAGMENT_RE + ASSUMING_FRAME_RE; commits a11834d + cd4e49b)"
+    - "residual-pre-verified-format: Rule 5b Format mandate prose ambiguity vs empirically-firing user-facing token-form pattern on plugin 0.12.0 (closed structurally by Plan 07-11 D2 amendment: dual-surface differentiation in references/context-packaging.md + B-pv-validation.sh Assertion 6 token-resolution check + REQUIREMENTS.md FIND-B.2-format-scope row + plugin 0.12.0 -> 0.12.1 PATCH bump across 5 surfaces; commits fb872d9 + 3e03ed0 + 3ef407d + bf8a8db + c220fb4)"
   gaps_remaining: []
   regressions: []
 human_verification:
-  - test: "Empirical UAT replay against plugin 0.12.0 to confirm structural closures hold behaviorally"
+  - test: "Plugin 0.12.1 empirical regression-gate (advisor budget + dual-surface resolution check)"
     expected: |
-      8-session UAT chain on canonical Compodoc + Storybook + Angular signals scenario produces:
-      (a) ToolSearch firing in 8 of 8 sessions where agent-generated source signals are present (Plan 07-07 closure of GAP-G1-firing)
-      (b) wip-prefix discipline on commits with `## Outstanding Verification` body sections (Plan 07-08 closure of GAP-G2-wip-scope)
-      (c) reviewer aggregate <=300w AND security-reviewer aggregate <=300w on representative inputs (Plan 07-09 closure of GAP-D-budget-empirical)
-      (d) Class-1 (API-correctness) recall does NOT drop more than 15% vs the prior xhigh baseline (Plan 07-09 reversion criterion)
+      Two smoke fixtures pass cleanly on plugin 0.12.1 against the canonical Compodoc + Storybook + Angular signals scenario:
+      (a) `bash D-advisor-budget.sh` PASSES with exit 0 -- advisor aggregate <=100w on canonical S1 plan session (Plan 07-10 closure of residual-advisor-budget); fragment-grammar shape detected; per-item <=15w (or <=22w if Assuming-frame); aggregate cap enforced
+      (b) `bash B-pv-validation.sh` PASSES all 6 assertions -- Assertion 6 (resolution check) confirms every user-facing pv-* token resolves to a canonical claim_id value in a `<pre_verified>` XML block in the same session's executor flow (Plan 07-11 closure of residual-pre-verified-format); structural integrity preserved without surface uniformity
     why_human: |
-      Plugin 0.12.0 was published by Plan 07-09 commit 24e80c6. UAT replay against plugin 0.12.0 has NOT yet been run.
-      The prior 8-session replay on plugin 0.10.0 (sessions f2d669f3 / 6276171a / a1503efa / 0d55118f / 29db446f / 2b5f3ae5 /
-      bfa913fa / b614d3dd) was conducted before Plans 07-07, 07-08, 07-09 landed. Per CLAUDE.md "Skill Verification with claude -p"
-      convention, this can be auto-tested via `claude -p "/lz-advisor.<skill> <prompt>"` against the canonical fixture once
-      a plugin 0.12.0 UAT replay is initiated.
-    binding_reversion_criterion: |
-      For Plan 07-09: if empirical Class-1 recall drops more than 15% on review/security-review skills with effort: medium
-      vs the xhigh baseline, REVERT D-04 amendment 2026-05-02 (effort medium -> xhigh; keep Candidate A fragment-grammar
-      template alone). Documented in 07-CONTEXT.md D-04 amendment 2026-05-02. Recall measured by:
-      (i) confirmed-true bug count vs curated answer key from Phase 6 / Phase 7 UAT scenarios (ngx-smart-components testbed);
-      (ii) severity-tag accuracy (medium-effort reviewer correctly tags Critical bugs as Critical);
-      (iii) OWASP category mapping accuracy (security-reviewer specific).
+      Plugin 0.12.1 was published by Plan 07-11 commit `bf8a8db` (5-surface atomic version bump for the paired Plan 07-10 + Plan 07-11 bundle). The 2 in-phase residuals from `empirical_subverification_2026_05_03` (residual-advisor-budget + residual-pre-verified-format) are now CLOSED structurally; the empirical regression-gate confirms behavior holds at runtime.
+      Per CLAUDE.md "Skill Verification with claude -p" convention, this can be auto-tested via `claude -p "/lz-advisor.<skill> <prompt>"` against the canonical fixture in a follow-up session. Specifically:
+      Step 1: Run `bash D-advisor-budget.sh` against a fresh `claude -p "/lz-advisor.plan ..."` JSONL trace seeded with the canonical Compodoc S1 plan prompt (memory: project_compodoc_uat_initial_plan_prompt.md).
+      Step 2: Run `bash B-pv-validation.sh` against the same JSONL trace plus an S3 review trace for cross-surface token resolution coverage.
+      Step 3: If either fixture FAILs, the closure is not behaviorally durable; re-open the residual entry. If both PASS, mark this human_verification item resolved.
+  - test: "Optional canonical 6-session UAT replay subset on plugin 0.12.1 (S1 plan + S3 review + S4 security-review)"
+    expected: |
+      The 3 sessions that exercised dual-surface pv-* most prominently on plugin 0.12.0 (S1 plan = prose-form citation in Key Decisions; S3 review = token references in Findings; S4 security-review = token reference in Findings) re-run cleanly on plugin 0.12.1 with:
+      (a) advisor aggregate <=100w on S1 plan session (Plan 07-10 fragment-grammar binding)
+      (b) reviewer aggregate <=300w on S3 review (Plan 07-09 fragment-grammar binding maintained)
+      (c) security-reviewer aggregate <=300w on S4 security-review (Plan 07-09 binding maintained)
+      (d) Assertion 6 token-resolution check passes on all 3 traces (Plan 07-11 dual-surface binding)
+    why_human: |
+      Per `07-RESEARCH-GAPS.md` Gap 2 validation strategy: "Re-run any 1-2 sessions from the canonical 6-session UAT (preferably S3 review + S4 security-review since they showed token-form most prominently)." This is OPTIONAL but recommended after Step 1 above passes; it provides end-to-end behavioral confirmation that the 0.12.0 -> 0.12.1 PATCH bundle did not introduce regressions on adjacent surfaces (reviewer/security-reviewer fragment-grammar that landed in 0.12.0 stays bound; pv-* synthesis discipline still fires the dual-surface pattern; ToolSearch + WebSearch + WebFetch tool-use distribution stays consistent with the 0.12.0 baseline).
+      Skip if regression-gate (Step 1) already passes cleanly and a full UAT replay is not warranted by the cost-benefit at this stage.
 deferred:
   - truth: "Cross-axis severity-vocabulary alignment between agents/{reviewer,security-reviewer}.md and lz-advisor.security-review/SKILL.md + references/context-packaging.md (security-reviewer renamed Critical/High/Medium -> Critical/Important/Suggestion in agent file but downstream surfaces still reference legacy ladder)"
     addressed_in: "Phase 8"
@@ -65,6 +76,16 @@ deferred:
       07-VERIFICATION.md original out-of-phase residual #5. Plan 07-01 Rule 5b applies to <pre_verified> XML blocks;
       advisor narrative claims aren't pv-* shaped. Mixed: could refine Rule 5b OR add new rule. Defer until empirical
       investigation of advisor narrative-SD self-anchor frequency.
+  - truth: "wip-discipline reversal (Plan 07-08 wip-prefix discipline rule fires correctly per spec but user rejects `wip:` commits as a project-level workflow choice; rule must be REMOVED in Phase 8 with plugin 0.12.1 -> 0.13.0 MINOR contract-shape change)"
+    addressed_in: "Phase 8"
+    evidence: |
+      07-HUMAN-UAT.md residual_findings_outside_07_09_scope id residual-wip-discipline-reversal (line 88-90) +
+      empirical_subverification_2026_05_03 line 81 (S2 + S6 commits demonstrate rule fires per spec) +
+      memory feedback_no_wip_commits.md 2026-05-03 (user directive: REMOVE the rule entirely from
+      lz-advisor.execute/SKILL.md + path-d assertion from E-verify-before-commit.sh + REQUIREMENTS.md
+      GAP-G2-wip-scope row; bump plugin 0.12.1 -> 0.13.0 MINOR for contract-shape change). This is the
+      ONLY residual remaining after Plans 07-10 + 07-11 closed the 2 in-phase residuals; explicitly OUT
+      OF SCOPE for in-phase Phase 7 closure per user directive.
 empirical_subverification_2026_05_03:
   context: |
     Full 6-session UAT chain on plugin 0.12.0 against ngx-smart-components testbed (uat-replay-0.12.0 branch),
@@ -112,7 +133,7 @@ closure_amendment_2026_05_04:
   plan_07_11_artifacts:
     - plugins/lz-advisor/references/context-packaging.md (Rule 5b "Format mandate" rewritten with dual-surface differentiation: internal-prompt surface XML required; user-facing artifact surface token-form permitted with concrete-source backing; trust contract preserved via Assertion 6 cross-reference)
     - .planning/phases/05.4-address-uat-findings-a-k/smoke-tests/B-pv-validation.sh (Assertion 6 added; existing Assertions 1-5 preserved byte-identically; final SUCCESS message updated to reference 6 assertions)
-    - .planning/REQUIREMENTS.md (FIND-B.2 row description amended with dual-surface scope language)
+    - .planning/REQUIREMENTS.md (FIND-B.2-format-scope row added with dual-surface scope language + Phase 7 traceability row)
   plugin_version: 0.12.1
   plugin_version_surfaces:
     - plugins/lz-advisor/.claude-plugin/plugin.json
@@ -131,52 +152,94 @@ closure_amendment_2026_05_04:
     The 2 in-phase residuals from empirical_subverification_2026_05_03 are now CLOSED structurally.
     Empirical re-validation pending: run bash D-advisor-budget.sh + bash B-pv-validation.sh on plugin 0.12.1
     in a follow-up regression-gate session.
+final_status_after_07_10_07_11_2026_05_04:
+  context: |
+    This block updates the top-level `status` and `score` fields after Plans 07-10 + 07-11 landed structurally on plugin 0.12.1.
+    The phase moves from "passed_with_residual with 2 in-phase residuals tracked" to "passed_with_residual with 1 OUT-OF-SCOPE residual tracked".
+    The 2 in-phase residuals (residual-advisor-budget + residual-pre-verified-format) are now CLOSED structurally with 5 commits across 8 files.
+  status_change: |
+    Top-level status remains `passed_with_residual` because the OUT-OF-SCOPE `residual-wip-discipline-reversal` is intentionally
+    deferred to Phase 8 per user directive 2026-05-03 (memory: feedback_no_wip_commits.md). It is not a structural defect of
+    Phase 7's in-phase scope; it is an explicit project-level design directive change that Phase 7 cannot resolve in-phase
+    without contradicting the user directive that Plans 07-10 + 07-11 should be the closing structural plans.
+  in_phase_score: 15 of 15 must-haves structurally verified (11 plans landed; all 11 SUMMARY.md files present; all closure-amendment artifacts in place; bash -n PASS on D-advisor-budget.sh + B-pv-validation.sh; plugin 0.12.1 across 5 surfaces zero version-drift remnants)
+  empirical_score: 13 of 15 must-haves empirically verified on plugin 0.12.0 (per 07-HUMAN-UAT.md: 11 EMPIRICAL ✓ + 3 structural-only-due-to-no-input-scenario + 1 EXCLUDED per user directive); the 2 closure plans (07-10 + 07-11) ride on plugin 0.12.1 and the empirical regression-gate is pending in a follow-up session per human_verification block above
+  closure_commits:
+    - a11834d feat(07-10) rewrite advisor.md Output Constraint with fragment-grammar emit template
+    - cd4e49b feat(07-10) update D-advisor-budget.sh parser for fragment-grammar shape
+    - fb872d9 feat(07-11) amend Rule 5b Format mandate with dual-surface differentiation
+    - 3e03ed0 feat(07-11) add Assertion 6 (token-form resolution check) to B-pv-validation.sh
+    - 3ef407d feat(07-11) add FIND-B.2-format-scope row to REQUIREMENTS.md
+    - bf8a8db feat(07-11) bump plugin SemVer 0.12.0 -> 0.12.1 PATCH
+    - c220fb4 feat(07-11) add closure_amendment_2026_05_04 to 07-VERIFICATION.md
+    - 0d86491 docs(07-10) summarize gap-closure plan execution -- residual-advisor-budget CLOSED structurally
+    - c56de23 docs(07-11) summarize gap-closure plan execution -- residual-pre-verified-format CLOSED
+  phase_7_sealing_readiness: |
+    Phase 7 is sealing-ready as `passed_with_residual` with 1 OUT-OF-SCOPE Phase 8 residual.
+    The phase delivered: 11 plans, 16 requirement IDs (15 inherited + 1 new FIND-B.2-format-scope), 4 plugin version bumps
+    (0.9.0 -> 0.10.0 -> 0.11.0 -> 0.12.0 -> 0.12.1), 5 NEW Phase 7 smoke fixtures (B-pv-validation.sh + D-advisor-budget.sh
+    + D-reviewer-budget.sh + D-security-reviewer-budget.sh + E-verify-before-commit.sh, all bash -n PASS), 4-skill byte-identical
+    `<context_trust_contract>` canon preserved across all 11 plans (3 cross-file diffs exit 0), tool grants preserved at
+    `["Read", "Glob"]` across all 3 agents (principle of least privilege).
+    Empirical confirmation pending in a follow-up regression-gate session: bash D-advisor-budget.sh + bash B-pv-validation.sh
+    on plugin 0.12.1 against the canonical Compodoc S1 + S3 + S4 fixture (per CLAUDE.md "Skill Verification with claude -p" convention).
 ---
 
-# Phase 7 Verification Report -- Consolidated Closure of 15 Requirement IDs
+# Phase 7 Verification Report -- Consolidated Closure of 16 Requirement IDs Across 11 Plans
 
 **Phase Goal:** Close all Phase 5.x + 6 UAT findings (Findings A, B.1+B.2, C, D, E, F, H + GAP-G1+G2-empirical from Phase 6 amendment 5) plus the in-phase Gap 1 (ToolSearch precondition firing) + Gap 2 (wip-discipline scope ambiguity) surfaced by 8-session UAT replay on plugin 0.10.0.
 
-**Status:** passed_with_residual -- 15 requirement IDs structurally verified; Plan 07-09 (the load-bearing within-phase gap closure) empirically verified on plugin 0.12.0 via D-reviewer-budget.sh + D-security-reviewer-budget.sh fixtures (both exit 0; reviewer aggregate 275w / 300 cap) AND Compodoc UAT plan session (ToolSearch + WebSearch + WebFetch firing per Plan 07-07; reconciliation rule fires per Plan 07-02 / 07-03). Two out-of-Plan-07-09-scope residuals tracked for Phase 8 (advisor word budget at 118w / 100 cap; pv-* schema clarification on plan-artifact-body format).
+**Status:** `passed_with_residual` -- 15 must-haves structurally verified across 11 plans (07-01 through 07-11). Plans 07-09 (reviewer + security-reviewer fragment-grammar) AND Plans 07-10 + 07-11 (advisor fragment-grammar + Rule 5b dual-surface) closed the 3 within-phase gap residuals. The 2 in-phase residuals from `empirical_subverification_2026_05_03` (residual-advisor-budget + residual-pre-verified-format) are now CLOSED STRUCTURALLY on plugin 0.12.1 by Plans 07-10 + 07-11. Only the OUT-OF-SCOPE `residual-wip-discipline-reversal` remains, which is explicitly Phase 8 reversal target per user directive 2026-05-03.
 
-**Plugin version:** 0.12.0 (across 5 surfaces: plugin.json + 4 SKILL.md frontmatter; zero 0.11.0 / 0.10.0 / 0.9.0 remnants).
+**Plugin version:** 0.12.1 (across 5 surfaces: plugin.json + 4 SKILL.md frontmatter; zero 0.12.0 / 0.11.0 / 0.10.0 / 0.9.0 remnants).
 
-**Re-verification:** Yes -- the prior 07-VERIFICATION.md (status: gaps_found) declared Gap 1, Gap 2, and (via Plan 07-09 amendment 2026-05-02) GAP-D-budget-empirical as within-phase residuals requiring closure. Plans 07-07, 07-08, 07-09 landed those closures structurally; this report consolidates the closed state.
+**Plugin version milestone trail (Phase 7):**
+
+- 0.9.0 -- pre-Phase 7 baseline (Phase 6 sealed)
+- 0.10.0 -- Plan 07-06 (Phase 1 + Phase 2 of byte-identical canon synthesis discipline + 8-session UAT replay basis)
+- 0.11.0 -- Plan 07-07 (default-on ToolSearch precondition + 2 worked examples)
+- 0.12.0 -- Plan 07-09 (reviewer + security-reviewer fragment-grammar emit template + effort medium)
+- 0.12.1 -- Plans 07-10 + 07-11 PATCH bundle (advisor fragment-grammar adaptation + Rule 5b dual-surface differentiation)
+
+**Re-verification:** Yes -- the prior 07-VERIFICATION.md (status: `passed_with_residual` after Plan 07-09; updated 2026-05-03 with `empirical_subverification_2026_05_03` block) tracked 2 in-phase residuals (residual-advisor-budget + residual-pre-verified-format) for closure. Plans 07-10 + 07-11 landed those closures structurally on plugin 0.12.1; this report consolidates the final state.
 
 ---
 
-## Goal Achievement -- Observable Truths (15 Requirement IDs)
+## Goal Achievement -- Observable Truths (16 Requirement IDs)
 
 ### Phase 5.x + Phase 6 inherited findings (12 IDs)
 
 | #   | Requirement ID            | Plan(s)        | Status                          | Evidence                                                                                                                                                                                                                                                                                                                |
 | --- | ------------------------- | -------------- | ------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | 1   | FIND-A (apply-then-revert reconciliation) | 07-02          | VERIFIED structurally + empirical | `<verify_before_commit>` Reconciliation extension subsection in `lz-advisor.execute/SKILL.md` (commit `5125f8a`); 8-session UAT (sessions 2 + 7) confirmed advisor Critical-flag mechanism working but P8-03 deferred (see deferred items)                                                                              |
-| 2   | FIND-B.1 (pv-* synthesis carry-forward + mandate) | 07-01          | VERIFIED                          | Common Contract Rule 5b sub-rule "Synthesis mandate" in `references/context-packaging.md` + 4-skill byte-identical `<context_trust_contract>` precondition supplement (commits `79d2273`, `e9f4166`); UAT sessions 1, 3, 6 produced 9 source-grounded pv-* blocks                                                       |
-| 3   | FIND-B.2 (XML format + source+evidence required) | 07-01          | VERIFIED                          | Common Contract Rule 5b sub-rule "Format mandate" + B-pv-validation.sh Assertion 1 (XML form + reject plain-bullet "Pre-verified Claims" sections); bash -n PASS                                                                                                                                                        |
-| 4   | FIND-C (4 confidence-laundering guards) | 07-03          | VERIFIED                          | Rules 5c (Hedge propagation) + 5d (Version-qualifier anchoring) + Cross-Skill Hedge Tracking section in `references/orient-exploration.md` + Verdict scope markers in 4 SKILL.md (commits `690cf3f`, `a03df5f`, `a418caf`); UAT replay confirmed 5 api-correctness + 3 security-threats verdict scope markers           |
-| 5   | FIND-D (word-budget regression) | 07-04, 07-09   | VERIFIED structurally             | Plan 07-04 landed descriptive sub-cap prose + 3 D-*-budget smoke fixtures; Plan 07-09 replaced prose with fragment-grammar emit template + effort xhigh -> medium (commits `00638bd`, `74929e1`, `5787a3c`) -- empirical UAT on 0.12.0 deferred (binding reversion criterion in CONTEXT.md D-04 amendment 2026-05-02)   |
-| 6   | FIND-E.1 (advisor refuse-or-flag) | 07-02          | VERIFIED                          | `## Hedge Marker Discipline` section in 3 agent prompts (advisor.md, reviewer.md, security-reviewer.md) with literal `Unresolved hedge:` frame (commit `4b61907`); E-verify-before-commit.sh path-a; 6 of 8 UAT sessions firing                                                                                          |
-| 7   | FIND-E.2 (plan-step-shape Run/Verify) | 07-02          | VERIFIED                          | `<verify_before_commit>` Phase 3.5 plan-step-shape rule + cost-cliff allowance + Verified: trailer convention (commit `5125f8a`); E-verify-before-commit.sh paths b + c; UAT progressive correctness sessions 2 -> 5 -> 8                                                                                                |
-| 8   | FIND-F (reviewer Class-2 escalation hook) | 07-05          | VERIFIED                          | Phase 1 Pre-emptive Class-2 scan + Phase 3 Reviewer Escalation Hook in `lz-advisor.review/SKILL.md`; `## Class-2 Escalation Hook` in `agents/reviewer.md`; `## Verify Request Schema` in `references/context-packaging.md` (commits `4a81a32`, `f42d89c`, `9191c65`); reviewer tool grant unchanged at `["Read", "Glob"]` |
-| 9   | FIND-G (review-skill safety net for verify-skip) | 07-02          | VERIFIED                          | `### Scan Criteria` Flag bullet "Verification gaps in implementation of hedged claims" with 3 verification record alternatives (`Verified:` trailer / `<pre_verified>` anchor / empirical evidence) in `lz-advisor.review/SKILL.md` (commit `286d2af`)                                                                  |
-| 10  | FIND-H (block confabulation on Class-2/3/4) | 07-01          | VERIFIED                          | Common Contract Rule 5b sub-rule "Self-anchor rejection" enumerating 9 forbidden method= values; B-pv-validation.sh Assertion 3; UAT sessions 1, 3, 6 produced 0 self-anchor pv-* blocks (residual P8-18 narrative-SD self-anchor deferred)                                                                              |
-| 11  | FIND-silent-resolve (numbered finding disposition) | 07-02          | VERIFIED                          | `## Findings Disposition (when input is a numbered finding list)` section in plan-file template in `lz-advisor.plan/SKILL.md` (commit `286d2af`); UAT sessions 4 + 7 (both plan-fixes UATs) confirmed silent-resolve sub-pattern CLOSED                                                                                  |
-| 12  | GAP-G1+G2-empirical (Phase 6 residual) | 07-01          | VERIFIED                          | Plan 07-01 Rule 5b ToolSearch precondition + 4-skill `<context_trust_contract>` synthesis precondition supplement; FIRST empirical confirmations across 8+ UAT cycles since Phase 5 (sessions 1 + 3 fired correctly); 06-VERIFICATION.md amendment 6 marks PARTIAL -> PASS-with-residual                                  |
+| 2   | FIND-B.1 (pv-* synthesis carry-forward + mandate) | 07-01          | VERIFIED + empirical              | Common Contract Rule 5b sub-rule "Synthesis mandate" in `references/context-packaging.md` + 4-skill byte-identical `<context_trust_contract>` precondition supplement (commits `79d2273`, `e9f4166`); UAT plugin 0.10.0 sessions 1, 3, 6 produced 9 source-grounded pv-* blocks; UAT plugin 0.12.0 S3 5 token refs + S4 1 token ref + carry-forward S3->S5->S6 |
+| 3   | FIND-B.2 (XML format + source+evidence required) | 07-01, 07-11 | VERIFIED + empirical (refined by 07-11 D2 amendment) | Plan 07-01 Common Contract Rule 5b sub-rule "Format mandate" + B-pv-validation.sh Assertion 1 (XML form + reject plain-bullet "Pre-verified Claims"); Plan 07-11 amended Rule 5b with dual-surface differentiation (internal-prompt XML required; user-facing token-form permitted with concrete-source backing per 3 explicit shapes); B-pv-validation.sh Assertion 6 token-resolution check; bash -n PASS                                                                            |
+| 4   | FIND-C (4 confidence-laundering guards) | 07-03          | VERIFIED + empirical              | Rules 5c (Hedge propagation) + 5d (Version-qualifier anchoring) + Cross-Skill Hedge Tracking section in `references/orient-exploration.md` + Verdict scope markers in 4 SKILL.md (commits `690cf3f`, `a03df5f`, `a418caf`); UAT 0.12.0 verdict scope markers correct in 4/4 applicable sessions; hedge propagation observed in S1; version-qualifiers anchored           |
+| 5   | FIND-D (word-budget regression) | 07-04, 07-09, 07-10 | VERIFIED structurally on 0.12.1 (advisor) + empirical on 0.12.0 (reviewer + security-reviewer) | Plan 07-04 landed descriptive sub-cap prose + 3 D-*-budget smoke fixtures; Plan 07-09 replaced reviewer + security-reviewer prose with fragment-grammar emit template + effort xhigh -> medium (commits `00638bd`, `74929e1`, `5787a3c`) -- empirically VERIFIED on plugin 0.12.0 (reviewer 197w + security-reviewer 285w both under 300w cap per 07-HUMAN-UAT.md); Plan 07-10 extended fragment-grammar to advisor.md + D-advisor-budget.sh parser (commits `a11834d`, `cd4e49b`) on plugin 0.12.1 -- empirical confirmation pending in regression-gate session per human_verification block |
+| 6   | FIND-E.1 (advisor refuse-or-flag) | 07-02          | VERIFIED + empirical (structural-only on 0.12.0 -- no hedge markers in input to flag) | `## Hedge Marker Discipline` section in 3 agent prompts (advisor.md, reviewer.md, security-reviewer.md) with literal `Unresolved hedge:` frame (commit `4b61907`); E-verify-before-commit.sh path-a; 8-session UAT 0.10.0 fired in 6 of 8 sessions                                                                                                                       |
+| 7   | FIND-E.2 (plan-step-shape Run/Verify) | 07-02          | VERIFIED + empirical              | `<verify_before_commit>` Phase 3.5 plan-step-shape rule + cost-cliff allowance + Verified: trailer convention (commit `5125f8a`); E-verify-before-commit.sh paths b + c; UAT 0.10.0 progressive correctness sessions 2 -> 5 -> 8; UAT 0.12.0 S2 + S6 commits include explicit Run: directives + Verified: trailers with concrete evidence                                |
+| 8   | FIND-F (reviewer Class-2 escalation hook) | 07-05          | VERIFIED + empirical              | Phase 1 Pre-emptive Class-2 scan + Phase 3 Reviewer Escalation Hook in `lz-advisor.review/SKILL.md`; `## Class-2 Escalation Hook` in `agents/reviewer.md`; `## Verify Request Schema` in `references/context-packaging.md` (commits `4a81a32`, `f42d89c`, `9191c65`); reviewer tool grant unchanged at `["Read", "Glob"]`; UAT 0.12.0 S3 review escalated pv-storybook-global-deprecation-10x to web verification |
+| 9   | FIND-G (review-skill safety net for verify-skip) | 07-02          | VERIFIED structurally (no verify-skip violation in UAT 0.12.0 input to flag) | `### Scan Criteria` Flag bullet "Verification gaps in implementation of hedged claims" with 3 verification record alternatives (`Verified:` trailer / `<pre_verified>` anchor / empirical evidence) in `lz-advisor.review/SKILL.md` (commit `286d2af`)                                                                  |
+| 10  | FIND-H (block confabulation on Class-2/3/4) | 07-01          | VERIFIED + empirical              | Common Contract Rule 5b sub-rule "Self-anchor rejection" enumerating 9 forbidden method= values; B-pv-validation.sh Assertion 3; UAT 0.10.0 sessions 1, 3, 6 produced 0 self-anchor pv-* blocks; UAT 0.12.0 S1 + S2 + S6 used local sources + web verification before propagating claims (no self-anchor evidence; residual P8-18 narrative-SD self-anchor deferred)                                                                              |
+| 11  | FIND-silent-resolve (numbered finding disposition) | 07-02          | VERIFIED structurally (not directly tested in UAT 0.12.0) | `## Findings Disposition (when input is a numbered finding list)` section in plan-file template in `lz-advisor.plan/SKILL.md` (commit `286d2af`); UAT 0.10.0 sessions 4 + 7 (both plan-fixes UATs) confirmed silent-resolve sub-pattern CLOSED                                                                                  |
+| 12  | GAP-G1+G2-empirical (Phase 6 residual) | 07-01          | VERIFIED + empirical              | Plan 07-01 Rule 5b ToolSearch precondition + 4-skill `<context_trust_contract>` synthesis precondition supplement; UAT 0.12.0 ToolSearch + WebSearch firing in 5/6 sessions on agent-generated source signals                                                                                                            |
 
-### Within-phase Gap-closure requirements (3 IDs registered in REQUIREMENTS.md)
+### Within-phase Gap-closure requirements (4 IDs registered in REQUIREMENTS.md)
 
 | #   | Requirement ID         | Plan  | Status                                  | Evidence                                                                                                                                                                                                                                                                            |
 | --- | ---------------------- | ----- | --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| 13  | GAP-G1-firing          | 07-07 | VERIFIED structurally; empirical pending | Default-on ToolSearch rule + 2 `<example>` blocks in 4-skill byte-identical `<context_trust_contract>` (3 cross-file diffs exit 0); B-pv-validation.sh Assertion 5 + second scratch-repo scenario; plugin version 0.10.0 -> 0.11.0 (commits `bd2d418`, `f73e24f`, `deb1fb2`, `dd2bdf1`) |
-| 14  | GAP-G2-wip-scope       | 07-08 | VERIFIED structurally; empirical pending | `### Subject-prefix discipline when Outstanding Verification is populated` subsection + 3-shape worked example pair in `lz-advisor.execute/SKILL.md` `<verify_before_commit>`; E-verify-before-commit.sh path-d + synthesized in-process scenario + --replay flag (commits `0d61b9f`, `7c2126c`, `515a707`); 4-step structural validation 4/4 PASS per 07-08-REPLAY-RESULTS.md |
-| 15  | GAP-D-budget-empirical | 07-09 | VERIFIED structurally; empirical pending | Fragment-grammar emit template (`<file>:<line>: <severity>: <problem>. <fix>.`) + ASCII severity prefixes (crit / imp / sug / q) + DROP/KEEP lists + 3 worked example pairs + holistic worked example (~296w aggregate) in `agents/{reviewer,security-reviewer}.md` `## Output Constraint`; effort frontmatter xhigh -> medium; D-{reviewer,security-reviewer}-budget.sh fragment-grammar parser; plugin 0.11.0 -> 0.12.0 (commits `00638bd`, `74929e1`, `5787a3c`, `24e80c6`) |
+| 13  | GAP-G1-firing          | 07-07 | VERIFIED structurally + empirical (0.12.0) | Default-on ToolSearch rule + 2 `<example>` blocks in 4-skill byte-identical `<context_trust_contract>` (3 cross-file diffs exit 0); B-pv-validation.sh Assertion 5 + second scratch-repo scenario; plugin version 0.10.0 -> 0.11.0 (commits `bd2d418`, `f73e24f`, `deb1fb2`, `dd2bdf1`); UAT 0.12.0 default-on ToolSearch fired in 5/6 sessions (S4 skipped because npm audit covered Class-1 question natively -- correct skip) |
+| 14  | GAP-G2-wip-scope       | 07-08 | VERIFIED structurally + empirical (0.12.0; rule REJECTED by user directive -- Phase 8 reversal target) | `### Subject-prefix discipline when Outstanding Verification is populated` subsection + 3-shape worked example pair in `lz-advisor.execute/SKILL.md` `<verify_before_commit>`; E-verify-before-commit.sh path-d + synthesized in-process scenario + --replay flag (commits `0d61b9f`, `7c2126c`, `515a707`); 4-step structural validation 4/4 PASS per 07-08-REPLAY-RESULTS.md; UAT 0.12.0 S2 + S6 demonstrate rule fires per spec (3 of 5 testbed commits use wip: prefix). User directive 2026-05-03 (memory: feedback_no_wip_commits.md): rule REJECTED; Phase 8 must REMOVE rule + bump 0.12.1 -> 0.13.0 MINOR for contract-shape change |
+| 15  | GAP-D-budget-empirical | 07-09 | VERIFIED structurally + empirical (0.12.0) | Fragment-grammar emit template (`<file>:<line>: <severity>: <problem>. <fix>.`) + ASCII severity prefixes (crit / imp / sug / q) + DROP/KEEP lists + 3 worked example pairs + holistic worked example (~296w aggregate) in `agents/{reviewer,security-reviewer}.md` `## Output Constraint`; effort frontmatter xhigh -> medium; D-{reviewer,security-reviewer}-budget.sh fragment-grammar parser; plugin 0.11.0 -> 0.12.0 (commits `00638bd`, `74929e1`, `5787a3c`, `24e80c6`); UAT 0.12.0 reviewer 197w + security-reviewer 285w both under 300w cap (LOAD-BEARING test PASSED on real testbed) |
+| 16  | FIND-B.2-format-scope (NEW Plan 07-11) | 07-11 | VERIFIED structurally on 0.12.1 | Rule 5b "Format mandate" amended in `references/context-packaging.md` with dual-surface differentiation (internal-prompt surface XML required; user-facing artifact surface 3 token-form shapes permitted with concrete-source backing); B-pv-validation.sh Assertion 6 token-form resolution check (orphan-token detection); REQUIREMENTS.md FIND-B.2-format-scope row + Phase 7 traceability entry; plugin 0.12.0 -> 0.12.1 PATCH atomic across 5 surfaces; commits `fb872d9`, `3e03ed0`, `3ef407d`, `bf8a8db`, `c220fb4`; bash -n PASS; empirical confirmation pending in regression-gate session per human_verification block |
 
-**Score:** 15/15 must-haves structurally verified.
+**Score:** 15/15 must-haves structurally verified across 11 plans. (FIND-B.2 + FIND-B.2-format-scope are counted as a single must-have because Plan 07-11 refines Plan 07-01's closure for FIND-B.2 without contradicting its intent; the 16th REQUIREMENTS.md row formalizes the structural integrity contract added by Plan 07-11.)
 
 ---
 
-## Empirical Verification Results -- Plans 07-01 through 07-08 (8-session UAT replay on plugin 0.10.0)
+## Empirical Verification Results
+
+### Plans 07-01 through 07-08 (8-session UAT replay on plugin 0.10.0)
 
 The 8-session UAT replay on plugin 0.10.0 (sessions `f2d669f3-...` / `6276171a-...` / `a1503efa-...` / `0d55118f-...` / `29db446f-...` / `2b5f3ae5-...` / `bfa913fa-...` / `b614d3dd-...`) ran during Plan 07-06. Per-session evidence is captured in `uat-replay/session-notes.md`.
 
@@ -188,32 +251,38 @@ The 8-session UAT replay on plugin 0.10.0 (sessions `f2d669f3-...` / `6276171a-.
 | 07-04 (word-budget structural sub-caps) | All 3 D-*-budget smoke fixtures PASS on 0.10.0; per-section sub-caps mostly enforced; aggregate cap exceeded on code-dense outputs across 4 of 8 sessions; trajectory 135w -> 95w final advisor in session 8 | PASS structurally; aggregate cap regression (reviewer 396w / security-reviewer 414w on plugin 0.11.0 after 0065425 extraction-defect fix) surfaced as GAP-D-budget-empirical and CLOSED structurally by Plan 07-09 |
 | 07-05 (reviewer Class-2 escalation hook) | Pre-emptive Class-2/2-S scan fired in sessions 3 + 6; reviewer accepted pv-* anchors in both; zero `<verify_request>` escalations needed (Option 1 + Option 2 working in tandem) | PASS |
 | 07-06 (plugin 0.10.0 + E-verify smoke + UAT replay + Amendment 6) | All 5 tasks complete; 8-session UAT chain executed; 06-VERIFICATION.md amendment 6 appended; smoke gate 6 PASS / 3 FAIL (5 NEW Phase 7 fixtures all PASS; 3 pre-existing failures classified) | PASS |
-| 07-07 (default-on ToolSearch + worked examples) | Structural closure of Gap 1; B-pv-validation.sh Assertion 5 added; plugin 0.10.0 -> 0.11.0; empirical UAT replay on plugin 0.11.0+ deferred per plan scope | PASS structurally; empirical pending |
-| 07-08 (wip-discipline subject-prefix + path-d) | Structural closure of Gap 2; E-verify-before-commit.sh path-d + synthesized in-process scenario + --replay flag; 4/4 structural validation steps PASS per 07-08-REPLAY-RESULTS.md; empirical UAT replay against ngx-smart-components testbed SHAs is documented manual-auditor operation | PASS structurally; empirical pending |
+| 07-07 (default-on ToolSearch + worked examples) | Structural closure of Gap 1; B-pv-validation.sh Assertion 5 added; plugin 0.10.0 -> 0.11.0; empirical UAT replay on plugin 0.11.0+ deferred per plan scope | PASS structurally; empirical confirmed on 0.12.0 (5/6 sessions firing) |
+| 07-08 (wip-discipline subject-prefix + path-d) | Structural closure of Gap 2; E-verify-before-commit.sh path-d + synthesized in-process scenario + --replay flag; 4/4 structural validation steps PASS per 07-08-REPLAY-RESULTS.md; empirical UAT replay against ngx-smart-components testbed SHAs is documented manual-auditor operation | PASS structurally; empirical confirmed on 0.12.0 (rule fires per spec; rule REJECTED by user directive -- Phase 8 reversal target) |
 
----
+### Plan 07-09 (6-session UAT chain on plugin 0.12.0; executed 2026-05-03)
 
-## Plan 07-09 Structural Verification (UAT replay on plugin 0.12.0 explicitly deferred)
+Plan 07-09 closed GAP-D-budget-empirical structurally on plugin 0.12.0. Behavioral verification of the effort de-escalation (xhigh -> medium) was performed via the 6-session UAT chain on canonical Compodoc + Storybook + Angular signals scenario per `empirical_subverification_2026_05_03` block above + 07-HUMAN-UAT.md.
 
-Plan 07-09 closed GAP-D-budget-empirical structurally. Per the binding reversion criterion in 07-CONTEXT.md D-04 amendment 2026-05-02, behavioral verification of the effort de-escalation (xhigh -> medium) requires a fresh UAT replay subset on plugin 0.12.0. Plan scope explicitly deferred this empirical confirmation.
+Result: **PASSED** -- reviewer aggregate 197w / 300 cap (S3); security-reviewer aggregate 285w / 300 cap (S4). Class-1 recall vs xhigh baseline: not measurable from 4 sessions; deferred to Phase 8 A/B comparison study (binding 15% reversion criterion documented in 07-CONTEXT.md D-04 amendment 2026-05-02 -- not triggered).
+
+### Plans 07-10 + 07-11 (closure structural; empirical regression-gate pending on plugin 0.12.1)
 
 | Surface | Expected | Observed | Verdict |
 |---------|----------|----------|---------|
-| `agents/reviewer.md` -- fragment-grammar template | `Format: <file>:<line>: <severity>: <problem>. <fix>.` literal at line 59 | landed | PASS |
-| `agents/security-reviewer.md` -- fragment-grammar template (with OWASP tag) | `Format: <file>:<line>: <severity>: [<OWASP-tag>] <threat>. <fix>.` literal at line 60 | landed | PASS |
-| `agents/reviewer.md` -- effort frontmatter | `effort: medium` | landed | PASS |
-| `agents/security-reviewer.md` -- effort frontmatter | `effort: medium` | landed | PASS |
-| `agents/advisor.md` -- effort frontmatter (control case) | `effort: high` (unchanged) | unchanged | PASS |
-| `07-CONTEXT.md` D-04 amendment 2026-05-02 | block citing Anthropic Best Practices + April 23 postmortem + binding 15% Class-1 recall reversion criterion | landed | PASS |
-| `D-reviewer-budget.sh` bash -n | exits 0 | exits 0 | PASS |
-| `D-security-reviewer-budget.sh` bash -n | exits 0 | exits 0 | PASS |
-| Plugin version 0.12.0 across 5 surfaces | plugin.json + 4 SKILL.md frontmatter | landed (5/5; zero 0.11.0 remnants) | PASS |
-| `REQUIREMENTS.md` GAP-D-budget-empirical row | new requirement + traceability entry | landed | PASS |
+| `agents/advisor.md` -- fragment-grammar template | `Format: each numbered item is` literal at line 60 | landed (a11834d) | PASS |
+| `agents/advisor.md` -- per-item word target line | `Per-item word target: <=15 words` literal at line 62 | landed | PASS |
+| `agents/advisor.md` -- DROP list anchor | `"I'd recommend..."` at line 66 | landed | PASS |
+| `agents/advisor.md` -- KEEP list anchor | `Verb-led action (Add, Remove, Replace, Run, Verify, Inline, Drop, Configure)` at line 76 | landed | PASS |
+| `agents/advisor.md` -- frontmatter `effort: high` (control case) | `effort: high` (UNCHANGED -- Candidate B rejected per research) | unchanged at line 43 | PASS |
+| `agents/advisor.md` -- Density example blocks preserved | 2 blocks (full-context + thin-context) at lines 86 + 94 | preserved verbatim | PASS |
+| `agents/advisor.md` -- Hedge Marker Discipline preserved (Plan 07-02 contract) | `## Hedge Marker Discipline` at line 212 | preserved | PASS |
+| `D-advisor-budget.sh` -- parser updates | ADVISOR_FRAGMENT_RE + ASSUMING_FRAME_RE + LEGACY_WC fallback + Critical-block strip | landed (cd4e49b); bash -n PASS | PASS |
+| `references/context-packaging.md` Rule 5b -- dual-surface | `internal-prompt surface` + `user-facing artifact surface` + 3 acceptable shapes (token reference + Verified: trailer / + prose citation / inline parenthetical) | landed (fb872d9) at lines 50-64 | PASS |
+| `references/context-packaging.md` Rule 5b -- trust contract preservation | Cross-reference to B-pv-validation.sh Assertion 6 (resolution check); orphan-token detection | landed at line 64 | PASS |
+| `B-pv-validation.sh` Assertion 6 | token-form resolution check; orphan-token detection; existing Assertions 1-5 preserved | landed (3e03ed0) at lines 141-187; bash -n PASS; final SUCCESS message updated to "all 6 assertions passed" | PASS |
+| `REQUIREMENTS.md` FIND-B.2-format-scope row + Phase 7 traceability | new requirement + traceability entry | landed (3ef407d) at lines 75 + 152 | PASS |
+| Plugin version 0.12.1 across 5 surfaces | plugin.json + 4 SKILL.md frontmatter | landed (bf8a8db); zero 0.12.0 / 0.11.0 / 0.10.0 / 0.9.0 remnants in version surfaces | PASS |
+| `07-VERIFICATION.md` `closure_amendment_2026_05_04` block | post-`empirical_subverification_2026_05_03`; preserves prior content byte-identically | landed (c220fb4) | PASS |
 | Tool grants preserved at `["Read", "Glob"]` (principle of least privilege) | unchanged across all 3 agents | unchanged | PASS |
-| Byte-identical 4-skill `<context_trust_contract>` canon | 3 cross-file diffs exit 0 | exit 0 / 0 / 0 | PASS |
+| 4-skill byte-identical `<context_trust_contract>` canon | 3 cross-file diffs exit 0 | exit 0 / 0 / 0 | PASS |
 | All 5 NEW Phase 7 smoke fixtures pass `bash -n` | exits 0 each | exits 0 (5/5) | PASS |
 
-**Empirical residual (the load-bearing pending item):** A fresh UAT replay subset (minimum: review skill + security-review skill on canonical Compodoc + Storybook scenario per Phase 6 amendment 5 + Plan 07-07/07-08/07-09 deferred-empirical precedent) on plugin 0.12.0 confirming aggregate <=300w in 8 of 8 sessions AND <=15% Class-1 recall drop vs xhigh baseline has NOT yet been run. If empirical recall drop exceeds 15%, REVERT D-04 amendment 2026-05-02 per the binding reversion criterion documented in 07-CONTEXT.md.
+**Empirical residual (pending):** A regression-gate session running `bash D-advisor-budget.sh` (Plan 07-10 fixture) + `bash B-pv-validation.sh` (Plan 07-11 fixture) on plugin 0.12.1 against the canonical Compodoc + Storybook + Angular signals scenario. Optional canonical 6-session UAT replay subset (S1 + S3 + S4) for end-to-end behavioral confirmation. See human_verification block above for the full validation protocol.
 
 ---
 
@@ -221,22 +290,22 @@ Plan 07-09 closed GAP-D-budget-empirical structurally. Per the binding reversion
 
 | Artifact                                                  | Expected                                                                | Status     | Details                                                                                                                                            |
 | --------------------------------------------------------- | ----------------------------------------------------------------------- | ---------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `plugins/lz-advisor/.claude-plugin/plugin.json`           | `"version": "0.12.0"`                                                   | VERIFIED   | Plugin manifest at 0.12.0 (Plan 07-09 commit `24e80c6`)                                                                                            |
-| `plugins/lz-advisor/skills/lz-advisor.plan/SKILL.md`      | version: 0.12.0; `## Findings Disposition`; `**Verdict scope:**`        | VERIFIED   | All 3 markers present; 4-skill byte-identical `<context_trust_contract>` preserved                                                                 |
-| `plugins/lz-advisor/skills/lz-advisor.execute/SKILL.md`   | `<verify_before_commit>`; Subject-prefix discipline; Worked example     | VERIFIED   | All Plan 07-02/07-08 contracts present; `<verify_before_commit>` open + close tags = 2; Verdict scope = 5                                          |
-| `plugins/lz-advisor/skills/lz-advisor.review/SKILL.md`    | Pre-emptive Class-2 scan; Reviewer Escalation Hook; scan criterion      | VERIFIED   | All Plan 07-02/07-05 contracts present                                                                                                              |
-| `plugins/lz-advisor/skills/lz-advisor.security-review/SKILL.md` | version: 0.12.0; Verdict scope marker (security-threats default)   | VERIFIED   | Verdict scope marker present                                                                                                                        |
-| `plugins/lz-advisor/agents/advisor.md`                    | effort: high (control); `## Hedge Marker Discipline`                    | VERIFIED   | Frontmatter unchanged; Plan 07-02 section present                                                                                                  |
+| `plugins/lz-advisor/.claude-plugin/plugin.json`           | `"version": "0.12.1"`                                                   | VERIFIED   | Plugin manifest at 0.12.1 (Plan 07-11 commit `bf8a8db`)                                                                                            |
+| `plugins/lz-advisor/skills/lz-advisor.plan/SKILL.md`      | version: 0.12.1; `## Findings Disposition`; `**Verdict scope:**`        | VERIFIED   | All markers present; 4-skill byte-identical `<context_trust_contract>` preserved                                                                    |
+| `plugins/lz-advisor/skills/lz-advisor.execute/SKILL.md`   | version: 0.12.1; `<verify_before_commit>`; Subject-prefix discipline    | VERIFIED   | All Plan 07-02/07-08 contracts present; `<verify_before_commit>` open + close tags = 2; Verdict scope = 5                                          |
+| `plugins/lz-advisor/skills/lz-advisor.review/SKILL.md`    | version: 0.12.1; Pre-emptive Class-2 scan; Reviewer Escalation Hook     | VERIFIED   | All Plan 07-02/07-05 contracts present                                                                                                              |
+| `plugins/lz-advisor/skills/lz-advisor.security-review/SKILL.md` | version: 0.12.1; Verdict scope marker (security-threats default)  | VERIFIED   | Verdict scope marker present                                                                                                                        |
+| `plugins/lz-advisor/agents/advisor.md`                    | effort: high (control); fragment-grammar template + DROP/KEEP lists; Density examples preserved | VERIFIED   | Plan 07-10 fragment-grammar template at line 60; Per-item word target at line 62; DROP list at line 66; KEEP list at line 76; Density examples preserved at lines 86 + 94; Plan 07-02 Hedge Marker Discipline preserved at line 212; frontmatter `effort: high` UNCHANGED at line 43 |
 | `plugins/lz-advisor/agents/reviewer.md`                   | effort: medium; fragment-grammar template; `## Class-2 Escalation Hook` | VERIFIED   | Plan 07-09 fragment-grammar template at line 59; Plan 07-05 Class-2 hook present                                                                   |
 | `plugins/lz-advisor/agents/security-reviewer.md`          | effort: medium; fragment-grammar template (with OWASP tag)              | VERIFIED   | Plan 07-09 template at line 60                                                                                                                      |
-| `plugins/lz-advisor/references/context-packaging.md`      | Rules 5b + 5c + 5d + Scope-Disambiguated Provenance Markers + Verify Request Schema | VERIFIED | All 5 sections present (count = 1 each)                                                                                                             |
+| `plugins/lz-advisor/references/context-packaging.md`      | Rule 5b dual-surface + 5c + 5d + Scope-Disambiguated Provenance Markers + Verify Request Schema | VERIFIED | All sections present; Plan 07-11 dual-surface differentiation at lines 50-64                                                                        |
 | `plugins/lz-advisor/references/orient-exploration.md`     | `## Cross-Skill Hedge Tracking`                                         | VERIFIED   | Plan 07-03 section present                                                                                                                          |
-| `.../smoke-tests/B-pv-validation.sh`                      | 5 assertions (XML format + synthesis + self-anchor + source-grounded + default-on ToolSearch) | VERIFIED | Plan 07-01 + 07-07 deliverable; bash -n PASS                                                                                                        |
-| `.../smoke-tests/D-advisor-budget.sh`                     | 100w cap on advisor SD; reuses extract-advisor-sd.mjs                   | VERIFIED   | Plan 07-04 deliverable; bash -n PASS                                                                                                                |
+| `.../smoke-tests/B-pv-validation.sh`                      | 6 assertions (XML format + synthesis + self-anchor + source-grounded + default-on ToolSearch + dual-surface resolution) | VERIFIED | Plan 07-01 + 07-07 + 07-11 deliverables; bash -n PASS; final SUCCESS message: "all 6 assertions passed"                                              |
+| `.../smoke-tests/D-advisor-budget.sh`                     | ADVISOR_FRAGMENT_RE + ASSUMING_FRAME_RE + LEGACY_WC fallback + 100w cap | VERIFIED   | Plan 07-10 parser update; bash -n PASS; ADVISOR_FRAGMENT_RE at line 89; ASSUMING_FRAME_RE at line 96; LEGACY_WC at line 169                          |
 | `.../smoke-tests/D-reviewer-budget.sh`                    | fragment-grammar parser; aggregate <=300w; backward-compat LEGACY_RE   | VERIFIED   | Plan 07-09 parser update; bash -n PASS; "Fragment-grammar shape detected" appears 2x (comment + log -- both canonical phrase)                       |
 | `.../smoke-tests/D-security-reviewer-budget.sh`           | fragment-grammar parser with OWASP tag tolerance; aggregate <=300w     | VERIFIED   | Plan 07-09 parser update; bash -n PASS                                                                                                              |
 | `.../smoke-tests/E-verify-before-commit.sh`               | Paths a/b/c (positive) + path-d (negative) + --replay flag             | VERIFIED   | Plan 07-02 + 07-06 + 07-08 deliverables; 4 paths + --replay; bash -n PASS                                                                           |
-| `.planning/REQUIREMENTS.md`                               | GAP-G1-firing + GAP-G2-wip-scope + GAP-D-budget-empirical with traceability | VERIFIED | All 3 IDs definition + traceability rows (count = 2 each); coverage 42                                                                              |
+| `.planning/REQUIREMENTS.md`                               | GAP-G1-firing + GAP-G2-wip-scope + GAP-D-budget-empirical + FIND-B.2-format-scope with traceability | VERIFIED | All 4 IDs definition + traceability rows; coverage 42                                                                                              |
 
 ---
 
@@ -254,6 +323,9 @@ Plan 07-09 closed GAP-D-budget-empirical structurally. Per the binding reversion
 | `references/context-packaging.md` Rule 5b ToolSearch precondition | 4-skill `<context_trust_contract>` default-on rule + 2 `<example>` blocks | cross-reference + cost-asymmetry framing | WIRED  |
 | `lz-advisor.execute/SKILL.md` Subject-prefix discipline | E-verify-before-commit.sh path-d assertion | shared regex `^wip(\(.+\))?:|^chore\(wip\):` + git diff --stat carve-out | WIRED |
 | `agents/{reviewer,security-reviewer}.md` effort frontmatter | UAT replay reversion criterion | 07-CONTEXT.md D-04 amendment 2026-05-02 (binding 15% Class-1 recall threshold) | WIRED |
+| `agents/advisor.md` ## Output Constraint fragment-grammar emit template | D-advisor-budget.sh ADVISOR_FRAGMENT_RE per-item + LEGACY_WC aggregate assertions | shape contract: `<verb-led action>. <concrete object or path>. <one-clause rationale or Assuming-frame if needed>.` per-item; aggregate <=100w | WIRED (Plan 07-10) |
+| `references/context-packaging.md` Rule 5b dual-surface amendment | B-pv-validation.sh Assertion 6 token-resolution check | structural integrity contract: user-facing pv-* tokens MUST resolve to internal `<pre_verified>` claim_id values; orphan-empty == trust intact | WIRED (Plan 07-11) |
+| Plugin SemVer 0.12.0 -> 0.12.1 (5-surface atomic bump) | CONTEXT.md D-06 SemVer convention + research | PATCH: refinements of existing rules, not new contract shapes; reserves 0.13.0 MINOR for Phase 8 wip-discipline reversal | WIRED (Plan 07-11 commit `bf8a8db`) |
 
 ---
 
@@ -263,21 +335,22 @@ Plan 07-09 closed GAP-D-budget-empirical structurally. Per the binding reversion
 | ------------------------ | --------------------- | ----------------------------------------------------------------- | ---------- | -------------------------------------------------------------------------------------------------------------- |
 | FIND-A                   | 07-02                 | Reconciliation policy on apply-then-revert flow                   | SATISFIED  | `<verify_before_commit>` Reconciliation extension                                                              |
 | FIND-B.1                 | 07-01                 | pv-* synthesis carry-forward + mandate                            | SATISFIED  | Common Contract Rule 5b sub-rule "Synthesis mandate"                                                           |
-| FIND-B.2                 | 07-01                 | XML format mandate; reject plain-bullet "Pre-verified Claims"     | SATISFIED  | Rule 5b sub-rule "Format mandate" + B-pv-validation.sh Assertion 1                                              |
+| FIND-B.2                 | 07-01, 07-11          | XML format mandate; reject plain-bullet "Pre-verified Claims"; refined to dual-surface differentiation by Plan 07-11 D2 amendment | SATISFIED  | Rule 5b sub-rule "Format mandate" rewritten with internal-prompt XML required + user-facing artifact 3 token-form shapes permitted; B-pv-validation.sh Assertion 1 + Assertion 6                                              |
 | FIND-C                   | 07-03                 | 4 confidence-laundering guards                                    | SATISFIED  | Rules 5c + 5d + Cross-Skill Hedge Tracking + Verdict scope markers                                              |
-| FIND-D                   | 07-04, 07-09          | Word-budget regression closure                                    | SATISFIED  | Plan 07-04 sub-cap prose + 3 D-*-budget fixtures; Plan 07-09 fragment-grammar template + effort de-escalation   |
+| FIND-D                   | 07-04, 07-09, 07-10   | Word-budget regression closure (advisor + reviewer + security-reviewer) | SATISFIED  | Plan 07-04 sub-cap prose + 3 D-*-budget fixtures; Plan 07-09 reviewer + security-reviewer fragment-grammar template + effort de-escalation (empirically VERIFIED on 0.12.0); Plan 07-10 advisor fragment-grammar template + parser update on 0.12.1 (empirical regression-gate pending)   |
 | FIND-E.1                 | 07-02                 | Advisor refuse-or-flag rule                                       | SATISFIED  | `## Hedge Marker Discipline` in 3 agents with `Unresolved hedge:` literal frame                                  |
 | FIND-E.2                 | 07-02                 | Plan-step-shape Run/Verify rule + cost-cliff allowance            | SATISFIED  | `<verify_before_commit>` Phase 3.5 element 2 + element 3                                                        |
 | FIND-F                   | 07-05                 | Reviewer Class-2 escalation hook (Option 1 + Option 2 in tandem)  | SATISFIED  | Phase 1 pre-emptive scan + Phase 3 escalation hook + `## Class-2 Escalation Hook` in reviewer.md + Verify Request Schema |
 | FIND-G                   | 07-02                 | Review-skill safety net for verify-skip                           | SATISFIED  | `### Scan Criteria` Flag bullet "Verification gaps in implementation of hedged claims"                          |
 | FIND-H                   | 07-01                 | Block confabulation on Class-2/3/4 (self-anchor rejection)        | SATISFIED  | Common Contract Rule 5b sub-rule "Self-anchor rejection" + B-pv-validation.sh Assertion 3                       |
 | FIND-silent-resolve      | 07-02                 | Plan SKILL.md silently drops numbered input findings              | SATISFIED  | `## Findings Disposition` section in plan-file template                                                         |
-| GAP-G1+G2-empirical      | 07-01                 | Phase 6 G1+G2 empirical residuals folded into Phase 7             | SATISFIED  | Rule 5b ToolSearch precondition + 4-skill `<context_trust_contract>` synthesis precondition supplement; UAT sessions 1 + 3 fired |
-| GAP-G1-firing            | 07-07                 | ToolSearch availability rule fires as default-on Phase 1 first action | SATISFIED structurally | Default-on conversion + 2 `<example>` blocks; B-pv-validation.sh Assertion 5; empirical UAT on 0.12.0 deferred |
-| GAP-G2-wip-scope         | 07-08                 | wip-prefix discipline when `## Outstanding Verification` populated | SATISFIED structurally | Subject-prefix discipline subsection + 3-shape worked example pair + path-d assertion + synthesized scenario; empirical UAT on 0.12.0 deferred |
-| GAP-D-budget-empirical   | 07-09                 | Reviewer + security-reviewer aggregate <=300w on canonical scenarios | SATISFIED structurally | Fragment-grammar template + ASCII severity prefixes + DROP/KEEP lists + 3 worked example pairs + holistic ~296w worked example + effort de-escalation; empirical UAT on 0.12.0 deferred (binding 15% Class-1 recall reversion criterion) |
+| GAP-G1+G2-empirical      | 07-01                 | Phase 6 G1+G2 empirical residuals folded into Phase 7             | SATISFIED  | Rule 5b ToolSearch precondition + 4-skill `<context_trust_contract>` synthesis precondition supplement; UAT 0.12.0 sessions 1, 2, 3, 5, 6 fired |
+| GAP-G1-firing            | 07-07                 | ToolSearch availability rule fires as default-on Phase 1 first action | SATISFIED  | Default-on conversion + 2 `<example>` blocks; B-pv-validation.sh Assertion 5; UAT 0.12.0 fired in 5/6 sessions  |
+| GAP-G2-wip-scope         | 07-08                 | wip-prefix discipline when `## Outstanding Verification` populated | SATISFIED structurally; rule REJECTED by user directive (Phase 8 reversal target) | Subject-prefix discipline subsection + 3-shape worked example pair + path-d assertion + synthesized scenario; UAT 0.12.0 fires per spec but rule rejected per user directive 2026-05-03; Phase 8 must REMOVE rule + bump 0.13.0 MINOR |
+| GAP-D-budget-empirical   | 07-09                 | Reviewer + security-reviewer aggregate <=300w on canonical scenarios | SATISFIED  | Fragment-grammar template + ASCII severity prefixes + DROP/KEEP lists + 3 worked example pairs + holistic ~296w worked example + effort de-escalation; UAT 0.12.0 reviewer 197w + security-reviewer 285w both UNDER 300w cap (LOAD-BEARING test PASSED) |
+| FIND-B.2-format-scope    | 07-11                 | Rule 5b dual-surface differentiation + Assertion 6 resolution check (refines original FIND-B.2 closure without contradicting intent) | SATISFIED structurally on 0.12.1 | Rule 5b amendment with 3 explicit user-facing shapes; B-pv-validation.sh Assertion 6 token-resolution check (orphan-token detection); REQUIREMENTS.md row + Phase 7 traceability; plugin 0.12.1 across 5 surfaces atomically; bash -n PASS |
 
-**Orphaned requirements:** None. All 15 requirement IDs from Phase 7 (12 inherited + 3 gap-closure) are accounted for in plan SUMMARY frontmatter (`requirements-completed:` field) AND verified structurally in the codebase. The 3 gap-closure IDs (GAP-G1-firing, GAP-G2-wip-scope, GAP-D-budget-empirical) additionally appear with traceability rows in REQUIREMENTS.md.
+**Orphaned requirements:** None. All 16 requirement IDs (12 Phase-inherited + 3 within-phase gap-closure + 1 Plan 07-11 refinement of FIND-B.2) are accounted for in plan SUMMARY frontmatter (`requirements:` field) AND verified structurally in the codebase. The 4 gap-closure / refinement IDs (GAP-G1-firing, GAP-G2-wip-scope, GAP-D-budget-empirical, FIND-B.2-format-scope) additionally appear with traceability rows in REQUIREMENTS.md.
 
 ---
 
@@ -298,34 +371,59 @@ These cross-file consistency drifts were introduced by Plan 07-09's severity ren
 
 ## Human Verification Required
 
-The structural closures of Plans 07-07 (Gap 1), 07-08 (Gap 2), and 07-09 (GAP-D-budget-empirical) all have explicit deferred-empirical clauses in their respective amendments. A fresh UAT replay subset against plugin 0.12.0 is required to confirm the structural closures hold behaviorally:
+The Plan 07-10 + Plan 07-11 closures are structurally COMPLETE on plugin 0.12.1; the empirical regression-gate is the load-bearing pending item. Per CLAUDE.md "Skill Verification with claude -p" convention, this can be auto-tested in a follow-up session.
 
-### 1. Plugin 0.12.0 UAT replay (critical)
+### 1. Plugin 0.12.1 empirical regression-gate (advisor budget + dual-surface resolution check)
 
-**Test:** Run a UAT replay subset (minimum: lz-advisor.plan + lz-advisor.execute + lz-advisor.review + lz-advisor.security-review on canonical Compodoc + Storybook + Angular signals scenario per `project_compodoc_uat_initial_plan_prompt.md`) against plugin 0.12.0.
+**Test:** Run two smoke fixtures against fresh `claude -p "/lz-advisor.<skill> <prompt>"` JSONL traces seeded with the canonical Compodoc + Storybook + Angular signals scenario (memory: project_compodoc_uat_initial_plan_prompt.md):
+
+- `bash D-advisor-budget.sh` against an S1 plan trace (Plan 07-10 fixture)
+- `bash B-pv-validation.sh` against an S1 plan trace + S3 review trace (Plan 07-11 Assertion 6 cross-surface coverage)
 
 **Expected:**
 
-- **GAP-G1-firing closure (Plan 07-07):** ToolSearch fires as Phase 1 first action in 8 of 8 sessions where agent-generated source signals are present. Detected by B-pv-validation.sh Assertion 5 + manual session-trace inspection.
-- **GAP-G2-wip-scope closure (Plan 07-08):** Commits with body containing `## Outstanding Verification` use the `wip:` prefix (or trailer-only carve-out with zero file changes per `git diff --stat HEAD~1..HEAD`). Detected by E-verify-before-commit.sh path-d.
-- **GAP-D-budget-empirical closure (Plan 07-09):**
-  - Reviewer aggregate <=300w on canonical scenario (D-reviewer-budget.sh PASS)
-  - Security-reviewer aggregate <=300w on canonical scenario (D-security-reviewer-budget.sh PASS)
-  - Class-1 (API-correctness) recall does NOT drop more than 15% vs the prior xhigh baseline. **If recall drop exceeds 15%**, REVERT D-04 amendment 2026-05-02: change reviewer + security-reviewer effort back to xhigh in frontmatter; keep Plan 07-09 Candidate A fragment-grammar template alone.
+- **Plan 07-10 closure of residual-advisor-budget:** D-advisor-budget.sh exits 0; advisor aggregate <=100w on canonical S1 plan session; fragment-grammar shape detected; per-item <=15w (or <=22w if Assuming-frame). The expected reduction range per Plan 07-09 reduction delta applied to advisor's 100w cap: aggregate ~85w (118w * 0.72 = 85w upper bound; 118w * 0.50 = 59w lower bound).
+- **Plan 07-11 closure of residual-pre-verified-format:** B-pv-validation.sh exits 0; all 6 assertions pass; Assertion 6 confirms every user-facing pv-* token resolves to a canonical claim_id value in a `<pre_verified>` XML block in the same session's executor flow; orphan-token set is empty; structural integrity preserved without surface uniformity.
 
-**Why human:** Plugin 0.12.0 was published 2026-05-02 by Plan 07-09 commit `24e80c6`. The prior 8-session UAT replay on plugin 0.10.0 was conducted before Plans 07-07, 07-08, 07-09 landed. Per CLAUDE.md "Skill Verification with claude -p" convention, this can be auto-tested via `claude -p "/lz-advisor.<skill> <prompt>"` in a follow-up session against the canonical fixture; the verification is structurally well-defined but requires running 4-8 fresh skill invocations against a representative scenario. This is the load-bearing pending item that closes Phase 7 empirically.
+**Why human:** Plugin 0.12.1 was published 2026-05-04 by Plan 07-11 commit `bf8a8db` (5-surface atomic version bump for the paired Plan 07-10 + Plan 07-11 bundle). The 2 in-phase residuals from `empirical_subverification_2026_05_03` are now CLOSED structurally; the empirical regression-gate confirms behavior holds at runtime. If either fixture FAILs, the closure is not behaviorally durable; re-open the residual entry. If both PASS, mark this human_verification item resolved and the phase is empirically sealed (modulo the OUT-OF-SCOPE Phase 8 wip-discipline reversal directive).
+
+### 2. Optional canonical 6-session UAT replay subset on plugin 0.12.1 (S1 plan + S3 review + S4 security-review)
+
+**Test:** Re-run 3 sessions from the canonical 6-session UAT chain on plugin 0.12.1 against the same ngx-smart-components testbed (uat-replay-0.12.1 branch):
+
+- S1 plan = prose-form citation in Key Decisions section
+- S3 review = token references in Findings
+- S4 security-review = token reference in Findings
+
+**Expected:**
+
+- (a) advisor aggregate <=100w on S1 plan session (Plan 07-10 fragment-grammar binding)
+- (b) reviewer aggregate <=300w on S3 review (Plan 07-09 fragment-grammar binding maintained)
+- (c) security-reviewer aggregate <=300w on S4 security-review (Plan 07-09 binding maintained)
+- (d) Assertion 6 token-resolution check passes on all 3 traces (Plan 07-11 dual-surface binding)
+
+**Why human:** Per `07-RESEARCH-GAPS.md` Gap 2 validation strategy. This is OPTIONAL but recommended after Step 1 above passes; provides end-to-end behavioral confirmation that the 0.12.0 -> 0.12.1 PATCH bundle did not introduce regressions on adjacent surfaces. Skip if regression-gate (Step 1) already passes cleanly.
 
 ---
 
 ## Phase 7 Sealing Verdict
 
-**Structural closure: COMPLETE.** All 15 requirement IDs verified across 9 plans (07-01 through 07-09). All 5 NEW Phase 7 smoke fixtures pass `bash -n`. Plugin version 0.12.0 across 5 surfaces with zero stale-version remnants. 4-skill byte-identical `<context_trust_contract>` canon preserved (3 cross-file diffs exit 0). Tool grants preserved at `["Read", "Glob"]` across all 3 agents (principle of least privilege). REQUIREMENTS.md coverage 42/42.
+**Structural closure: COMPLETE (across all 11 plans).** All 16 requirement IDs verified across 11 plans (07-01 through 07-11). All 5 NEW Phase 7 smoke fixtures pass `bash -n`. Plugin version 0.12.1 across 5 surfaces with zero stale-version remnants. 4-skill byte-identical `<context_trust_contract>` canon preserved (3 cross-file diffs exit 0). Tool grants preserved at `["Read", "Glob"]` across all 3 agents (principle of least privilege). REQUIREMENTS.md coverage 42/42 (16 Phase 7 IDs + 26 inherited from earlier phases).
 
-**Empirical closure: PARTIAL.** Plans 07-01 through 07-08 have empirical confirmation via the 8-session UAT replay on plugin 0.10.0 (Plan 07-06 deliverable). Plans 07-07, 07-08, 07-09 closures have explicit deferred-empirical clauses; a fresh UAT replay subset on plugin 0.12.0 is required for full empirical confirmation.
+**Empirical closure: 13 of 15 must-haves empirically VERIFIED on plugin 0.12.0 (per 07-HUMAN-UAT.md verdict).** The 2 closure plans (07-10 + 07-11) ride on plugin 0.12.1 and the empirical regression-gate is pending in a follow-up session per the human_verification block above.
 
-**Recommended next action:** Run plugin 0.12.0 UAT replay subset (4-skill chain on canonical Compodoc + Storybook scenario) per CLAUDE.md "Skill Verification with claude -p" convention. If empirical Class-1 recall drop exceeds 15% on review/security-review, REVERT D-04 amendment 2026-05-02 per the binding reversion criterion.
+**Plugin version milestone trail:** 0.9.0 (pre-Phase-7 baseline) -> 0.10.0 (Plan 07-06) -> 0.11.0 (Plan 07-07) -> 0.12.0 (Plan 07-09) -> 0.12.1 (Plans 07-10 + 07-11 PATCH bundle).
+
+**Recommended next action (Phase 7 sealing readiness):**
+
+1. Run plugin 0.12.1 regression-gate session: `bash D-advisor-budget.sh` + `bash B-pv-validation.sh` against canonical Compodoc S1 + S3 fixture traces. If both PASS, Phase 7 is empirically sealed.
+2. (Optional) Run canonical 6-session UAT replay subset (S1 + S3 + S4) on plugin 0.12.1 for end-to-end behavioral confirmation.
+3. (Phase 8) REMOVE Plan 07-08 wip-discipline rule entirely from `lz-advisor.execute/SKILL.md` + path-d assertion from `E-verify-before-commit.sh` + GAP-G2-wip-scope row from `REQUIREMENTS.md`; bump plugin 0.12.1 -> 0.13.0 MINOR for contract-shape change. Per user directive 2026-05-03 (memory: feedback_no_wip_commits.md).
+4. (Phase 8) Severity-rename drift cleanup (WR-01/WR-02/WR-03): align lz-advisor.security-review/SKILL.md + references/context-packaging.md with security-reviewer.md's renamed Critical/Important/Suggestion vocabulary.
+5. (Phase 8) Address residual Phase 8 candidates (P8-03 Pre-Verified Contradiction Rule, P8-12 Cross-Skill Hedge Tracking auto-detect, P8-18 advisor narrative-SD self-anchor leak) per `project_phase_8_candidates_post_07.md`.
 
 ---
 
-_Verified: 2026-05-03_
+_Initial verification: 2026-05-03_
+_Updated for Plans 07-10 + 07-11 closure: 2026-05-04_
 _Verifier: Claude (gsd-verifier)_
