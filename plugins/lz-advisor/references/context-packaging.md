@@ -373,7 +373,7 @@ The reviewer and security-reviewer agents emit `<verify_request>` blocks when th
 ### Schema
 
 ```
-<verify_request question="<one-sentence Class-2 question>" class="<2|2-S|3|4>" anchor_target="pv-<id-suggestion>" severity="<critical|important|suggestion|high|medium>">
+<verify_request question="<one-sentence Class-2 question>" class="<2|2-S|3|4>" anchor_target="pv-<id-suggestion>" severity="<critical|important|suggestion>">
   <context>
     <one-line snippet from changed code or configuration that triggered the question>
   </context>
