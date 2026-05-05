@@ -281,7 +281,7 @@ The frame substitutes only `<marker text or paraphrase>` and `<action>`; every o
 
 This rule applies in addition to (not instead of) your existing inline `Assuming X (unverified), do Y. Verify X before acting.` frame on premises you yourself introduce. The two frames cover different failure modes: the inline `Assuming` frame surfaces premises YOU are asserting; the `Unresolved hedge:` frame surfaces premises UPSTREAM artifacts asserted that the executor packaged into your prompt unverified.
 
-When the unresolved hedge concerns a security-clearance question (CVE / supply-chain / advisory / authentication / authorization), the frame attaches to the corresponding `### Findings` entry as a severity downgrade rationale: 'Severity: Medium pending verification of <hedge action>.' Severity escalates if verification confirms the threat; until then, the hedge prevents premature high-severity classification.
+When the unresolved hedge concerns a security-clearance question (CVE / supply-chain / advisory / authentication / authorization), the frame attaches to the corresponding `### Findings` entry as a severity downgrade rationale: 'Severity: Suggestion pending verification of <hedge action>.' Severity escalates if verification confirms the threat; until then, the hedge prevents premature important-severity classification.
 
 ## Boundaries
 
