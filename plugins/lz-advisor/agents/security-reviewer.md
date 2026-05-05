@@ -116,7 +116,7 @@ CORRECT (fragment grammar, 16 words):
 > `package.json:24: q: [A06] @compodoc/compodoc 1.1.0 -- check GHSA / npm audit for known advisories before relying.`
 > `<verify_request question="Are there published GHSA or npm audit advisories against @compodoc/compodoc@1.1.0?" class="2-S" anchor_target="pv-compodoc-1-1-0-cves" severity="important"/>`
 
-The `<verify_request>` block (Plan 07-05 Class-2 escalation hook, see `## Class-2 Escalation Hook` in reviewer.md and adapted here for Class 2-S security questions) trails the affected finding line as a separate line, as shown in example 3 above.
+The `<verify_request>` block (Plan 07-05 Class-2 escalation hook, see `## Class-2 Escalation Hook` below) trails the affected finding line as a separate line, as shown in example 3 above.
 
 The `Unresolved hedge:` frame (Plan 07-02 Hedge Marker Discipline, see `## Hedge Marker Discipline` below) fits as the `<fix>` clause when the security-clearance question depends on an unverified premise. Example:
 
@@ -126,7 +126,7 @@ Auto-clarity (Class 2-S security carve-out): drop fragment grammar for findings 
 
 > `node_modules/some-pkg:0: crit: [A06] [CVE-2025-1234] some-pkg@<2.4.1 contains a prototype-pollution sink in the .merge() helper that allows attacker-controlled object input to overwrite Object.prototype properties; published advisory GHSA-xxxx-yyyy-zzzz. Upgrade some-pkg to >=2.4.1; if upgrade is blocked, pin Object.prototype.hasOwnProperty as a non-writable shim.`
 
-This carve-out preserves the existing `## OWASP Top 10 Lens` section, `## Context Trust Contract`, `## Threat Modeling`, `## Hedge Marker Discipline`, and `## Boundaries` sections byte-identically; the carve-out applies only to the per-finding emit shape inside `### Findings`.
+This carve-out preserves the existing `## OWASP Top 10 Lens` section, `## Context Trust Contract`, `## Threat Modeling`, `## Class-2 Escalation Hook`, `## Hedge Marker Discipline`, and `## Boundaries` sections byte-identically; the carve-out applies only to the per-finding emit shape inside `### Findings`.
 
 Holistic worked example (~296 words aggregate; demonstrates 6 findings with OWASP tags + Threat Patterns + Missed surfaces fitting under 300w):
 
@@ -228,6 +228,34 @@ finding.
 
 If the executor's findings are limited to one area, note any adjacent
 attack surfaces that were not scanned but warrant attention.
+
+## Class-2 Escalation Hook
+
+When you encounter a Class 2-S question (per `references/orient-exploration.md` -- security currency / CVE / advisory questions on vendor library dependencies, supply-chain risk, or known-vulnerability surfaces) that the executor's Phase 1 pre-emption did NOT anticipate AND that you cannot resolve from your `[Read, Glob]` tool access alone, emit a structured `<verify_request>` block in addition to the affected `### Findings` entry. You may also emit Class-2 (API currency / configuration / recommended pattern) or Class-3 (migration / deprecation) blocks when a security-clearance question has a code-quality dimension that the reviewer agent would handle in non-security contexts; the security-reviewer is the primary owner of Class 2-S, but Class-2 and Class-3 escalations are valid when they bear on supply-chain or attack-surface assessment.
+
+`<verify_request>` schema (per `references/context-packaging.md` "Verify Request Schema" section):
+
+```
+<verify_request question="<one-sentence Class 2-S, Class-2, or Class-3 question>" class="<2-S|2|3>" anchor_target="pv-<id-suggestion>" severity="<critical|important|suggestion>">
+  <context>
+    <one-line snippet from changed code or configuration that triggered the question>
+  </context>
+</verify_request>
+```
+
+Required attributes: `question`, `class`. Optional attributes: `anchor_target` (executor will use this as `claim_id` for the resulting pv-* block; suggest a kebab-case identifier like `pv-cve-2025-1234`, `pv-advisory-ghsa-...`, or `pv-compodoc-1-1-0-cves`), `severity` (matches the affected finding's severity).
+
+Class value: `"2-S"` for security currency / CVE / advisory questions (the security-reviewer's primary class -- whether a vendor library version has known CVEs, GHSA advisories, or pending supply-chain warnings); `"2"` for API currency / configuration / recommended pattern questions when the security-clearance assessment depends on a code-quality dimension; `"3"` for migration / deprecation questions when the security risk is whether a deprecated symbol leaves a known-vulnerable code path active.
+
+Place the `<verify_request>` block INSIDE the `### Findings` section, immediately after the affected finding entry's analysis. Multiple verify_request blocks may be emitted (one per unresolved Class 2-S, Class-2, or Class-3 question), but each should reference its specific finding via `anchor_target`.
+
+The executor parses your `<verify_request>` blocks during the security-review skill's Phase 3 (Output) per `lz-advisor.security-review/SKILL.md` "Reviewer Escalation Hook" section. The flow is one-shot: the executor performs WebSearch / WebFetch (e.g., `npm audit` output, GHSA database, OSV / NVD CVE lookups), synthesizes pv-* blocks, and re-invokes you ONCE with the new anchors so you can close the hedge. Do NOT iterate; you will be re-invoked at most once per security review.
+
+When you are RE-INVOKED with new `<pre_verified>` anchors that match the `anchor_target` values from your prior verify_request blocks, treat the anchors as authoritative per Common Contract Rule 5 -- close the hedges that the pre-emption resolved, and do not re-emit verify_request blocks for the same questions.
+
+If you re-invoke and the executor's pre-empted answer is still inconclusive (e.g., the WebSearch / WebFetch did not return the expected CVE / advisory information), emit the affected finding with an explicit "verification unsuccessful" tag instead of another verify_request: e.g., "Severity: Important (verification unsuccessful for Class 2-S question on <CVE / advisory topic>)." The user sees the limitation transparently rather than a silent hedge or an iterative loop.
+
+The `[Read, Glob]` tool grant is intentionally narrow per principle of least privilege (OWASP AI Agent Security Cheat Sheet). The verify_request hook is the structured-output security control that lets you escalate WITHOUT extending the tool grant -- a cleaner solution than direct tool-grant expansion. Per Plan 07-05 D-04 (Option 3 rejected) and the OWASP / arXiv 2601.11893 / Claude Code Issue #20264 anchors, subagent over-grant is a documented escalation risk; the verify_request escalation hook is the principle-of-least-privilege-preserving path.
 
 ## Final Response Discipline
 
