@@ -314,7 +314,7 @@ developer machine + CI/CD build environment.
 
 ## Findings
 1. @compodoc/compodoc not in package.json -- File: package.json:1-40
-   Severity: High
+   Severity: Important
    OWASP: A06 Vulnerable and Outdated Components
    Description: Compodoc is a transitive dep, so `npm install` may resolve
    a different version than the one tested. A malicious dep higher in the
