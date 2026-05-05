@@ -1,0 +1,23 @@
+[INFO] Fragment-grammar shape detected: 7 numbered item(s)
+[OK] Item 1: 12 words (<=15 target)
+[OK] Item 2: 11 words (<=15 target)
+[OK] Item 3: 13 words (<=15 target)
+[OK] Item 4: 11 words (<=15 target)
+[OK] Item 5: 11 words (<=15 target)
+[OK] Item 6: 11 words (<=15 target)
+[OK] Item 7: 12 words (<=15 target)
+[INFO] Per-item check: 7 items; 0 over-cap; aggregate 81 words
+[OK] Finding D (advisor) per-item check: all items within target
+[OK] Finding D (advisor): Strategic Direction 88 words (<=100 cap)
+--- advisor Strategic Direction (extracted from JSONL) ---
+1. Install `@storybook/addon-docs@^10.3.5` as devDependency; required since not bundled in Storybook 10 essentials.
+2. Add `tsconfig.doc.json` extending `tsconfig.json` with `include: ["src/**/*.ts"]` and `exclude: ["**/*.spec.ts", "**/*.stories.ts"]`.
+3. Configure `storybook` and `build-storybook` targets in `project.json` with `compodoc: true` and `compodocArgs: ["-e","json","-d",".","-p","tsconfig.doc.json"]`.
+4. Create ESM `.storybook/preview.ts` importing `setCompodocJson` from `@storybook/addon-docs/angular`, calling it with `../documentation.json`.
+5. Add `tags: ['autodocs']` on each component story `meta` instead of `docs.autodocs`.
+6. Write JSDoc above each `@Input()` and `@Output()` decorator in component sources.
+7. Run `npx nx storybook <project>` to regenerate `documentation.json` and verify Docs tab.
+
+**Critical:** Add `documentation.json` to `.gitignore`; it is a build artefact regenerated each Storybook run.
+--- End advisor Strategic Direction ---
+[SUCCESS] D-advisor-budget.sh: advisor 100w cap enforced (88 words)

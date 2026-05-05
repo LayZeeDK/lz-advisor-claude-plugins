@@ -1,0 +1,1 @@
+/lz-advisor.execute Read @plans/storybook-compodoc-signal-io.plan.md and implement the plan end-to-end. Set up Compodoc + Storybook integration, add the sample input() and output() signals to ngx-smart-components, and add the JSDoc descriptions. Verify each plan step before committing.

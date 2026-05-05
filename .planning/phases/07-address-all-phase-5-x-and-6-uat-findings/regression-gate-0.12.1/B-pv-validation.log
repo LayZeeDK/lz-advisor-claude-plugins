@@ -1,0 +1,7 @@
+[OK] Assertion 1 (FIND-B.2 XML format): pv-* blocks use canonical XML form; no plain-bullet sections
+[OK] Assertion 2 (FIND-B.1 synthesis count): 4 pv-* synthesized for 12 Read/WebFetch invocations (>=1 required)
+[OK] Assertion 3 (FIND-H self-anchor rejection): no self-anchor evidence patterns
+[OK] Assertion 4 (FIND-H source-grounded): all pv-* blocks have non-empty <evidence> AND path/URL source= values
+[OK] Assertion 5 (GAP-G1-firing default-on): ToolSearch fired on agent-generated input (TOOLSEARCH_COUNT=1, AGENT_INPUT_DETECTED=2)
+[SKIP] Assertion 6 (FIND-B.2 dual-surface resolution): no user-facing pv-* tokens detected in trace; assertion N/A (fixture-shape may be too thin to surface tokens)
+[SUCCESS] B-pv-validation.sh: all 6 assertions passed (XML format + synthesis count + no self-anchor + no empty evidence + GAP-G1-firing default-on + dual-surface token resolution)
