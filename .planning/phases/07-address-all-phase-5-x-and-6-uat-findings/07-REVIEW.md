@@ -79,9 +79,26 @@ inconsistency is asymmetrically improving (advisor.md leads,
 reviewer.md / security-reviewer.md lag).
 ```
 
+## Resolved Gaps (gap-list amendment 2026-05-05)
+
+The 2026-05-05 ultrathink against `07-RESEARCH-GAPS-2.md` Gap 2 surfaced three residual severity-vocabulary-alignment gaps (WR-01, WR-02, WR-03) that originated as gap-list items adjacent to this review (commit `6e96b27`, "docs(07): plan gap closures 2 -- WR-01/02/03 + security-reviewer 0.12.1 budget regression"). They were re-evaluated as in-phase and closed via Plan 07-13.
+
+**WR-01: RESOLVED via Plan 07-13 Task 1 (commit 92cac0b; plugin 0.12.2).**
+
+Closure: `agents/security-reviewer.md:284` Hedge Marker Discipline security-clearance carve-out paragraph severity-vocabulary aligned (`Severity: Medium pending verification` -> `Severity: Suggestion pending verification`; `premature high-severity classification` -> `premature important-severity classification`). Verified via `git grep -c "Severity: Suggestion pending verification" plugins/lz-advisor/agents/security-reviewer.md` returns 1 + `git grep -c "Severity: Medium pending verification" plugins/lz-advisor/agents/security-reviewer.md` returns 0.
+
+**WR-02: RESOLVED via Plan 07-13 Task 2 (commit ea2045e; plugin 0.12.2).**
+
+Closure: 5 surfaces aligned to renamed Critical/Important/Suggestion lexicon. Surface 1: `lz-advisor.security-review/SKILL.md:14` user-visible comma-form skill description (matches sister skill `lz-advisor.review/SKILL.md:13`); Surface 2: `lz-advisor.security-review/SKILL.md:126` Phase 1 Scan vocabulary; Surface 3: `lz-advisor.security-review/SKILL.md:164` Phase 3 Output reformat-prohibition vocabulary; Surface 4: `references/context-packaging.md:289` Verification template severity guidance; Surface 5 (design-bearing): `references/context-packaging.md:388` Verify Request Schema severity attribute (Option A full alignment per 07-RESEARCH-GAPS-2.md Gap 2 Surface 4 ranked recommendation; no external consumer of internal verify_request schema). Verified via `git grep -F "Critical / High / Medium" plugins/lz-advisor/` returns 0 + `git grep -F "Critical/High/Medium" plugins/lz-advisor/` returns 0 + `rg -F "Critical, High" plugins/lz-advisor/` returns 0 lines.
+
+**WR-03: RESOLVED via Plan 07-13 Task 3 (commit b5916ea; plugin 0.12.2).**
+
+Closure: `agents/security-reviewer.md` gains self-contained `## Class-2 Escalation Hook` section between `## Threat Modeling` and `## Final Response Discipline`, mirroring `agents/reviewer.md` lines 223-249 with security-specific adaptations (Class 2-S primary; renamed severity lexicon; pv-cve-... / pv-advisory-ghsa-... / pv-compodoc-... anchor_target conventions; security-tool guidance for npm audit / GHSA / OSV / NVD CVE lookups; Plan 07-05 D-04 + OWASP / arXiv 2601.11893 / Claude Code Issue #20264 privilege-escalation anchors). Cross-file pointer on line 119 replaced with self-contained reference; carve-out enumeration on line 129 updated. Verified via `git grep -c "^## Class-2 Escalation Hook$" plugins/lz-advisor/agents/security-reviewer.md` returns 1 + `git grep -c "see \`## Class-2 Escalation Hook\` in reviewer.md" plugins/lz-advisor/agents/security-reviewer.md` returns 0.
+
 ---
 
 _Reviewed: 2026-05-04T00:00:00Z_
 _Reviewer: Claude (gsd-code-reviewer)_
 _Depth: standard_
 _Scope: Plan 07-10 (advisor.md fragment-grammar emit template) + Plan 07-11 (Rule 5b dual-surface differentiation) + plugin SemVer bump 0.12.0 -> 0.12.1 PATCH_
+_Amendment 2026-05-05: WR-01/02/03 RESOLVED via Plan 07-13 (severity-vocabulary alignment + Class-2 Escalation Hook addition); plugin 0.12.1 -> 0.12.2 PATCH_

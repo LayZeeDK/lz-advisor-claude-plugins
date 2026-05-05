@@ -458,6 +458,55 @@ The Plan 07-10 + Plan 07-11 closures are structurally COMPLETE on plugin 0.12.1;
 
 ---
 
+## closure_amendment_2026_05_05_severity_vocabulary_alignment
+
+**Status:** RESOLVED via Plan 07-13 (severity-vocabulary cross-surface alignment + Class-2 Escalation Hook addition).
+
+**Plugin version:** 0.12.2 (PATCH bump from 0.12.1 across 5 surfaces: `plugin.json` + 4 `SKILL.md` frontmatter `version:` fields). Plan 07-13 ships the bump on its own because Plan 07-12 halted at Task 1 by design (its 326w regression was empirically disconfirmed as a stochastic outlier; 3x re-run mean 272.3w, all PASS); Plan 07-13 is therefore the only structural change in the 0.12.1 -> 0.12.2 PATCH cycle.
+
+**Closes:** `residual-severity-vocabulary-alignment` (07-REVIEW.md gap-list Warnings WR-01, WR-02, WR-03; 07-RESEARCH-GAPS-2.md Gap 2; in-phase per the 2026-05-05 ultrathink re-evaluation).
+
+**Mechanism:**
+
+- **WR-01 closure (mechanical text replacement):** `agents/security-reviewer.md:284` Hedge Marker Discipline security-clearance carve-out: `Severity: Medium pending verification` -> `Severity: Suggestion pending verification`; `premature high-severity classification` -> `premature important-severity classification`. Aligns the carve-out prose with the per-finding severity prefix table (lines 65-68; aligned per Plan 07-09).
+- **WR-02 closure (mechanical text replacement; 5 surfaces):**
+  - `lz-advisor.security-review/SKILL.md:14` user-visible comma-form skill description: `Critical, High, or Medium` -> `Critical, Important, or Suggestion` (matches sister skill `lz-advisor.review/SKILL.md:13`)
+  - `lz-advisor.security-review/SKILL.md:126` Phase 1 Scan: `(Critical / High / Medium)` -> `(Critical / Important / Suggestion)`
+  - `lz-advisor.security-review/SKILL.md:164` Phase 3 Output: `(Critical / High / Medium)` -> `(Critical / Important / Suggestion)`
+  - `references/context-packaging.md:289` Verification template: `Critical/High/Medium for security-review` -> `Critical/Important/Suggestion for security-review`
+  - `references/context-packaging.md:388` Verify Request Schema severity attribute (Surface 4 design-bearing): `Critical / High / Medium for security-reviewer` -> `Critical / Important / Suggestion for security-reviewer`. Surface 4 design decision = Option A (full alignment of internal contract; no backward-compat translation note) per 07-RESEARCH-GAPS-2.md Gap 2 ranked recommendation; verify_request schema is internal to plugin invocation flow with no external consumer.
+- **WR-03 closure (structural; section addition + cross-reference fix):** `agents/security-reviewer.md` gains a new self-contained `## Class-2 Escalation Hook` section between `## Threat Modeling` and `## Final Response Discipline`, mirroring `agents/reviewer.md` lines 223-249 byte-identically except for security-specific adaptations (Class 2-S primary; renamed severity lexicon `critical|important|suggestion`; security-specific anchor_target conventions `pv-cve-2025-1234`, `pv-advisory-ghsa-...`, `pv-compodoc-1-1-0-cves`; security-tool guidance `npm audit` / GHSA database / OSV / NVD CVE lookups; explicit Plan 07-05 D-04 / OWASP / arXiv 2601.11893 / Claude Code Issue #20264 privilege-escalation anchors). Cross-file pointer on line 119 replaced with self-contained reference (`see ## Class-2 Escalation Hook below`); carve-out enumeration on line 129 updated to include the new section in the byte-identical-preservation list.
+
+**Rejected alternatives (in plan rationale, not shipped):**
+
+- **Direction 2B (separate WR-01 + WR-02; defer WR-03 to Phase 8):** REJECTED -- WR-03 is structural and Phase-7-scoped; cross-file pointer is invalid; deferring leaves Plan 07-09 contract integrity incomplete; bundling cost amortized in 2A.
+- **Direction 2C (status quo + documentation note):** REJECTED -- doesn't fix the contract gap; preserves empirical risk; avoidance pattern.
+- **WR-02 Surface 4 Option B (backward-compat with translation note):** REJECTED -- creates technical debt for an internal contract with no external consumer.
+- **WR-02 Surface 4 Option C (differentiated per-agent lexicon):** REJECTED -- contradicts Plan 07-09 alignment intent.
+
+**Empirical evidence (mechanical):**
+
+- `git grep -F "Critical / High / Medium" plugins/lz-advisor/` returns 0 matches (post-fix verification).
+- `git grep -F "Critical/High/Medium" plugins/lz-advisor/` returns 0 matches.
+- `rg -F "Critical, High" plugins/lz-advisor/` returns 0 lines (anti-regression for user-visible-prose drift).
+- `git grep -F "Severity: Medium pending" plugins/lz-advisor/` returns 0 matches.
+- `git grep -F "premature high-severity" plugins/lz-advisor/` returns 0 matches.
+- `git grep -c "^## Class-2 Escalation Hook$" plugins/lz-advisor/agents/security-reviewer.md` returns 1.
+- 07-REVIEW.md Resolved Gaps section marks WR-01/02/03 RESOLVED with cross-references to this Plan 07-13 closure.
+
+**Plan 07-09 contract integrity (closure):** With Plan 07-13 closure, all 3 Plan 07-09 contract-integrity gaps (WR-01 + WR-02 + WR-03) are CLOSED on plugin 0.12.2. The renamed Critical/Important/Suggestion lexicon is now consistent across:
+
+- `agents/security-reviewer.md` per-finding severity prefix table (lines 65-68; Plan 07-09)
+- `agents/security-reviewer.md` Hedge Marker Discipline carve-out (line 284; Plan 07-13 WR-01)
+- `agents/security-reviewer.md` `## Class-2 Escalation Hook` severity attribute (new section; Plan 07-13 WR-03)
+- `lz-advisor.security-review/SKILL.md` user-visible comma-form description (line 14; Plan 07-13 WR-02 Surface 5)
+- `lz-advisor.security-review/SKILL.md` Phase 1 + Phase 3 (lines 126 + 164; Plan 07-13 WR-02 Surfaces 1+2)
+- `references/context-packaging.md` Verification template + Verify Request Schema (lines 289 + 388; Plan 07-13 WR-02 Surfaces 3+4)
+
+**Phase 7 sealing readiness update.** With Plan 07-13 closure (this amendment), the in-scope residual `residual-severity-vocabulary-alignment` is CLOSED on plugin 0.12.2. Phase 7 sealing readiness is now blocked ONLY by the OUT-OF-SCOPE Phase 8 directive `residual-wip-discipline-reversal` (per user 2026-05-03; memory `feedback_no_wip_commits.md`) and the Plan 07-12 follow-up captured under `project_phase_8_candidates_post_07.md` (security-reviewer 0.12.1 budget regression empirically disconfirmed as stochastic outlier; no Phase 7 plan ships against it). Phase 7 status updates from `executing` to `passed_with_residual` (the residual being exclusively the Phase 8 directive, not an in-phase failure).
+
+---
+
 ## Phase 7 Sealing Verdict
 
 **Structural closure: COMPLETE (across all 11 plans).** All 16 requirement IDs verified across 11 plans (07-01 through 07-11). All 5 NEW Phase 7 smoke fixtures pass `bash -n`. Plugin version 0.12.1 across 5 surfaces with zero stale-version remnants. 4-skill byte-identical `<context_trust_contract>` canon preserved (3 cross-file diffs exit 0). Tool grants preserved at `["Read", "Glob"]` across all 3 agents (principle of least privilege). REQUIREMENTS.md coverage 42/42 (16 Phase 7 IDs + 26 inherited from earlier phases).
