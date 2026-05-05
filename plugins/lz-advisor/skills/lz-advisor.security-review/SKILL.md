@@ -11,7 +11,7 @@ description: >
   and "audit for security". This skill provides Opus-level security
   review at Sonnet cost by consulting the security-reviewer agent
   for OWASP Top 10-informed threat analysis. Findings are
-  classified as Critical, High, or Medium with OWASP category
+  classified as Critical, Important, or Suggestion with OWASP category
   tags. This skill should NOT be used for general code quality
   reviews, bug finding, or style issues -- use lz-advisor.review
   instead. It should also NOT be used for planning or implementing
@@ -123,7 +123,7 @@ Skip (do not flag):
 - Theoretical vulnerabilities in code paths that are never exposed to external input
 - Issues a SAST tool would flag without context (pure pattern matching)
 
-Curate the top 3-5 highest-severity security findings with file:line references and relevant code context. For each finding, include an initial severity assessment (Critical / High / Medium).
+Curate the top 3-5 highest-severity security findings with file:line references and relevant code context. For each finding, include an initial severity assessment (Critical / Important / Suggestion).
 
 Do not consult the security-reviewer agent during scanning. Scanning is preparation.
 </scan>
@@ -161,7 +161,7 @@ Required output shape:
 > [Security-reviewer agent's response, rendered verbatim. Begins with `### Findings`, continues with finding entries (each tagged with an OWASP category like `[A03 Injection]`) per the security-reviewer's Output Constraint, then the `### Threat Patterns` section.]
 
 Do NOT:
-- Reformat the security-reviewer's response into severity groups (Critical / High / Medium) -- the security-reviewer already includes severity per finding entry within the `### Findings` section.
+- Reformat the security-reviewer's response into severity groups (Critical / Important / Suggestion) -- the security-reviewer already includes severity per finding entry within the `### Findings` section.
 - Strip, rename, or bold the `### Findings` or `### Threat Patterns` headers.
 - Drop the `### Threat Patterns` section even if its body is short -- the security-reviewer emits the header unconditionally per its Output Constraint; pass it through.
 - Add a "Recommended Action" or next-steps section.

@@ -286,7 +286,7 @@ authoritative and do NOT re-verify them.
 - Finding N: [title]
   - File: `path:line-range`
   - Severity (initial): [Critical/Important/Suggestion for review;
-    Critical/High/Medium for security-review]
+    Critical/Important/Suggestion for security-review]
   - OWASP category (security-review only): [e.g., A03 Injection]
   - Description: [one paragraph]
   - Code context: [fenced block showing the relevant lines]
@@ -385,7 +385,7 @@ The reviewer and security-reviewer agents emit `<verify_request>` blocks when th
 - **`question`** (REQUIRED): one-sentence question shaped so a `WebSearch` query or `WebFetch` URL can produce a definitive answer. Bad: "What about Storybook?" Good: "Does `@storybook/angular@10.3.5` still export `setCompodocJson` from `@storybook/addon-docs/angular`?"
 - **`class`** (REQUIRED): one of `"2"` (API currency / configuration / recommended pattern), `"2-S"` (security currency / CVE / advisory; security-reviewer only), `"3"` (migration / deprecation), `"4"` (language semantics). Per `references/orient-exploration.md` Class 1-4 + Class 2-S taxonomy.
 - **`anchor_target`** (OPTIONAL): kebab-case suggestion for the resulting `<pre_verified>` block's `claim_id` attribute. Allows the agent to anticipate the anchor name so its re-invocation prose can reference it. Format: `pv-<short-descriptor>`, e.g., `pv-storybook-10-args-fn-spy`. If omitted, the executor generates a fresh `pv-N` claim_id.
-- **`severity`** (OPTIONAL): matches the affected finding's severity (Critical / Important / Suggestion for reviewer; Critical / High / Medium for security-reviewer). Helps the executor prioritize verification effort when multiple verify_request blocks are emitted.
+- **`severity`** (OPTIONAL): matches the affected finding's severity (Critical / Important / Suggestion for reviewer; Critical / Important / Suggestion for security-reviewer). Helps the executor prioritize verification effort when multiple verify_request blocks are emitted.
 - **`<context>`** (OPTIONAL): one-line snippet from changed code or configuration that triggered the question. Useful when the question would be ambiguous without surrounding code context.
 
 ### Worked example
