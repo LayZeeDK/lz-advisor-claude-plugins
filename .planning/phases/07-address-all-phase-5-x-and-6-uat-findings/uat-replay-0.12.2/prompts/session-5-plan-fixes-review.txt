@@ -1,0 +1,1 @@
+/lz-advisor.plan Read @plans/review-report.md and plan the fixes for every finding in it. Write the fix plan to @plans/fix-review-findings.plan.md.

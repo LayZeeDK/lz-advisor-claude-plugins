@@ -1,0 +1,46 @@
+[OK] Security-reviewer output sections present: Findings=1 TP=1
+[INFO] Fragment-grammar shape detected (security): 6 finding line(s)
+[WARN] Finding line 1: 25 words (>22 target but <=28 outlier; acceptable)
+[ERROR] Finding line 2: 37 words (>28 outlier soft cap; target <=22w)
+[ERROR] Finding line 3: 29 words (>28 outlier soft cap; target <=22w)
+[ERROR] Finding line 4: 33 words (>28 outlier soft cap; target <=22w)
+[WARN] Finding line 5: 24 words (>22 target but <=28 outlier; acceptable)
+[WARN] Finding line 6: 24 words (>22 target but <=28 outlier; acceptable)
+[INFO] Total findings: 6; bad: 3
+[OK] Threat Patterns: 95 words (<=160 cap)
+[OK] Missed surfaces: 30 words (<=30 cap)
+[ERROR] Aggregate: 427 words (>300 cap; regression)
+--- security-reviewer output (last 200 lines) ---
+## Security Review Summary
+
+Reviewed: `review-src/handler.ts` and `review-src/validate.ts` (commit `3afb74f` -- "add unvalidated handler with JSON.parse for security-reviewer scenario")
+
+### Findings
+
+`review-src/handler.ts:7: crit: [A04] unguarded JSON.parse(req.body) throws SyntaxError/TypeError on malformed or non-string input, crashing handler (unauth DoS). Wrap in try/catch, assert typeof data === 'string', return 400 on failure.`
+
+`review-src/handler.ts:7: imp: [A08] parsed object returned raw with __proto__/constructor keys intact; downstream merges (Object.assign, lodash.merge) yield prototype pollution. Use JSON.parse(data, (k,v) => k === '__proto__' || k === 'constructor' ? undefined : v) or schema-validate (zod/ajv) and reject reserved keys.`
+
+`review-src/handler.ts:1-3: imp: [A04] validate exported but never imported in handler; security control bypassed on hot path. Import and call validate (after hardening per finding 4) before process; reject with 400 on failure.`
+
+`review-src/validate.ts:1: sug: [A04] x != null is nullity-only check -- no type, length, or shape constraint; oversized/empty/wrong-type payloads pass. Replace with schema validator (zod/ajv) enforcing typeof string, max length (e.g., 1MB), and structural shape before JSON.parse.`
+
+`review-src/handler.ts:1: sug: [A09] no logging on parse failure or rejected input; attacker probing is invisible. Log structured warn on validation/parse failure with request id, omit body contents.`
+
+`review-src/handler.ts:1: q: [A01] handler has no auth/authorization check -- threat model states "unauthenticated by design"; confirm routing layer enforces auth or that this endpoint is intentionally public.`
+
+Severity revisions vs. initial:
+- Finding 1: confirmed Critical (unauth DoS, trivially exploitable -- any malformed POST crashes handler).
+- Finding 2: confirmed Important; remains Important rather than Critical because exploitation requires a vulnerable downstream sink (Object.assign/merge on the returned object), which is not visible in scope.
+- Finding 3: confirmed Important; the bypass itself is the misconfiguration, mapped to A04 Insecure Design rather than A05 since the control exists but was never wired.
+- Finding 4: confirmed Suggestion; even if wired, the check is too weak to mitigate findings 1-2, so escalation is not warranted -- the fix is replacement, not strengthening.
+
+### Threat Patterns
+
+Findings 1+2+3 chain into a single unauth exploit path: missing wiring (3) means no gatekeeping runs; weak validator (4) would not help even if wired; `JSON.parse` (1) crashes on malformed input AND emits prototype-polluting payloads (2) to downstream consumers. Attacker with one HTTP request achieves DoS; with knowledge of a downstream merge sink, achieves prototype pollution. Root cause is shared: zero input contract enforcement between transport and business logic. Fixing only finding 1 (try/catch) closes DoS but leaves pollution vector open -- schema validation at the boundary is the structural fix that resolves all four.
+
+### Missed surfaces (optional)
+
+Routing layer wiring `handle` is out of scope -- verify whether body-parser pre-parses `req.body` (would make `JSON.parse` double-parse and TypeError on objects) and whether any auth middleware fronts this route.
+
+**Verdict scope:** scope: security-threats

@@ -1,0 +1,39 @@
+[OK] Security-reviewer output sections present: Findings=1 TP=1
+[INFO] Fragment-grammar shape detected (security): 1 finding line(s)
+[ERROR] Finding line 1: 33 words (>28 outlier soft cap; target <=22w)
+[INFO] Total findings: 1; bad: 1
+[OK] Threat Patterns: 90 words (<=160 cap)
+[OK] Missed surfaces: section absent (optional)
+[ERROR] Aggregate: 363 words (>300 cap; regression)
+--- security-reviewer output (last 200 lines) ---
+## Security Review Summary
+
+Reviewed: `review-src/handler.ts` and `review-src/validate.ts` -- commit `a681c0f` ("add unvalidated handler with JSON.parse for security-reviewer scenario")
+
+### Findings
+
+`review-src/handler.ts:6-8: crit: [A04]` `JSON.parse(req.body)` with no try/catch on unauthenticated input -- single malformed body crashes process. Wrap in try/catch returning 400; reject non-string `data` early.
+
+`review-src/handler.ts:1-3: crit: [A04]` `validate()` never imported -- input-validation layer is dead code, raw `req.body` reaches parser. Import and gate `process()` behind `validate(req.body)` with schema check (zod/ajv), not null-check.
+
+`review-src/handler.ts:6-8: imp: [A05]` Unhandled `SyntaxError` from `JSON.parse` propagates as uncaught exception / unhandled rejection -- DoS via one request. Add try/catch and structured error response; ensure framework-level error middleware exists.
+
+`review-src/handler.ts:6-8: imp: [A08] [CWE-1321]` Parsed object returned with `__proto__`/`constructor` keys intact; downstream merge (`Object.assign`, lodash `_.merge`, spread into shared state) poisons `Object.prototype`. Use `JSON.parse(data, (k,v) => k==='__proto__'||k==='constructor'||k==='prototype' ? undefined : v)` or `Object.create(null)` target for merges.
+
+`review-src/validate.ts:1: imp: [A04]` `validate(x) { return x != null }` is structurally insufficient even if wired -- accepts strings, arrays, numbers, polluted objects. Replace with schema validator (zod/ajv) asserting shape + reject prototype keys.
+
+`review-src/handler.ts:1: sug: [A09]` Handler logs nothing on parse failure / invalid input -- no signal for abuse detection. Emit structured log with request id + failure reason on validation reject.
+
+`review-src/handler.ts:1: q: [A01]` Is `handle()` exposed unauthenticated? Threat model says yes; if so, all above severities hold as stated. Assuming unauthenticated network exposure (unverified), apply fixes pre-merge. Verify auth posture before committing.
+
+Severity confirmations: Findings 1, 2 confirmed Critical. Findings 3, 4 confirmed Important (3 contingent on framework error handling; 4 contingent on downstream merge usage -- both plausible defaults).
+
+### Threat Patterns
+
+Findings 1+2 chain into the primary exploit path: dead `validate()` (F2) leaves `JSON.parse` (F1) as sole gate, and F1 has no error boundary (F3) nor proto-key filter (F4) -- a single unauthenticated malformed body achieves DoS, and a single `{"__proto__":...}` body achieves prototype pollution if any caller merges the return value. Root cause is shared: handler was authored without an input-trust boundary. Fix is structural -- introduce a schema-validating gateway (zod/ajv) at `handle()` entry that rejects malformed JSON, dangerous keys, and shape mismatches uniformly, rather than patching each finding independently.
+
+**Missed surfaces (optional)**
+
+No size limit on `req.body` -- large-payload DoS (billion-laughs-style nested JSON, multi-MB strings) is adjacent to F1/F3; check framework body-parser `limit` config.
+
+**Verdict scope:** scope: security-threats

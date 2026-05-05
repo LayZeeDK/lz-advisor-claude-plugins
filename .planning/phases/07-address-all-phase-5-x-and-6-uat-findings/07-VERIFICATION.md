@@ -770,4 +770,82 @@ No critical anti-patterns. The 2 prior 07-REVIEW.md severity-rename drift Warnin
 _Initial verification: 2026-05-03_
 _Updated for Plans 07-10 + 07-11 closure: 2026-05-04_
 _Updated for Plans 07-12 + 07-13 closure: 2026-05-05_
+_Updated for 0.12.2 regression-gate empirical subverification: 2026-05-06_
 _Verifier: Claude (gsd-verifier)_
+
+---
+
+## empirical_subverification_2026_05_06 (0.12.2 regression-gate + 8-session UAT replay)
+
+**Trigger:** `/gsd-verify-work 7 autonomous smoke tests for gaps only if relevant. After that, run a full, autonomous Compodoc UAT including all skills as well as plan+execute of review and security-review reports in D:\projects\github\LayZeeDK\ngx-smart-components`
+
+**Source artefact:** `07-UAT-REGRESSION-0.12.2.md` (sealed report; this verification block summarises and reclassifies the worklist).
+
+### Phase 8 worklist item 4 disposition: REGRESSION CONFIRMED
+
+The 2026-05-05 sealing block flagged worklist item 4 ("(Optional) D-security-reviewer-budget.sh against plugin 0.12.2 to confirm the new ~32-line `## Class-2 Escalation Hook` section addition does not push security-reviewer over the 300w aggregate cap on canonical scenarios. ~28w expected headroom from 0.12.1 baseline (272.3w mean).") as deferred-but-recommended. The 2026-05-06 regression-gate executes that item with 4-run smoke + S4 UAT corroboration.
+
+| Run | Aggregate (w) | vs 300w cap | Status |
+|-----|--------------|-------------|--------|
+| smoke run 1 | 427 | +42% | FAIL |
+| smoke run 2 | 317 | +5.7% | FAIL |
+| smoke run 3 | 310 | +3.3% | FAIL |
+| smoke run 4 | 363 | +21% | FAIL |
+| smoke n=4 mean | **354.25** | **+18%** | **FAIL (4/4)** |
+| S4 UAT (Compodoc + Storybook real scenario) | 407 | +36% | FAIL |
+| Combined n=5 mean | 364.6 | +22% | FAIL (5/5) |
+
+**Disposition:** worklist item 4 is **falsified**. The "~28w expected headroom" assumption was wrong; the actual delta is +82w mean (+30% mean shift). 4/4 smoke runs FAIL with even the BEST run (310w) over cap. Plus S4 UAT 407w confirms the regression generalises beyond the synthetic handle/validate fixture scenario.
+
+**Aggregate driver:** the security-reviewer agent emits an undocumented "Severity revisions vs. {initial,executor}:" prose section (4-5 bullets, ~50-100w) after the Findings section. This emission is not authorised by the Plan 07-09 fragment-grammar emit template + per-section budget caps documented in `agents/security-reviewer.md`. The emission appears in BOTH the synthetic smoke fixture AND the real Compodoc + Storybook UAT, so it is not a fixture-specific artefact.
+
+**Hypothesis (Phase 8 to confirm):** Plan 07-13 added the `## Class-2 Escalation Hook` section (~32 lines) and renamed severity vocabulary (Critical/Important/Suggestion). The new section's "verify reasoning before stating" pattern + the WR-01 Hedge Marker Discipline carve-out at line 312 ("Severity: Suggestion pending behaviour observation in this codebase") may be inducing the agent to emit per-finding severity-validation prose blocks. This is consistent with the n=4 + n=1 evidence that the regression is structural (induced by Plan 07-13 surface changes), not stochastic.
+
+### Phase 8 worklist additions
+
+The 2026-05-05 worklist had 6 items (3 mandatory: residual-wip-discipline-reversal, WR-04, WR-05; 3 informational: P8-03, P8-12, P8-18, plus reclassification + optional smoke). The 2026-05-06 regression-gate adds 3 items and reclassifies 1:
+
+| # | Item | Status |
+|---|------|--------|
+| 4 (was) | Optional `D-security-reviewer-budget.sh` against 0.12.2 | **PROMOTED to mandatory pre-merge gate; expected REGRESSION CONFIRMED.** |
+| 7 (new) | Tighten `agents/security-reviewer.md` emit contract to forbid post-Findings "Severity revisions vs." prose blocks. Either extend WR-01 carve-out scope OR widen contract with explicit budget allocation. Re-run smoke fixture; expect <=300w aggregate on 3x mean. | **MANDATORY** |
+| 8 (new) | Run `D-reviewer-budget.sh` on 0.12.2 (3x for n=3 mean) to corroborate / refute the n=1 reviewer regression observed in S3 UAT (520w aggregate; 1.84x cap). Reviewer was NOT changed by Plan 07-13 but shares byte-identical canon with security-reviewer, so cross-pollination of "Validation of Finding N:" prose is plausible. If structural, tighten `agents/reviewer.md` emit contract. | **MANDATORY** |
+| 9 (new) | Run `D-advisor-budget.sh` extraction script against `session-1-plan.jsonl` from this UAT (or fresh trace) to get fixture-grade advisor SD word count separate from the executor's plan repackaging. Visual estimate ~143w (43% over 100w cap) on the Compodoc + Storybook scenario; may reproduce residual-advisor-budget on 0.12.2 even after Plan 07-10 closure on 0.12.1. n=1 visual estimate; needs fixture-grade confirmation. | recommended |
+
+### Phase 8 worklist additions: not 0.12.2 regressions, just observations
+
+| Observation | Source |
+|-------------|--------|
+| `wip:` prefix fires on S2 (2x), S6 (1x of 3 commits), S8 (2x); `docs(wip-resolve):` fires on S2 + S6 (1x each). Plan 07-08 wip-discipline rule fires per spec on 0.12.2. | session-2/6/8 commit logs |
+| Class-2 Escalation Hook (Plan 07-13 WR-03) NOT visibly fired in S4 UAT output. No `<verify_request>` block; no flagged auth-context ambiguity question on the Compodoc + Storybook security-review surface. May be scenario-specific (no obvious auth/authz ambiguity in the Compodoc + Storybook surface to trigger Class-2 escalation). | `D:/projects/github/LayZeeDK/ngx-smart-components/plans/security-review-report.md` |
+| Default-on ToolSearch precondition (Plan 07-07): fires in **8 of 8** sessions (>=1 ToolSearch event each). Confirms Plan 07-07 closure remains durable on 0.12.2. | session-{1..8}.jsonl |
+| Web research integration: WebSearch + WebFetch fire in all 8 sessions. Plan 07-01 + 07-07 web-first ranking pattern confirmed durable on 0.12.2. | session-{1..8}.jsonl |
+| pv-* dual-surface (Plan 07-11 D2): pv-2, pv-3 token-form references appear in S3 review output. Confirms Plan 07-11 dual-surface differentiation remains durable on 0.12.2. | `D:/projects/github/LayZeeDK/ngx-smart-components/plans/review-report.md` |
+
+### Tool-use distribution (8-session UAT chain on 0.12.2)
+
+| Session | Skill | ToolSearch | WebSearch | WebFetch | Agent | Trace bytes |
+|---------|-------|-----------|-----------|----------|-------|-------------|
+| S1 | `/lz-advisor.plan` | 2 | 4 | 5 | 1 | 187K |
+| S2 | `/lz-advisor.execute` | 4 | 5 | 4 | 2 | 472K |
+| S3 | `/lz-advisor.review` | 2 | 2 | 2 | 1 | 325K |
+| S4 | `/lz-advisor.security-review` | 1 | 1 | 1 | 1 | 182K |
+| S5 | `/lz-advisor.plan` | 2 | 4 | 4 | 1 | 201K |
+| S6 | `/lz-advisor.execute` | 2 | 2 | 2 | 2 | 306K |
+| S7 | `/lz-advisor.plan` | 2 | 4 | 2 | 1 | 152K |
+| S8 | `/lz-advisor.execute` | 3 | 2 | 2 | 2 | 228K |
+
+Counts are JSONL occurrences, so actual call counts are roughly half (each tool-use appears in tool_use + tool_result events).
+
+### Phase 7 sealing verdict (unchanged)
+
+Phase 7 remains sealed at `passed_with_residual` per the 2026-05-05 verdict. The 0.12.2 regression-gate **does not reopen Phase 7** -- the security-reviewer budget regression is now reclassified from "optional follow-up" to "mandatory Phase 8 worklist item 7" but does not invalidate any landed Plan 07-01..07-13 deliverable. The 16 Phase 7 must-haves remain structurally + empirically verified. Plan 07-13 itself (severity rename + Class-2 hook section) is durable on its own terms; the Phase 8 follow-up is to constrain the agent's prose emission patterns that piggy-back on the new surface.
+
+### Test-plan replay artefacts
+
+- `.planning/phases/07-address-all-phase-5-x-and-6-uat-findings/07-UAT-REGRESSION-0.12.2.md` -- sealed UAT report
+- `.planning/phases/07-address-all-phase-5-x-and-6-uat-findings/regression-gate-0.12.2/D-security-reviewer-budget*.log` -- 4 smoke logs
+- `.planning/phases/07-address-all-phase-5-x-and-6-uat-findings/uat-replay-0.12.2/session-{1..8}-*.jsonl` -- 8 UAT session traces (1.97MB total)
+- `.planning/phases/07-address-all-phase-5-x-and-6-uat-findings/uat-replay-0.12.2/runners/run-session.sh` -- runner script
+- `.planning/phases/07-address-all-phase-5-x-and-6-uat-findings/uat-replay-0.12.2/prompts/session-*.txt` -- 8 prompt files (S2 prompt was corrected mid-run to point to actual S1 plan filename `compodoc-storybook-angular-setup.plan.md`)
+- `D:/projects/github/LayZeeDK/ngx-smart-components` branch `uat-replay-0.12.2` -- 8 commits across S2 + S6 + S8 implementing Compodoc + Storybook + signal I/O + review fixes + security fixes
