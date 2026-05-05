@@ -1,0 +1,45 @@
+[OK] Security-reviewer output sections present: Findings=1 TP=1
+[INFO] Fragment-grammar shape detected (security): 7 finding line(s)
+[OK] Finding line 1: 14 words (<=22 target)
+[OK] Finding line 2: 16 words (<=22 target)
+[WARN] Finding line 3: 23 words (>22 target but <=28 outlier; acceptable)
+[OK] Finding line 4: 17 words (<=22 target)
+[OK] Finding line 5: 19 words (<=22 target)
+[WARN] Finding line 6: 28 words (>22 target but <=28 outlier; acceptable)
+[OK] Finding line 7: 13 words (<=22 target)
+[INFO] Total findings: 7; bad: 0
+[OK] Threat Patterns: 115 words (<=160 cap)
+[OK] Missed surfaces: 29 words (<=30 cap)
+[ERROR] Aggregate: 326 words (>300 cap; regression)
+--- security-reviewer output (last 200 lines) ---
+## Security Review Summary
+
+Reviewed: `review-src/handler.ts` and `review-src/validate.ts` -- commit 603d211 ("add unvalidated handler with JSON.parse for security-reviewer scenario")
+
+### Findings
+
+`review-src/handler.ts:7: crit: [A08] `JSON.parse(req.body)` accepts `__proto__`/`constructor.prototype` keys polluting Object.prototype process-wide. Use `secure-json-parse` or strip `__proto__`/`constructor` keys post-parse.`
+
+`review-src/handler.ts:7: imp: [A05] uncaught `SyntaxError` from malformed body crashes process (DoS). Wrap in try/catch, return 400 on parse failure.`
+
+`review-src/handler.ts:2,review-src/validate.ts:1: imp: [A04] exported `validate()` never imported; truthy `if (req.body)` admits arrays/numbers/objects to `JSON.parse`. Import and apply schema validator (zod/ajv) before parse.`
+
+`review-src/handler.ts:2-3: sug: [A05] no body-size cap before `JSON.parse` enables memory/CPU exhaustion via large or deeply nested payload. Enforce `Content-Length` ceiling and reject >N KB before parsing.`
+
+`review-src/handler.ts:7: sug: [A09] parse failures unlogged; attacker probes leave no trace. Log structured parse errors with request ID for monitoring.`
+
+`review-src/handler.ts:1: sug: [A03] `process` shadows Node global `process` object inside module scope; refactor risk if future code references global. Rename to `parseBody`.`
+
+`review-src/validate.ts:1: sug: [A04] `validate(x) { return x != null }` is a permissive null-check masquerading as validation; trivially passes hostile input. Replace with schema-bound validator or delete to remove false assurance.`
+
+`review-src/handler.ts:1: q: [A07] is `handle` reachable unauthenticated? If yes, severity of findings 1-2 escalates to confirmed-remote-unauth-crit.`
+
+### Threat Patterns
+
+Findings 1+3+4 chain into a confirmed remote prototype-pollution: the absent validator (3) lets any truthy body reach `JSON.parse` (1), which mutates `Object.prototype` for the entire process; absence of size cap (4) lets the same path double as a memory-DoS. Finding 2 (uncaught SyntaxError) is independent but shares the same root cause -- no defensive boundary around the parse call. Finding 7 (`validate` stub) is the systemic root: a placeholder validator that was never wired, giving false defense-in-depth assurance. Severity confirmations: F1 Critical confirmed; F2 Important (High in original scheme) confirmed; F3 Important confirmed (root enabler, not standalone exploit); F4 Suggestion (Medium confirmed, requires large-payload capability). Auth posture (Q) gates whether F1/F2 are unauthenticated-critical or authenticated-only.
+
+### Missed surfaces (optional)
+
+No response shape on success path -- `handle` returns the parsed object directly to caller; if serialized back to client, prototype-pollution payload echoes and may poison downstream JSON consumers.
+
+**Verdict scope:** scope: security-threats

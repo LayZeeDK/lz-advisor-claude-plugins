@@ -313,12 +313,12 @@ evidence: |
 ## Summary
 
 total: 8
-passed: 7
-passed_with_observation: 1  (Test 6 / S4 security-reviewer 314w aggregate, 4.7% over 300w cap)
-issues: 0
+passed: 6
+issues: 2  (Test 6 / S4 security-reviewer 314w + smoke fixture 326w confirms regression; Plan 07-09 contract-integrity WR-01/02/03)
 pending: 0
 skipped: 0
 blocked: 0
+post_uat_smoke_fixture_d_security_reviewer_budget_on_0_12_1: FAILED (aggregate 326w / 300 cap = 8.7% over; canonical-scenario load-bearing test for GAP-D-budget-empirical durability empirically REGRESSED on 0.12.1)
 
 ## Gaps
 
@@ -357,26 +357,86 @@ blocked: 0
     - D:/projects/github/LayZeeDK/ngx-smart-components/plans/fix-review-findings.plan.md (carry-forward)
   closes: residual-pre-verified-format (in 07-VERIFICATION.md empirical_subverification_2026_05_03)
 
-- truth: Security-reviewer aggregate <=300w on Compodoc + supply-chain UAT scenario, plugin 0.12.1
-  status: minor-drift
+- truth: Security-reviewer aggregate <=300w on canonical Compodoc + supply-chain scenario, plugin 0.12.1 (GAP-D-budget-empirical durability)
+  status: failed
   reason: |
-    S4 security-review aggregate was 314 words (Findings 187 + Threat Patterns 101 + Missed surfaces 26),
-    4.7% over the 300w cap. On plugin 0.12.0 the same scenario shape produced 285w. The drift is ~10%
-    increase from 0.12.0 -> 0.12.1, but per-section sub-caps still hold: Threat Patterns 101w/160 cap,
-    Missed surfaces 26w/30 cap, severity prefixes ASCII (1 imp + 3 sug), OWASP A0X tags applied,
-    fragment-grammar shape preserved. Hypothesis: scenario-specific (this UAT's 4 OWASP-tagged findings
-    each carry more rationale + fix proposal verbosity than 0.12.0's findings). Plan 07-09 structural
-    binding is preserved; only the aggregate envelope drifted. NOT a Plan 07-10/07-11 regression.
-  severity: minor
+    Initial UAT signal (S4: 314w / 300 cap = 4.7% over) was disambiguated by a follow-up
+    smoke-fixture run on plugin 0.12.1: D-security-reviewer-budget.sh exits non-zero with
+    aggregate 326 words (8.7% over the 300w cap; baseline on plugin 0.12.0 was 285w / 300 cap
+    PASSING). The fixture spawns its own claude.exe with a fixed canonical scenario, so the
+    drift is NOT scenario-specific -- GAP-D-budget-empirical closure (Plan 07-09 fragment-grammar
+    template) is empirically DEGRADED on plugin 0.12.1 against the load-bearing test.
+
+    Per-section sub-caps still hold:
+    - Findings: 7 fragment-grammar lines (1 outlier acceptable per parser)
+    - Threat Patterns: 115w / 160w cap (under)
+    - Missed surfaces: 29w / 30w cap (under)
+    - Aggregate: 326w / 300w cap (8.7% OVER -- regression)
+
+    Plugin 0.12.1 only changed advisor.md (Plan 07-10) and references/context-packaging.md
+    (Plan 07-11). Security-reviewer.md was NOT touched. Hypothesis: cross-surface
+    bleed-through from Plan 07-11 dual-surface differentiation OR Sonnet/Opus sampling
+    drift OR security-reviewer's natural output spread now exceeding cap envelope.
+    Investigation needed; closure plan must restore aggregate compliance on canonical scenario.
+  severity: major
   artifacts:
-    - D:/projects/github/LayZeeDK/ngx-smart-components/plans/security-review-report.md
+    - .planning/phases/07-address-all-phase-5-x-and-6-uat-findings/regression-gate-0.12.1/D-security-reviewer-budget.log (FAILED -- aggregate 326w / 300 cap)
+    - D:/projects/github/LayZeeDK/ngx-smart-components/plans/security-review-report.md (UAT S4 -- 314w drift)
     - .planning/phases/07-address-all-phase-5-x-and-6-uat-findings/uat-replay-0.12.1/session-4-security-review.jsonl
-  followup_recommendation: |
-    Phase 8 candidate: investigate whether to tighten security-reviewer aggregate cap or add an
-    explicit ~280w target with worked example (parallels Plan 07-04 reviewer/security-reviewer
-    per-entry sub-cap approach). Could also be addressed by lowering effort or adjusting prose
-    constraints. NOT a Phase 7 in-scope gap; this UAT verifies the empirical regression-gate
-    items from 07-VERIFICATION.md only.
+    - plugins/lz-advisor/agents/security-reviewer.md (Plan 07-09 fragment-grammar emit template + effort medium)
+  missing:
+    - Investigation of why security-reviewer drifted 285w -> 326w on canonical scenario
+      between plugin 0.12.0 and 0.12.1 despite no security-reviewer.md modifications
+    - Remediation: tighter aggregate constraint mechanism OR per-section cap re-balance
+      OR worked-example anchor at ~280w target OR effort downshift OR alternative emit
+      template adjustment
+    - Re-running D-security-reviewer-budget.sh against the remediated security-reviewer.md
+      to confirm fix lands cleanly under 300w cap
+
+- truth: Severity-vocabulary cross-surface alignment (Plan 07-09 contract integrity; WR-01/02/03)
+  status: failed
+  reason: |
+    Plan 07-09 renamed the security-reviewer severity ladder from `Critical / High / Medium`
+    to `Critical / Important / Suggestion` (matching the reviewer agent's renamed ladder) at
+    the agent-file level (security-reviewer.md per-finding severity prefixes use crit:/imp:/
+    sug:/q:). Three downstream surfaces still reference the legacy ladder, surfaced by
+    07-REVIEW.md (commit 26d2899) as Warnings WR-01/WR-02/WR-03:
+
+    WR-01: agents/security-reviewer.md:284 (## Hedge Marker Discipline section, security-
+      clearance carve-out) still says 'Severity: Medium pending verification of <hedge action>'
+      and 'premature high-severity classification' -- legacy vocabulary inside the agent's
+      own file, in tension with the renamed per-finding severity ladder used elsewhere in the
+      same file (lines 65-68, 100, 108, 116, 123, 127, 135-141)
+
+    WR-02: 4 occurrences of legacy ladder in downstream surfaces:
+      - lz-advisor.security-review/SKILL.md:126 ("Critical / High / Medium")
+      - lz-advisor.security-review/SKILL.md:164 ("Critical / High / Medium")
+      - references/context-packaging.md:289 ("Critical/High/Medium for security-review")
+      - references/context-packaging.md:388 ("Critical / High / Medium for security-reviewer"
+        in verify_request severity attribute schema)
+
+    WR-03: agents/security-reviewer.md:119 cross-file references reviewer.md for Class-2
+      Escalation Hook protocol ('see ## Class-2 Escalation Hook in reviewer.md and adapted
+      here for Class 2-S security questions') -- agents are stateless; security-reviewer
+      cannot read reviewer.md at runtime. The security-reviewer.md file omits a `## Class-2
+      Escalation Hook` section, leaving the agent without canonical instructions on when to
+      emit verify_request blocks, where to place them inside ### Findings, what classes
+      (2-S vs 3) are valid, or the one-shot re-invocation expectation. The carve-out
+      enumeration on line 129 (`## OWASP Top 10 Lens`, `## Context Trust Contract`,
+      `## Threat Modeling`, `## Hedge Marker Discipline`, `## Boundaries`) omits Class-2
+      Escalation Hook entirely.
+  severity: major
+  artifacts:
+    - plugins/lz-advisor/agents/security-reviewer.md:284 (WR-01 -- legacy "Severity: Medium" + "premature high-severity classification")
+    - plugins/lz-advisor/agents/security-reviewer.md:119 + 129 (WR-03 -- cross-file reference + missing section)
+    - plugins/lz-advisor/skills/lz-advisor.security-review/SKILL.md:126 (WR-02)
+    - plugins/lz-advisor/skills/lz-advisor.security-review/SKILL.md:164 (WR-02)
+    - plugins/lz-advisor/references/context-packaging.md:289 (WR-02)
+    - plugins/lz-advisor/references/context-packaging.md:388 (WR-02)
+  missing:
+    - Update security-reviewer.md:284 to use renamed vocabulary (Severity: Suggestion + premature important-severity classification)
+    - Update 4 downstream surfaces to match renamed ladder OR add per-surface translation note
+    - Add `## Class-2 Escalation Hook` section to security-reviewer.md (mirroring reviewer.md but adapted for 2-S security classes); replace cross-file pointer on line 119 with self-contained reference; update line 129 carve-out enumeration
 
 ## Phase 7 Gap Closure Evaluation (autonomous regression-gate session 2026-05-05)
 
