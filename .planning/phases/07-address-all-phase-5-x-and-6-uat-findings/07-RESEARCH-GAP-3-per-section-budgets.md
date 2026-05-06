@@ -682,27 +682,29 @@ fi
 
 **If this table is empty:** All claims in this research were verified or cited. (It's not empty; flagged claims need confirmation.)
 
-## Open Questions
+## Open Questions (RESOLVED)
 
-1. **Are there additional emergent emission patterns we haven't observed yet?**
+_Resolution status updated 2026-05-06 after planning round; each question dispositioned per Plans 07-14 / 07-15 / 07-16 / 07-17 + Phase 8 deferral framework._
+
+1. **Are there additional emergent emission patterns we haven't observed yet?** **DEFERRED to post-empirical recalibration.**
    - What we know: 3 patterns observed across n=5 (`Validation of Finding N:`, `Severity revisions vs. initial:`, `Severity revisions vs. executor:`).
    - What's unclear: whether other 0.12.x scenarios (e.g., a multi-CVE security review, a refactor review with no severity-revision) trigger different surfaces.
-   - Recommendation: Plan 07-14 should run `D-reviewer-budget.sh` + `D-security-reviewer-budget.sh` 5x across diverse scenarios (unvalidated-handler synthetic + Compodoc UAT + a multi-CVE synthetic + a refactor synthetic) before finalizing the `<do_not_include>` enumeration.
+   - **Resolution:** Plan 07-14 `<do_not_include>` enumeration is calibrated against the n=5 0.12.2 evidence covering the 3 observed patterns. The Wave 0 5x diversity sweep was REJECTED in favor of empirical recalibration after Plan 07-17 first 3-run smoke on 0.13.0 (per Plan 07-14 threat row T-07-14-04 + closure-amendment block). Rationale: 5x diversity sweep adds ~$1.50 + 30min cost without proportionate empirical signal. If 0.13.0 first 3-run smoke surfaces new emission patterns NOT covered by the 4 `<do_not_include>` items, the enumeration is amendable in a Phase 8 follow-up plan (mechanical text edit + smoke re-run).
 
-2. **Does the advisor agent's residual-advisor-budget on the Compodoc + Storybook scenario require its own per-section redesign?**
+2. **Does the advisor agent's residual-advisor-budget on the Compodoc + Storybook scenario require its own per-section redesign?** **RESOLVED by Plan 07-16.**
    - What we know: ~143w visual estimate on S1 plan; n=1 visual; not fixture-grade.
    - What's unclear: whether D-advisor-budget.sh against session-1-plan.jsonl confirms or refutes; whether the executor's plan repackaging is the variable.
-   - Recommendation: Plan 07-14 should include the advisor extraction-script run as a Wave 0 task. If confirmed, follow Plan 07-10 fragment-grammar pattern (already proven on 0.12.1); if not, defer per Phase 8 worklist item 9.
+   - **Resolution:** Plan 07-16 (Wave 1 parallel diagnostic) runs the extract-advisor-sd.mjs against the existing `uat-replay-0.12.2/session-1-plan.jsonl` trace and logs fixture-grade verdict to `regression-gate-0.12.2/D-advisor-budget-against-session-1-plan.log`. Per-item parser is verbatim parity with `D-advisor-budget.sh` lines 89-141 (3-band [OK]/[INFO]/[ERROR]; ADVISOR_FRAGMENT_RE + ASSUMING_FRAME_RE; non-frame >15/>18; frame >18/>22) per Plan 07-16 T-07-16-02. If verdict PASS: visual ~143w was an executor-repackaging artifact, no advisor structural change. If verdict FAIL: advisor regression confirmed at fixture grade; Phase 8 follow-up (analogous to Plan 07-10 fragment-grammar pattern). Disposition recorded in Plan 07-17 closure-amendment block.
 
-3. **Will the byte-identity preservation hold across both reviewer.md and security-reviewer.md when the new section ordering is applied?**
+3. **Will the byte-identity preservation hold across both reviewer.md and security-reviewer.md when the new section ordering is applied?** **RESOLVED by Plan 07-14.**
    - What we know: shared canon is `<context_trust_contract>` + `<orient_exploration_ranking>` (per `git grep` cross-file SHA256). The `## Output Constraint` section is NOT byte-identical -- it's per-agent customized.
    - What's unclear: introducing the same XML `<output_constraints>` shape in both agents may be the right move, but the per-finding word target differs (reviewer 22w / security-reviewer 22w + OWASP tag prefix accommodation).
-   - Recommendation: ship the XML shape as byte-identical structurally (same `<section>` element names, same attribute ordering); per-cap NUMBERS may differ per agent if the empirical evidence justifies.
+   - **Resolution:** Plan 07-14 Task 2 acceptance criterion: cross-file structural symmetry `diff <(awk '/<output_constraints>/,/<\/output_constraints>/' agents/reviewer.md) <(awk '/<output_constraints>/,/<\/output_constraints>/' agents/security-reviewer.md)` shows EXACTLY 4 changed lines (2 section name + 2 heading text -- `cross_cutting_patterns` -> `threat_patterns` + `### Cross-Cutting Patterns` -> `### Threat Patterns`). Per-cap NUMBERS are byte-identical (22w/28w/60w/160w/30w match across both agents). The XML shape is byte-identically structural; only the section name + heading text differ per the agent's existing two-slot output contract (reviewer = CCP; security-reviewer = TP). Plan 07-14 T-07-14-01 + T-07-14-02 + T-07-14-04 threat rows enforce this.
 
-4. **Should the `<verify_request>` and `<pre_verified>` schemas also move to a unified `<output_constraints>` framing?**
+4. **Should the `<verify_request>` and `<pre_verified>` schemas also move to a unified `<output_constraints>` framing?** **DEFERRED to 1.0.0 polish phase (out of scope for this gap closure).**
    - What we know: those schemas already use XML and bind well.
    - What's unclear: whether bundling all output structure under one parent block improves coherence.
-   - Recommendation: out of scope for this gap closure; consider for 1.0.0 polish phase.
+   - **Resolution:** Out of scope for Phase 7 gap closure 3. The current `<verify_request>` + `<pre_verified>` schemas live independently and bind well per UAT 0.12.0 / 0.12.1 evidence; no empirical pressure for unification. Defer to 1.0.0 marketplace-readiness cut (per CONTEXT.md D-06: 1.0.0 deferred until Phase 7 closes empirically AND a follow-up regression cycle confirms zero residuals). Phase 8 owns wip-discipline reversal exclusively; `<output_constraints>` unification is a polish phase concern.
 
 ## Environment Availability
 
