@@ -1,0 +1,56 @@
+# D-advisor-budget extraction against session-1-plan.jsonl
+# Generated: 2026-05-06T13:47:41Z
+# Plan: 07-16 (gap-closure diagnostic; addresses UAT-REGRESSION-0.12.2 Issue 4)
+# Source trace: .planning/phases/07-address-all-phase-5-x-and-6-uat-findings/uat-replay-0.12.2/session-1-plan.jsonl
+# Plugin version at trace capture: 0.12.2
+# Extractor: .planning/phases/05.4-address-uat-findings-a-k/smoke-tests/extract-advisor-sd.mjs
+
+--- Raw advisor Strategic Direction (post-Critical-block strip) ---
+
+1. Add `@compodoc/compodoc@^1.2.1` to `devDependencies` in `package.json`; transitive deps are not version-pinned and may vanish on lockfile changes.
+2. Create `packages/ngx-smart-components/tsconfig.doc.json` extending `tsconfig.lib.json` with `"include": ["src/**/*.ts"]` and `"exclude": ["**/*.spec.ts", "**/*.stories.ts"]`.
+3. Set `compodoc: true` and `compodocArgs: ["-e", "json", "-d", "packages/ngx-smart-components", "-p", "packages/ngx-smart-components/tsconfig.doc.json"]` on both `storybook` and `build-storybook` targets; Nx executes from workspace root.
+4. Add `'@storybook/addon-docs'` to `addons` in `.storybook/main.ts`; Storybook 10 requires explicit registration.
+5. Populate `.storybook/preview.ts` with `import { setCompodocJson } from '@storybook/addon-docs/angular'; import docJson from '../documentation.json'; setCompodocJson(docJson); export const parameters = { docs: { source: { type: 'code' } } };`.
+6. Add `"../documentation.json"` to `include` in `.storybook/tsconfig.json` and enable `"resolveJsonModule": true`.
+7. Replace component with `readonly label = input<string>('default'); readonly clicked = output<void>();` plus JSDoc `/** ... */` blocks above class, each input, and each output.
+8. Add `tags: ['autodocs']` to the story default export; Compodoc supplies descriptions, autodocs renders Docs tab.
+9. Run `npm install && npx nx run ngx-smart-components:storybook`.
+
+--- Per-item word counts (D-advisor-budget.sh parity: 3-band [OK]/[INFO]/[ERROR]; non-frame >15/>18; frame >18/>22) ---
+
+[INFO] Fragment-grammar shape detected: 9 numbered item(s)
+[INFO] Item 1: 17 words (>15 target but <=18 outlier; acceptable)
+[OK] Item 2: 11 words (<=15 target)
+[ERROR] Item 3: 22 words (>18 outlier; target <=15w)
+[OK] Item 4: 11 words (<=15 target)
+[ERROR] Item 5: 28 words (>18 outlier; target <=15w)
+[OK] Item 6: 10 words (<=15 target)
+[ERROR] Item 7: 24 words (>18 outlier; target <=15w)
+[OK] Item 8: 15 words (<=15 target)
+[OK] Item 9: 8 words (<=15 target)
+[INFO] Per-item check: 9 items; 3 over-cap; aggregate 146 words
+
+Note on aggregate divergence:
+- Per-item aggregate (146w) sums words inside each captured fragment body (excluding leading "N." and trailing period).
+- Whole-body wc -w (155w) counts all whitespace-separated tokens in the post-Critical-strip body, including the literal "1.", "2.", ..., "9." numerals (9 extra tokens).
+- D-advisor-budget.sh enforces the 100w cap against the whole-body wc -w value (line 169-176); both 155w and 146w exceed cap.
+
+--- Aggregate ---
+
+advisor Strategic Direction aggregate: 155w (cap 100w)
+verdict: FAIL
+
+--- Disposition ---
+
+advisor budget regression EMPIRICALLY CONFIRMED on plugin 0.12.2 + Compodoc scenario at fixture grade.
+Plan 07-10 fragment-grammar template binding does NOT hold for this scenario shape. Plan 07-14 redesign was
+scoped to reviewer + security-reviewer; advisor redesign would be a Phase 8 follow-up. Plan 07-17 closure
+amendment records this as a Phase 8 candidate (analogous to project_phase_8_candidates_post_07.md item 9
+framing per 07-VERIFICATION.md `closure_amendment_2026_05_05` boundary precedent).
+
+Per-item evidence:
+- 3 of 9 items over per-item outlier cap (>18w non-frame): items 3 (22w), 5 (28w), 7 (24w).
+- Items 3, 5, 7 inline configuration code (compodocArgs JSON array, addon-docs setCompodocJson initializer, signal-input/output declarations + JSDoc).
+- The fragment-grammar template binding compresses prose-shape advice but not inline code-block advice; this is the scenario-sensitive scope where the binding does not hold.
+- n=1 caveat: this is a single trace from the 2026-05-06 UAT. Phase 8 should re-run n>=3 across heterogeneous scenarios (Compodoc, generic feature implementation, refactor) before declaring a structural advisor redesign needed.
