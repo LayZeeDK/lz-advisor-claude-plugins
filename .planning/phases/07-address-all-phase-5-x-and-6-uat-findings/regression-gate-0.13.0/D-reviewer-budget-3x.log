@@ -1,0 +1,107 @@
+# D-reviewer-budget.sh 3x re-run on plugin 0.13.0
+# Plan: 07-17 (gap-closure 3 empirical gate)
+# Generated: 2026-05-06T16:27:00Z
+# Plugin version: 0.13.0 (per Plan 07-17 Task 1)
+# Contract: per-section budgets per Plan 07-14 <output_constraints> XML; aggregate cap dropped
+# Fixture: .planning/phases/05.4-address-uat-findings-a-k/smoke-tests/D-reviewer-budget.sh
+
+=== Run 1 ===
+Run 1: EXIT 0 (PASS)
+
+--- Run 1 output (full) ---
+[OK] Reviewer output sections present: Findings=1 CCP=1
+[INFO] Fragment-grammar shape detected: 5 finding line(s)
+[OK] Finding line 1: 14 words (<=22 target)
+[OK] Finding line 2: 14 words (<=22 target)
+[WARN] Finding line 3: 25 words (>22 target but <=28 outlier; acceptable)
+[OK] Finding line 4: 14 words (<=22 target)
+[OK] Finding line 5: 20 words (<=22 target)
+[INFO] Total findings: 5; bad: 0
+[INFO] Per-finding validation: 5 entries
+[OK] Per-finding validation entry 1: 41 words (<=60 cap)
+[OK] Per-finding validation entry 2: 53 words (<=60 cap)
+[OK] Per-finding validation entry 3: 37 words (<=60 cap)
+[OK] Per-finding validation entry 4: 33 words (<=60 cap)
+[OK] Per-finding validation entry 5: 33 words (<=60 cap)
+[OK] Cross-Cutting Patterns: 88 words (<=160 cap)
+[OK] Missed surfaces: 28 words (<=30 cap)
+[SUCCESS] D-reviewer-budget.sh: per-section budgets enforced (entries <=22w/28w outlier, Per-finding validation <=60w, CCP <=160w, Missed surfaces <=30w; aggregate cap dropped per Plan 07-14)
+
+--- end Run 1 ---
+
+=== Run 2 ===
+Run 2: EXIT non-zero (FAIL)
+
+--- Run 2 output (full) ---
+[OK] Reviewer output sections present: Findings=1 CCP=1
+[INFO] Fragment-grammar shape detected: 3 finding line(s)
+[OK] Finding line 1: 16 words (<=22 target)
+[OK] Finding line 2: 14 words (<=22 target)
+[OK] Finding line 3: 11 words (<=22 target)
+[INFO] Total findings: 3; bad: 0
+[OK] Per-finding validation: section absent (optional)
+[ERROR] Cross-Cutting Patterns: 162 words (>160 cap)
+[OK] Missed surfaces: section absent (optional)
+--- reviewer output (last 200 lines) ---
+## Review Summary
+
+Reviewed: `review-src/handler.ts` and `review-src/validate.ts` (commit `1f7b9a3`)
+
+### Findings
+
+`review-src/handler.ts:7: crit: unguarded JSON.parse throws SyntaxError on malformed body, crashing handler. Wrap in try/catch and return typed error.`
+`review-src/handler.ts:1-4: imp: validate exported but never imported; req.body bypasses guard. Import validate and gate before process.`
+`review-src/handler.ts:2: imp: braceless if violates CLAUDE.md mandate. Add { } block around return.`
+`review-src/handler.ts:1,6, review-src/validate.ts:1: imp: implicit any on handle/process/validate params and returns disables type checking. Annotate (req: Request, data: string): unknown and validate(x: unknown): x is NonNullable<unknown>.`
+
+### Cross-Cutting Patterns
+
+Findings 1, 2, and 4 share a single root cause: missing input-validation discipline at the module boundary. `handle` accepts untyped input, skips the available `validate` guard, and forwards raw bytes to `JSON.parse` without exception handling -- the type system, the runtime guard, and the parser all fail open. A single zod or io-ts schema at `handle`'s entry would close all three: it types `req`, replaces the trivial `validate`, and surfaces parse errors as typed results. Finding 3 (braces) is independent style/consistency enforcement but compounds review noise around the same `if` line that finding 2 wants to extend with the validate call -- fixing 2 forces the brace fix anyway.
+
+Severity confirmations: all four match initial assessments. Finding 1 is Critical because unhandled SyntaxError on user-controlled input is a trivially-triggered DoS. Finding 2 is Important (not Critical) only because Finding 1's crash masks the validation gap -- if Finding 1 is fixed without Finding 2, the validation gap becomes the next correctness defect.
+
+**Verdict scope:** scope: api-correctness
+
+--- end Run 2 ---
+
+=== Run 3 ===
+Run 3: EXIT 0 (PASS)
+
+--- Run 3 output (full) ---
+[OK] Reviewer output sections present: Findings=1 CCP=1
+[INFO] Fragment-grammar shape detected: 6 finding line(s)
+[OK] Finding line 1: 15 words (<=22 target)
+[OK] Finding line 2: 17 words (<=22 target)
+[OK] Finding line 3: 21 words (<=22 target)
+[OK] Finding line 4: 13 words (<=22 target)
+[OK] Finding line 5: 18 words (<=22 target)
+[OK] Finding line 6: 14 words (<=22 target)
+[INFO] Total findings: 6; bad: 0
+[INFO] Per-finding validation: 4 entries
+[OK] Per-finding validation entry 1: 53 words (<=60 cap)
+[OK] Per-finding validation entry 2: 60 words (<=60 cap)
+[OK] Per-finding validation entry 3: 36 words (<=60 cap)
+[OK] Per-finding validation entry 4: 29 words (<=60 cap)
+[OK] Cross-Cutting Patterns: 76 words (<=160 cap)
+[OK] Missed surfaces: 30 words (<=30 cap)
+[SUCCESS] D-reviewer-budget.sh: per-section budgets enforced (entries <=22w/28w outlier, Per-finding validation <=60w, CCP <=160w, Missed surfaces <=30w; aggregate cap dropped per Plan 07-14)
+
+--- end Run 3 ---
+
+
+=== Summary ===
+Pass count: 2 of 3
+Fail count: 1 of 3
+
+Per-run breakdown:
+- Run 1: 5 findings (entries 14/14/25/14/20w; one 25w outlier acceptable), PFV 5 entries (33-53w), CCP 88w, Missed 28w. PASS.
+- Run 2: 3 findings (entries 16/14/11w, all under target), PFV absent, CCP 162w (>160 cap; 2w over), Missed absent. FAIL on CCP.
+- Run 3: 6 findings (entries 15/17/21/13/18/14w, all under target), PFV 4 entries (29-60w), CCP 76w, Missed 30w. PASS.
+
+Per-section trend (informational; aggregate cap is dropped per Plan 07-14):
+- Findings entry word counts: max=25 (run 1), all <=28 outlier soft cap. PASS each run.
+- Per-finding validation: optional surface emitted on runs 1+3, absent on run 2. <=60w cap honoured each entry. PASS each run.
+- Cross-Cutting Patterns: 88w / 162w / 76w (mean ~109w; one breach at 162w = 2w over the 160w cap).
+- Missed surfaces: 28w / absent / 30w. PASS each run.
+
+verdict: FAIL_2_of_3

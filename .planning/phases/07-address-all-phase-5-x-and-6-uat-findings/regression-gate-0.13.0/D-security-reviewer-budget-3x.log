@@ -1,0 +1,156 @@
+# D-security-reviewer-budget.sh 3x re-run on plugin 0.13.0
+# Plan: 07-17 (gap-closure 3 empirical gate)
+# Generated: 2026-05-06T16:27:00Z
+# Plugin version: 0.13.0 (per Plan 07-17 Task 1)
+# Contract: per-section budgets per Plan 07-14 <output_constraints> XML (threat_patterns variant); aggregate cap dropped
+# Fixture: .planning/phases/05.4-address-uat-findings-a-k/smoke-tests/D-security-reviewer-budget.sh
+
+=== Run 1 ===
+Run 1: EXIT 0 (PASS)
+
+--- Run 1 output (full) ---
+[OK] Security-reviewer output sections present: Findings=1 TP=1
+[INFO] Fragment-grammar shape detected (security): 5 finding line(s)
+[OK] Finding line 1: 21 words (<=22 target)
+[OK] Finding line 2: 18 words (<=22 target)
+[OK] Finding line 3: 20 words (<=22 target)
+[OK] Finding line 4: 22 words (<=22 target)
+[OK] Finding line 5: 21 words (<=22 target)
+[INFO] Total findings: 5; bad: 0
+[INFO] Per-finding validation: 2 entries
+[OK] Per-finding validation entry 1: 46 words (<=60 cap)
+[OK] Per-finding validation entry 2: 43 words (<=60 cap)
+[OK] Threat Patterns: 83 words (<=160 cap)
+[OK] Missed surfaces: 30 words (<=30 cap)
+[SUCCESS] D-security-reviewer-budget.sh: per-section budgets enforced (entries <=22w/28w outlier, Per-finding validation <=60w, Threat Patterns <=160w, Missed surfaces <=30w; aggregate cap dropped per Plan 07-14)
+
+--- end Run 1 ---
+
+=== Run 2 ===
+Run 2: EXIT non-zero (FAIL)
+
+--- Run 2 output (full) ---
+[OK] Security-reviewer output sections present: Findings=1 TP=1
+[WARN] Fragment-grammar shape NOT detected; falling back to Plan 07-04 numbered-section parser. New fragment-grammar shape is preferred per Plan 07-09.
+[ERROR] No Findings entries detected (neither fragment-grammar nor Plan 07-04 numbered shape matched)
+[INFO] Per-finding validation: 4 entries
+[OK] Per-finding validation entry 1: 41 words (<=60 cap)
+[OK] Per-finding validation entry 2: 33 words (<=60 cap)
+[OK] Per-finding validation entry 3: 32 words (<=60 cap)
+[OK] Per-finding validation entry 4: 22 words (<=60 cap)
+[OK] Threat Patterns: 91 words (<=160 cap)
+[OK] Missed surfaces: 29 words (<=30 cap)
+--- security-reviewer output (last 200 lines) ---
+## Security Review Summary
+
+Reviewed: `review-src/handler.ts` and `review-src/validate.ts` -- two new files added in commit `8092b5b` (add unvalidated handler with JSON.parse for security-reviewer scenario)
+
+### Findings
+
+`review-src/handler.ts:7: imp: [A04]` `JSON.parse(req.body)` without try/catch throws SyntaxError on malformed input, leaking stacks or crashing process. Wrap in try/catch, return 400.
+
+`review-src/handler.ts:1-4: crit: [A04]` `validate()` exported but never imported; `handle()` passes `req.body` straight to parser. Import and gate `process(req.body)` behind schema validation (zod/ajv), not the null-check.
+
+`review-src/validate.ts:1: imp: [A04]` `validate(x) => x != null` is a null-check mislabeled as validation, creating false security posture. Replace with schema validator enforcing type, shape, and key allowlist (reject `__proto__`, `constructor`, `prototype`).
+
+`review-src/handler.ts:7: imp: [A03]` `JSON.parse` returns attacker-controlled graph including `__proto__`/`constructor` keys; downstream merge/spread pollutes `Object.prototype` process-wide. Use reviver that strips `__proto__`/`constructor`/`prototype`, or `Object.create(null)` containers, or schema validator that rejects those keys.
+
+`review-src/handler.ts:1,6, review-src/validate.ts:1: sug: [A04]` implicit `any` on `req`, `data`, `x` defeats type-time guards; `JSON.parse(Buffer)` coerces silently. Enable `noImplicitAny`, type `req: {body: string}`, narrow before parse.
+
+### Per-finding validation
+
+Validation of Finding 1: Confirm A04 Insecure Design as primary (A05 secondary). Severity revised Critical -> Important: unhandled SyntaxError destabilizes one request handler; process-wide crash depends on unverified host (Express swallows; raw `http` crashes). Unresolved hedge: host framework unspecified. Verify host runtime before downgrading further.
+
+Validation of Finding 2: Confirm Critical. A04 Insecure Design fits better than A01 -- this is a missing-control design defect, not a bypassed access check. The dead-code validator is the root enabler for Findings 1, 3, 4.
+
+Validation of Finding 3: Confirm A03 Injection mapping and Important severity. Exploitability gated on downstream consumer behavior (merge/spread/property-walk), which is not in scope; if any consumer uses `lodash.merge` or `Object.assign` on the result, escalate to Critical.
+
+Validation of Finding 4: Confirm Suggestion + A04. Defense-in-depth; not directly exploitable but removes the type-time guard that would have surfaced Findings 1-3 at compile time.
+
+### Threat Patterns
+
+Findings 1, 2, 3 form a single amplified chain rooted in Finding 2: the unwired `validate()` lets any anonymous HTTP body reach `JSON.parse` (Finding 1: malformed -> DoS / stack leak) AND lets `__proto__`-bearing payloads through (Finding 3: prototype pollution persisting for process lifetime). Finding 2 is the keystone -- wiring a real schema validator before `process()` neutralizes 1 and 3 simultaneously. Finding 4 is the type-system gap that allowed the keystone to ship undetected; fixing it (strict mode + typed `req`) would have made the missing import a compile error.
+
+### Missed surfaces (optional)
+
+Downstream consumers of `handle()`'s return value are out of scope but determine Finding 3's true blast radius; audit any caller using `Object.assign`, spread, or `lodash.merge` on the parsed result.
+
+**Verdict scope:** scope: security-threats
+
+--- end Run 2 ---
+
+=== Run 3 ===
+Run 3: EXIT non-zero (FAIL)
+
+--- Run 3 output (full) ---
+[OK] Security-reviewer output sections present: Findings=1 TP=1
+[INFO] Fragment-grammar shape detected (security): 5 finding line(s)
+[OK] Finding line 1: 22 words (<=22 target)
+[OK] Finding line 2: 21 words (<=22 target)
+[OK] Finding line 3: 21 words (<=22 target)
+[ERROR] Finding line 4: 34 words (>28 outlier soft cap; target <=22w)
+[WARN] Finding line 5: 23 words (>22 target but <=28 outlier; acceptable)
+[INFO] Total findings: 5; bad: 1
+[OK] Per-finding validation: section absent (optional)
+[OK] Threat Patterns: 85 words (<=160 cap)
+[OK] Missed surfaces: section absent (optional)
+--- security-reviewer output (last 200 lines) ---
+## Security Review Summary
+
+Reviewed: `review-src/handler.ts` and `review-src/validate.ts` (commit c573b74 -- "add unvalidated handler with JSON.parse for security-reviewer scenario")
+
+---
+
+### Findings
+
+`review-src/handler.ts:7: crit: [A03] JSON.parse on attacker-controlled `req.body` enables prototype pollution via `__proto__`/`constructor.prototype` keys, poisoning Object.prototype process-wide. Use safe parser (e.g., `secure-json-parse`) or strip `__proto__`/`constructor` post-parse.`
+`review-src/handler.ts:7: imp: [A05] Unhandled `SyntaxError` from `JSON.parse` on malformed body crashes handler / leaks stack trace. Wrap in try/catch, return 400 with generic message.`
+`review-src/handler.ts:1-3: imp: [A01] Exported `validate` from `validate.ts` never imported; truthy `if (req.body)` is sole gate. Import and invoke `validate(req.body)` before `process()`, reject on false.`
+`review-src/validate.ts:1: sug: [A04] `validate(x) { return x != null }` is a null-check, not a schema validator -- accepts any non-null value including hostile JSON. Replace with schema check (zod/ajv) asserting string + size cap before parse.`
+`review-src/handler.ts:1: sug: [A04] Implicit-any `req` permits non-string `req.body`; `JSON.parse(object)` coerces to `"[object Object]"` and throws. Type `req: { body: string }` and assert `typeof === 'string'`.`
+
+**Per-finding validation**
+
+Validation of Finding 1: Confirmed Critical. A03 mapping is correct (injection via parser-level prototype mutation). Node.js `JSON.parse` does honor `__proto__` as own-property on result rather than mutating `Object.prototype` directly, but downstream merge/assign sinks (common in handlers) propagate the pollution -- treat as Critical given unknown downstream consumers and zero mitigation cost.
+
+Validation of Finding 2: Confirmed Important. A01 fits (control-gate absent). Could also tag A04 (design defect: validator exists but is unwired). Keep A01 as primary -- the access-control framing matches OWASP guidance for missing authorization/validation gates.
+
+Validation of Finding 3: Confirmed Important; consider merging presentation with Finding 1 since both originate at line 7. Kept separate here because remediation differs (try/catch vs. safe parser); both fixes are required.
+
+Validation of Finding 4: Downgraded to Suggestion (you had Suggestion -- confirmed). Split recommended: the type-contract issue and the validator-semantics issue are distinct. Emitted as two findings above (`validate.ts:1` schema-weakness + `handler.ts:1` implicit-any).
+
+### Threat Patterns
+
+Findings 2, 3, and 1 chain into a single unauthenticated exploit path: missing `validate()` invocation (F2) -> raw attacker JSON reaches `JSON.parse` (F1) -> malformed payload throws uncaught `SyntaxError` (F3) for DoS, OR well-formed payload with `__proto__` poisons runtime (F1). Finding 4/5 (weak validator + implicit-any) is the systemic root: there is no type-or-schema boundary at the trust edge, so even wiring `validate()` would not stop pollution. Fix order: (a) wrap `JSON.parse` in try/catch, (b) replace `validate` with schema check, (c) wire it before `process()`.
+
+**Missed surfaces (optional)**
+
+No HTTP framework wiring shown -- verify top-level error boundary exists in the server entry; an uncaught `SyntaxError` in Express without `express.json()` and without error middleware terminates the worker.
+
+---
+
+**Verdict scope:** scope: security-threats
+
+--- end Run 3 ---
+
+
+=== Summary ===
+Pass count: 1 of 3
+Fail count: 2 of 3
+
+Per-run breakdown:
+- Run 1: 5 findings (entries 21/18/20/22/21w, all <=22 target), PFV 2 entries (43-46w), Threat Patterns 83w, Missed 30w. PASS.
+- Run 2: parser FALLBACK triggered (fragment-grammar shape NOT detected; Plan 07-04 numbered shape ALSO not matched -- output emitted findings as paragraph-separated bullet-prefix entries, not the canonical fragment shape), PFV 4 entries (22-41w), Threat Patterns 91w, Missed 29w. FAIL on parser-fallback / no findings detected.
+- Run 3: 5 findings (entries 22/21/21/34/23w; one entry at 34w breached 28w outlier soft cap; one entry at 23w within 28w outlier), PFV absent, Threat Patterns 85w, Missed absent. FAIL on Finding line 4 outlier breach.
+
+Per-section trend (informational; aggregate cap is dropped per Plan 07-14):
+- Findings entry word counts: max=22 (run 1) / shape-fail (run 2) / max=34 (run 3, breach). Mixed PASS/FAIL/FAIL.
+- Per-finding validation: optional surface emitted on runs 1+2, absent on run 3. All entries <=60w. PASS each run where surface emitted.
+- Threat Patterns: 83w / 91w / 85w (mean ~86w; well under 160w cap each run).
+- Missed surfaces: 30w / 29w / absent. PASS each run where surface emitted.
+
+Distinct failure modes:
+- Run 2: shape regression to Plan 07-04 numbered-section variant (or to a paragraph-bullet shape that neither the new fragment-grammar parser nor the legacy numbered-section parser matches). Indicates Plan 07-14 XML <output_constraints> binding is not deterministic across the security-reviewer's full output distribution.
+- Run 3: per-finding entry outlier (34w vs 28w outlier soft cap = 6w over). Indicates per-section budget enforcement at the prompt layer is not tight enough on the security-reviewer to prevent occasional outliers.
+
+verdict: FAIL_1_of_3

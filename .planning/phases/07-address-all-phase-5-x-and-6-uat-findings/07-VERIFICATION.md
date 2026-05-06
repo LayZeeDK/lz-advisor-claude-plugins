@@ -2,9 +2,9 @@
 phase: 07-address-all-phase-5-x-and-6-uat-findings
 verified: 2026-05-03T00:00:00Z
 updated: 2026-05-05T18:00:00Z
-status: passed_with_residual
-score: 15 of 15 must-haves structurally AND empirically verified across 11 plans (07-01..07-11); the 2 in-phase residuals from `empirical_subverification_2026_05_03` (residual-advisor-budget + residual-pre-verified-format) are now EMPIRICALLY CLOSED on plugin 0.12.1 by Plans 07-10 and 07-11 per `empirical_subverification_2026_05_05` block (regression-gate session); only the OUT-OF-SCOPE `residual-wip-discipline-reversal` remains (Phase 8 reversal target per user directive 2026-05-03)
-plugin_version: 0.12.2
+status: failed_gap_closure_3
+score: 15 of 15 must-haves structurally AND empirically verified across 11 plans (07-01..07-11); the 2 in-phase residuals from `empirical_subverification_2026_05_03` (residual-advisor-budget + residual-pre-verified-format) are now EMPIRICALLY CLOSED on plugin 0.12.1 by Plans 07-10 and 07-11 per `empirical_subverification_2026_05_05` block (regression-gate session); only the OUT-OF-SCOPE `residual-wip-discipline-reversal` remains (Phase 8 reversal target per user directive 2026-05-03); Plan 07-17 closure_amendment_2026_05_06_per_section_budgets FAIL_2_of_3 (D-reviewer) + FAIL_1_of_3 (D-security-reviewer) on plugin 0.13.0 -- per-section contract redesign did NOT empirically close FIND-D + GAP-D-budget-empirical at 3x re-run gate
+plugin_version: 0.13.0
 plugin_version_milestone_trail:
   - 0.9.0  -- pre-Phase 7 baseline (Phase 6 sealed)
   - 0.10.0 -- Plan 07-06 (Phase 1 + Phase 2 of byte-identical canon synthesis discipline + 8-session UAT replay basis)
@@ -12,6 +12,7 @@ plugin_version_milestone_trail:
   - 0.12.0 -- Plan 07-09 (reviewer + security-reviewer fragment-grammar emit template + effort medium)
   - 0.12.1 -- Plans 07-10 + 07-11 PATCH bundle (advisor fragment-grammar adaptation + Rule 5b dual-surface differentiation)
   - 0.12.2 -- Plan 07-13 (severity-vocabulary cross-surface alignment + ## Class-2 Escalation Hook self-contained section in security-reviewer.md)
+  - 0.13.0 -- Plans 07-14 + 07-15 + 07-17 (per-section <output_constraints> contract redesign + smoke-fixture parser update + 3x re-run empirical gate + Plan 07-16 advisor diagnostic)
 plans: [07-01, 07-02, 07-03, 07-04, 07-05, 07-06, 07-07, 07-08, 07-09, 07-10, 07-11, 07-12, 07-13]
 verification_basis:
   structural: file-content checks via Read + git grep + bash -n on plugins/, references/, smoke-tests/, REQUIREMENTS.md
@@ -887,3 +888,130 @@ Phase 7 remains sealed at `passed_with_residual` per the 2026-05-05 verdict. The
 
 _Addendum written: 2026-05-06_
 _Verifier: Claude (gsd-verifier) per user directive_
+
+---
+
+## closure_amendment_2026_05_06_per_section_budgets
+
+**Context**
+
+Phase 7 had sealed `passed_with_residual` on 2026-05-05 with 0.12.2 across 5 surfaces. The 2026-05-06 regression-gate UAT (07-UAT-REGRESSION-0.12.2.md) executed the previously-deferred Phase 8 worklist item 4 (D-security-reviewer-budget against 0.12.2) and confirmed n=4 mean 354.25w (18% over 300w cap; ALL 4 RUNS FAILED). The S3 review UAT also failed at 520w aggregate (84% over). User directive 2026-05-06 specified the resolution: replace aggregate <=300w cap with per-section budgets (per-finding entry <=22w/28w outlier; CCP / TP <=160w; Missed surfaces <=30w; NEW per-finding-validation <=60w optional surface; aggregate cap DROP). Plans 07-14 + 07-15 + 07-16 + 07-17 land the redesign + empirical confirmation; this amendment block records the closure.
+
+**user_directive:** 2026-05-06_per_section_budgets (memory feedback_advisor_fix_approach.md / 07-VERIFICATION.md addendum_2026_05_06_user_directive_per_section_budgets)
+
+**research_anchor:** `.planning/phases/07-address-all-phase-5-x-and-6-uat-findings/07-RESEARCH-GAP-3-per-section-budgets.md`
+
+**plan_07_14_disposition:** closed_structurally
+
+**plan_07_14_artifacts:**
+
+- `plugins/lz-advisor/agents/reviewer.md` (`## Output Constraint` `<output_constraints>` XML block; aggregate-cap prose removed; per-finding-validation surface authorized; per-finding thresholds 22w/28w outlier)
+- `plugins/lz-advisor/agents/security-reviewer.md` (same XML shape; cross_cutting_patterns -> threat_patterns substitution; aggregate-cap prose removed; per-finding-validation surface authorized)
+
+**plan_07_15_disposition:** closed_structurally
+
+**plan_07_15_artifacts:**
+
+- `.planning/phases/05.4-address-uat-findings-a-k/smoke-tests/D-reviewer-budget.sh` (aggregate-cap assertion REMOVED; per-finding-validation parser ADDED with 60w cap; Findings extraction awk hardened to terminate on any `### ` heading; per-finding thresholds 20w/25w -> 22w/28w)
+- `.planning/phases/05.4-address-uat-findings-a-k/smoke-tests/D-security-reviewer-budget.sh` (same shape changes; per-finding thresholds preserved at 22w/28w since already aligned)
+
+**plan_07_16_disposition:** FAIL_at_fixture_grade -- advisor SD aggregate 155w against 100w cap on session-1-plan.jsonl trace; 3 of 9 items over per-item outlier cap (>18w non-frame); items 3/5/7 carry inline configuration code that fragment-grammar template binding does not compress. Recorded as Phase 8 candidate (advisor redesign out of scope for Plan 07-14 + 07-15).
+
+**plan_07_16_advisor_diagnostic:**
+
+```text
+verdict: FAIL
+Aggregate (whole-body wc -w): 155 words against 100w cap -> FAIL
+Per-item aggregate (sum of fragment bodies): 146 words; 3 of 9 items over per-item outlier cap (>18w non-frame).
+Per-item ERROR items: 3 (22w), 5 (28w), 7 (24w) -- all three carry inline configuration code (compodocArgs JSON array, addon-docs setCompodocJson initializer, signal-input/output declarations + JSDoc). Fragment-grammar template binding compresses prose advice but not inline code-block advice.
+
+Disposition: advisor budget regression EMPIRICALLY CONFIRMED on plugin 0.12.2 + Compodoc scenario at fixture grade. Plan 07-10 fragment-grammar template binding does NOT hold for this scenario shape. Plan 07-14 redesign was scoped to reviewer + security-reviewer; advisor redesign would be a Phase 8 follow-up.
+
+Log: regression-gate-0.12.2/D-advisor-budget-against-session-1-plan.log
+n=1 caveat: this is a single trace from the 2026-05-06 UAT. Phase 8 should re-run n>=3 across heterogeneous scenarios (Compodoc, generic feature implementation, refactor) before declaring a structural advisor redesign needed.
+```
+
+**plugin_version_bump:** 0.12.2 -> 0.13.0 MINOR (5 surfaces atomically)
+
+**plugin_version_surfaces:**
+
+- `plugins/lz-advisor/.claude-plugin/plugin.json`
+- `plugins/lz-advisor/skills/lz-advisor.plan/SKILL.md` (frontmatter `version:` field)
+- `plugins/lz-advisor/skills/lz-advisor.execute/SKILL.md` (frontmatter `version:` field)
+- `plugins/lz-advisor/skills/lz-advisor.review/SKILL.md` (frontmatter `version:` field)
+- `plugins/lz-advisor/skills/lz-advisor.security-review/SKILL.md` (frontmatter `version:` field)
+
+**semver_rationale:** MINOR per 07-RESEARCH-GAP-3 Q4 + project 0.x convention. Contract-shape change at smoke-fixture API layer (aggregate-cap assertion removed; per-finding-validation parser added). Skill invocation surface (`/lz-advisor.{plan,execute,review,security-review}`) UNCHANGED for users. Coordination with Phase 8 wip-discipline reversal: Phase 8 may share 0.13.0 if its independent timeline aligns; if not, Phase 8 bumps separately to 0.13.1+ at its own discretion.
+
+**empirical_gate**
+
+`d_reviewer_budget_3x`:
+
+- **verdict:** FAIL_2_of_3
+- **log:** `regression-gate-0.13.0/D-reviewer-budget-3x.log`
+- **per_run_summary:**
+  - Run 1: 5 findings (entries 14/14/25/14/20w; one 25w outlier inside soft cap), Per-finding validation 5 entries (33-53w, all <=60w), CCP 88w, Missed surfaces 28w. PASS.
+  - Run 2: 3 findings (entries 16/14/11w, all under 22w target), Per-finding validation absent, CCP 162w (2w OVER 160w cap), Missed surfaces absent. **FAIL on CCP breach.**
+  - Run 3: 6 findings (entries 15/17/21/13/18/14w, all under 22w target), Per-finding validation 4 entries (29-60w, all <=60w), CCP 76w, Missed surfaces 30w. PASS.
+- **mean_aggregate_for_trend (informational):** ~310w over 3 runs (CCP mean ~109w; Findings entry mean varies); aggregate cap is dropped per Plan 07-14, so this is reference-only.
+
+`d_security_reviewer_budget_3x`:
+
+- **verdict:** FAIL_1_of_3
+- **log:** `regression-gate-0.13.0/D-security-reviewer-budget-3x.log`
+- **per_run_summary:**
+  - Run 1: 5 findings (entries 21/18/20/22/21w, all <=22w target), Per-finding validation 2 entries (43-46w, all <=60w), Threat Patterns 83w, Missed surfaces 30w. PASS.
+  - Run 2: parser FALLBACK triggered -- fragment-grammar shape NOT detected; Plan 07-04 numbered-section parser ALSO failed (output emitted findings as paragraph-separated bullet-prefix entries, not the canonical fragment shape). Per-finding validation 4 entries (22-41w, <=60w), Threat Patterns 91w, Missed surfaces 29w. **FAIL on parser-fallback / no findings detected.**
+  - Run 3: 5 findings (entries 22/21/21/34/23w; entry 4 at 34w BREACHED 28w outlier soft cap; entry 5 at 23w within 28w outlier), Per-finding validation absent, Threat Patterns 85w, Missed surfaces absent. **FAIL on Finding line 4 outlier breach.**
+- **mean_aggregate_for_trend (informational):** Threat Patterns mean ~86w (well under 160w); per-finding entry max=34w (1 breach run 3); aggregate cap dropped.
+
+**phase_7_status_reconfirmed:** failed_gap_closure_3
+
+**phase_7_residual_remaining:**
+
+- residual-wip-discipline-reversal (Phase 8 reversal target per user directive 2026-05-03; unchanged from final_closure_2026_05_05)
+- NEW: residual-per-section-budget-not-empirically-closed (Phase 8 candidate; the per-section <output_constraints> XML contract from Plan 07-14 + the smoke-fixture rebind from Plan 07-15 did NOT achieve 3/3 PASS on either fixture at 3x re-run on plugin 0.13.0; two distinct failure modes observed: (a) D-reviewer run 2 CCP 162w breach = 2w over 160w cap = single-section overflow; (b) D-security-reviewer run 2 fragment-grammar shape regression to paragraph-bullet variant = parser-detection failure; (c) D-security-reviewer run 3 entry 4 outlier 34w = 6w over 28w outlier soft cap; aggregate volatility was NOT eliminated by per-section budgets, just relocated).
+- NEW: residual-advisor-fragment-grammar-not-binding-on-code-blocks (Phase 8 candidate from Plan 07-16 fixture-grade FAIL on advisor; the 100w aggregate cap on advisor SD was empirically falsified at fixture grade against the Compodoc session-1-plan.jsonl trace; n=1 evidence; needs n>=3 confirmation before structural redesign).
+
+**cross_pollination_disposition:** Per 07-RESEARCH-GAP-3 Q2 cross-pollination hypothesis: shared canon read-in-context attention budget effect was the most plausible root-cause explanation for the reviewer regression (520w S3 UAT) without reviewer.md changing structurally. The per-section contract redesign (Plan 07-14 + 07-15) addresses cross-pollination by bounding the drift surface (per-finding validation prose) explicitly + enumerating forbidden legacy patterns in `<do_not_include>`. The empirical 3x re-run gate on 0.13.0 shows the contract redesign is INSUFFICIENT to close the regression: distinct per-section breaches surfaced on each fixture (CCP overflow on reviewer; shape regression + outlier breach on security-reviewer). The counterfactual rollback experiment (Q2c) is RECOMMENDED for Phase 8 -- the new failure modes do NOT match the cross-pollination signature (which would predict aggregate volatility on otherwise-compliant per-section emissions); they look like distinct prompt-binding failures (Plan 07-14 XML <output_constraints> binding is not deterministic at 3x sampling).
+
+**closure_commits:**
+
+- 76ac386 feat(07-14) replace aggregate-cap prose with XML <output_constraints> block in agents/reviewer.md
+- bb455e0 feat(07-14) replace aggregate-cap prose with XML <output_constraints> block in agents/security-reviewer.md
+- 7f332f0 feat(07-15) update D-reviewer-budget.sh per-section parser + remove aggregate assertion
+- d6a5997 feat(07-15) update D-security-reviewer-budget.sh per-section parser + remove aggregate assertion
+- be27bc8 feat(07-16) record advisor diagnostic against session-1-plan.jsonl on 0.12.2
+- 6fd916d feat(07-17) bump plugin SemVer 0.12.2 -> 0.13.0 MINOR (5 surfaces atomically)
+- (this commit) docs(07-17) add closure_amendment_2026_05_06_per_section_budgets block + 3x re-run logs
+
+**sealing_readiness_post_gap_closure_3:**
+
+Phase 7 sealing UNREADY. Gap closure 3 did not empirically close FIND-D + GAP-D-budget-empirical on the new contract.
+
+Failure modes observed at 3x re-run on plugin 0.13.0:
+
+1. **D-reviewer run 2 (CCP overflow):** 162w against 160w cap = 2w over. Per-section budget partially enforced but tail of distribution leaks. Mean CCP ~109w with std-dev ~37w; 95th-percentile estimate ~165w under normal-shape assumption.
+2. **D-security-reviewer run 2 (shape regression):** Output emitted findings as paragraph-separated bullet-prefix entries (not the canonical `<file>:<line>: <severity>: <body>` fragment shape). Both the new fragment-grammar parser AND the legacy Plan 07-04 numbered-section parser failed to match. Indicates Plan 07-14 XML `<output_constraints>` binding does NOT enforce the per-finding entry shape deterministically across the security-reviewer's full output distribution.
+3. **D-security-reviewer run 3 (outlier breach):** Finding line 4 at 34w against 28w outlier soft cap = 6w over. Per-section budget partially enforced but per-entry outliers exceed the soft cap.
+
+Recommended Phase 8 next steps (sealed at `failed_gap_closure_3`):
+
+a. **Counterfactual rollback experiment (07-RESEARCH-GAP-3 Q2c):** Roll back the per-section XML contract while keeping the smoke-fixture parser update; re-run 3x on plugin 0.13.0-rollback. If reviewer 3/3 PASS observed (as on plugin 0.12.0 and 0.12.1 baselines), the per-section contract is the regression source. If still 2/3 PASS, the regression is in the smoke-fixture parser and the per-section caps need recalibration.
+
+b. **Per-section cap recalibration:** Raise CCP cap 160w -> 180w (covers 95th-percentile reviewer emission) and outlier soft cap 28w -> 32w (covers run-3 security-reviewer entry distribution). Re-run 3x; if still failures, the prompt binding is not tight enough and architecture-grade redesign is required.
+
+c. **Re-evaluate XML <output_constraints> binding:** Plan 07-14 assumed XML wrapping binds 15-20% better than prose on Claude per cloud-authority + AgentIF benchmark. Empirical evidence on plugin 0.13.0 (3x re-run) shows distinct per-section failures that look like prompt-binding leaks rather than aggregate volatility. Consider hybrid contract (XML schema + repeated prose admonition + few-shot examples per section).
+
+d. **Bundle Plan 07-16 advisor verdict (FAIL n=1):** Phase 8 should also redesign advisor.md per-section budgets per the diagnostic verdict; advisor's 100w aggregate cap shares the per-section-redesign scope with reviewer + security-reviewer. Advisor n=1 -> n>=3 across heterogeneous scenarios first to size the per-section caps.
+
+**phase_7_residual_remaining_summary:** 3 residuals as of 2026-05-06:
+
+| Residual | Origin | Phase | Disposition |
+|---|---|---|---|
+| residual-wip-discipline-reversal | user directive 2026-05-03 / memory feedback_no_wip_commits.md | 8 | unchanged from final_closure_2026_05_05 |
+| residual-per-section-budget-not-empirically-closed | this amendment 2026-05-06 / Plan 07-17 3x gate FAIL_2_of_3 + FAIL_1_of_3 | 8 | NEW; Phase 8 a/b/c steps above |
+| residual-advisor-fragment-grammar-not-binding-on-code-blocks | this amendment 2026-05-06 / Plan 07-16 fixture-grade FAIL n=1 | 8 | NEW; Phase 8 step d above |
+
+_Closure amendment written: 2026-05-06_
+_Verifier: Claude (gsd-executor / Plan 07-17) per user directive 2026-05-06_
