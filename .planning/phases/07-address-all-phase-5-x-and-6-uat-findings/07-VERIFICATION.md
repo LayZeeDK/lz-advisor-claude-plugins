@@ -849,3 +849,41 @@ Phase 7 remains sealed at `passed_with_residual` per the 2026-05-05 verdict. The
 - `.planning/phases/07-address-all-phase-5-x-and-6-uat-findings/uat-replay-0.12.2/runners/run-session.sh` -- runner script
 - `.planning/phases/07-address-all-phase-5-x-and-6-uat-findings/uat-replay-0.12.2/prompts/session-*.txt` -- 8 prompt files (S2 prompt was corrected mid-run to point to actual S1 plan filename `compodoc-storybook-angular-setup.plan.md`)
 - `D:/projects/github/LayZeeDK/ngx-smart-components` branch `uat-replay-0.12.2` -- 8 commits across S2 + S6 + S8 implementing Compodoc + Storybook + signal I/O + review fixes + security fixes
+
+---
+
+## addendum_2026_05_06_user_directive_per_section_budgets
+
+**User directive (2026-05-06):** Replace the aggregate `<=300w` cap on reviewer + security-reviewer output with **per-section word budgets**. Quality should emerge from each component being concise, not from a total-volume ceiling that scales perversely with finding count.
+
+**Implication for Phase 8 worklist:**
+
+- **Item 7 (was: tighten security-reviewer.md emit contract to forbid post-Findings prose):** SUPERSEDED. New direction: redesign the contract with explicit per-section budgets including a NEW budget for the per-finding validation prose the agents are already emitting (`Validation of Finding N:` / `Severity revisions vs.`). Budget the pattern instead of forbidding it.
+- **Item 8 (was: corroborate reviewer regression via D-reviewer-budget.sh × 3):** RE-FRAMED. The 520w aggregate on S3 UAT is no longer a violation under the new contract. Run still useful as evidence for sizing the per-section validation-prose budget; not blocking-class.
+- **Item 9 (was: D-advisor-budget.sh extraction against session-1-plan.jsonl):** UNCHANGED. The advisor's 100w aggregate cap may also benefit from per-section redesign (e.g., per-directive-entry budget), but the n=1 visual estimate still needs fixture-grade confirmation as the empirical baseline for any redesign.
+
+**Proposed new contract shape (refine in Phase 8 plan; user directive 2026-05-06):**
+
+| Section | Budget | Notes |
+|---------|--------|-------|
+| Per-finding entry | <=22w target / <=28w outlier soft cap | Existing per-entry caps; preserve |
+| Cross-Cutting Patterns / Threat Patterns | <=160w | Existing per-section cap; preserve |
+| Missed surfaces | <=30w | Existing per-section cap; preserve |
+| Per-finding validation prose | NEW: <=60w per finding (caps at finding count) | Authorize the patterns the agents are emitting; budget them explicitly |
+| Aggregate cap | DROP | Total volume scales naturally with finding count |
+
+**Knock-on for smoke fixtures:**
+
+- `D-reviewer-budget.sh` and `D-security-reviewer-budget.sh` need extraction-pattern + assertion-set updates to enforce per-section caps without aggregate.
+- Plan 07-12 disconfirmation protocol (3x re-run + halt-criterion) stays applicable to per-section caps, just not to aggregate.
+
+**Rationale (from 2026-05-06 evidence):**
+
+- 4 smoke runs + 1 UAT run on 0.12.2 (n=5) all over 300w aggregate, with high inter-run variance (310w-427w; std-dev ~52w). Per-section components were largely compliant: Threat Patterns / Missed surfaces hit their caps cleanly across runs.
+- The aggregate's volatility was driven by 1 emergent section (`Severity revisions vs.` / `Validation of Finding N:` post-Findings prose) plus per-finding length variance on CVE-rich findings (which naturally grow with detail).
+- Forbidding the emergent section (alternative path) suppresses information the agents are choosing to surface (per-finding severity validation reasoning); budgeting it preserves that information at predictable cost.
+
+**Phase 7 sealing verdict (unchanged):** `passed_with_residual`. This addendum supersedes the resolution direction for the 0.12.2 budget regression but does not reopen Phase 7 structural deliverables.
+
+_Addendum written: 2026-05-06_
+_Verifier: Claude (gsd-verifier) per user directive_
