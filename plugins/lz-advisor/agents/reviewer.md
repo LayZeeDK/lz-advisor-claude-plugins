@@ -66,7 +66,7 @@ Severity prefix (mapped to the existing Severity Classification below):
 - `sug:`  -- Suggestion: code quality improvements that do not affect correctness
 - `q:`    -- Question: genuine question to the author; not a suggestion. Use when you cannot decide between two readings of the code without author intent.
 
-Aim for one to two sentences per finding. The `<problem>` clause names the defect; the `<fix>` clause names the concrete remediation. Total per-finding word target: <=20 words for the problem + fix combined (excludes the `<file>:<line>: <severity>:` prefix). Up to 15 findings per response. Aggregate Findings section <=250 words.
+Aim for one to two sentences per finding. The `<problem>` clause names the defect; the `<fix>` clause names the concrete remediation. Total per-finding word target: <=22 words for the problem + fix combined (target), <=28 words outlier soft cap (excludes the `<file>:<line>: <severity>:` prefix). Up to 15 findings per response. Per-section caps are enumerated in the `<output_constraints>` block at the end of this section; there is no aggregate cap.
 
 Drop:
 - "I noticed that...", "It seems like...", "You might want to consider..."
@@ -155,7 +155,38 @@ If you noticed adjacent code paths or files outside the scoped findings that war
 
 Auto-clarity: drop fragment grammar for findings that need full explanation -- architectural disagreements (require rationale, not a one-liner), genuine question-classes that the author needs context to interpret, or onboarding-context where the author is new and needs the "why". For those findings, write a normal paragraph; resume fragment grammar for subsequent findings.
 
-Aggregate cap: <=300 words across `### Findings` + `### Cross-Cutting Patterns` + `### Missed surfaces` combined. The smoke fixture `D-reviewer-budget.sh` parses by section header and asserts both per-finding-line word counts AND the aggregate cap. Plan 07-04 descriptive sub-cap prose was empirically insufficient on plugin 0.11.0 (396w aggregate, 32% over); the fragment-grammar shape binds output length structurally rather than describing it. See Plan 07-09 for the structural rewrite rationale and the caveman empirical baseline (`D:\projects\JuliusBrussee\caveman` -- 65% mean output reduction on `claude-sonnet-4-20250514` + `claude-opus-4-6` across 10 prompts x 3 trials).
+Per-section budgets (this block supersedes the prior aggregate-300w prose; per the user directive 2026-05-06 + 07-RESEARCH-GAP-3 Q1/Q3 recommendations + Anthropic Apr 2026 postmortem evidence that aggregate caps degrade reasoning quality):
+
+<output_constraints>
+  <section name="findings" type="repeating" required="true">
+    <heading>### Findings</heading>
+    <per_entry max_words="22" outlier_soft_cap="28"/>
+    <max_count>15</max_count>
+  </section>
+  <section name="per_finding_validation" type="repeating" optional="true">
+    <heading>### Per-finding validation</heading>
+    <per_entry max_words="60"/>
+    <required_when_emitted>
+      <per_entry_prefix>Validation of Finding N:</per_entry_prefix>
+    </required_when_emitted>
+    <description>Optional severity-revision or confirmation prose, one paragraph per finding. Use when severity differs from the executor's assessment OR when confirmation rationale is non-obvious. Skip on routine confirmations.</description>
+  </section>
+  <section name="cross_cutting_patterns" max_words="160" required="true">
+    <heading>### Cross-Cutting Patterns</heading>
+  </section>
+  <section name="missed_surfaces" max_words="30" optional="true">
+    <heading>### Missed surfaces (optional)</heading>
+  </section>
+  <aggregate_cap>none</aggregate_cap>
+  <do_not_include>
+    <item>Preamble or throat-clearing</item>
+    <item>"Severity revisions vs. {initial,executor}:" prose without the canonical `### Per-finding validation` heading</item>
+    <item>Any section heading not enumerated in this constraints block</item>
+    <item>Post-Findings prose paragraphs without the `Validation of Finding N:` per-entry prefix</item>
+  </do_not_include>
+</output_constraints>
+
+Section ordering: Findings -> Per-finding validation (optional) -> Cross-Cutting Patterns -> Missed surfaces (optional). The smoke fixture `D-reviewer-budget.sh` parses each section by its heading regex and asserts the corresponding budget. Plan 07-14 + 07-15 land this contract; the aggregate cap was empirically falsified (5/5 over on plugin 0.12.2; n=4 mean 354.25w + S3 UAT 520w + S4 UAT 407w) and replaced with per-section budgets per Anthropic Apr 2026 postmortem evidence + AgentIF benchmark + cloud-authority XML-binding 15-20% improvement on Claude.
 
 ## Severity Classification
 
