@@ -1,9 +1,14 @@
 #!/usr/bin/env bash
 # Smoke test for Finding D (reviewer side):
-#   reviewer Output Constraint sub-caps -- each Findings entry <=80w,
-#   ### Cross-Cutting Patterns <=160w, ### Missed surfaces (if present) <=30w,
-#   total <=300w aggregate.
-# Empirical baseline (plugin 0.9.0): observed 411 words total, 37% over 300w cap.
+#   reviewer Output Constraint per-section budgets per Plan 07-14 <output_constraints>:
+#   each Findings entry <=22w target / <=28w outlier soft cap,
+#   ### Per-finding validation entries <=60w (optional surface),
+#   ### Cross-Cutting Patterns <=160w,
+#   ### Missed surfaces (if present) <=30w.
+#   No aggregate cap (dropped per user directive 2026-05-06 + Anthropic Apr 2026 postmortem).
+# Empirical context: aggregate-cap pattern empirically falsified on plugin 0.12.2
+# (S3 UAT 520w, n=4 mean 354.25w on D-security-reviewer-budget; per-section is
+# the 2026-standard pattern per AgentIF + cloud-authority XML 15-20% better binding).
 set -eu
 
 # Windows Git Bash compat: suppress argv path translation for native binaries
@@ -53,9 +58,16 @@ else
   echo "[OK] Reviewer output sections present: Findings=1 CCP=1"
 fi
 
-# Extract Findings section body (between '### Findings' and '### Cross-Cutting Patterns')
+# Extract Findings section body (between '### Findings' and the next ### heading).
+# Hardened per Plan 07-14 + 07-15: terminates on ANY subsequent `### ` heading
+# so the new optional `### Per-finding validation` section between Findings and
+# `### Cross-Cutting Patterns` does NOT contaminate the per-finding entry parser.
 FINDINGS_BODY="$SCRATCH/findings-body.txt"
-awk '/^### Findings/,/^### Cross-Cutting Patterns/' "$OUT" | sed '1d;$d' > "$FINDINGS_BODY" || true
+awk '
+  /^### Findings/ {flag=1; next}
+  flag && /^### / {flag=0}
+  flag {print}
+' "$OUT" > "$FINDINGS_BODY" || true
 
 # Per-entry Findings word count: split by numbered entry pattern (e.g., "1. ", "2. ") at column 0
 # and assert each entry <=80w. Use Node ESM script for robust parsing.
@@ -67,8 +79,9 @@ const body = readFileSync(process.argv[2], 'utf8');
 // Plan 07-09 fragment-grammar shape: each finding emits as a single line
 //   `<file>:<line>: <severity>: <problem>. <fix>.` (or `<file>:<start>-<end>: ...`)
 // Severity prefixes: crit | imp | sug | q
-// Per-finding-line word target: <=20 words for problem + fix combined (excludes
-// the file:line: severity: prefix). Soft target; occasional 25w outliers OK.
+// Per-finding-line word target: <=22 words target / <=28 words outlier soft cap
+// (per user directive 2026-05-06 + Plan 07-14 contract). Excludes the
+// file:line: severity: prefix.
 const FRAGMENT_RE = /^[^:\s]+:\d+(?:-\d+)?:\s+(?:crit|imp|sug|q):\s+(.+)$/gm;
 
 // Backward-compat: Plan 07-04 numbered-section shape (1. ..., **Finding 1:**)
@@ -85,13 +98,13 @@ if (fragmentMatches.length > 0) {
     const fixClause = m[1].trim();
     const wc = fixClause.split(/\s+/).filter(Boolean).length;
     total++;
-    if (wc > 25) {
-      console.log(`[ERROR] Finding line ${idx + 1}: ${wc} words (>25 outlier soft cap; target <=20w)`);
+    if (wc > 28) {
+      console.log(`[ERROR] Finding line ${idx + 1}: ${wc} words (>28 outlier soft cap; target <=22w)`);
       bad++;
-    } else if (wc > 20) {
-      console.log(`[WARN] Finding line ${idx + 1}: ${wc} words (>20 target but <=25 outlier; acceptable)`);
+    } else if (wc > 22) {
+      console.log(`[WARN] Finding line ${idx + 1}: ${wc} words (>22 target but <=28 outlier; acceptable)`);
     } else {
-      console.log(`[OK] Finding line ${idx + 1}: ${wc} words (<=20 target)`);
+      console.log(`[OK] Finding line ${idx + 1}: ${wc} words (<=22 target)`);
     }
   });
 } else {
@@ -119,6 +132,51 @@ process.exit(bad === 0 ? 0 : 1);
 EOF
 
 if ! node "$ENTRY_CHECK_SCRIPT" "$FINDINGS_BODY"; then
+  FAIL=1
+fi
+
+# Per-finding-validation block extraction (Plan 07-14 + 07-15: optional surface per
+# the new <output_constraints> contract; absent on routine confirmations, present
+# when severity differs or rationale is non-obvious; <=60w per entry).
+PFV_BODY="$SCRATCH/pfv-body.txt"
+awk '
+  /^### Per-finding validation/ {flag=1; next}
+  flag && /^### |^---|^\*\*Verdict scope/ {flag=0}
+  flag {print}
+' "$OUT" > "$PFV_BODY" || true
+
+# Per-entry word count via Node ESM (mirrors check-entries.mjs pattern).
+# Each entry is one paragraph keyed by the literal `Validation of Finding N:` prefix.
+PFV_CHECK_SCRIPT="$SCRATCH/check-pfv-entries.mjs"
+cat > "$PFV_CHECK_SCRIPT" << 'EOF'
+import { readFileSync } from 'node:fs';
+const body = readFileSync(process.argv[2], 'utf8');
+
+// Match `Validation of Finding N: <body>` entries.
+// Each entry is one paragraph (terminated by blank line then next entry, or end).
+const PFV_RE = /^Validation of Finding \d+:\s+([\s\S]+?)(?=\n\nValidation of Finding|\n*$)/gm;
+const matches = [...body.matchAll(PFV_RE)];
+
+if (matches.length === 0) {
+  console.log('[OK] Per-finding validation: section absent (optional)');
+  process.exit(0);
+}
+
+console.log(`[INFO] Per-finding validation: ${matches.length} entries`);
+let bad = 0;
+matches.forEach((m, idx) => {
+  const wc = m[1].trim().split(/\s+/).filter(Boolean).length;
+  if (wc > 60) {
+    console.log(`[ERROR] Per-finding validation entry ${idx + 1}: ${wc} words (>60 cap)`);
+    bad++;
+  } else {
+    console.log(`[OK] Per-finding validation entry ${idx + 1}: ${wc} words (<=60 cap)`);
+  }
+});
+process.exit(bad === 0 ? 0 : 1);
+EOF
+
+if ! node "$PFV_CHECK_SCRIPT" "$PFV_BODY"; then
   FAIL=1
 fi
 
@@ -162,28 +220,10 @@ else
   echo "[OK] Missed surfaces: section absent (optional)"
 fi
 
-# Aggregate <=300w total across all reviewer-emitted sections (Findings + CCP +
-# optional Missed surfaces). Terminates on **Verdict scope: inline marker or ---.
-# The ^$ terminator was previously buggy because markdown convention puts a blank
-# line right after every ### heading, prematurely ending the range.
-AGG_BODY="$SCRATCH/aggregate-body.txt"
-awk '
-  /^### Findings/ {flag=1}
-  flag && /^\*\*Verdict scope|^---/ {flag=0}
-  flag {print}
-' "$OUT" > "$AGG_BODY" || true
-AGG_WC=$(wc -w < "$AGG_BODY" | tr -d ' ')
-if [ "$AGG_WC" -le 300 ]; then
-  echo "[OK] Aggregate: $AGG_WC words (<=300 cap)"
-else
-  echo "[ERROR] Aggregate: $AGG_WC words (>300 cap; regression)"
-  FAIL=1
-fi
-
 if [ "$FAIL" -ne 0 ]; then
   echo "--- reviewer output (last 200 lines) ---"
   tail -n 200 "$OUT"
   exit 1
 fi
 
-echo "[SUCCESS] D-reviewer-budget.sh: all sub-caps enforced (entries <=80w, CCP <=160w, Missed surfaces <=30w, total <=300w)"
+echo "[SUCCESS] D-reviewer-budget.sh: per-section budgets enforced (entries <=22w/28w outlier, Per-finding validation <=60w, CCP <=160w, Missed surfaces <=30w; aggregate cap dropped per Plan 07-14)"
