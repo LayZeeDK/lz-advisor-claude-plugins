@@ -1,11 +1,14 @@
 #!/usr/bin/env bash
 # Smoke test for Finding D (security-reviewer side):
-#   security-reviewer Output Constraint sub-caps -- each Findings entry <=80w,
-#   ### Threat Patterns <=160w, ### Missed surfaces (if present) <=30w,
-#   total <=300w aggregate.
-# Empirical baseline: observed 412 words on plugin 0.8.9, 438 words on plugin 0.9.0
-# (46% over 300w cap) -- WORST regression among the 3 agents and the strongest
-# reinforcement reason.
+#   security-reviewer Output Constraint per-section budgets per Plan 07-14 <output_constraints>:
+#   each Findings entry <=22w target / <=28w outlier soft cap,
+#   ### Per-finding validation entries <=60w (optional surface),
+#   ### Threat Patterns <=160w,
+#   ### Missed surfaces (if present) <=30w.
+#   No aggregate cap (dropped per user directive 2026-05-06 + Anthropic Apr 2026 postmortem).
+# Empirical context: aggregate-cap pattern empirically falsified on plugin 0.12.2
+# (n=4 mean 354.25w / 18% over; ALL 4 RUNS FAILED; Severity revisions vs. {initial,executor}:
+# emergent surface drove ~50-100w of overshoot; not stochastic outlier per Plan 07-12 protocol).
 set -eu
 
 # Windows Git Bash compat: suppress argv path translation for native binaries
@@ -55,9 +58,16 @@ else
   echo "[OK] Security-reviewer output sections present: Findings=1 TP=1"
 fi
 
-# Extract Findings section body (between '### Findings' and '### Threat Patterns')
+# Extract Findings section body (between '### Findings' and the next ### heading).
+# Hardened per Plan 07-14 + 07-15: terminates on ANY subsequent `### ` heading
+# so the new optional `### Per-finding validation` section between Findings and
+# `### Threat Patterns` does NOT contaminate the per-finding entry parser.
 FINDINGS_BODY="$SCRATCH/findings-body.txt"
-awk '/^### Findings/,/^### Threat Patterns/' "$OUT" | sed '1d;$d' > "$FINDINGS_BODY" || true
+awk '
+  /^### Findings/ {flag=1; next}
+  flag && /^### / {flag=0}
+  flag {print}
+' "$OUT" > "$FINDINGS_BODY" || true
 
 # Per-entry Findings word count: split by numbered entry pattern (e.g., "1. ", "2. ") at column 0
 # and assert each entry <=80w. Use Node ESM script for robust parsing.
@@ -123,6 +133,51 @@ if ! node "$ENTRY_CHECK_SCRIPT" "$FINDINGS_BODY"; then
   FAIL=1
 fi
 
+# Per-finding-validation block extraction (Plan 07-14 + 07-15: optional surface per
+# the new <output_constraints> contract; absent on routine confirmations, present
+# when severity differs or rationale is non-obvious; <=60w per entry).
+PFV_BODY="$SCRATCH/pfv-body.txt"
+awk '
+  /^### Per-finding validation/ {flag=1; next}
+  flag && /^### |^---|^\*\*Verdict scope/ {flag=0}
+  flag {print}
+' "$OUT" > "$PFV_BODY" || true
+
+# Per-entry word count via Node ESM (mirrors check-entries.mjs pattern).
+# Each entry is one paragraph keyed by the literal `Validation of Finding N:` prefix.
+PFV_CHECK_SCRIPT="$SCRATCH/check-pfv-entries.mjs"
+cat > "$PFV_CHECK_SCRIPT" << 'EOF'
+import { readFileSync } from 'node:fs';
+const body = readFileSync(process.argv[2], 'utf8');
+
+// Match `Validation of Finding N: <body>` entries.
+// Each entry is one paragraph (terminated by blank line then next entry, or end).
+const PFV_RE = /^Validation of Finding \d+:\s+([\s\S]+?)(?=\n\nValidation of Finding|\n*$)/gm;
+const matches = [...body.matchAll(PFV_RE)];
+
+if (matches.length === 0) {
+  console.log('[OK] Per-finding validation: section absent (optional)');
+  process.exit(0);
+}
+
+console.log(`[INFO] Per-finding validation: ${matches.length} entries`);
+let bad = 0;
+matches.forEach((m, idx) => {
+  const wc = m[1].trim().split(/\s+/).filter(Boolean).length;
+  if (wc > 60) {
+    console.log(`[ERROR] Per-finding validation entry ${idx + 1}: ${wc} words (>60 cap)`);
+    bad++;
+  } else {
+    console.log(`[OK] Per-finding validation entry ${idx + 1}: ${wc} words (<=60 cap)`);
+  }
+});
+process.exit(bad === 0 ? 0 : 1);
+EOF
+
+if ! node "$PFV_CHECK_SCRIPT" "$PFV_BODY"; then
+  FAIL=1
+fi
+
 # Threat Patterns word count <=160w.
 # Awk pattern terminates on real section boundaries: next ### heading, ---,
 # **Missed surface: inline marker, **Verdict scope: inline marker. Markdown
@@ -163,28 +218,10 @@ else
   echo "[OK] Missed surfaces: section absent (optional)"
 fi
 
-# Aggregate <=300w total across all security-reviewer-emitted sections (Findings +
-# Threat Patterns + optional Missed surfaces). Terminates on **Verdict scope: inline
-# marker or ---. The ^$ terminator was previously buggy because markdown convention
-# puts a blank line right after every ### heading, prematurely ending the range.
-AGG_BODY="$SCRATCH/aggregate-body.txt"
-awk '
-  /^### Findings/ {flag=1}
-  flag && /^\*\*Verdict scope|^---/ {flag=0}
-  flag {print}
-' "$OUT" > "$AGG_BODY" || true
-AGG_WC=$(wc -w < "$AGG_BODY" | tr -d ' ')
-if [ "$AGG_WC" -le 300 ]; then
-  echo "[OK] Aggregate: $AGG_WC words (<=300 cap)"
-else
-  echo "[ERROR] Aggregate: $AGG_WC words (>300 cap; regression)"
-  FAIL=1
-fi
-
 if [ "$FAIL" -ne 0 ]; then
   echo "--- security-reviewer output (last 200 lines) ---"
   tail -n 200 "$OUT"
   exit 1
 fi
 
-echo "[SUCCESS] D-security-reviewer-budget.sh: all sub-caps enforced (entries <=80w, Threat Patterns <=160w, Missed surfaces <=30w, total <=300w)"
+echo "[SUCCESS] D-security-reviewer-budget.sh: per-section budgets enforced (entries <=22w/28w outlier, Per-finding validation <=60w, Threat Patterns <=160w, Missed surfaces <=30w; aggregate cap dropped per Plan 07-14)"
