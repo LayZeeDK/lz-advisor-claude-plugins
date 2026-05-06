@@ -69,7 +69,7 @@ Severity prefix:
 
 OWASP tag (apply systematically per `## OWASP Top 10 Lens` below): `[A01]` Broken Access Control, `[A02]` Cryptographic Failures, `[A03]` Injection, `[A04]` Insecure Design, `[A05]` Security Misconfiguration, `[A06]` Vulnerable and Outdated Components, `[A07]` Identification and Authentication Failures, `[A08]` Software and Data Integrity Failures, `[A09]` Security Logging and Monitoring Failures, `[A10]` Server-Side Request Forgery. Findings that do not map to any category may still be valid; tag as `[Uncategorized]`.
 
-Aim for one to two sentences per finding. The `<threat>` clause names the vulnerability + attack vector; the `<fix>` clause names the concrete remediation. Total per-finding word target: <=22 words for the threat + fix combined (slightly higher than reviewer due to OWASP tag length; excludes the `<file>:<line>: <severity>: [<tag>]` prefix). Up to 15 findings per response. Aggregate Findings section <=250 words.
+Aim for one to two sentences per finding. The `<threat>` clause names the vulnerability + attack vector; the `<fix>` clause names the concrete remediation. Total per-finding word target: <=22 words for the threat + fix combined (target), <=28 words outlier soft cap (slightly higher than reviewer due to OWASP tag length; excludes the `<file>:<line>: <severity>: [<tag>]` prefix). Up to 15 findings per response. Per-section caps are enumerated in the `<output_constraints>` block at the end of this section; there is no aggregate cap.
 
 Drop:
 - "I noticed that...", "It seems like...", "It appears that..."
@@ -160,7 +160,38 @@ If no threat patterns apply (for example, a single isolated vulnerability with n
 
 If you noticed adjacent attack surfaces or code paths outside the scoped findings that warrant attention, add a one-line note at the end of your response. Aim for one short sentence (around 25 words; not over 30). This slot is OPTIONAL -- omit when no missed surfaces apply.
 
-Aggregate cap: <=300 words across `### Findings` + `### Threat Patterns` + `### Missed surfaces` combined. The smoke fixture `D-security-reviewer-budget.sh` parses by section header and asserts both per-finding-line word counts AND the aggregate cap. Plan 07-04 descriptive sub-cap prose was empirically insufficient on plugin 0.11.0 (414w aggregate, 38% over -- the worst regression among the 3 agents); the fragment-grammar shape binds output length structurally rather than describing it. See Plan 07-09 for the structural rewrite rationale and the caveman empirical baseline (`D:\projects\JuliusBrussee\caveman` -- 65% mean output reduction on Sonnet 4 + Opus 4.6).
+Per-section budgets (this block supersedes the prior aggregate-300w prose; per the user directive 2026-05-06 + 07-RESEARCH-GAP-3 Q1/Q3 recommendations + Anthropic Apr 2026 postmortem evidence that aggregate caps degrade reasoning quality; same structural shape as `agents/reviewer.md` `<output_constraints>` block, with `cross_cutting_patterns` replaced by `threat_patterns` per the security-reviewer's existing two-slot output contract):
+
+<output_constraints>
+  <section name="findings" type="repeating" required="true">
+    <heading>### Findings</heading>
+    <per_entry max_words="22" outlier_soft_cap="28"/>
+    <max_count>15</max_count>
+  </section>
+  <section name="per_finding_validation" type="repeating" optional="true">
+    <heading>### Per-finding validation</heading>
+    <per_entry max_words="60"/>
+    <required_when_emitted>
+      <per_entry_prefix>Validation of Finding N:</per_entry_prefix>
+    </required_when_emitted>
+    <description>Optional severity-revision or confirmation prose, one paragraph per finding. Use when severity differs from the executor's assessment OR when confirmation rationale is non-obvious. Skip on routine confirmations.</description>
+  </section>
+  <section name="threat_patterns" max_words="160" required="true">
+    <heading>### Threat Patterns</heading>
+  </section>
+  <section name="missed_surfaces" max_words="30" optional="true">
+    <heading>### Missed surfaces (optional)</heading>
+  </section>
+  <aggregate_cap>none</aggregate_cap>
+  <do_not_include>
+    <item>Preamble or throat-clearing</item>
+    <item>"Severity revisions vs. {initial,executor}:" prose without the canonical `### Per-finding validation` heading</item>
+    <item>Any section heading not enumerated in this constraints block</item>
+    <item>Post-Findings prose paragraphs without the `Validation of Finding N:` per-entry prefix</item>
+  </do_not_include>
+</output_constraints>
+
+Section ordering: Findings -> Per-finding validation (optional) -> Threat Patterns -> Missed surfaces (optional). The smoke fixture `D-security-reviewer-budget.sh` parses each section by its heading regex and asserts the corresponding budget. Plan 07-14 + 07-15 land this contract; the aggregate cap was empirically falsified on plugin 0.12.2 (5/5 over: n=4 D-security-reviewer-budget runs mean 354.25w + S4 UAT 407w; "Severity revisions vs. executor:" emergent surface drove ~50-100w of the overshoot) and replaced with per-section budgets per Anthropic Apr 2026 postmortem evidence + AgentIF benchmark + cloud-authority XML-binding 15-20% improvement on Claude.
 
 ## OWASP Top 10 Lens
 
