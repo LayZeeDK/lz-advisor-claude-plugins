@@ -1015,3 +1015,187 @@ d. **Bundle Plan 07-16 advisor verdict (FAIL n=1):** Phase 8 should also redesig
 
 _Closure amendment written: 2026-05-06_
 _Verifier: Claude (gsd-executor / Plan 07-17) per user directive 2026-05-06_
+
+## independent_verification_2026_05_06
+
+**Verifier:** Claude (gsd-verifier; independent goal-backward verification, external to Plan 07-17)
+
+**Verified:** 2026-05-06T18:00:00Z
+
+**Verdict:** `gaps_found` -- CONFIRMS Plan 07-17 self-assessment of `failed_gap_closure_3`. The empirical FAIL is real, the closure_amendment_2026_05_06_per_section_budgets evidence is sound, and Phase 7 sealing remains UNREADY pending Phase 8 closure of `residual-per-section-budget-not-empirically-closed`. This independent block additionally surfaces a partial root cause from `07-REVIEW-GAPS-3.md` (WR-01/02/03 prose-XML contradictions) that is recoverable in Phase 8 and should be tested BEFORE the more invasive interventions (per-section cap recalibration, architectural redesign). Recoverability changes the disposition framing and Phase 8 worklist priority, but not the Phase 7 status.
+
+**Independent verification scope:** This block is an external goal-backward audit of Plan 07-17 closure_amendment_2026_05_06_per_section_budgets against (a) the 16 Phase 7 must-haves enumerated in the prior `final_closure_2026_05_05_post_07_12_07_13` block, (b) the 3x re-run gate logs at `regression-gate-0.13.0/D-{reviewer,security-reviewer}-budget-3x.log`, (c) the agent prompt-source contradictions surfaced by the gap-closure-3 code review at `07-REVIEW-GAPS-3.md` WR-01 + WR-02 + WR-03, and (d) the structural surfaces shipped by Plans 07-14 + 07-15 + 07-16 + 07-17. The block does NOT re-run the empirical gate (single sources of empirical truth are the 6 logged runs from Plan 07-17); it cross-references the existing evidence from an external verifier perspective and confirms or qualifies the self-assessment.
+
+### Cross-reference: 16 Phase 7 requirement IDs against current empirical state
+
+| #  | Requirement ID            | Source                          | Plan(s)                                                  | Independent verdict                | Evidence                                                                                                                                                                                                                                                                                                                                                                                |
+| -- | ------------------------- | ------------------------------- | -------------------------------------------------------- | ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1  | FIND-A                    | Phase 5.x SUMMARY frontmatter   | 07-02                                                    | closed                             | Reconciliation extension in `lz-advisor.execute/SKILL.md`; empirical UAT 0.10.0 + 0.12.0 + 0.12.1 chains; not regressed by Plans 07-14..07-17 (out-of-scope surfaces; 14/15/16/17 modify only reviewer.md + security-reviewer.md + smoke fixtures + version-bump).                                                                                                                       |
+| 2  | FIND-B.1                  | Phase 5.x SUMMARY frontmatter   | 07-01                                                    | closed                             | Rule 5b synthesis mandate; empirical multi-version VERIFIED (0.10.0/0.12.0/0.12.1/0.12.2); not regressed by Plans 07-14..07-17.                                                                                                                                                                                                                                                          |
+| 3  | FIND-B.2 + FIND-B.2-format-scope | Phase 5.x + REQUIREMENTS.md line 75 | 07-01, 07-11                                       | closed                             | Rule 5b dual-surface differentiation; B-pv-validation.sh Assertion 6; empirical 0.12.1 + 0.12.2 verification per empirical_subverification_2026_05_06 line 824; not regressed by Plans 07-14..07-17.                                                                                                                                                                                     |
+| 4  | FIND-C                    | Phase 5.x SUMMARY frontmatter   | 07-03                                                    | closed                             | 4 confidence-laundering guards; verdict scope markers in 4 SKILL.md; empirical UAT chains; not regressed by Plans 07-14..07-17.                                                                                                                                                                                                                                                          |
+| 5  | FIND-D                    | Phase 5.x SUMMARY frontmatter   | 07-04, 07-09, 07-10, 07-12 (halted), 07-13, 07-14, 07-15, 07-17 | OPEN -- gap closure 3 FAIL | Plans 07-14 + 07-15 + 07-17 redesigned the contract from aggregate-300w to per-section budgets in response to 0.12.2 empirical regression (n=4 mean 354.25w + S3 UAT 520w + S4 UAT 407w); 0.13.0 3x re-run gate FAIL_2_of_3 + 2-of-3 FAIL on D-security-reviewer confirms structural rebind did NOT bind the prompt deterministically. PARTIAL: per-section caps largely held (CCP mean ~109w; Threat Patterns mean ~86w; Missed surfaces compliant); 3 distinct failure modes documented in Plan 07-17. |
+| 6  | FIND-E.1                  | Phase 5.x SUMMARY frontmatter   | 07-02                                                    | closed                             | `## Hedge Marker Discipline` in 3 agents preserved byte-identically across Plans 07-14..07-17; reviewer.md:302, security-reviewer.md:319 (verified inline).                                                                                                                                                                                                                              |
+| 7  | FIND-E.2                  | Phase 5.x SUMMARY frontmatter   | 07-02                                                    | closed                             | verify-before-commit Phase 3.5 + Verified: trailer; not regressed by Plans 07-14..07-17.                                                                                                                                                                                                                                                                                                  |
+| 8  | FIND-F                    | Phase 5.x SUMMARY frontmatter   | 07-05, 07-13                                             | closed                             | reviewer Class-2 Escalation Hook at reviewer.md:254 + security-reviewer self-contained Class-2 hook at security-reviewer.md:263 (Plan 07-13 WR-03 closure); both preserved byte-identically by Plans 07-14..07-17.                                                                                                                                                                       |
+| 9  | FIND-G                    | Phase 5.x SUMMARY frontmatter   | 07-02                                                    | closed                             | review-skill Scan Criteria flag bullet; not regressed.                                                                                                                                                                                                                                                                                                                                    |
+| 10 | FIND-H                    | Phase 5.x SUMMARY frontmatter   | 07-01                                                    | closed                             | Rule 5b self-anchor rejection + B-pv-validation.sh Assertion 3; empirical UAT chains.                                                                                                                                                                                                                                                                                                     |
+| 11 | FIND-silent-resolve       | Phase 5.x SUMMARY frontmatter   | 07-02                                                    | closed                             | `## Findings Disposition` section in plan SKILL.md template; preserved.                                                                                                                                                                                                                                                                                                                   |
+| 12 | GAP-G1+G2-empirical       | Phase 6 amendment 5 (UAT-derived) | 07-01                                                  | closed                             | Rule 5b ToolSearch precondition + 4-skill canon; empirical UAT 0.12.0 + 0.12.1 + 0.12.2 firing in 5/6 + 8/8 sessions per empirical_subverification_2026_05_06 line 822.                                                                                                                                                                                                                   |
+| 13 | GAP-G1-firing             | REQUIREMENTS.md line 69         | 07-07                                                    | closed                             | Default-on ToolSearch + 2 worked examples; B-pv-validation.sh Assertion 5; empirical 8/8 sessions on plugin 0.12.2 per empirical_subverification_2026_05_06 line 822.                                                                                                                                                                                                                     |
+| 14 | GAP-G2-wip-scope          | REQUIREMENTS.md line 71         | 07-08                                                    | closed structurally; Phase 8 reversal target | Rule fires per spec on plugin 0.12.0/0.12.1/0.12.2 across S2 + S6 + S8 commit logs (per empirical_subverification_2026_05_05 + 2026_05_06); user directive 2026-05-03 mandates Phase 8 REMOVAL (memory: feedback_no_wip_commits.md). NOT a Phase 7 in-phase gap; tracked as residual-wip-discipline-reversal.                                                                            |
+| 15 | GAP-D-budget-empirical    | REQUIREMENTS.md line 73         | 07-09, 07-10, 07-12 (halted), 07-13, 07-14, 07-15, 07-17 | OPEN -- gap closure 3 FAIL        | Same evidence as FIND-D row above. NOTE: REQUIREMENTS.md line-73 definition specifies aggregate <=300w but Plan 07-14 dropped that contract per user directive 2026-05-06; the requirement definition is now stale relative to the current contract shape. Phase 8 must either (a) close the residual against the new per-section contract once empirically verified, or (b) update the REQUIREMENTS.md definition to reflect the per-section contract. Documentation-debt item flagged here for Phase 8 traceability hygiene. |
+| 16 | FIND-B.2-format-scope     | REQUIREMENTS.md line 75         | 07-11                                                    | closed                             | Rule 5b dual-surface; empirical 0.12.1 + 0.12.2 verification (line 824 of prior block); not regressed by Plans 07-14..07-17.                                                                                                                                                                                                                                                              |
+
+**Independent score:** 14 of 16 closed; 2 OPEN with same root cause (FIND-D + GAP-D-budget-empirical, both expressed in the single residual `residual-per-section-budget-not-empirically-closed`). This matches Plan 07-17 self-assessment. The empirical regression is real and load-bearing for Phase 7 sealing.
+
+### Cross-reference: 3x re-run gate evidence (logs verified by independent reading)
+
+Independent reading of `regression-gate-0.13.0/D-reviewer-budget-3x.log` and `regression-gate-0.13.0/D-security-reviewer-budget-3x.log` confirms the verdicts in Plan 07-17 closure_amendment with one labelling-clarity caveat:
+
+| Fixture                          | Plan 07-17 closure_amendment verdict | Independent verdict (per-run breakdown)                                                                                                                                                                                                                                                                                                                                                                          | Match              |
+| -------------------------------- | ------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------ |
+| D-reviewer-budget.sh 3x          | FAIL_2_of_3                           | FAIL_2_of_3 (run 1+3 PASS; run 2 CCP 162w over 160w cap = 2w over; verdict line at log:107)                                                                                                                                                                                                                                                                                                                       | YES                |
+| D-security-reviewer-budget.sh 3x | FAIL_1_of_3                           | 2-of-3-FAIL: log:138 says "Pass count: 1 of 3 / Fail count: 2 of 3"; runs 2+3 both FAIL with distinct failure modes (run 2 shape regression to paragraph-bullet variant; run 3 entry 4 outlier 34w over 28w soft cap = 6w over). The verdict label "FAIL_1_of_3" at log:156 is **semantically ambiguous** -- it appears to encode "1 of 3 PASSED" not "1 of 3 FAILED". | NO (label clarity) |
+
+**Independent verdict on the 3x gate:** the empirical FAIL is REAL and slightly STRONGER than the closure_amendment text suggests on D-security-reviewer. The literal verdict label `FAIL_1_of_3` carried into the closure_amendment empirical_gate.d_security_reviewer_budget_3x section faithfully matches the log header by string match, but the per-run breakdown shows 2 of 3 runs FAILED, not 1 of 3. **Combined gate: 3 of 6 runs FAIL across both fixtures** (Plan 07-17 line 109 of summary correctly states "3 of 6 runs failed" -- the aggregate Combined gate verdict FAIL is unambiguous and correct).
+
+**Recommendation for Phase 8:** disambiguate the verdict label convention. Either rename to `FAIL_PASS_1_of_3` / `FAIL_2_of_3` (encoding pass count) or `FAIL_2_of_3_FAILED` / `FAIL_2_of_3_FAILED` (encoding fail count) consistently across both logs. The current label-shape is internally consistent but cognitively-ambiguous when read at-a-glance.
+
+### Code review WR-01/02/03 contradictions: PARTIAL ROOT CAUSE for prompt-binding leak
+
+Independent reading of `agents/reviewer.md:144` and `agents/security-reviewer.md:151` against `07-REVIEW-GAPS-3.md` WR-01 + WR-02 + WR-03 CONFIRMS the code-review findings. The new XML `<output_constraints>` block (Plan 07-14) declares `<aggregate_cap>none</aggregate_cap>` but the post-XML narrative prose still asserts the old aggregate-300w cap as MUST-binding. Specifically:
+
+- **WR-01 confirmed at `agents/reviewer.md:144`:** Sentence reads "The executor MUST count words in their own output and stay <=300w aggregate; the per-finding 20w target is GUIDANCE." This sits ~16 lines above the XML block at lines 160-187 (which declares `<aggregate_cap>none</aggregate_cap>` at line 180). A model reading the prompt sees BOTH "MUST stay <=300w aggregate" AND "aggregate cap: none" within the same Output Constraint section. The "MUST" framing is the more imperative directive; the model has no deterministic resolution path.
+
+- **WR-02 confirmed at `agents/security-reviewer.md:151`:** Sentence reads "The aggregate <=300w cap remains binding regardless of per-finding distribution." This is even MORE explicit than WR-01 ("remains binding"); it directly contradicts the `<aggregate_cap>none</aggregate_cap>` line at security-reviewer.md:185 within the SAME Output Constraint section. The contradiction is internal to a single section read by the model in a single pass.
+
+- **WR-03 confirmed at `agents/reviewer.md:123` and `agents/security-reviewer.md:131`:** Both files introduce their holistic worked example with "fitting under 300w" framing. This is a leftover anchor from the aggregate-cap regime; a model parsing the example treats 300w as an implicit pass criterion despite the new XML.
+
+**Hypothesis (independent assessment):** The 3x gate failures observed in Plan 07-17's empirical evidence are PARTIALLY explained by these prose-XML contradictions. Specifically:
+
+1. **D-reviewer run 2 CCP 162w breach:** consistent with a model that allocated more words to the Cross-Cutting Patterns section because the "stay under 300w aggregate" prose freed up budget once Findings entries came in low (3 entries of 16/14/11w = 41w total). With the XML alone the per-section CCP cap of 160w would have been the binding constraint; the contradicting prose may have caused the model to optimize against the aggregate target (3 + 41 + 162 = ~206w total = comfortably under 300w aggregate prose constraint) rather than against the per-section CCP cap.
+
+2. **D-security-reviewer run 3 entry 4 outlier 34w:** consistent with the WR-01-adjacent prose at security-reviewer.md:151 explicitly noting the auto-clarity carve-out (Finding 7 with CVE-2025-1234) takes ~50w which is "well above the per-finding target and that is INTENTIONAL". The model may be reading this as license to emit 34w on a non-CVE finding because the auto-clarity precedent normalized supra-target entries.
+
+3. **D-security-reviewer run 2 shape regression to paragraph-bullet variant:** the WR-03 holistic example framing ("fitting under 300w") may be inducing form-flexibility -- the model picks an alternate emission shape that achieves the implicit aggregate target rather than honoring the fragment-grammar pattern asserted by the XML.
+
+**Recoverability:** The prose-XML contradictions are MECHANICAL 2-3-line text edits per `07-REVIEW-GAPS-3.md` WR-01/02/03 suggested fixes. If Phase 8 lands those edits BEFORE re-running the 3x gate, the empirical disposition may shift -- potentially closing the regression without architectural redesign. The closure_amendment_2026_05_06_per_section_budgets cross_pollination_disposition section already RECOMMENDS the counterfactual rollback experiment (Q2c) for Phase 8; this independent verification ADDS that the WR-01/02/03 fix should be tested FIRST as a less-invasive intervention.
+
+**This recoverability does NOT change Phase 7 status.** The empirical FAIL on plugin 0.13.0 is the load-bearing closure-criterion; until Phase 8 resolves the contradictions and re-runs the gate to 3/3 PASS on both fixtures, FIND-D + GAP-D-budget-empirical remain OPEN against the new per-section contract.
+
+### Cross-reference: must-have artifacts from Plans 07-14..07-17 against codebase state
+
+| Artifact                                                 | Expected                                                                       | Independent verification                                                                                                                                              | Status                          |
+| -------------------------------------------------------- | ------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------- |
+| `agents/reviewer.md` `<output_constraints>` XML block    | XML present at lines 160-187; aggregate_cap=none; Plan 07-14 contract           | VERIFIED (read inline)                                                                                                                                                 | PASS structurally                |
+| `agents/security-reviewer.md` `<output_constraints>` XML | XML at lines 165-192; threat_patterns variant; aggregate_cap=none; Plan 07-14   | VERIFIED (read inline)                                                                                                                                                 | PASS structurally                |
+| `D-reviewer-budget.sh` per-section parser                | PFV parser added; aggregate-cap assertion REMOVED; Plan 07-15 contract          | VERIFIED via 07-15 SUMMARY acceptance criteria + log evidence (PASS runs 1+3 emit "[OK] Per-finding validation: <N> entries" + "[OK] Cross-Cutting Patterns: <Nw> (<=160 cap)") | PASS structurally                |
+| `D-security-reviewer-budget.sh` per-section parser       | Mirror shape; threat_patterns variant; PFV parser; Plan 07-15 contract          | VERIFIED via 07-15 SUMMARY + log evidence                                                                                                                              | PASS structurally                |
+| `regression-gate-0.13.0/D-reviewer-budget-3x.log`        | 3 runs; verdict line; per-run breakdown                                         | VERIFIED (read inline)                                                                                                                                                 | PASS structurally; FAIL_2_of_3   |
+| `regression-gate-0.13.0/D-security-reviewer-budget-3x.log` | 3 runs; verdict line; per-run breakdown                                       | VERIFIED (read inline)                                                                                                                                                 | PASS structurally; 2-of-3-FAIL (label "FAIL_1_of_3" semantically ambiguous) |
+| Plugin 0.13.0 atomic 5-surface stamp                     | plugin.json + 4 SKILL.md frontmatter; zero stale-version remnants               | VERIFIED via 07-17 SUMMARY acceptance criteria                                                                                                                          | PASS structurally                |
+| `closure_amendment_2026_05_06_per_section_budgets` block | H2 heading at line 894; all 18 required fields present                          | VERIFIED (read inline at lines 894-1014)                                                                                                                                | PASS structurally                |
+| `B-pv-validation.sh` Assertion 6 (FIND-B.2-format-scope) | 6 assertions; not regressed by Plans 07-14..07-17                               | VERIFIED via prior empirical_subverification_2026_05_05 (5 OK + 1 SKIP-as-N/A on a single fixture; covered naturally in fuller UAT chain on 0.12.1)                     | PASS structurally + PARTIAL emp. |
+| `agents/advisor.md` fragment-grammar template            | Plan 07-10 contract preserved; not modified by Plans 07-14..07-17               | VERIFIED inferentially (Plans 07-14 + 15 modify only reviewer.md + security-reviewer.md per 07-14-SUMMARY key-files; Plan 07-16 logs only; Plan 07-17 plugin.json + SKILL.md only) | PASS structurally; advisor 100w-cap binding empirically falsified at fixture grade per Plan 07-16 (n=1 evidence; needs n>=3 in Phase 8) |
+| 4-skill byte-identical `<context_trust_contract>` canon  | 3 cross-file diffs exit 0                                                       | VERIFIED via prior structural_verification_2026_05_05 (4_of_4_byte_identical) + Plans 07-14..07-17 do not touch SKILL.md `<context_trust_contract>` blocks               | PASS structurally                |
+| Tool grants on advisor + reviewer + security-reviewer    | `["Read", "Glob"]` x 3 unchanged                                                | VERIFIED via prior structural_verification_2026_05_05 + Plans 07-14..07-17 do not touch tool grants                                                                      | PASS structurally                |
+
+**Score:** 11 of 11 must-have artifacts structurally PASS; 2 of 11 have empirical caveats (Plans 07-14/15 per-section contract empirically FAIL at 3x gate; Plan 07-10 advisor fragment-grammar empirically FAIL at fixture grade n=1).
+
+### Independent gap structuring (for Phase 8 closure planning)
+
+The gaps_found verdict surfaces the following structured gaps. These are NEW gaps relative to the prior `final_closure_2026_05_05_post_07_12_07_13` block (which sealed Phase 7 with status `passed_with_residual` after Plans 07-12 + 07-13 closure):
+
+```yaml
+gaps:
+  - truth: "FIND-D + GAP-D-budget-empirical empirically closed against per-section contract on plugin 0.13.0"
+    status: failed
+    reason: |
+      Plan 07-17 3x re-run gate FAIL on both fixtures: D-reviewer FAIL_2_of_3 (run 2 CCP 162w over 160w cap),
+      D-security-reviewer 2-of-3-fail (label FAIL_1_of_3 in log header is semantically ambiguous; per-run
+      breakdown shows 2 of 3 FAIL: run 2 shape regression to paragraph-bullet variant, run 3 entry 4
+      outlier 34w over 28w soft cap). Combined gate: 3 of 6 runs FAIL.
+    artifacts:
+      - path: "plugins/lz-advisor/agents/reviewer.md"
+        issue: "Line 144 prose asserts MUST-binding aggregate-300w cap contradicting <aggregate_cap>none</aggregate_cap> at line 180. WR-01."
+      - path: "plugins/lz-advisor/agents/security-reviewer.md"
+        issue: "Line 151 prose asserts aggregate-300w cap remains binding contradicting <aggregate_cap>none</aggregate_cap> at line 185. WR-02."
+      - path: "plugins/lz-advisor/agents/reviewer.md"
+        issue: "Line 123 holistic example introduction frames `fitting under 300w` -- legacy aggregate-cap anchor. WR-03."
+      - path: "plugins/lz-advisor/agents/security-reviewer.md"
+        issue: "Line 131 holistic example introduction frames `fitting under 300w` -- legacy aggregate-cap anchor. WR-03."
+    missing:
+      - "Apply WR-01 fix: replace line-144 reviewer.md MUST-prose with text aligning to the new XML contract per 07-REVIEW-GAPS-3.md suggested fix"
+      - "Apply WR-02 fix: replace line-151 security-reviewer.md aggregate-binding prose with text aligning to the new XML contract per 07-REVIEW-GAPS-3.md suggested fix"
+      - "Apply WR-03 fix: replace `fitting under 300w` framing in both holistic examples per 07-REVIEW-GAPS-3.md suggested fix"
+      - "Re-run 3x gate on plugin 0.13.0 (or 0.13.1 PATCH if WR-01/02/03 fixes warrant a version bump) AFTER mechanical fixes; expect 3/3 PASS on both fixtures"
+      - "If WR-01/02/03 fix alone does not close to 3/3 PASS, escalate to per-section cap recalibration (CCP 160 -> 180w; outlier soft cap 28 -> 32w) per closure_amendment Phase 8 step b"
+      - "If WR-01/02/03 fix + recalibration BOTH fail to close at 3/3 PASS, escalate to architectural redesign per closure_amendment Phase 8 step c (hybrid contract: XML schema + repeated prose admonition + few-shot examples per section)"
+      - "Update REQUIREMENTS.md GAP-D-budget-empirical definition to reflect the new per-section contract shape (line-73 still cites the dropped aggregate-300w contract; documentation debt)"
+  - truth: "Advisor 100w cap empirically holds at fixture grade across heterogeneous scenarios"
+    status: partial
+    reason: |
+      Plan 07-16 fixture-grade FAIL on plugin 0.12.2 + Compodoc scenario (155w vs 100w cap; 3 of 9 items
+      over per-item outlier; items 3/5/7 carry inline configuration code that fragment-grammar template
+      binding does not compress). n=1 evidence; needs n>=3 across heterogeneous scenarios (Compodoc,
+      generic feature implementation, refactor) before declaring structural advisor redesign needed.
+    artifacts:
+      - path: "plugins/lz-advisor/agents/advisor.md"
+        issue: "Plan 07-10 fragment-grammar template at line 60 binds prose advice but not inline-code-block advice; n=1 fixture fail on Compodoc scenario"
+    missing:
+      - "Re-run D-advisor-budget extraction across n>=3 heterogeneous scenarios (Compodoc, generic feature, refactor) to size whether per-section advisor budget redesign is warranted vs n=1 outlier-rejection"
+      - "If n>=3 confirms structural regression, redesign advisor.md per-section budget contract analogous to reviewer + security-reviewer; bundle with WR-01/02/03 fixes for Phase 8 single-bump version coordination"
+
+deferred:
+  - truth: "wip-discipline rule removal per user directive 2026-05-03"
+    addressed_in: "Phase 8"
+    evidence: |
+      final_closure_2026_05_05_post_07_12_07_13 sealing block + memory feedback_no_wip_commits.md;
+      rule fires per spec on plugin 0.12.0 / 0.12.1 / 0.12.2 across S2 + S6 + S8 commits but rejected
+      as project-level workflow choice. Phase 8 must REMOVE rule from `lz-advisor.execute/SKILL.md` +
+      path-d assertion from `E-verify-before-commit.sh` + GAP-G2-wip-scope row from `REQUIREMENTS.md`;
+      bump plugin 0.13.0 -> 0.14.0 MINOR (or coordinate with Phase 8 per-section + WR-01/02/03 fix
+      version bump as a single 0.13.0 -> 0.14.0 MINOR for two contract-shape changes if timeline aligns).
+  - truth: "WR-04 + WR-05 (context-packaging.md schema BNF + worked-example demo legacy severity values)"
+    addressed_in: "Phase 8"
+    evidence: |
+      final_closure_2026_05_05_post_07_12_07_13 sealing block lines 749-751 + 763-764; mechanical 1-line
+      edits in same Phase 8 commit as schema parity wave; non-blocking for Phase 7.
+  - truth: "P8-03 + P8-12 + P8-18 from project_phase_8_candidates_post_07.md"
+    addressed_in: "Phase 8"
+    evidence: |
+      project_phase_8_candidates_post_07.md (memory) + closure_amendment_2026_05_05_severity_vocabulary_alignment
+      Phase 8 worklist; not regressed by Plans 07-14..07-17.
+```
+
+### Independent Phase 8 worklist re-prioritization (recommended)
+
+Plan 07-17 closure_amendment Phase 8 worklist is the right scope for re-engagement. This independent verification ADDS that the WR-01/02/03 fix should be tested FIRST as a less-invasive intervention. Re-prioritized order:
+
+1. **NEW (highest priority; mechanical):** Apply WR-01 + WR-02 + WR-03 fixes per `07-REVIEW-GAPS-3.md` suggested-fix blocks. Three text edits totalling ~10 lines across reviewer.md + security-reviewer.md. Expected duration: ~5min editor time + bump plugin 0.13.0 -> 0.13.1 PATCH.
+2. **Was step a in closure_amendment:** Re-run 3x gate on plugin 0.13.1 (or counterfactual rollback at 0.13.0-rollback). If 3/3 PASS on both fixtures, the contradictions WERE the partial root cause and Phase 7 closure for FIND-D + GAP-D-budget-empirical can be empirically sealed. If still FAIL, proceed to step 3.
+3. **Was step b in closure_amendment:** Per-section cap recalibration (CCP 160 -> 180w; outlier soft cap 28 -> 32w). Re-run 3x; if 3/3 PASS, close. If still FAIL, proceed to step 4.
+4. **Was step c in closure_amendment:** Hybrid contract architectural redesign (XML schema + repeated prose admonition + few-shot examples per section). Architecture-grade redesign; only after steps 1-3 fail.
+5. **Was step d in closure_amendment:** Bundle Plan 07-16 advisor verdict; n>=3 advisor re-run + per-section advisor redesign if confirmed.
+6. **Carried forward from final_closure_2026_05_05:** Wip-discipline reversal (residual-wip-discipline-reversal); WR-04 + WR-05 schema parity wave; P8-03 + P8-12 + P8-18.
+
+This re-prioritization preserves the closure_amendment's recommended Phase 8 next steps but inserts the WR-01/02/03 fix as a low-cost first-attempt intervention.
+
+### Phase 7 sealing verdict: UNREADY (CONFIRMED)
+
+Phase 7 sealing remains UNREADY post-Plan-07-17 per the closure_amendment_2026_05_06_per_section_budgets self-assessment. The single Phase 7 in-phase residual (`residual-per-section-budget-not-empirically-closed`) blocks sealing until Phase 8 closes it via the worklist re-prioritization above. The other 2 residuals (`residual-wip-discipline-reversal` + `residual-advisor-fragment-grammar-not-binding-on-code-blocks`) are out-of-scope for in-phase Phase 7 closure (the first by user directive 2026-05-03; the second by Plan 07-14 explicit scope decision per 07-RESEARCH-GAP-3).
+
+**Status field disposition:** the existing frontmatter `status: failed_gap_closure_3` is correct; this independent verification CONFIRMS the value. No frontmatter edit is required.
+
+**Anti-pattern scan (independent, light):** the WR-01/02/03 contradictions in `agents/reviewer.md:144` + `agents/security-reviewer.md:151` + holistic-example introductions are the only Warning-class anti-patterns surfaced by the gap-closure-3 review (`07-REVIEW-GAPS-3.md`). They are NOT critical (the XML contract is structurally correct; the prose is leftover documentation that misleads the model), they are NOT security-bearing, and they have a documented mechanical fix path. No new anti-patterns surfaced by this independent verification beyond the WR-01/02/03 set already identified.
+
+**Score reconciliation with prior verification blocks:**
+
+- `final_closure_2026_05_05_post_07_12_07_13` reported 16/16 must-haves structurally verified (Phase 7 sealing-ready as `passed_with_residual`).
+- `closure_amendment_2026_05_06_per_section_budgets` reconfirmed 15/15 structurally + empirically across 11 plans BUT empirical 3x gate FAIL on Plans 07-14 + 07-15 + 07-17 per-section contract redesign; status downgraded to `failed_gap_closure_3`.
+- This `independent_verification_2026_05_06` block confirms 14/16 closed + 2 OPEN (FIND-D + GAP-D-budget-empirical, both expressed in `residual-per-section-budget-not-empirically-closed`); + 1 closed-structurally Phase-8-reversal (`residual-wip-discipline-reversal`); + 1 partial advisor regression (`residual-advisor-fragment-grammar-not-binding-on-code-blocks`).
+- The 2 verifications converge: Phase 7 is NOT sealing-ready until Phase 8 closes the per-section regression empirically. The only divergence is the 3x gate label-clarity caveat on D-security-reviewer (FAIL_1_of_3 label vs 2-of-3-FAIL semantic) which does not change verdict polarity (combined gate FAIL is unambiguous).
+
+_Independent verification block written: 2026-05-06_
+_Verifier: Claude (gsd-verifier; goal-backward audit external to Plan 07-17)_
