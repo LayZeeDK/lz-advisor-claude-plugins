@@ -1,0 +1,39 @@
+## Review Summary
+
+Reviewed: commit `fd5f6bc` -- `review-src/handler.ts` and `review-src/validate.ts` (2 new files, 9 lines total)
+
+### Findings
+
+`review-src/handler.ts:6-8` -- **Critical** -- `JSON.parse` lacks try/catch; malformed body throws `SyntaxError` to caller. Wrap in try/catch returning typed error/null.
+
+`review-src/handler.ts:1-3` -- **Important** -- truthy guard admits `Buffer`/object/number; `JSON.parse` coerces via `toString()` producing silent `SyntaxError`. Add `typeof req.body === 'string'` check.
+
+`review-src/handler.ts:1-8` -- **Important** -- `validate` exported but never invoked; commit labels handler "unvalidated". Import `validate` and reject when `validate(parsed)` is false.
+
+`review-src/handler.ts:1,6`, `review-src/validate.ts:1` -- **Suggestion** -- implicit `any` on all params hides Finding 2 at compile time. Annotate `req: { body?: string }`, `data: string`, `x: unknown`.
+
+`review-src/handler.ts:8` -- **Important** (additional) -- no schema validation post-parse; `JSON.parse` accepts any valid JSON (numbers, arrays, nulls, hostile objects). Validate shape with zod or hand-rolled type guard before returning.
+
+`review-src/validate.ts:1` -- **Suggestion** (additional) -- `validate` name misleading; only checks non-null. Rename `isNonNullish` or expand to schema-aware check matching handler's needs.
+
+---
+
+**Per-finding validation**
+
+- **Finding 1 (Critical, confirmed):** `JSON.parse` throws synchronously and the function provides no error channel. Callers cannot distinguish "empty body" (returns `null`) from "invalid JSON" (throws). The error contract must be explicit -- return `null`, return a Result type, or document the throw.
+
+- **Finding 2 (Important, confirmed, minor correction):** The Buffer coercion path is real -- Express with `express.raw()` delivers `req.body` as a `Buffer`; `JSON.parse(buffer)` calls `Buffer.prototype.toString()` which returns decoded UTF-8 (not `"[object Object]"` as the scan noted -- the correction applies to the object case: a plain object from body-parser's JSON middleware gives `"[object Object]"` and throws). Severity holds.
+
+- **Finding 3 (Important, confirmed):** Dead export plus commit intent ("unvalidated handler") makes this a structural gap. The schema-validation fix (Finding 5) subsumes it -- `validate` as written is too weak regardless.
+
+- **Finding 4 (Suggestion, confirmed):** Type annotations would surface Findings 2 and 3 via `tsc --strict`. Worth pairing with `"strict": true` in `tsconfig.json` rather than annotation-by-annotation.
+
+---
+
+### Cross-Cutting Patterns
+
+Findings 1, 2, 3, and 5 share a single root cause: the handler treats `req.body` as trusted, parseable, and shape-correct without any boundary validation. The fix is one schema-validating entry point (zod / valibot / hand-rolled type guard) that replaces the truthy check, the bare `JSON.parse`, and the unused `validate` helper in one refactor. Finding 4 (missing types) is the compile-time corollary of the same trust gap -- `strict` mode plus annotated boundaries would have flagged Findings 2 and 3 mechanically.
+
+No `tsconfig.json` visible in scope; verify `strict`/`noImplicitAny` are enabled project-wide so type annotations actually gate future regressions.
+
+**Verdict scope:** scope: api-correctness

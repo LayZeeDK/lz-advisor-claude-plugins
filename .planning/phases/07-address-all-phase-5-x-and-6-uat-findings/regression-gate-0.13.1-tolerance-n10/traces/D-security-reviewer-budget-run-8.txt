@@ -1,0 +1,45 @@
+## Security Review Summary
+
+Reviewed: `review-src/handler.ts` and `review-src/validate.ts` (commit 97e1bce -- "add unvalidated handler with JSON.parse for security-reviewer scenario")
+
+---
+
+### Findings
+
+`review-src/handler.ts:7: crit: [A04]` `JSON.parse(data)` lacks try/catch; SyntaxError on malformed input crashes process or leaks stack via 500. Wrap in try/catch, return 400.
+
+`review-src/handler.ts:2-7: crit: [A04]` Unbounded `req.body` to `JSON.parse` enables DoS via deep nesting / oversized payload. Enforce body size cap + depth-limited parser (e.g., `secure-json-parse`).
+
+`review-src/handler.ts:7: imp: [A08]` `JSON.parse` permits `__proto__`/`constructor.prototype` keys reaching downstream sinks. Use `secure-json-parse` with `protoAction:'remove'`.
+
+`review-src/validate.ts:1: imp: [A04]` `validate` exported but never imported in `handler.ts`; dead defense layer. Import and gate `process()` behind schema validation (zod/ajv).
+
+`review-src/validate.ts:1: imp: [A04]` `x != null` accepts any non-null (oversized blobs, prototype-poisoning objects). Replace with typed schema validator enforcing type/length/shape.
+
+`review-src/handler.ts:1,6; review-src/validate.ts:1: sug: [A04]` Implicit `any` on `req`/`data`/`x` disables compile-time defense; `JSON.parse(object)` would coerce silently. Enable `noImplicitAny`, type `data: string`.
+
+`review-src/handler.ts:2: sug: [A09]` No logging on parse failure or rejected input; attacker probing is invisible. Log structured parse errors with request id, no payload echo.
+
+### Per-finding validation
+
+Validation of Finding 1: Confirmed Critical. Mapping revised from A05 to A04 Insecure Design -- absent error handling around an untrusted-input sink is a design omission, not a misconfiguration. Stack trace exposure is runtime-dependent (Express dev mode, Fastify default 500); confirm framework before assuming leak.
+
+Validation of Finding 2: Confirmed Critical. Primary mapping is A04 Insecure Design (no rate/size/depth guard); A03 does not fit (no injection sink, just resource exhaustion). Modern V8 `JSON.parse` does not stack-overflow on nesting (iterative since ~Node 12), but heap exhaustion via large arrays/strings remains exploitable; size cap is the load-bearing fix.
+
+Validation of Finding 3: Confirmed Important, recategorized A04. The dead-code defense pattern is the classic "Insecure Design" failure -- a control exists in the codebase but is not wired into the request path.
+
+Validation of Finding 4: Confirmed Important, recategorized A04. Added prototype-pollution angle: `JSON.parse` returns objects with attacker-controlled `__proto__` if downstream uses unsafe merge/assign (separate finding 3 above on handler.ts:7).
+
+Validation of Finding 5: Confirmed Suggestion, recategorized A04. Type system is defense-in-depth, not a primary control; severity stays low.
+
+### Threat Patterns
+
+Findings 1+2+4+5 chain into a single root cause: handler.ts treats `req.body` as trusted because no design-layer contract (validation, typing, error handling, size limits) exists between network ingress and `JSON.parse`. Finding 3 (orphaned `validate`) is the smoking gun -- a defense was authored but never wired in, indicating the design gap is known but unaddressed. An unauthenticated attacker sending one malformed or oversized POST achieves DoS (Finding 2) plus information disclosure via stack trace (Finding 1) plus potential prototype pollution into downstream consumers (added A08 finding) in a single request. Gate-block: do not ship without schema validation + size cap + try/catch + secure-json-parse.
+
+### Missed surfaces (optional)
+
+Downstream consumers of `process()` return value unscanned -- if any caller does `Object.assign({}, parsed)` or lodash `merge`, prototype pollution from `__proto__` keys becomes RCE-adjacent.
+
+---
+
+**Verdict scope:** scope: security-threats

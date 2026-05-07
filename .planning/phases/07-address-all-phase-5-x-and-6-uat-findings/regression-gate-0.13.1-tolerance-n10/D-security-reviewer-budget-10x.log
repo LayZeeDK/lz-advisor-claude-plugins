@@ -1,0 +1,479 @@
+# D-security-reviewer-budget.sh 10x re-run on plugin 0.13.1 (assembled via parser replay against captured traces)
+# Generated: 2026-05-07T21:57:44Z
+# Plugin version: 0.13.1
+# Contract: per-section budgets per Plan 07-14 <output_constraints> XML; aggregate cap dropped; smoke +10% gate tolerance applied
+# Fixture: .planning/phases/05.4-address-uat-findings-a-k/smoke-tests/D-security-reviewer-budget.sh
+# Trace cache: .planning/phases/07-address-all-phase-5-x-and-6-uat-findings/regression-gate-0.13.1-tolerance-n10/traces (10 runs preserved for future --from-trace replay)
+
+=== Run 1 ===
+Run 1: EXIT 1 (FAIL)
+
+--- Run 1 output (full) ---
+[INFO] Replay mode: using trace .planning/phases/07-address-all-phase-5-x-and-6-uat-findings/regression-gate-0.13.1-tolerance-n10/traces/D-security-reviewer-budget-run-1.txt (skipping claude -p)
+[OK] Security-reviewer output sections present: Findings=1 TP=1
+[INFO] Fragment-grammar shape detected (security): 6 finding line(s)
+[OK] Finding line 1: 22 words (<=22 target)
+[OK] Finding line 2: 21 words (<=22 target)
+[OK] Finding line 3: 18 words (<=22 target)
+[OK] Finding line 4: 21 words (<=22 target)
+[OK] Finding line 5: 22 words (<=22 target)
+[OK] Finding line 6: 21 words (<=22 target)
+[INFO] Total findings: 6; bad: 0
+[INFO] Per-finding validation: 3 entries
+[ERROR] Per-finding validation entry 1: 67 words (>66 outlier soft cap; target <=60w)
+[OK] Per-finding validation entry 2: 31 words (<=60 target)
+[OK] Per-finding validation entry 3: 19 words (<=60 target)
+[OK] Threat Patterns: 79 words (<=160 target)
+[OK] Missed surfaces: 24 words (<=30 target)
+--- security-reviewer output (last 200 lines) ---
+## Security Review Summary
+
+Reviewed: `review-src/handler.ts` and `review-src/validate.ts` -- last commit (`1557849`, "add unvalidated handler with JSON.parse for security-reviewer scenario")
+
+### Findings
+
+`review-src/handler.ts:6-8: crit: [A08] JSON.parse on attacker-controlled req.body enables prototype pollution via __proto__ payload on Node<23. Reject __proto__/constructor keys via reviver or use safe parser (secure-json-parse).`
+`review-src/handler.ts:6-8: imp: [A03] JSON.parse lacks try/catch; SyntaxError on malformed input crashes process or leaks stack trace. Wrap in try/catch, return 400 on parse failure.`
+`review-src/handler.ts:1-3: imp: [A04] exported validate never imported in handler; defense-in-depth bypassed entirely. Import and gate process() behind validate(req.body) plus schema check.`
+`review-src/validate.ts:1: imp: [A04] validate(x) only checks x != null; permits any payload shape. Replace with schema validator (zod/ajv) enforcing type, structure, and length bounds.`
+`review-src/handler.ts:5: sug: [A09] handle() returns null on missing body with no logging; failed/malformed requests leave no audit trail. Add structured logging on validation/parse failure paths.`
+`review-src/handler.ts:2: sug: [A04] handler signature lacks TypeScript types (req:any implicit); type system cannot catch shape mismatches. Type req as {body?: string} and enable strict/noImplicitAny.`
+
+### Per-finding validation
+
+Validation of Finding 1: Severity confirmed Critical, but primary OWASP tag revised from A03 to A08 (Software and Data Integrity Failures) -- prototype pollution is the integrity-violation vector, not classical injection. Note: Node.js 21+ JSON.parse still preserves `__proto__` as own-property (not pollution by itself); pollution occurs when downstream code merges/assigns the parsed object into another via Object.assign/lodash.merge/spread-into-prototype patterns. Severity remains Critical because such sinks are common and not visible in scope.
+
+Validation of Finding 2: Severity confirmed Important, OWASP retagged from A03 to A04 (Insecure Design) -- the defense exists but the wiring is absent; this is a design/integration flaw, not an injection class per se.
+
+Validation of Finding 4: Severity confirmed Suggestion-to-Important; upgraded to Important because combined with Finding 2 it represents the entire input-validation layer being non-functional.
+
+### Threat Patterns
+
+Findings 2+1 chain into the dominant attack path: validate() is never invoked (Finding 2), so attacker-controlled req.body reaches JSON.parse unchecked (Finding 1), enabling both prototype pollution (Critical) and parse-crash DoS (Finding 3). Finding 4 compounds: even if Finding 2 were fixed, the validator itself is a no-op, so the chain remains open. Root cause is systemic: input-trust boundary is absent end-to-end. Single fix (zod schema + safe-parse + wired validate call) closes findings 1, 2, 3, and 4 simultaneously.
+
+### Missed surfaces (optional)
+
+Downstream consumers of `process()` return value not in scope; if any caller does `Object.assign({}, parsed)` or lodash.merge, prototype pollution becomes immediately exploitable beyond theoretical.
+
+**Verdict scope:** scope: security-threats
+--- end Run 1 output ---
+
+=== Run 2 ===
+Run 2: EXIT 0 (PASS)
+
+--- Run 2 output (full) ---
+[INFO] Replay mode: using trace .planning/phases/07-address-all-phase-5-x-and-6-uat-findings/regression-gate-0.13.1-tolerance-n10/traces/D-security-reviewer-budget-run-2.txt (skipping claude -p)
+[OK] Security-reviewer output sections present: Findings=1 TP=1
+[INFO] Fragment-grammar shape detected (security): 4 finding line(s)
+[OK] Finding line 1: 17 words (<=22 target)
+[OK] Finding line 2: 17 words (<=22 target)
+[OK] Finding line 3: 17 words (<=22 target)
+[WARN] Finding line 4: 27 words (>22 target but <=28 outlier; acceptable)
+[INFO] Total findings: 4; bad: 0
+[INFO] Per-finding validation: 4 entries
+[OK] Per-finding validation entry 1: 54 words (<=60 target)
+[OK] Per-finding validation entry 2: 45 words (<=60 target)
+[OK] Per-finding validation entry 3: 45 words (<=60 target)
+[OK] Per-finding validation entry 4: 35 words (<=60 target)
+[OK] Threat Patterns: 86 words (<=160 target)
+[OK] Missed surfaces: 29 words (<=30 target)
+[SUCCESS] D-security-reviewer-budget.sh: per-section budgets enforced (entries <=22w/28w outlier, Per-finding validation <=60w/66w outlier, Threat Patterns <=160w/176w outlier, Missed surfaces <=30w/33w outlier; aggregate cap dropped per Plan 07-14; gate-tolerance +10% at test layer only, agent XML targets stay canonical)
+--- end Run 2 output ---
+
+=== Run 3 ===
+Run 3: EXIT 0 (PASS)
+
+--- Run 3 output (full) ---
+[INFO] Replay mode: using trace .planning/phases/07-address-all-phase-5-x-and-6-uat-findings/regression-gate-0.13.1-tolerance-n10/traces/D-security-reviewer-budget-run-3.txt (skipping claude -p)
+[OK] Security-reviewer output sections present: Findings=1 TP=1
+[INFO] Fragment-grammar shape detected (security): 4 finding line(s)
+[WARN] Finding line 1: 26 words (>22 target but <=28 outlier; acceptable)
+[OK] Finding line 2: 21 words (<=22 target)
+[WARN] Finding line 3: 24 words (>22 target but <=28 outlier; acceptable)
+[WARN] Finding line 4: 28 words (>22 target but <=28 outlier; acceptable)
+[INFO] Total findings: 4; bad: 0
+[INFO] Per-finding validation: 2 entries
+[OK] Per-finding validation entry 1: 42 words (<=60 target)
+[OK] Per-finding validation entry 2: 49 words (<=60 target)
+[OK] Threat Patterns: 93 words (<=160 target)
+[OK] Missed surfaces: 26 words (<=30 target)
+[SUCCESS] D-security-reviewer-budget.sh: per-section budgets enforced (entries <=22w/28w outlier, Per-finding validation <=60w/66w outlier, Threat Patterns <=160w/176w outlier, Missed surfaces <=30w/33w outlier; aggregate cap dropped per Plan 07-14; gate-tolerance +10% at test layer only, agent XML targets stay canonical)
+--- end Run 3 output ---
+
+=== Run 4 ===
+Run 4: EXIT 1 (FAIL)
+
+--- Run 4 output (full) ---
+[INFO] Replay mode: using trace .planning/phases/07-address-all-phase-5-x-and-6-uat-findings/regression-gate-0.13.1-tolerance-n10/traces/D-security-reviewer-budget-run-4.txt (skipping claude -p)
+[OK] Security-reviewer output sections present: Findings=1 TP=1
+[INFO] Fragment-grammar shape detected (security): 4 finding line(s)
+[OK] Finding line 1: 22 words (<=22 target)
+[OK] Finding line 2: 22 words (<=22 target)
+[WARN] Finding line 3: 24 words (>22 target but <=28 outlier; acceptable)
+[ERROR] Finding line 4: 33 words (>28 outlier soft cap; target <=22w)
+[INFO] Total findings: 4; bad: 1
+[INFO] Per-finding validation: 4 entries
+[OK] Per-finding validation entry 1: 47 words (<=60 target)
+[OK] Per-finding validation entry 2: 45 words (<=60 target)
+[OK] Per-finding validation entry 3: 32 words (<=60 target)
+[OK] Per-finding validation entry 4: 38 words (<=60 target)
+[OK] Threat Patterns: 94 words (<=160 target)
+[OK] Missed surfaces: 29 words (<=30 target)
+--- security-reviewer output (last 200 lines) ---
+## Security Review Summary
+
+Reviewed: `review-src/handler.ts` and `review-src/validate.ts` (commit `9fbd69b` -- "add unvalidated handler with JSON.parse for security-reviewer scenario")
+
+### Findings
+
+`review-src/handler.ts:1-8,review-src/validate.ts:1: imp: [A03] `validate` defined but never imported; `req.body` flows raw to `JSON.parse`. Import + call `validate` at handler entry, then schema-validate (zod/ajv) before parsing.`
+
+`review-src/handler.ts:7: imp: [A04] `JSON.parse` lacks try/catch; malformed body throws SyntaxError reachable by any client (DoS / stack leak). Wrap in try/catch, return 400 on failure.`
+
+`review-src/handler.ts:7: imp: [A03] parsed object retains attacker `__proto__`/`constructor` keys, polluting prototype if downstream merges. Use `JSON.parse(data, (k,v) => k==="__proto__"||k==="constructor"?undefined:v)` or schema validator that strips them.`
+
+`review-src/handler.ts:2: sug: [A04] `if (req.body)` falsy guard accepts arrays/objects; non-string input coerces to `"[object Object]"` and throws. Replace with `typeof req.body === "string" && req.body.length > 0`.`
+
+`review-src/handler.ts:1-3: q: [A01] `handle()` has no auth check, but the file is a library function -- is auth enforced by an outer middleware layer (Express/Fastify route guard)? Confirm before rating; library-level auth is usually wrong layer.`
+
+### Per-finding validation
+
+Validation of Finding 1: Severity revised Critical -> Important. The unused `validate` is a code-quality smell, but the actual injection risk is the absence of validation, which Findings 2 and 3 already enumerate concretely. Critical is reserved for confirmed-exploitable; this finding is the root cause but its exploit surface is double-counted.
+
+Validation of Finding 2: Severity revised Critical -> Important. Synchronous DoS is exploitable by any client, but most Node HTTP frameworks (Express 5+, Fastify, Koa) catch synchronous handler throws and return 500 without crashing the process. Crit requires confirmed process-crash; absent framework context this is Important + verify deployment.
+
+Validation of Finding 3: Severity confirmed Important. Prototype pollution requires a downstream merge sink to be exploitable; not visible in scope. Important is correct; would escalate to Critical if a `_.merge`/`Object.assign(target, parsed)` sink were confirmed downstream.
+
+Validation of Finding 5: Severity revised Important -> Question. `handle()` is a plain function export, not a route binding. Whether auth is missing depends on how the caller wires it (Express middleware chain, Fastify hook, manual gate). Cannot rate without that context.
+
+### Threat Patterns
+
+Findings 1, 2, 3 share a single root: no input validation before `JSON.parse`. Fixing Finding 1 (calling a real schema validator, not the trivial `x != null` stub) collapses Findings 2 and 3 simultaneously -- a schema validator rejects malformed JSON (closing DoS) and strips `__proto__`/`constructor` keys (closing prototype pollution). Finding 4 (falsy guard) compounds Finding 2: non-string body coerces and triggers the same uncaught SyntaxError path. Finding 5 (auth) is orthogonal -- it gates whether attackers reach the chain at all; if auth is absent the other findings escalate one severity tier each.
+
+### Missed surfaces (optional)
+
+Downstream consumers of `handle()`'s return value are out of scope but determine whether Finding 3 is Important or Critical -- audit any `Object.assign`/spread/`_.merge` sinks that receive the parsed payload.
+
+**Verdict scope:** scope: security-threats
+--- end Run 4 output ---
+
+=== Run 5 ===
+Run 5: EXIT 1 (FAIL)
+
+--- Run 5 output (full) ---
+[INFO] Replay mode: using trace .planning/phases/07-address-all-phase-5-x-and-6-uat-findings/regression-gate-0.13.1-tolerance-n10/traces/D-security-reviewer-budget-run-5.txt (skipping claude -p)
+[OK] Security-reviewer output sections present: Findings=1 TP=1
+[INFO] Fragment-grammar shape detected (security): 5 finding line(s)
+[OK] Finding line 1: 17 words (<=22 target)
+[ERROR] Finding line 2: 40 words (>28 outlier soft cap; target <=22w)
+[OK] Finding line 3: 21 words (<=22 target)
+[WARN] Finding line 4: 24 words (>22 target but <=28 outlier; acceptable)
+[ERROR] Finding line 5: 33 words (>28 outlier soft cap; target <=22w)
+[INFO] Total findings: 5; bad: 2
+[INFO] Per-finding validation: 5 entries
+[OK] Per-finding validation entry 1: 31 words (<=60 target)
+[WARN] Per-finding validation entry 2: 61 words (>60 target but <=66 outlier; acceptable)
+[OK] Per-finding validation entry 3: 34 words (<=60 target)
+[OK] Per-finding validation entry 4: 5 words (<=60 target)
+[OK] Per-finding validation entry 5: 20 words (<=60 target)
+[OK] Threat Patterns: 103 words (<=160 target)
+[WARN] Missed surfaces: 31 words (>30 target but <=33 outlier; acceptable)
+--- security-reviewer output (last 200 lines) ---
+## Security Review Summary
+
+Reviewed: `review-src/handler.ts`, `review-src/validate.ts` (commit `84f8eea` -- "add unvalidated handler with JSON.parse for security-reviewer scenario")
+
+### Findings
+
+`review-src/handler.ts:7: crit: [A04] unhandled JSON.parse on attacker-controlled req.body crashes process via SyntaxError. Wrap in try/catch; return 400 on parse failure.`
+`review-src/handler.ts:7: imp: [A03] JSON.parse output flows to unknown downstream consumers without __proto__/constructor scrubbing; spread/merge sinks enable prototype pollution. Use safe parser (e.g. secure-json-parse) or strip __proto__/constructor keys; severity escalates to crit if downstream merge sink confirmed (unverified). Verify downstream consumer shape before committing.`
+`review-src/handler.ts:1-8: imp: [A04] validate() exported but never imported -- validation gate permanently open. Import and call validate (after hardening) before process(); reject on false.`
+`review-src/handler.ts:1-4: imp: [A04] no body-size cap before JSON.parse enables heap-exhaustion DoS via large payload. Enforce max body size at framework layer (e.g. express.json({limit:'100kb'})) and reject oversized req.body.`
+`review-src/validate.ts:1: sug: [A04] x != null passes "", 0, false, [] -- insufficient as parse gate. Replace with schema validator (zod/ajv) or at minimum typeof x === 'string' && x.length > 0 && x.length < MAX.`
+
+### Per-finding validation
+
+Validation of Finding 1: Confirmed crit. Unauthenticated network-reachable handler + uncaught synchronous throw = trivial DoS. OWASP mapping revised from A05 to A04 (Insecure Design): missing error boundary is a design defect, not a misconfiguration.
+
+Validation of Finding 2: Severity revised from crit to imp pending downstream-sink verification. JSON.parse alone does not pollute Object.prototype in modern Node (V8 treats `__proto__` as own property on parsed result). Pollution requires a downstream merge/assign sink that walks `__proto__`. Without that sink in scope, the threat is latent. Unresolved hedge: downstream consumer of process() return value not packaged. Verify consumer shape before committing severity.
+
+Validation of Finding 3: Confirmed imp. Mapping revised A03 -> A04 (Insecure Design); the validation primitive exists but is unwired -- a design defect, not an injection per se. Becomes the enabling condition for findings 1, 2, 4.
+
+Validation of Finding 4: Confirmed imp. Mapping A04 retained.
+
+Validation of Finding 5: Confirmed sug. Mapping revised A03 -> A04. Even if wired, the predicate is too permissive to be a meaningful gate.
+
+### Threat Patterns
+
+Findings 3, 1, 4 chain into the dominant attack path: the unwired validate() (3) leaves JSON.parse exposed to both malformed input (1 -> crash/DoS) and oversized input (4 -> heap-exhaustion DoS), both unauthenticated and trivially exploitable. Finding 2 is latent and depends on an out-of-scope downstream merge sink; if such a sink exists, findings 3+2 chain to persistent prototype pollution affecting every subsequent request in the process -- escalates to crit. Remediation order: (a) wrap JSON.parse in try/catch [F1], (b) enforce body-size limit at framework layer [F4], (c) wire and harden validate() with schema [F3+F5], (d) audit downstream consumers and adopt secure-json-parse [F2].
+
+### Missed surfaces (optional)
+
+Handler registration site (Express/Fastify/raw http) not in scope -- verify global error middleware exists and body-parser limit is configured; both gate whether F1/F4 crash the whole process or just the request.
+
+**Verdict scope:** scope: security-threats
+--- end Run 5 output ---
+
+=== Run 6 ===
+Run 6: EXIT 1 (FAIL)
+
+--- Run 6 output (full) ---
+[INFO] Replay mode: using trace .planning/phases/07-address-all-phase-5-x-and-6-uat-findings/regression-gate-0.13.1-tolerance-n10/traces/D-security-reviewer-budget-run-6.txt (skipping claude -p)
+[OK] Security-reviewer output sections present: Findings=1 TP=1
+[INFO] Fragment-grammar shape detected (security): 6 finding line(s)
+[OK] Finding line 1: 17 words (<=22 target)
+[ERROR] Finding line 2: 31 words (>28 outlier soft cap; target <=22w)
+[WARN] Finding line 3: 24 words (>22 target but <=28 outlier; acceptable)
+[ERROR] Finding line 4: 29 words (>28 outlier soft cap; target <=22w)
+[WARN] Finding line 5: 24 words (>22 target but <=28 outlier; acceptable)
+[WARN] Finding line 6: 27 words (>22 target but <=28 outlier; acceptable)
+[INFO] Total findings: 6; bad: 2
+[INFO] Per-finding validation: 5 entries
+[ERROR] Per-finding validation entry 1: 69 words (>66 outlier soft cap; target <=60w)
+[OK] Per-finding validation entry 2: 55 words (<=60 target)
+[OK] Per-finding validation entry 3: 19 words (<=60 target)
+[OK] Per-finding validation entry 4: 18 words (<=60 target)
+[OK] Per-finding validation entry 5: 13 words (<=60 target)
+[OK] Threat Patterns: 107 words (<=160 target)
+[OK] Missed surfaces: 28 words (<=30 target)
+--- security-reviewer output (last 200 lines) ---
+## Security Review Summary
+
+Reviewed: `review-src/handler.ts` and `review-src/validate.ts` -- last commit (ae9434a "add unvalidated handler with JSON.parse for security-reviewer scenario")
+
+---
+
+### Findings
+
+`review-src/handler.ts:7: imp: [A04] unguarded `JSON.parse(data)` throws on malformed input, propagating uncaught SyntaxError. Wrap in try/catch, return 400 on parse failure.`
+`review-src/handler.ts:7: sug: [A03] `JSON.parse` itself does not pollute prototypes; risk materializes only if parsed result is later merged via unsafe `Object.assign`/recursive merge. Strip `__proto__`/`constructor` keys post-parse or use `Map`/null-prototype object before any merge downstream.`
+`review-src/handler.ts:1-4: imp: [A04] `validate()` exported but never imported -- handler passes `req.body` straight to `JSON.parse` with zero gate. Import and call `validate(req.body)` before `process()`; reject on failure.`
+`review-src/validate.ts:1: imp: [A04] `validate(x)` only checks `x != null`; passes any string/object regardless of size, type, or shape -- false-assurance stub. Replace with schema validator (zod/ajv) enforcing type, max-length, and structural depth.`
+`review-src/handler.ts:1: sug: [A04] `req` is implicit `any`; pre-parsed body objects coerce to `"[object Object]"` under `JSON.parse`, masking type-confusion. Annotate `req: { body: string }` and enable `noImplicitAny`/`strict`.`
+`review-src/handler.ts:7: sug: [A04] no input-size cap before `JSON.parse`; large payloads (e.g., 100 MB string, deeply nested arrays) block the event loop. Enforce `Content-Length`/byte cap and depth limit upstream of parse.`
+
+### Per-finding validation
+
+Validation of Finding 1: Confirmed but downgrade Critical -> Important. Unhandled `SyntaxError` is a real DoS vector, but Node.js HTTP frameworks (Express, Fastify, Koa) catch synchronous handler throws and return 500 by default -- process crash requires the handler to be invoked outside a framework's error boundary. Severity rises to Critical only if deployment context confirms no framework-level error handler. Unresolved hedge: deployment framework unknown (unverified). Verify framework error-boundary behavior before downgrading further.
+
+Validation of Finding 2: Downgrade Critical -> Suggestion. `JSON.parse` in modern V8 places `__proto__` as an own property on the parsed object -- it does NOT mutate `Object.prototype` directly. Pollution requires a downstream unsafe-merge sink (`Object.assign`, lodash `_.merge` pre-4.17.12, recursive copy). No such sink exists in scope. Threat is latent, not confirmed-exploitable. Re-escalate if/when caller code merges the result.
+
+Validation of Finding 3: Confirmed Important. Dead-code validator is a design smell that signals incomplete wiring -- exactly the surface an attacker probes.
+
+Validation of Finding 4: Confirmed Important. Stub validators are worse than no validator; they shift trust to a function that earns none.
+
+Validation of Finding 5: Confirmed Suggestion. Type-confusion via pre-parsed body is a real but low-impact bug class.
+
+### Threat Patterns
+
+Findings 1, 3, 4 chain into the dominant attack path: handler accepts `req.body` (Finding 3 -- no gate), passes to unguarded `JSON.parse` (Finding 1 -- crash on malformed), and even if gated would clear the null-only stub (Finding 4 -- no schema). An unauthenticated attacker sends `{broken` and triggers the DoS; sends a 100 MB string and exhausts memory; sends `{"__proto__":{...}}` and primes Finding 2 for any future merge sink. The shared root cause is absent input contract -- no schema, no size cap, no type guard -- a single `zod`/`ajv` schema applied at the handler entry closes Findings 1, 3, 4, and the size/depth gap simultaneously.
+
+### Missed surfaces (optional)
+
+Caller of `handle()` is out of scope; if it spreads/merges the returned object (`{...result}` is safe, `Object.assign(target, result)` or recursive merge is not), Finding 2 escalates to Critical.
+
+---
+
+**Verdict scope:** scope: security-threats
+--- end Run 6 output ---
+
+=== Run 7 ===
+Run 7: EXIT 0 (PASS)
+
+--- Run 7 output (full) ---
+[INFO] Replay mode: using trace .planning/phases/07-address-all-phase-5-x-and-6-uat-findings/regression-gate-0.13.1-tolerance-n10/traces/D-security-reviewer-budget-run-7.txt (skipping claude -p)
+[OK] Security-reviewer output sections present: Findings=1 TP=1
+[INFO] Fragment-grammar shape detected (security): 4 finding line(s)
+[OK] Finding line 1: 18 words (<=22 target)
+[OK] Finding line 2: 18 words (<=22 target)
+[WARN] Finding line 3: 25 words (>22 target but <=28 outlier; acceptable)
+[WARN] Finding line 4: 28 words (>22 target but <=28 outlier; acceptable)
+[INFO] Total findings: 4; bad: 0
+[OK] Per-finding validation: section absent (optional)
+[OK] Threat Patterns: 99 words (<=160 target)
+[OK] Missed surfaces: section absent (optional)
+[SUCCESS] D-security-reviewer-budget.sh: per-section budgets enforced (entries <=22w/28w outlier, Per-finding validation <=60w/66w outlier, Threat Patterns <=160w/176w outlier, Missed surfaces <=30w/33w outlier; aggregate cap dropped per Plan 07-14; gate-tolerance +10% at test layer only, agent XML targets stay canonical)
+--- end Run 7 output ---
+
+=== Run 8 ===
+Run 8: EXIT 1 (FAIL)
+
+--- Run 8 output (full) ---
+[INFO] Replay mode: using trace .planning/phases/07-address-all-phase-5-x-and-6-uat-findings/regression-gate-0.13.1-tolerance-n10/traces/D-security-reviewer-budget-run-8.txt (skipping claude -p)
+[OK] Security-reviewer output sections present: Findings=1 TP=1
+[WARN] Fragment-grammar shape NOT detected; falling back to Plan 07-04 numbered-section parser. New fragment-grammar shape is preferred per Plan 07-09.
+[ERROR] No Findings entries detected (neither fragment-grammar nor Plan 07-04 numbered shape matched)
+[INFO] Per-finding validation: 5 entries
+[OK] Per-finding validation entry 1: 41 words (<=60 target)
+[OK] Per-finding validation entry 2: 47 words (<=60 target)
+[OK] Per-finding validation entry 3: 29 words (<=60 target)
+[OK] Per-finding validation entry 4: 24 words (<=60 target)
+[OK] Per-finding validation entry 5: 15 words (<=60 target)
+[OK] Threat Patterns: 103 words (<=160 target)
+[OK] Missed surfaces: 24 words (<=30 target)
+--- security-reviewer output (last 200 lines) ---
+## Security Review Summary
+
+Reviewed: `review-src/handler.ts` and `review-src/validate.ts` (commit 97e1bce -- "add unvalidated handler with JSON.parse for security-reviewer scenario")
+
+---
+
+### Findings
+
+`review-src/handler.ts:7: crit: [A04]` `JSON.parse(data)` lacks try/catch; SyntaxError on malformed input crashes process or leaks stack via 500. Wrap in try/catch, return 400.
+
+`review-src/handler.ts:2-7: crit: [A04]` Unbounded `req.body` to `JSON.parse` enables DoS via deep nesting / oversized payload. Enforce body size cap + depth-limited parser (e.g., `secure-json-parse`).
+
+`review-src/handler.ts:7: imp: [A08]` `JSON.parse` permits `__proto__`/`constructor.prototype` keys reaching downstream sinks. Use `secure-json-parse` with `protoAction:'remove'`.
+
+`review-src/validate.ts:1: imp: [A04]` `validate` exported but never imported in `handler.ts`; dead defense layer. Import and gate `process()` behind schema validation (zod/ajv).
+
+`review-src/validate.ts:1: imp: [A04]` `x != null` accepts any non-null (oversized blobs, prototype-poisoning objects). Replace with typed schema validator enforcing type/length/shape.
+
+`review-src/handler.ts:1,6; review-src/validate.ts:1: sug: [A04]` Implicit `any` on `req`/`data`/`x` disables compile-time defense; `JSON.parse(object)` would coerce silently. Enable `noImplicitAny`, type `data: string`.
+
+`review-src/handler.ts:2: sug: [A09]` No logging on parse failure or rejected input; attacker probing is invisible. Log structured parse errors with request id, no payload echo.
+
+### Per-finding validation
+
+Validation of Finding 1: Confirmed Critical. Mapping revised from A05 to A04 Insecure Design -- absent error handling around an untrusted-input sink is a design omission, not a misconfiguration. Stack trace exposure is runtime-dependent (Express dev mode, Fastify default 500); confirm framework before assuming leak.
+
+Validation of Finding 2: Confirmed Critical. Primary mapping is A04 Insecure Design (no rate/size/depth guard); A03 does not fit (no injection sink, just resource exhaustion). Modern V8 `JSON.parse` does not stack-overflow on nesting (iterative since ~Node 12), but heap exhaustion via large arrays/strings remains exploitable; size cap is the load-bearing fix.
+
+Validation of Finding 3: Confirmed Important, recategorized A04. The dead-code defense pattern is the classic "Insecure Design" failure -- a control exists in the codebase but is not wired into the request path.
+
+Validation of Finding 4: Confirmed Important, recategorized A04. Added prototype-pollution angle: `JSON.parse` returns objects with attacker-controlled `__proto__` if downstream uses unsafe merge/assign (separate finding 3 above on handler.ts:7).
+
+Validation of Finding 5: Confirmed Suggestion, recategorized A04. Type system is defense-in-depth, not a primary control; severity stays low.
+
+### Threat Patterns
+
+Findings 1+2+4+5 chain into a single root cause: handler.ts treats `req.body` as trusted because no design-layer contract (validation, typing, error handling, size limits) exists between network ingress and `JSON.parse`. Finding 3 (orphaned `validate`) is the smoking gun -- a defense was authored but never wired in, indicating the design gap is known but unaddressed. An unauthenticated attacker sending one malformed or oversized POST achieves DoS (Finding 2) plus information disclosure via stack trace (Finding 1) plus potential prototype pollution into downstream consumers (added A08 finding) in a single request. Gate-block: do not ship without schema validation + size cap + try/catch + secure-json-parse.
+
+### Missed surfaces (optional)
+
+Downstream consumers of `process()` return value unscanned -- if any caller does `Object.assign({}, parsed)` or lodash `merge`, prototype pollution from `__proto__` keys becomes RCE-adjacent.
+
+---
+
+**Verdict scope:** scope: security-threats
+--- end Run 8 output ---
+
+=== Run 9 ===
+Run 9: EXIT 1 (FAIL)
+
+--- Run 9 output (full) ---
+[INFO] Replay mode: using trace .planning/phases/07-address-all-phase-5-x-and-6-uat-findings/regression-gate-0.13.1-tolerance-n10/traces/D-security-reviewer-budget-run-9.txt (skipping claude -p)
+[OK] Security-reviewer output sections present: Findings=1 TP=1
+[INFO] Fragment-grammar shape detected (security): 4 finding line(s)
+[OK] Finding line 1: 16 words (<=22 target)
+[OK] Finding line 2: 20 words (<=22 target)
+[WARN] Finding line 3: 24 words (>22 target but <=28 outlier; acceptable)
+[OK] Finding line 4: 21 words (<=22 target)
+[INFO] Total findings: 4; bad: 0
+[INFO] Per-finding validation: 4 entries
+[OK] Per-finding validation entry 1: 16 words (<=60 target)
+[ERROR] Per-finding validation entry 2: 71 words (>66 outlier soft cap; target <=60w)
+[OK] Per-finding validation entry 3: 43 words (<=60 target)
+[OK] Per-finding validation entry 4: 31 words (<=60 target)
+[OK] Threat Patterns: 86 words (<=160 target)
+[OK] Missed surfaces: 24 words (<=30 target)
+--- security-reviewer output (last 200 lines) ---
+## Security Review Summary
+
+Reviewed: `review-src/handler.ts` and `review-src/validate.ts` (commit `801f37b` -- "add unvalidated handler with JSON.parse for security-reviewer scenario")
+
+### Findings
+
+`review-src/handler.ts:7: crit: [A05] unwrapped `JSON.parse(data)` crashes process on malformed body (DoS, unauthenticated). Wrap in try/catch; return 400 on `SyntaxError`.`
+`review-src/handler.ts:7: crit: [A03] `JSON.parse` returns attacker-controlled `__proto__`/`constructor` keys unsanitized, enabling prototype pollution downstream. Use reviver that drops `__proto__`/`constructor`/`prototype`, or `Object.create(null)` + key allow-list.`
+`review-src/validate.ts:1: imp: [A04] `validate(x)` is a null-check masquerading as a security boundary; any non-null payload passes. Replace with schema validation (zod/ajv) enforcing shape, types, and key allow-list.`
+`review-src/handler.ts:2: imp: [A04] `if (req.body)` truthy-gates non-string inputs (Buffer, `"0"`, `[]`) into `JSON.parse`. Assert `typeof req.body === 'string'` and enforce max length before parsing.`
+
+### Per-finding validation
+
+Validation of Finding 1: Confirmed Critical. Unauthenticated remote DoS with one-byte payload (`x`) is the canonical A05/A04 misconfiguration. Stays Critical.
+
+Validation of Finding 2: Confirmed Critical, but conditional on a downstream sink. Prototype pollution requires a subsequent `Object.assign({}, parsed)`, recursive merge, or property-existence check on a fresh object elsewhere in the process. Per threat-model context ("In a Node.js server context, prototype pollution cascades across all in-process request handling"), the executor asserts such sinks exist process-wide. Assuming downstream merge/assign sinks exist (unverified in scoped files), do treat as Critical. Verify presence of merge sinks before downgrading.
+
+Validation of Finding 3: Confirm Important; consider promotion to Critical when chained with Finding 2 -- `validate()` is the only gate between `JSON.parse` output and downstream consumers, and it admits `__proto__`-bearing objects untouched. As an isolated weakness, Important holds; in the chain, it is the load-bearing bypass.
+
+Validation of Finding 4: Confirm Important. Type confusion on `req.body` is a reliable amplifier for Finding 1 (Buffer input throws different exception class) and Finding 2 (array input parses successfully into prototype-pollution vector). Stays Important.
+
+### Threat Patterns
+
+Findings 2, 3, 4 chain into a confirmed prototype-pollution exploit: attacker sends `{"__proto__":{"isAdmin":true}}` as the body; Finding 4's truthy guard admits it; `JSON.parse` (Finding 2) returns the polluting object; Finding 3's `validate()` returns true unconditionally; the polluted object reaches any downstream `Object.assign`/merge sink and corrupts `Object.prototype` process-wide. Finding 1 is an independent unauthenticated-DoS primitive on the same endpoint -- attacker chooses crash-or-pollute. The shared root cause is absence of an input-validation boundary: `validate()` is structurally incapable of being one, and the handler trusts `JSON.parse` output verbatim.
+
+### Missed surfaces (optional)
+
+Adjacent: any caller of `process()` or consumer of `handle()`'s return value (not in scope) is the prototype-pollution sink; audit `Object.assign`/spread/merge usage across the codebase.
+
+**Verdict scope:** scope: security-threats
+--- end Run 9 output ---
+
+=== Run 10 ===
+Run 10: EXIT 1 (FAIL)
+
+--- Run 10 output (full) ---
+[INFO] Replay mode: using trace .planning/phases/07-address-all-phase-5-x-and-6-uat-findings/regression-gate-0.13.1-tolerance-n10/traces/D-security-reviewer-budget-run-10.txt (skipping claude -p)
+[OK] Security-reviewer output sections present: Findings=1 TP=1
+[WARN] Fragment-grammar shape NOT detected; falling back to Plan 07-04 numbered-section parser. New fragment-grammar shape is preferred per Plan 07-09.
+[ERROR] No Findings entries detected (neither fragment-grammar nor Plan 07-04 numbered shape matched)
+[OK] Per-finding validation: section absent (optional)
+[OK] Threat Patterns: 102 words (<=160 target)
+[OK] Missed surfaces: section absent (optional)
+--- security-reviewer output (last 200 lines) ---
+## Security Review Summary
+
+Reviewed: `review-src/handler.ts` and `review-src/validate.ts` (commit `898e0a2` -- "add unvalidated handler with JSON.parse for security-reviewer scenario")
+
+### Findings
+
+`review-src/handler.ts:7: imp: [A04]` `JSON.parse(req.body)` without try/catch crashes process on malformed input (DoS). Wrap in try/catch, return 400 on SyntaxError.
+
+`review-src/handler.ts:7: sug: [A08]` Prototype pollution via `__proto__` in JSON.parse output only exploitable if downstream uses unsafe merge/assign; modern Node.js JSON.parse sets `__proto__` as own property, not prototype. Use `Object.create(null)` or schema validator (zod/ajv) at sinks.
+
+`review-src/handler.ts:1-8: imp: [A04]` Exported `validate` never imported -- dead security control. Import and invoke `validate(req.body)` before `process()`, or remove and replace with schema validator.
+
+`review-src/validate.ts:1: imp: [A04]` `validate` is `x != null` -- not a validator, semantic placebo. Replace with schema check (zod/ajv/io-ts) asserting shape, types, bounds.
+
+`review-src/handler.ts:2: imp: [A04]` `if (req.body)` permits unbounded payloads; deep nesting / large strings exhaust stack/memory. Enforce body size limit at framework layer + max-depth check post-parse.
+
+`review-src/handler.ts:1: sug: [A04]` Implicit `any` on `req`, `data`, `x` disables shape checks. Type as `req: { body: unknown }`, `data: string`; enable `noImplicitAny` in tsconfig.
+
+**Per-finding validation**
+
+Validation of Finding 1: Confirmed exploitable but downgraded Critical -> Important. Unauthenticated DoS via malformed JSON is real, but blast radius is single request crash in most frameworks (Express/Fastify catch sync throws in handlers); only Critical if hosted on a runtime that terminates the process on uncaught handler exceptions. Verify framework error-boundary behavior before acting.
+
+Validation of Finding 2 (prototype pollution sub-claim): Downgraded to Suggestion. Since Node.js 10+, `JSON.parse('{"__proto__":{...}}')` assigns `__proto__` as an own enumerable property on the result object, NOT to `Object.prototype` -- the parse step itself is safe. Pollution requires a downstream unsafe-merge sink (`lodash.merge` <4.17.21, `Object.assign` recursion, manual deep-merge). No such sink visible in scope; threat is latent, not active. Severity escalates to Important if downstream consumers perform recursive merge.
+
+Validation of Finding 3 (dead validate): Confirmed Important. The exported-but-unused `validate` is a documentation lie -- future maintainers may assume validation happens. A05 -> A04 (insecure design, not misconfig).
+
+Validation of Finding 5 (truthy check): Confirmed Important, A05 -> A04. Body-size limits are framework-layer concerns (Express `express.json({ limit })`); recommend both layers.
+
+### Threat Patterns
+
+Findings 1, 3, 4, 5 chain into a single insecure-design root: handler accepts unauthenticated input, the only declared validator is dead code, the runtime guard is truthy-only, and the parse step is unprotected. Attacker sends malformed or oversized JSON -> SyntaxError or memory pressure -> request/process disruption. The dead-code `validate` (finding 3) is the load-bearing weakness: had it been wired in (even as `x != null`), it would not stop the attack, but its absence signals the validation layer was never designed. Prototype-pollution (finding 2 sub-claim) is dormant pending a downstream merge sink -- track but do not gate-block on it alone.
+
+**Missed surfaces (optional):** Caller of `handle()` not in scope -- verify whether the HTTP framework wraps handler exceptions (Express does, raw `http.createServer` does not) and enforces `bodyParser` size limits.
+
+---
+
+**Verdict scope:** scope: security-threats
+--- end Run 10 output ---
+
+=== Summary ===
+Pass count: 3 / 10
+Fail count: 7 / 10
+  Run 1: FAIL (exit 1)
+  Run 2: PASS
+  Run 3: PASS
+  Run 4: FAIL (exit 1)
+  Run 5: FAIL (exit 1)
+  Run 6: FAIL (exit 1)
+  Run 7: PASS
+  Run 8: FAIL (exit 1)
+  Run 9: FAIL (exit 1)
+  Run 10: FAIL (exit 1)
+
+verdict: PASS_3_of_10 (FAIL_7_of_10)

@@ -1,0 +1,37 @@
+## Security Review Summary
+
+Reviewed: `review-src/handler.ts` and `review-src/validate.ts` (commit `898e0a2` -- "add unvalidated handler with JSON.parse for security-reviewer scenario")
+
+### Findings
+
+`review-src/handler.ts:7: imp: [A04]` `JSON.parse(req.body)` without try/catch crashes process on malformed input (DoS). Wrap in try/catch, return 400 on SyntaxError.
+
+`review-src/handler.ts:7: sug: [A08]` Prototype pollution via `__proto__` in JSON.parse output only exploitable if downstream uses unsafe merge/assign; modern Node.js JSON.parse sets `__proto__` as own property, not prototype. Use `Object.create(null)` or schema validator (zod/ajv) at sinks.
+
+`review-src/handler.ts:1-8: imp: [A04]` Exported `validate` never imported -- dead security control. Import and invoke `validate(req.body)` before `process()`, or remove and replace with schema validator.
+
+`review-src/validate.ts:1: imp: [A04]` `validate` is `x != null` -- not a validator, semantic placebo. Replace with schema check (zod/ajv/io-ts) asserting shape, types, bounds.
+
+`review-src/handler.ts:2: imp: [A04]` `if (req.body)` permits unbounded payloads; deep nesting / large strings exhaust stack/memory. Enforce body size limit at framework layer + max-depth check post-parse.
+
+`review-src/handler.ts:1: sug: [A04]` Implicit `any` on `req`, `data`, `x` disables shape checks. Type as `req: { body: unknown }`, `data: string`; enable `noImplicitAny` in tsconfig.
+
+**Per-finding validation**
+
+Validation of Finding 1: Confirmed exploitable but downgraded Critical -> Important. Unauthenticated DoS via malformed JSON is real, but blast radius is single request crash in most frameworks (Express/Fastify catch sync throws in handlers); only Critical if hosted on a runtime that terminates the process on uncaught handler exceptions. Verify framework error-boundary behavior before acting.
+
+Validation of Finding 2 (prototype pollution sub-claim): Downgraded to Suggestion. Since Node.js 10+, `JSON.parse('{"__proto__":{...}}')` assigns `__proto__` as an own enumerable property on the result object, NOT to `Object.prototype` -- the parse step itself is safe. Pollution requires a downstream unsafe-merge sink (`lodash.merge` <4.17.21, `Object.assign` recursion, manual deep-merge). No such sink visible in scope; threat is latent, not active. Severity escalates to Important if downstream consumers perform recursive merge.
+
+Validation of Finding 3 (dead validate): Confirmed Important. The exported-but-unused `validate` is a documentation lie -- future maintainers may assume validation happens. A05 -> A04 (insecure design, not misconfig).
+
+Validation of Finding 5 (truthy check): Confirmed Important, A05 -> A04. Body-size limits are framework-layer concerns (Express `express.json({ limit })`); recommend both layers.
+
+### Threat Patterns
+
+Findings 1, 3, 4, 5 chain into a single insecure-design root: handler accepts unauthenticated input, the only declared validator is dead code, the runtime guard is truthy-only, and the parse step is unprotected. Attacker sends malformed or oversized JSON -> SyntaxError or memory pressure -> request/process disruption. The dead-code `validate` (finding 3) is the load-bearing weakness: had it been wired in (even as `x != null`), it would not stop the attack, but its absence signals the validation layer was never designed. Prototype-pollution (finding 2 sub-claim) is dormant pending a downstream merge sink -- track but do not gate-block on it alone.
+
+**Missed surfaces (optional):** Caller of `handle()` not in scope -- verify whether the HTTP framework wraps handler exceptions (Express does, raw `http.createServer` does not) and enforces `bodyParser` size limits.
+
+---
+
+**Verdict scope:** scope: security-threats

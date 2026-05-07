@@ -1,0 +1,33 @@
+## Security Review Summary
+
+Reviewed: `review-src/handler.ts` and `review-src/validate.ts` -- commit `179db02` ("add unvalidated handler with JSON.parse for security-reviewer scenario")
+
+### Findings
+
+`review-src/handler.ts:7: crit: [A04] unguarded JSON.parse(req.body) on attacker-controlled input throws SyntaxError, crashing handler (DoS). Wrap in try/catch, return 400 on parse failure.`
+
+`review-src/handler.ts:2: imp: [A04] validate() exported but never imported/called in handler; defense layer silently bypassed. Import and gate process() behind validate(parsed) post-parse.`
+
+`review-src/handler.ts:6-8: imp: [A09] uncaught SyntaxError propagates to runtime default handler, risking stack-trace leakage in responses and trivial DoS. Add try/catch with structured 400 response and sanitized log entry.`
+
+`review-src/validate.ts:1: sug: [A04] x != null admits arrays, primitives, empty strings, booleans -- insufficient for type-confusion defense. Replace with schema validator (zod/ajv) or explicit typeof x === 'object' && !Array.isArray(x) guard.`
+
+**Per-finding validation**
+
+Validation of Finding 1: Confirm Critical. OWASP mapping revised from A03 Injection to A04 Insecure Design -- the root cause is missing input-validation design, not an injection sink (no SQL/command/template interpolation present). Unauthenticated DoS via malformed JSON on external boundary justifies Critical.
+
+Validation of Finding 2: Confirm Important. OWASP mapping revised from A01 Broken Access Control to A04 Insecure Design -- this is a missing validation gate, not an authorization check. No identity/role decision is bypassed; the defense layer is structural.
+
+Validation of Finding 3: Confirm Important. A09 mapping holds for the logging/observability dimension (stack-trace leakage, no audit trail of parse failures), though A04 also applies. Keeping A09 since the executor's framing emphasizes monitoring gap.
+
+Validation of Finding 4: Confirm Suggestion. OWASP mapping revised from A05 to A04 -- this is a design weakness (insufficient type guard), not a misconfiguration of a security control. Severity stays Suggestion because validate() is unreachable (Finding 2); exploitability is gated behind fixing Finding 2 first.
+
+### Threat Patterns
+
+Findings 1 + 2 compound: the unwired validate() (F2) means there is no logical place where malformed/hostile input is rejected before reaching JSON.parse (F1). Fixing F1 alone (try/catch) prevents the DoS crash but still admits any well-formed JSON -- including primitives, arrays, prototype-pollution payloads ({"__proto__":{...}}) -- into downstream consumers. Fixing F2 alone (wiring validate) is neutralized by F4's permissive guard. The three together form a defense-in-depth gap: parse-safety (F1) + validation-gate wiring (F2) + schema-strength (F4) must all land to close the external-boundary attack surface. F3 is the observability dimension of F1 and rides along with the try/catch fix.
+
+**Missed surfaces (optional)**
+
+Downstream consumers of handle()'s return value were not packaged; if any perform property access via bracket notation on the parsed object, prototype-pollution exploitability escalates F1 impact materially.
+
+**Verdict scope:** scope: security-threats

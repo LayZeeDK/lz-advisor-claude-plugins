@@ -1,0 +1,27 @@
+No `<verify_request>` blocks present. Rendering the final output.
+
+---
+
+## Review Summary
+
+Reviewed: `review-src/handler.ts` and `review-src/validate.ts` (commit `cd0f417` -- "add unvalidated handler with JSON.parse for reviewer scenario")
+
+### Findings
+
+`review-src/handler.ts:7` -- **Critical:** `JSON.parse(data)` uncaught on malformed input. Wrap in try/catch returning typed error or null.
+
+`review-src/validate.ts:1` -- **Important:** `validate` exported but never imported by `handler.ts`. Wire into `handle` before `process` or delete module.
+
+`review-src/handler.ts:2` -- **Important:** `if (req.body)` rejects falsy-but-valid bodies (`""`, `0`, `false`) and double-parses pre-deserialized objects to `"[object Object]"`. Use `req.body != null` and assert string type before `JSON.parse`.
+
+`review-src/handler.ts:6` -- **Important** (raised from Suggestion): local `process` shadows Node global; future `process.env`/`process.exit` references silently bind to parser. Rename to `parseBody`. Severity raised: shadowing a runtime-critical global is a latent correctness hazard, not style.
+
+`review-src/handler.ts:1` -- **Suggestion:** implicit `any` on `req`, `data`, `x` defeats TS guarantees. Add `RequestLike { body: unknown }`, `data: string`, `x: unknown`.
+
+### Cross-Cutting Patterns
+
+Findings 1, 2, and 3 form a single attack chain: handler accepts `req.body` with no type guard (3), skips the available validator (2), and parses without error containment (1). Root cause is missing boundary discipline -- a single hardening pass (import `validate`, narrow `req.body` to `string`, wrap `JSON.parse` in try/catch) closes all three. Findings 4 and 5 are independent hygiene issues but share a theme with the chain: weak typing and weak naming let the unsafe shape compile silently. A `tsconfig` with `strict: true` plus an ESLint `no-shadow-restricted-names`-style rule would have surfaced 4 and 5 at lint time and forced the author to confront 3 via the type checker.
+
+**Missed surfaces (optional):** Check whether other handlers in `review-src/` or sibling route modules replicate the same `JSON.parse(req.body)` pattern; the dead `validate` export hints at an abandoned refactor that may leave several handlers unguarded.
+
+**Verdict scope:** scope: api-correctness

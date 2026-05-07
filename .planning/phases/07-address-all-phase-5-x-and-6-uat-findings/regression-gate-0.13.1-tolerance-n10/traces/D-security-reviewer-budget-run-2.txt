@@ -1,0 +1,33 @@
+## Security Review Summary
+
+Reviewed: `review-src/handler.ts` and `review-src/validate.ts` -- new files added in commit `b9af3d6` ("add unvalidated handler with JSON.parse for security-reviewer scenario")
+
+### Findings
+
+`review-src/handler.ts:2: crit: [A04] req.body flows to JSON.parse unvalidated; validate() never imported. Import + call validate() with schema check before process().`
+
+`review-src/handler.ts:7: crit: [A05] uncaught JSON.parse(data) throws SyntaxError on malformed body -> DoS / stack-trace leak. Wrap in try/catch, return 400.`
+
+`review-src/handler.ts:7: imp: [A03] JSON.parse returns objects with __proto__/constructor keys enabling prototype pollution downstream. Use reviver stripping __proto__/constructor/prototype or Object.create(null) projection.`
+
+`review-src/validate.ts:1: sug: [A04] x != null admits arrays, strings, nested objects -- no structural safety at trust boundary. Replace with schema validator (zod/ajv) enforcing type + shape + depth bounds.`
+
+### Per-finding validation
+
+Validation of Finding 1: Severity confirmed Critical, but OWASP mapping revised from A03 Injection to **A04 Insecure Design**. The defect is architectural -- a validation control exists but is never wired into the trust-boundary path. A03 fits the downstream consequence (parsed payload reaches sinks); A04 fits the root cause (control omitted by design). Tag A04 primary, A03 secondary.
+
+Validation of Finding 2: Severity confirmed Critical. Unauthenticated single-request DoS on a public HTTP entry point with stack-trace exposure meets Critical. OWASP mapping revised from A05 to **A04 Insecure Design** -- missing error handling at a trust boundary is a design omission, not a misconfiguration of an existing control.
+
+Validation of Finding 3: Severity confirmed Important. Exploitability is gated on a downstream merge/spread sink that this diff does not show; until a sink is confirmed, escalation to Critical is not warranted. If `handle()`'s return value reaches `Object.assign`, lodash `merge`, or spread into a config/auth object, escalate to Critical.
+
+Validation of Finding 4: Severity confirmed Suggestion. Dead code at present (Finding 1); upgrades to Important only after `validate()` is wired in, since a weak guard at an active boundary is materially worse than no guard plus a TODO.
+
+### Threat Patterns
+
+Findings 1 + 2 + 3 chain into an unauthenticated kill-chain on a public route: F1 (no validation gate) admits arbitrary payloads, F2 (no try/catch) converts a malformed-JSON request into a process crash, and F3 (raw parse output) seeds prototype pollution into any downstream merge sink. A single attacker request body exercises all three. F4 is latent -- it becomes load-bearing the moment F1 is remediated by wiring `validate()` without strengthening it, so fix F4 in the same commit as F1 to avoid a false-confidence regression.
+
+### Missed surfaces (optional)
+
+Adjacent: confirm `handle()`'s call sites -- any Express/Fastify route registration, and whether the returned parsed object reaches `Object.assign`, lodash `merge`, or template rendering, which would escalate F3 to Critical.
+
+**Verdict scope:** scope: security-threats

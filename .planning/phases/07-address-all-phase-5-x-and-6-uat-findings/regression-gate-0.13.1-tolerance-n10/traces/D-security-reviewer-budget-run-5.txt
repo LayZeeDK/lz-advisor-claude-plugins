@@ -1,0 +1,33 @@
+## Security Review Summary
+
+Reviewed: `review-src/handler.ts`, `review-src/validate.ts` (commit `84f8eea` -- "add unvalidated handler with JSON.parse for security-reviewer scenario")
+
+### Findings
+
+`review-src/handler.ts:7: crit: [A04] unhandled JSON.parse on attacker-controlled req.body crashes process via SyntaxError. Wrap in try/catch; return 400 on parse failure.`
+`review-src/handler.ts:7: imp: [A03] JSON.parse output flows to unknown downstream consumers without __proto__/constructor scrubbing; spread/merge sinks enable prototype pollution. Use safe parser (e.g. secure-json-parse) or strip __proto__/constructor keys; severity escalates to crit if downstream merge sink confirmed (unverified). Verify downstream consumer shape before committing.`
+`review-src/handler.ts:1-8: imp: [A04] validate() exported but never imported -- validation gate permanently open. Import and call validate (after hardening) before process(); reject on false.`
+`review-src/handler.ts:1-4: imp: [A04] no body-size cap before JSON.parse enables heap-exhaustion DoS via large payload. Enforce max body size at framework layer (e.g. express.json({limit:'100kb'})) and reject oversized req.body.`
+`review-src/validate.ts:1: sug: [A04] x != null passes "", 0, false, [] -- insufficient as parse gate. Replace with schema validator (zod/ajv) or at minimum typeof x === 'string' && x.length > 0 && x.length < MAX.`
+
+### Per-finding validation
+
+Validation of Finding 1: Confirmed crit. Unauthenticated network-reachable handler + uncaught synchronous throw = trivial DoS. OWASP mapping revised from A05 to A04 (Insecure Design): missing error boundary is a design defect, not a misconfiguration.
+
+Validation of Finding 2: Severity revised from crit to imp pending downstream-sink verification. JSON.parse alone does not pollute Object.prototype in modern Node (V8 treats `__proto__` as own property on parsed result). Pollution requires a downstream merge/assign sink that walks `__proto__`. Without that sink in scope, the threat is latent. Unresolved hedge: downstream consumer of process() return value not packaged. Verify consumer shape before committing severity.
+
+Validation of Finding 3: Confirmed imp. Mapping revised A03 -> A04 (Insecure Design); the validation primitive exists but is unwired -- a design defect, not an injection per se. Becomes the enabling condition for findings 1, 2, 4.
+
+Validation of Finding 4: Confirmed imp. Mapping A04 retained.
+
+Validation of Finding 5: Confirmed sug. Mapping revised A03 -> A04. Even if wired, the predicate is too permissive to be a meaningful gate.
+
+### Threat Patterns
+
+Findings 3, 1, 4 chain into the dominant attack path: the unwired validate() (3) leaves JSON.parse exposed to both malformed input (1 -> crash/DoS) and oversized input (4 -> heap-exhaustion DoS), both unauthenticated and trivially exploitable. Finding 2 is latent and depends on an out-of-scope downstream merge sink; if such a sink exists, findings 3+2 chain to persistent prototype pollution affecting every subsequent request in the process -- escalates to crit. Remediation order: (a) wrap JSON.parse in try/catch [F1], (b) enforce body-size limit at framework layer [F4], (c) wire and harden validate() with schema [F3+F5], (d) audit downstream consumers and adopt secure-json-parse [F2].
+
+### Missed surfaces (optional)
+
+Handler registration site (Express/Fastify/raw http) not in scope -- verify global error middleware exists and body-parser limit is configured; both gate whether F1/F4 crash the whole process or just the request.
+
+**Verdict scope:** scope: security-threats

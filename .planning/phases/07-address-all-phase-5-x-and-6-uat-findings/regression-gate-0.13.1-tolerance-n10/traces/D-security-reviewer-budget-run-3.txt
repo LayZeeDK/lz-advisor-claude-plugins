@@ -1,0 +1,26 @@
+## Security Review Summary
+
+Reviewed: `review-src/handler.ts` and `review-src/validate.ts` (commit `1f08eba` -- "add unvalidated handler with JSON.parse for security-reviewer scenario")
+
+### Findings
+
+`review-src/handler.ts:6-7: crit: [A08] unvalidated `req.body` flows to `JSON.parse` without schema/size/content-type checks, enabling prototype-pollution payloads and DoS via deeply nested input. Validate with schema (zod/ajv) + size cap before parse.`
+`review-src/handler.ts:1-9: crit: [A01] `validate` exported from `validate.ts` is never imported/invoked; input gate is dead code. Import `validate` and call before `process()`, reject on false.`
+`review-src/handler.ts:7: imp: [A09] uncaught `SyntaxError` from `JSON.parse` on malformed body leaks stack traces and crashes handler (DoS). Wrap in try/catch, return 400 with generic message, log internally.`
+`review-src/validate.ts:1: imp: [A04] `validate` is `x != null` only -- accepts arbitrary structures incl. `__proto__` keys, providing false safety signal. Replace with strict schema validator (zod/ajv) enforcing shape, types, key allowlist.`
+
+### Per-finding validation
+
+Validation of Finding 2: Escalating implicit severity framing -- the dead-gate pattern is A01 (Broken Access Control) more than pure design; the control exists in the codebase but is bypassed at the call site. Confirmed Critical: unauthenticated path, zero validation, full blast radius per threat model.
+
+Validation of Finding 4: Revising initial Suggestion to Important. A `!= null` check that masquerades as validation is worse than no validation -- it creates the false-confidence pattern that lets reviewers/maintainers skip adding real schema checks. Severity tied to blast radius (full app compromise per threat model), not to the function's own triviality.
+
+### Threat Patterns
+
+Findings 1, 2, and 4 chain into a single unauthenticated RCE-class path: external `req.body` (F1) bypasses the never-invoked gate (F2); even if wired up, the gate (F4) would pass prototype-pollution payloads through to `JSON.parse`, and downstream consumers of the parsed object inherit polluted `Object.prototype`. Finding 3 (uncaught SyntaxError) is the DoS/info-disclosure side channel on the same entry point -- malformed input crashes/leaks; well-formed malicious input pollutes. The systemic root: a validation module exists but is decorative, not load-bearing. Gate-block until F1+F2 are fixed jointly (importing `validate` alone is insufficient without replacing F4's body).
+
+### Missed surfaces (optional)
+
+Downstream consumers of `process()`'s return value were not in scope -- any object-merge, property-copy, or template-render sink that touches the parsed result inherits the prototype-pollution exposure.
+
+**Verdict scope:** scope: security-threats

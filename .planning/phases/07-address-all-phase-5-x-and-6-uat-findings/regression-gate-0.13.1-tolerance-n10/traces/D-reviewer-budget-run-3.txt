@@ -1,0 +1,37 @@
+No `<verify_request>` blocks -- proceeding directly to output.
+
+---
+
+## Review Summary
+
+Reviewed: commit `fdebb8c` -- `review-src/handler.ts` and `review-src/validate.ts`
+
+### Findings
+
+`review-src/handler.ts:7: crit: JSON.parse throws SyntaxError on malformed input; no try/catch on call path. Wrap in try/catch, return typed error or 400.`
+`review-src/handler.ts:1-8: crit: validate exported but never imported; commit confirms "unvalidated handler". Import validate, gate process(req.body) on it, reject otherwise.`
+`review-src/handler.ts:2: imp: if (req.body) drops 0, false, "", null which are valid JSON. Use req.body != null.`
+`review-src/handler.ts:6: imp: local fn process shadows Node global; future process.env/process.exit in this module silently calls helper. Rename to parseBody.`
+`review-src/handler.ts:1,6: sug: handle(req), process(data), validate(x) lack types; req: any erodes TS guarantees. Add Request/unknown types and parsed return type.`
+`review-src/validate.ts:1: imp: validate(x) only checks != null; does not validate shape, type, or string-vs-object. Strengthen to assert string before JSON.parse, or replace with schema validator.`
+`review-src/handler.ts:7: imp: JSON.parse return typed as any flows to callers untyped. Type as unknown and narrow at boundary.`
+
+### Per-finding validation
+
+Validation of Finding 1: Confirmed Critical. `JSON.parse` on attacker-controlled body without try/catch is a denial-of-service vector in any server framework that does not catch synchronous handler throws (raw http, some middleware chains). Even in Express 5 / Fastify which catch sync throws, the default response is 500 with stack -- wrong status code (should be 400) and information disclosure.
+
+Validation of Finding 2: Confirmed Important; arguably Critical given the commit message explicitly flags "unvalidated handler" as the scenario. The dead export is the smoking gun -- author intended validation, wired nothing. Severity hinges on caller trust boundary: if `req` is HTTP-external, escalate to Critical (input validation gap on trust boundary, OWASP A03).
+
+Validation of Finding 3: Confirmed Important. The falsy-coercion bug is real but narrow -- most HTTP frameworks deliver `req.body` as a parsed object or string, so `0` / `false` arrive only when upstream JSON middleware has already parsed. Combined with Finding 1 (double-parse of already-parsed body) suggests the author may be confused about whether `req.body` is raw or parsed -- worth raising.
+
+Validation of Finding 4: Revising Suggestion -> Important. `process` shadowing is not merely stylistic in a Node module; it is a latent footgun that activates the moment anyone adds logging, env reads, or exit calls. The fix is one rename. Cheap to fix, cheap to miss in review later.
+
+### Cross-Cutting Patterns
+
+Findings 1, 2, 3, and 6 share a single root cause: no input-validation contract at the trust boundary. The handler treats `req.body` as trusted, well-formed JSON-string input without verifying it is (a) present-vs-absent distinctly, (b) a string, (c) parseable, or (d) shape-conformant. The dead `validate.ts` export indicates the author knew validation was needed and did not finish wiring it. Recommend a single boundary parser using `zod` / `valibot` that handles null-check, type-check, parse, and shape-check atomically, replacing both files. Findings 4 and 5 are independent code-hygiene issues (shadowing, missing types) that compound the boundary problem by making future fixes riskier.
+
+### Missed surfaces (optional)
+
+No tests accompany either file; the falsy-body and malformed-JSON paths from Findings 1 and 3 are exactly the cases a single parametrised test would catch.
+
+**Verdict scope:** scope: api-correctness

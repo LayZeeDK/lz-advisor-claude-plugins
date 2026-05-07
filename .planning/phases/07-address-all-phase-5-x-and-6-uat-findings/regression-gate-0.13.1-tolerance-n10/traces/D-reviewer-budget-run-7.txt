@@ -1,0 +1,31 @@
+## Review Summary
+
+Reviewed: `review-src/handler.ts` and `review-src/validate.ts` (commit `5c04de9` -- "add unvalidated handler with JSON.parse for reviewer scenario")
+
+### Findings
+
+`review-src/handler.ts:7: crit: unguarded JSON.parse throws SyntaxError on malformed body, propagates unhandled. Wrap in try/catch, return null or typed error.`
+
+`review-src/handler.ts:2: crit: validate exported but unused; truthiness gate is not validation. Import validate and reject when validate(req.body) is false before process().`
+
+`review-src/handler.ts:2-7: imp: non-string body (parsed object from body-parser) coerces to "[object Object]" then throws. Add typeof data === 'string' guard before JSON.parse.`
+
+`review-src/validate.ts:1: imp: validate(x) = x != null is too permissive -- passes "", 0, [], {}, NaN as valid. Tighten to schema check matching expected payload shape.`
+
+`review-src/handler.ts:2: sug: braceless if violates CLAUDE.md. Wrap body in { }.`
+
+`review-src/handler.ts:2-3: sug: missing blank line before return null per CLAUDE.md control-flow rule. Insert blank line.`
+
+`review-src/handler.ts:1,6: imp: handle(req) and process(data) lack parameter types; defeats TypeScript. Type as (req: { body?: unknown }) and (data: string).`
+
+`review-src/handler.ts:3: q: returning null on falsy body conflates "no body" with "empty string body" and "body=0". Intended, or should empty/zero be a 400?`
+
+### Cross-Cutting Patterns
+
+Findings 1, 2, 3, and 4 share a single root cause: the boundary between untrusted input and `JSON.parse` has no contract. `validate.ts` exists but is wired to nothing, types are absent, and the only gate is JS truthiness -- so every malformed-input class (non-string, empty string, pre-parsed object, invalid JSON) reaches `JSON.parse` or silently returns `null`. Fix is structural: import `validate`, tighten it to a real schema/`typeof` check, type the handler signature, and wrap parse in try/catch. Findings 5-6 (style) are independent of the validation gap but cluster on the same two lines, suggesting the file was not run through the project's ESLint/Prettier config before commit.
+
+### Missed surfaces (optional)
+
+No tests accompany either file; the validation gap and parse-throw path are both trivially unit-testable and should land with the fix.
+
+**Verdict scope:** scope: api-correctness

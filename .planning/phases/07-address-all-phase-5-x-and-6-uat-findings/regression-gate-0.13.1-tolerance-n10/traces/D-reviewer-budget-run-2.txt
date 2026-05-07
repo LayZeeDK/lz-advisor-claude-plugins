@@ -1,0 +1,39 @@
+## Review Summary
+
+Reviewed: `review-src/handler.ts` and `review-src/validate.ts` (commit `bbc0729`)
+
+### Findings
+
+`review-src/handler.ts:7: crit: `JSON.parse(data)` lacks try/catch; malformed input throws uncaught `SyntaxError` to caller. Wrap in try/catch and return typed error result.`
+
+`review-src/handler.ts:2: imp: truthy check drops valid falsy JSON (`""`, `"0"`, `"false"`); `false` body coerces silently. Use `req.body != null` and explicit string-type guard.`
+
+`review-src/handler.ts:1-8,review-src/validate.ts:1: imp: `validate` exported but never imported in handler; input flows to `JSON.parse` unchecked. Import and gate `process(req.body)` behind `validate(req.body)`.`
+
+`review-src/handler.ts:2,7: imp: ambiguous contract -- if upstream uses `express.json()`, `req.body` is already an object and `JSON.parse` throws on `"[object Object]"`. Type `req.body: string` and document raw-body requirement, or drop `JSON.parse`.`
+
+`review-src/validate.ts:1: sug: `validate(x)` only checks `x != null`; accepts `""`, `0`, `false`, `NaN`, malformed strings. Tighten to schema check (zod / typeof + structural validation) matching expected payload.`
+
+`review-src/handler.ts:1,7: imp: untyped `req` and `data` parameters; `any` defeats TS guarantees and hides the string-vs-object ambiguity in Finding 4. Add `req: { body: unknown }` and narrow before parsing.`
+
+`review-src/handler.ts:7: sug: `process` is module-private but shadows the Node.js global `process`. Rename to `parseBody` to avoid confusion in stack traces and lint warnings.`
+
+### Per-finding validation
+
+Validation of Finding 1: Confirmed Critical. `JSON.parse` throws synchronously on any non-JSON string; with no try/catch in `handle` and no documented async boundary, the exception escapes to the HTTP framework. Express 4 returns 500 but Express 5 / raw `http` handlers without a default error handler crash the worker. Fix: return `{ ok: false, error }` discriminated union, or rethrow a typed `BadRequestError` the framework can map to 400.
+
+Validation of Finding 2: Confirmed Important, not Critical -- silent data loss but not a crash. Note the practical trigger: `req.body === ""` is common when clients send `Content-Type: application/json` with empty body; the handler returns `null` indistinguishable from "no body field present". Fix: distinguish missing (`req.body === undefined`) from empty-string (explicit 400) from valid string (parse).
+
+Validation of Finding 3: Confirmed Important. Co-located `validate.ts` with no import site is a strong signal of incomplete wiring. Even if the current `validate` is weak (Finding 5), calling it establishes the validation seam for future tightening. Severity holds; the absent call is the structural defect, independent of `validate`'s current strength.
+
+Validation of Finding 4: Confirmed Important, with caveat -- severity escalates to Critical IF the upstream framework is known to use `express.json()`. Without that confirmation, Important is correct. Assuming Express with default JSON middleware (unverified), do remove `JSON.parse` and treat `req.body` as already-parsed. Verify the framework integration before acting.
+
+### Cross-Cutting Patterns
+
+Findings 1, 2, 3, and 4 share a single root cause: the module has no defined input contract. There is no type annotation on `req`, no schema, no validator invocation, and no error boundary -- so every assumption (body is string, body is JSON-shaped, body is non-empty, parse succeeds) is implicit. Fix the contract once: type `req.body: unknown`, call `validate` (tightened per Finding 5), then parse inside try/catch. That single seam closes Findings 1-4 together. Finding 7 (shadowing `process`) is independent stylistic noise.
+
+### Missed surfaces (optional)
+
+No tests accompany these files; add a `handler.test.ts` covering empty-string body, object body, malformed JSON, and valid JSON paths to lock the contract once fixed.
+
+**Verdict scope:** scope: api-correctness

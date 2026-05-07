@@ -1,0 +1,30 @@
+## Security Review Summary
+
+Reviewed: `review-src/handler.ts` and `review-src/validate.ts` (commit `801f37b` -- "add unvalidated handler with JSON.parse for security-reviewer scenario")
+
+### Findings
+
+`review-src/handler.ts:7: crit: [A05] unwrapped `JSON.parse(data)` crashes process on malformed body (DoS, unauthenticated). Wrap in try/catch; return 400 on `SyntaxError`.`
+`review-src/handler.ts:7: crit: [A03] `JSON.parse` returns attacker-controlled `__proto__`/`constructor` keys unsanitized, enabling prototype pollution downstream. Use reviver that drops `__proto__`/`constructor`/`prototype`, or `Object.create(null)` + key allow-list.`
+`review-src/validate.ts:1: imp: [A04] `validate(x)` is a null-check masquerading as a security boundary; any non-null payload passes. Replace with schema validation (zod/ajv) enforcing shape, types, and key allow-list.`
+`review-src/handler.ts:2: imp: [A04] `if (req.body)` truthy-gates non-string inputs (Buffer, `"0"`, `[]`) into `JSON.parse`. Assert `typeof req.body === 'string'` and enforce max length before parsing.`
+
+### Per-finding validation
+
+Validation of Finding 1: Confirmed Critical. Unauthenticated remote DoS with one-byte payload (`x`) is the canonical A05/A04 misconfiguration. Stays Critical.
+
+Validation of Finding 2: Confirmed Critical, but conditional on a downstream sink. Prototype pollution requires a subsequent `Object.assign({}, parsed)`, recursive merge, or property-existence check on a fresh object elsewhere in the process. Per threat-model context ("In a Node.js server context, prototype pollution cascades across all in-process request handling"), the executor asserts such sinks exist process-wide. Assuming downstream merge/assign sinks exist (unverified in scoped files), do treat as Critical. Verify presence of merge sinks before downgrading.
+
+Validation of Finding 3: Confirm Important; consider promotion to Critical when chained with Finding 2 -- `validate()` is the only gate between `JSON.parse` output and downstream consumers, and it admits `__proto__`-bearing objects untouched. As an isolated weakness, Important holds; in the chain, it is the load-bearing bypass.
+
+Validation of Finding 4: Confirm Important. Type confusion on `req.body` is a reliable amplifier for Finding 1 (Buffer input throws different exception class) and Finding 2 (array input parses successfully into prototype-pollution vector). Stays Important.
+
+### Threat Patterns
+
+Findings 2, 3, 4 chain into a confirmed prototype-pollution exploit: attacker sends `{"__proto__":{"isAdmin":true}}` as the body; Finding 4's truthy guard admits it; `JSON.parse` (Finding 2) returns the polluting object; Finding 3's `validate()` returns true unconditionally; the polluted object reaches any downstream `Object.assign`/merge sink and corrupts `Object.prototype` process-wide. Finding 1 is an independent unauthenticated-DoS primitive on the same endpoint -- attacker chooses crash-or-pollute. The shared root cause is absence of an input-validation boundary: `validate()` is structurally incapable of being one, and the handler trusts `JSON.parse` output verbatim.
+
+### Missed surfaces (optional)
+
+Adjacent: any caller of `process()` or consumer of `handle()`'s return value (not in scope) is the prototype-pollution sink; audit `Object.assign`/spread/merge usage across the codebase.
+
+**Verdict scope:** scope: security-threats

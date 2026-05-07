@@ -1,0 +1,38 @@
+## Security Review Summary
+
+Reviewed: `review-src/handler.ts` and `review-src/validate.ts` -- last commit (ae9434a "add unvalidated handler with JSON.parse for security-reviewer scenario")
+
+---
+
+### Findings
+
+`review-src/handler.ts:7: imp: [A04] unguarded `JSON.parse(data)` throws on malformed input, propagating uncaught SyntaxError. Wrap in try/catch, return 400 on parse failure.`
+`review-src/handler.ts:7: sug: [A03] `JSON.parse` itself does not pollute prototypes; risk materializes only if parsed result is later merged via unsafe `Object.assign`/recursive merge. Strip `__proto__`/`constructor` keys post-parse or use `Map`/null-prototype object before any merge downstream.`
+`review-src/handler.ts:1-4: imp: [A04] `validate()` exported but never imported -- handler passes `req.body` straight to `JSON.parse` with zero gate. Import and call `validate(req.body)` before `process()`; reject on failure.`
+`review-src/validate.ts:1: imp: [A04] `validate(x)` only checks `x != null`; passes any string/object regardless of size, type, or shape -- false-assurance stub. Replace with schema validator (zod/ajv) enforcing type, max-length, and structural depth.`
+`review-src/handler.ts:1: sug: [A04] `req` is implicit `any`; pre-parsed body objects coerce to `"[object Object]"` under `JSON.parse`, masking type-confusion. Annotate `req: { body: string }` and enable `noImplicitAny`/`strict`.`
+`review-src/handler.ts:7: sug: [A04] no input-size cap before `JSON.parse`; large payloads (e.g., 100 MB string, deeply nested arrays) block the event loop. Enforce `Content-Length`/byte cap and depth limit upstream of parse.`
+
+### Per-finding validation
+
+Validation of Finding 1: Confirmed but downgrade Critical -> Important. Unhandled `SyntaxError` is a real DoS vector, but Node.js HTTP frameworks (Express, Fastify, Koa) catch synchronous handler throws and return 500 by default -- process crash requires the handler to be invoked outside a framework's error boundary. Severity rises to Critical only if deployment context confirms no framework-level error handler. Unresolved hedge: deployment framework unknown (unverified). Verify framework error-boundary behavior before downgrading further.
+
+Validation of Finding 2: Downgrade Critical -> Suggestion. `JSON.parse` in modern V8 places `__proto__` as an own property on the parsed object -- it does NOT mutate `Object.prototype` directly. Pollution requires a downstream unsafe-merge sink (`Object.assign`, lodash `_.merge` pre-4.17.12, recursive copy). No such sink exists in scope. Threat is latent, not confirmed-exploitable. Re-escalate if/when caller code merges the result.
+
+Validation of Finding 3: Confirmed Important. Dead-code validator is a design smell that signals incomplete wiring -- exactly the surface an attacker probes.
+
+Validation of Finding 4: Confirmed Important. Stub validators are worse than no validator; they shift trust to a function that earns none.
+
+Validation of Finding 5: Confirmed Suggestion. Type-confusion via pre-parsed body is a real but low-impact bug class.
+
+### Threat Patterns
+
+Findings 1, 3, 4 chain into the dominant attack path: handler accepts `req.body` (Finding 3 -- no gate), passes to unguarded `JSON.parse` (Finding 1 -- crash on malformed), and even if gated would clear the null-only stub (Finding 4 -- no schema). An unauthenticated attacker sends `{broken` and triggers the DoS; sends a 100 MB string and exhausts memory; sends `{"__proto__":{...}}` and primes Finding 2 for any future merge sink. The shared root cause is absent input contract -- no schema, no size cap, no type guard -- a single `zod`/`ajv` schema applied at the handler entry closes Findings 1, 3, 4, and the size/depth gap simultaneously.
+
+### Missed surfaces (optional)
+
+Caller of `handle()` is out of scope; if it spreads/merges the returned object (`{...result}` is safe, `Object.assign(target, result)` or recursive merge is not), Finding 2 escalates to Critical.
+
+---
+
+**Verdict scope:** scope: security-threats

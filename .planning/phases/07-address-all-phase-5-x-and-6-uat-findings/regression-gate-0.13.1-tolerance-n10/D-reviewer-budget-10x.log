@@ -1,0 +1,399 @@
+# D-reviewer-budget.sh 10x re-run on plugin 0.13.1 (assembled via parser replay against captured traces)
+# Generated: 2026-05-07T21:57:24Z
+# Plugin version: 0.13.1
+# Contract: per-section budgets per Plan 07-14 <output_constraints> XML; aggregate cap dropped; smoke +10% gate tolerance applied
+# Fixture: .planning/phases/05.4-address-uat-findings-a-k/smoke-tests/D-reviewer-budget.sh
+# Trace cache: .planning/phases/07-address-all-phase-5-x-and-6-uat-findings/regression-gate-0.13.1-tolerance-n10/traces (10 runs preserved for future --from-trace replay)
+
+=== Run 1 ===
+Run 1: EXIT 1 (FAIL)
+
+--- Run 1 output (full) ---
+[INFO] Replay mode: using trace .planning/phases/07-address-all-phase-5-x-and-6-uat-findings/regression-gate-0.13.1-tolerance-n10/traces/D-reviewer-budget-run-1.txt (skipping claude -p)
+[OK] Reviewer output sections present: Findings=1 CCP=1
+[INFO] Fragment-grammar shape detected: 6 finding line(s)
+[OK] Finding line 1: 20 words (<=22 target)
+[OK] Finding line 2: 21 words (<=22 target)
+[ERROR] Finding line 3: 34 words (>28 outlier soft cap; target <=22w)
+[OK] Finding line 4: 22 words (<=22 target)
+[OK] Finding line 5: 22 words (<=22 target)
+[ERROR] Finding line 6: 37 words (>28 outlier soft cap; target <=22w)
+[INFO] Total findings: 6; bad: 2
+[INFO] Per-finding validation: 3 entries
+[OK] Per-finding validation entry 1: 35 words (<=60 target)
+[OK] Per-finding validation entry 2: 56 words (<=60 target)
+[OK] Per-finding validation entry 3: 39 words (<=60 target)
+[OK] Cross-Cutting Patterns: 80 words (<=160 target)
+[OK] Missed surfaces: 28 words (<=30 target)
+--- reviewer output (last 200 lines) ---
+## Review Summary
+
+Reviewed: `review-src/handler.ts` and `review-src/validate.ts` -- commit `087fd0c` ("add unvalidated handler with JSON.parse for reviewer scenario")
+
+### Findings
+
+`review-src/handler.ts:7: crit: `JSON.parse(data)` throws `SyntaxError` on malformed input; uncaught propagates to caller. Wrap in try/catch and return null or throw typed error.`
+
+`review-src/validate.ts:1: imp: `validate` exported but never imported by `handler.ts`; dead code and handler skips validation before `JSON.parse`. Import and call `validate(req.body)` before `process()`.`
+
+`review-src/handler.ts:2: sug: truthy check `if (req.body)` rejects empty string and `0` but those are not valid JSON-body shapes for HTTP request bodies in normal frameworks. Use `if (req.body != null)` for clarity, but practical impact low.`
+
+`review-src/handler.ts:3: imp: `process()` return value is `any`/untyped; downstream callers receive unknown shape. Add return-type schema or run `validate` on parsed result, not raw input.`
+
+`review-src/handler.ts:1: imp: parameter `req` and `data` lack type annotations in TypeScript module; defeats type-checking purpose. Type as `{ body?: unknown }` and `string` respectively.`
+
+`review-src/validate.ts:1: imp: `validate(x) { return x != null }` is meaningless as JSON-body validator -- accepts any non-null value including arrays, numbers, malformed strings. Replace with schema check (zod, ajv) or at minimum `typeof x === 'string'` before `JSON.parse`.`
+
+### Per-finding validation
+
+Validation of Finding 1: Confirmed Critical. `JSON.parse` on attacker-controlled `req.body` with no guard is a denial-of-service vector -- a single malformed POST crashes the handler and, depending on framework, the worker. Standard remediation is try/catch returning a 400-equivalent sentinel.
+
+Validation of Finding 2: Confirmed Important, leaning Critical-adjacent. The dead `validate` import is the symptom; the disease is that `handler.ts` performs zero input validation before `JSON.parse`. Even wired up, the current `validate` body (`x != null`) does not prevent the SyntaxError in Finding 1 because non-null strings can still be malformed JSON. Fix requires both wiring AND strengthening the validator.
+
+Validation of Finding 3: Revise to Suggestion. In practice Express/Fastify/Koa never deliver `0` or `""` as `req.body` -- bodies are objects, strings, or `undefined`. The truthiness check is imprecise but the failure modes you describe are theoretical. Real risk is style/readability, not correctness.
+
+### Cross-Cutting Patterns
+
+Findings 1, 2, 4, and 6 share a root cause: the module treats `req.body` as trusted, structured input when it is untyped attacker-controlled bytes. A single `parseAndValidate(body: unknown): Result<T, Error>` boundary function -- typed input, schema-validated output, exception-free return -- collapses all four findings. The TypeScript-without-types pattern (Finding 5) compounds this: the compiler cannot warn about the missing validation hop because nothing is typed at the boundary. Recommend zod or ajv at the entry point and strict mode in `tsconfig.json`.
+
+### Missed surfaces (optional)
+
+Check whether `handler.ts` is wired into a route registration file; if `process()` return value flows to `res.json()` without sanitization, prototype-pollution via `__proto__` keys in parsed JSON becomes reachable.
+
+---
+
+**Verdict scope:** scope: api-correctness
+--- end Run 1 output ---
+
+=== Run 2 ===
+Run 2: EXIT 0 (PASS)
+
+--- Run 2 output (full) ---
+[INFO] Replay mode: using trace .planning/phases/07-address-all-phase-5-x-and-6-uat-findings/regression-gate-0.13.1-tolerance-n10/traces/D-reviewer-budget-run-2.txt (skipping claude -p)
+[OK] Reviewer output sections present: Findings=1 CCP=1
+[INFO] Fragment-grammar shape detected: 4 finding line(s)
+[OK] Finding line 1: 18 words (<=22 target)
+[OK] Finding line 2: 21 words (<=22 target)
+[WARN] Finding line 3: 26 words (>22 target but <=28 outlier; acceptable)
+[OK] Finding line 4: 21 words (<=22 target)
+[INFO] Total findings: 4; bad: 0
+[INFO] Per-finding validation: 4 entries
+[WARN] Per-finding validation entry 1: 65 words (>60 target but <=66 outlier; acceptable)
+[OK] Per-finding validation entry 2: 53 words (<=60 target)
+[OK] Per-finding validation entry 3: 47 words (<=60 target)
+[OK] Per-finding validation entry 4: 45 words (<=60 target)
+[OK] Cross-Cutting Patterns: 83 words (<=160 target)
+[OK] Missed surfaces: 25 words (<=30 target)
+[SUCCESS] D-reviewer-budget.sh: per-section budgets enforced (entries <=22w/28w outlier, Per-finding validation <=60w/66w outlier, CCP <=160w/176w outlier, Missed surfaces <=30w/33w outlier; aggregate cap dropped per Plan 07-14; gate-tolerance +10% at test layer only, agent XML targets stay canonical)
+--- end Run 2 output ---
+
+=== Run 3 ===
+Run 3: EXIT 0 (PASS)
+
+--- Run 3 output (full) ---
+[INFO] Replay mode: using trace .planning/phases/07-address-all-phase-5-x-and-6-uat-findings/regression-gate-0.13.1-tolerance-n10/traces/D-reviewer-budget-run-3.txt (skipping claude -p)
+[OK] Reviewer output sections present: Findings=1 CCP=1
+[INFO] Fragment-grammar shape detected: 6 finding line(s)
+[OK] Finding line 1: 19 words (<=22 target)
+[OK] Finding line 2: 17 words (<=22 target)
+[OK] Finding line 3: 15 words (<=22 target)
+[OK] Finding line 4: 17 words (<=22 target)
+[WARN] Finding line 5: 23 words (>22 target but <=28 outlier; acceptable)
+[OK] Finding line 6: 16 words (<=22 target)
+[INFO] Total findings: 6; bad: 0
+[INFO] Per-finding validation: 4 entries
+[OK] Per-finding validation entry 1: 55 words (<=60 target)
+[OK] Per-finding validation entry 2: 49 words (<=60 target)
+[OK] Per-finding validation entry 3: 58 words (<=60 target)
+[OK] Per-finding validation entry 4: 45 words (<=60 target)
+[OK] Cross-Cutting Patterns: 100 words (<=160 target)
+[OK] Missed surfaces: 25 words (<=30 target)
+[SUCCESS] D-reviewer-budget.sh: per-section budgets enforced (entries <=22w/28w outlier, Per-finding validation <=60w/66w outlier, CCP <=160w/176w outlier, Missed surfaces <=30w/33w outlier; aggregate cap dropped per Plan 07-14; gate-tolerance +10% at test layer only, agent XML targets stay canonical)
+--- end Run 3 output ---
+
+=== Run 4 ===
+Run 4: EXIT 1 (FAIL)
+
+--- Run 4 output (full) ---
+[INFO] Replay mode: using trace .planning/phases/07-address-all-phase-5-x-and-6-uat-findings/regression-gate-0.13.1-tolerance-n10/traces/D-reviewer-budget-run-4.txt (skipping claude -p)
+[OK] Reviewer output sections present: Findings=1 CCP=1
+[INFO] Fragment-grammar shape detected: 6 finding line(s)
+[OK] Finding line 1: 16 words (<=22 target)
+[OK] Finding line 2: 12 words (<=22 target)
+[OK] Finding line 3: 17 words (<=22 target)
+[ERROR] Finding line 4: 30 words (>28 outlier soft cap; target <=22w)
+[OK] Finding line 5: 18 words (<=22 target)
+[OK] Finding line 6: 19 words (<=22 target)
+[INFO] Total findings: 6; bad: 1
+[INFO] Per-finding validation: 4 entries
+[OK] Per-finding validation entry 1: 33 words (<=60 target)
+[OK] Per-finding validation entry 2: 36 words (<=60 target)
+[OK] Per-finding validation entry 3: 29 words (<=60 target)
+[OK] Per-finding validation entry 4: 33 words (<=60 target)
+[OK] Cross-Cutting Patterns: 93 words (<=160 target)
+[OK] Missed surfaces: 26 words (<=30 target)
+--- reviewer output (last 200 lines) ---
+## Review Summary
+
+Reviewed: `review-src/handler.ts` and `review-src/validate.ts` (commit `346cf91` -- "add unvalidated handler with JSON.parse for reviewer scenario")
+
+### Findings
+
+`review-src/handler.ts:7: crit: `JSON.parse(data)` throws `SyntaxError` on malformed input; propagates uncaught. Wrap in try/catch, return error result or null.`
+
+`review-src/handler.ts:2: imp: truthy guard drops `""`, `0`, `false`, `[]`. Replace with `req.body != null`.`
+
+`review-src/handler.ts:1: imp: `validate` from sibling module never imported; handler bypasses validation before `JSON.parse`. Import and call `validate(req.body)` before `process`.`
+
+`review-src/validate.ts:1: imp: `validate` only checks `x != null`; accepts non-string types `JSON.parse` will reject and does not verify parseability. Tighten to `typeof x === 'string' && x.length > 0` (or schema-validate post-parse).`
+
+`review-src/handler.ts:1,6: sug: implicit `any` on `req`, `data`; no return type. Type as `{ body?: unknown }` and `string`; annotate return.`
+
+`review-src/validate.ts:1: sug: implicit `any` on `x`, no return-type annotation. Type `x: unknown`, return `boolean`; consider type predicate `x is string`.`
+
+`review-src/handler.ts:7: imp: `process` returns `any` from `JSON.parse`; caller receives untyped data. Validate parsed shape with schema (zod/io-ts) or narrow before return.`
+
+### Per-finding validation
+
+Validation of Finding 1: Confirmed Critical. `JSON.parse` on `'{'`, `'undefined'`, or any non-JSON string throws synchronously. With no try/catch and no caller-side boundary visible, this is a guaranteed crash on first malformed payload -- standard request-handler footgun.
+
+Validation of Finding 2: Confirmed Important. Severity correct: empty-string bodies are common (DELETE requests, empty POSTs) and `0` / `false` are valid JSON bodies a parser would happily accept. The fix `req.body != null` preserves intent while admitting falsy-but-present values.
+
+Validation of Finding 3: Confirmed Important. The dead-code signal is strong: same directory, sibling file, exported symbol, no other consumers visible. Author intent almost certainly was `if (validate(req.body)) return process(req.body)`. Ship the wiring.
+
+Validation of Finding 4: Confirmed Suggestion. Not correctness-affecting at runtime but blocks downstream type-safety. Bumping to Important is tempting but the runtime bugs (1-3) are the actual user-facing failures; types are the prevention layer, not the bug.
+
+### Cross-Cutting Patterns
+
+Findings 1, 3, and 4 share a root cause: the boundary between untrusted input (`req.body`) and parsed/processed data has no validation, no error handling, and no type narrowing. A single zod (or equivalent) schema applied at the boundary would resolve all three: parse safely, validate shape, and produce a typed result. Finding 2 is an independent logic bug in the guard expression. The added Finding 4 (validate is too weak) and Finding 7 (untyped parse result) extend the same boundary-validation theme -- the codebase treats `JSON.parse` output as trusted, which it is not.
+
+### Missed surfaces (optional)
+
+Check whether `handle()` callers expect `null` vs throw for invalid input -- the contract is currently undefined and the fix in Finding 1 must pick one.
+
+**Verdict scope:** scope: api-correctness
+--- end Run 4 output ---
+
+=== Run 5 ===
+Run 5: EXIT 1 (FAIL)
+
+--- Run 5 output (full) ---
+[INFO] Replay mode: using trace .planning/phases/07-address-all-phase-5-x-and-6-uat-findings/regression-gate-0.13.1-tolerance-n10/traces/D-reviewer-budget-run-5.txt (skipping claude -p)
+[OK] Reviewer output sections present: Findings=1 CCP=1
+[WARN] Fragment-grammar shape NOT detected; falling back to Plan 07-04 numbered-section parser. New fragment-grammar shape is preferred per Plan 07-09.
+[ERROR] No Findings entries detected (neither fragment-grammar nor Plan 07-04 numbered shape matched)
+[OK] Per-finding validation: section absent (optional)
+[OK] Cross-Cutting Patterns: 98 words (<=160 target)
+[OK] Missed surfaces: section absent (optional)
+--- reviewer output (last 200 lines) ---
+## Review Summary
+
+Reviewed: commit `fd5f6bc` -- `review-src/handler.ts` and `review-src/validate.ts` (2 new files, 9 lines total)
+
+### Findings
+
+`review-src/handler.ts:6-8` -- **Critical** -- `JSON.parse` lacks try/catch; malformed body throws `SyntaxError` to caller. Wrap in try/catch returning typed error/null.
+
+`review-src/handler.ts:1-3` -- **Important** -- truthy guard admits `Buffer`/object/number; `JSON.parse` coerces via `toString()` producing silent `SyntaxError`. Add `typeof req.body === 'string'` check.
+
+`review-src/handler.ts:1-8` -- **Important** -- `validate` exported but never invoked; commit labels handler "unvalidated". Import `validate` and reject when `validate(parsed)` is false.
+
+`review-src/handler.ts:1,6`, `review-src/validate.ts:1` -- **Suggestion** -- implicit `any` on all params hides Finding 2 at compile time. Annotate `req: { body?: string }`, `data: string`, `x: unknown`.
+
+`review-src/handler.ts:8` -- **Important** (additional) -- no schema validation post-parse; `JSON.parse` accepts any valid JSON (numbers, arrays, nulls, hostile objects). Validate shape with zod or hand-rolled type guard before returning.
+
+`review-src/validate.ts:1` -- **Suggestion** (additional) -- `validate` name misleading; only checks non-null. Rename `isNonNullish` or expand to schema-aware check matching handler's needs.
+
+---
+
+**Per-finding validation**
+
+- **Finding 1 (Critical, confirmed):** `JSON.parse` throws synchronously and the function provides no error channel. Callers cannot distinguish "empty body" (returns `null`) from "invalid JSON" (throws). The error contract must be explicit -- return `null`, return a Result type, or document the throw.
+
+- **Finding 2 (Important, confirmed, minor correction):** The Buffer coercion path is real -- Express with `express.raw()` delivers `req.body` as a `Buffer`; `JSON.parse(buffer)` calls `Buffer.prototype.toString()` which returns decoded UTF-8 (not `"[object Object]"` as the scan noted -- the correction applies to the object case: a plain object from body-parser's JSON middleware gives `"[object Object]"` and throws). Severity holds.
+
+- **Finding 3 (Important, confirmed):** Dead export plus commit intent ("unvalidated handler") makes this a structural gap. The schema-validation fix (Finding 5) subsumes it -- `validate` as written is too weak regardless.
+
+- **Finding 4 (Suggestion, confirmed):** Type annotations would surface Findings 2 and 3 via `tsc --strict`. Worth pairing with `"strict": true` in `tsconfig.json` rather than annotation-by-annotation.
+
+---
+
+### Cross-Cutting Patterns
+
+Findings 1, 2, 3, and 5 share a single root cause: the handler treats `req.body` as trusted, parseable, and shape-correct without any boundary validation. The fix is one schema-validating entry point (zod / valibot / hand-rolled type guard) that replaces the truthy check, the bare `JSON.parse`, and the unused `validate` helper in one refactor. Finding 4 (missing types) is the compile-time corollary of the same trust gap -- `strict` mode plus annotated boundaries would have flagged Findings 2 and 3 mechanically.
+
+No `tsconfig.json` visible in scope; verify `strict`/`noImplicitAny` are enabled project-wide so type annotations actually gate future regressions.
+
+**Verdict scope:** scope: api-correctness
+--- end Run 5 output ---
+
+=== Run 6 ===
+Run 6: EXIT 1 (FAIL)
+
+--- Run 6 output (full) ---
+[INFO] Replay mode: using trace .planning/phases/07-address-all-phase-5-x-and-6-uat-findings/regression-gate-0.13.1-tolerance-n10/traces/D-reviewer-budget-run-6.txt (skipping claude -p)
+[OK] Reviewer output sections present: Findings=1 CCP=1
+[WARN] Fragment-grammar shape NOT detected; falling back to Plan 07-04 numbered-section parser. New fragment-grammar shape is preferred per Plan 07-09.
+[ERROR] No Findings entries detected (neither fragment-grammar nor Plan 07-04 numbered shape matched)
+[OK] Per-finding validation: section absent (optional)
+[OK] Cross-Cutting Patterns: 110 words (<=160 target)
+[OK] Missed surfaces: 27 words (<=30 target)
+--- reviewer output (last 200 lines) ---
+## Review Summary
+
+Reviewed: `review-src/handler.ts` and `review-src/validate.ts` (last commit: "add unvalidated handler with JSON.parse for reviewer scenario")
+
+### Findings
+
+`review-src/handler.ts:7` -- **Critical** -- `JSON.parse(data)` throws `SyntaxError` on malformed input. Wrap in try/catch and return null or throw a typed error.
+
+`review-src/handler.ts:2` -- **Important** -- `req.body` access throws `TypeError` when `req` is null/undefined. Guard with `if (!req) return null;` or `req?.body`.
+
+`review-src/validate.ts:1` -- **Important** -- `validate` is exported but unused by `handle()`. Import and call before `process(req.body)`, or delete the file if it is obsolete.
+
+`review-src/handler.ts:1,6` -- **Suggestion** -- Implicit `any` on `req`, `data`, `x` removes static safety. Type as `{body?: string}`, `string`, `unknown`.
+
+`review-src/handler.ts:7` -- **Important** -- `process` returns the `JSON.parse` result unvalidated; `"null"`, `"false"`, `"0"` parse to falsy values that may mislead callers expecting an object. Validate the parsed shape post-parse.
+
+`review-src/handler.ts:3` -- **Important** -- `if (req.body)` treats empty string and `0` as absent, conflating "missing body" with "falsy body". Use `req.body !== undefined` or an explicit presence check.
+
+### Per-finding validation
+
+**Finding 1:** Confirmed Critical. `JSON.parse` on malformed input is the canonical uncaught-exception vector in Node handlers; with no caller-side try/catch documented, a single malformed POST body crashes the request. Severity stands.
+
+**Finding 2:** Confirmed Important. Crashes only when caller violates implicit contract (passing nullish `req`), but in middleware pipelines this is reachable via misrouted invocations. Not Critical because normal HTTP frameworks always pass a request object; remains Important.
+
+**Finding 3:** Revise to Suggestion-bordering-Important. The commit title explicitly advertises "unvalidated" -- this is deliberate scenario seeding, not an oversight. As real code it would be Important (dead-export + missing integration); as a fixture it documents the gap intentionally. Treat as Important if this code ships; Suggestion if scenario-only.
+
+**Finding 4:** Confirmed Suggestion. Types do not change runtime behavior, but in concert with findings 1 and 2 the absence of `req: Request` annotation removes the one mechanism that would catch findings 2 and partially 1 at compile time. Severity stands; impact amplified by cross-cutting pattern below.
+
+### Cross-Cutting Patterns
+
+Findings 1, 2, and 6 share a single root cause: `handle()` accepts an untrusted external input and performs no boundary validation before consumption. The cascade is `handle(req)` -> `req.body` access -> `JSON.parse(body)` with three trust assumptions (req non-null, body present-and-string, body well-formed JSON) and zero guards. Finding 3 (`validate` orphaned) and Finding 4 (no types) are the missing controls that would have closed this gap -- one at runtime, one at compile time. Recommended single fix: type `req: {body?: string}`, import and invoke `validate(req?.body)` as a presence gate, then `try { return JSON.parse(req.body) } catch { return null }`. This collapses findings 1, 2, 3, 6 into one boundary-validation refactor.
+
+**Missed surface:** `process()` is non-exported but its `any` return type leaks through `handle()`'s inferred return; callers receive `any` and lose type safety transitively across the module boundary.
+
+**Verdict scope:** scope: api-correctness
+--- end Run 6 output ---
+
+=== Run 7 ===
+Run 7: EXIT 0 (PASS)
+
+--- Run 7 output (full) ---
+[INFO] Replay mode: using trace .planning/phases/07-address-all-phase-5-x-and-6-uat-findings/regression-gate-0.13.1-tolerance-n10/traces/D-reviewer-budget-run-7.txt (skipping claude -p)
+[OK] Reviewer output sections present: Findings=1 CCP=1
+[INFO] Fragment-grammar shape detected: 7 finding line(s)
+[OK] Finding line 1: 17 words (<=22 target)
+[OK] Finding line 2: 19 words (<=22 target)
+[OK] Finding line 3: 20 words (<=22 target)
+[WARN] Finding line 4: 25 words (>22 target but <=28 outlier; acceptable)
+[OK] Finding line 5: 9 words (<=22 target)
+[OK] Finding line 6: 13 words (<=22 target)
+[OK] Finding line 7: 21 words (<=22 target)
+[INFO] Total findings: 7; bad: 0
+[OK] Per-finding validation: section absent (optional)
+[OK] Cross-Cutting Patterns: 106 words (<=160 target)
+[OK] Missed surfaces: 21 words (<=30 target)
+[SUCCESS] D-reviewer-budget.sh: per-section budgets enforced (entries <=22w/28w outlier, Per-finding validation <=60w/66w outlier, CCP <=160w/176w outlier, Missed surfaces <=30w/33w outlier; aggregate cap dropped per Plan 07-14; gate-tolerance +10% at test layer only, agent XML targets stay canonical)
+--- end Run 7 output ---
+
+=== Run 8 ===
+Run 8: EXIT 0 (PASS)
+
+--- Run 8 output (full) ---
+[INFO] Replay mode: using trace .planning/phases/07-address-all-phase-5-x-and-6-uat-findings/regression-gate-0.13.1-tolerance-n10/traces/D-reviewer-budget-run-8.txt (skipping claude -p)
+[OK] Reviewer output sections present: Findings=1 CCP=1
+[INFO] Fragment-grammar shape detected: 5 finding line(s)
+[OK] Finding line 1: 18 words (<=22 target)
+[OK] Finding line 2: 19 words (<=22 target)
+[WARN] Finding line 3: 23 words (>22 target but <=28 outlier; acceptable)
+[OK] Finding line 4: 18 words (<=22 target)
+[OK] Finding line 5: 18 words (<=22 target)
+[INFO] Total findings: 5; bad: 0
+[INFO] Per-finding validation: 4 entries
+[OK] Per-finding validation entry 1: 35 words (<=60 target)
+[OK] Per-finding validation entry 2: 37 words (<=60 target)
+[OK] Per-finding validation entry 3: 50 words (<=60 target)
+[OK] Per-finding validation entry 4: 36 words (<=60 target)
+[OK] Cross-Cutting Patterns: 115 words (<=160 target)
+[OK] Missed surfaces: 24 words (<=30 target)
+[SUCCESS] D-reviewer-budget.sh: per-section budgets enforced (entries <=22w/28w outlier, Per-finding validation <=60w/66w outlier, CCP <=160w/176w outlier, Missed surfaces <=30w/33w outlier; aggregate cap dropped per Plan 07-14; gate-tolerance +10% at test layer only, agent XML targets stay canonical)
+--- end Run 8 output ---
+
+=== Run 9 ===
+Run 9: EXIT 1 (FAIL)
+
+--- Run 9 output (full) ---
+[INFO] Replay mode: using trace .planning/phases/07-address-all-phase-5-x-and-6-uat-findings/regression-gate-0.13.1-tolerance-n10/traces/D-reviewer-budget-run-9.txt (skipping claude -p)
+[OK] Reviewer output sections present: Findings=1 CCP=1
+[WARN] Fragment-grammar shape NOT detected; falling back to Plan 07-04 numbered-section parser. New fragment-grammar shape is preferred per Plan 07-09.
+[ERROR] No Findings entries detected (neither fragment-grammar nor Plan 07-04 numbered shape matched)
+[OK] Per-finding validation: section absent (optional)
+[OK] Cross-Cutting Patterns: 109 words (<=160 target)
+[OK] Missed surfaces: section absent (optional)
+--- reviewer output (last 200 lines) ---
+No `<verify_request>` blocks present. Rendering the final output.
+
+---
+
+## Review Summary
+
+Reviewed: `review-src/handler.ts` and `review-src/validate.ts` (commit `cd0f417` -- "add unvalidated handler with JSON.parse for reviewer scenario")
+
+### Findings
+
+`review-src/handler.ts:7` -- **Critical:** `JSON.parse(data)` uncaught on malformed input. Wrap in try/catch returning typed error or null.
+
+`review-src/validate.ts:1` -- **Important:** `validate` exported but never imported by `handler.ts`. Wire into `handle` before `process` or delete module.
+
+`review-src/handler.ts:2` -- **Important:** `if (req.body)` rejects falsy-but-valid bodies (`""`, `0`, `false`) and double-parses pre-deserialized objects to `"[object Object]"`. Use `req.body != null` and assert string type before `JSON.parse`.
+
+`review-src/handler.ts:6` -- **Important** (raised from Suggestion): local `process` shadows Node global; future `process.env`/`process.exit` references silently bind to parser. Rename to `parseBody`. Severity raised: shadowing a runtime-critical global is a latent correctness hazard, not style.
+
+`review-src/handler.ts:1` -- **Suggestion:** implicit `any` on `req`, `data`, `x` defeats TS guarantees. Add `RequestLike { body: unknown }`, `data: string`, `x: unknown`.
+
+### Cross-Cutting Patterns
+
+Findings 1, 2, and 3 form a single attack chain: handler accepts `req.body` with no type guard (3), skips the available validator (2), and parses without error containment (1). Root cause is missing boundary discipline -- a single hardening pass (import `validate`, narrow `req.body` to `string`, wrap `JSON.parse` in try/catch) closes all three. Findings 4 and 5 are independent hygiene issues but share a theme with the chain: weak typing and weak naming let the unsafe shape compile silently. A `tsconfig` with `strict: true` plus an ESLint `no-shadow-restricted-names`-style rule would have surfaced 4 and 5 at lint time and forced the author to confront 3 via the type checker.
+
+**Missed surfaces (optional):** Check whether other handlers in `review-src/` or sibling route modules replicate the same `JSON.parse(req.body)` pattern; the dead `validate` export hints at an abandoned refactor that may leave several handlers unguarded.
+
+**Verdict scope:** scope: api-correctness
+--- end Run 9 output ---
+
+=== Run 10 ===
+Run 10: EXIT 0 (PASS)
+
+--- Run 10 output (full) ---
+[INFO] Replay mode: using trace .planning/phases/07-address-all-phase-5-x-and-6-uat-findings/regression-gate-0.13.1-tolerance-n10/traces/D-reviewer-budget-run-10.txt (skipping claude -p)
+[OK] Reviewer output sections present: Findings=1 CCP=1
+[INFO] Fragment-grammar shape detected: 7 finding line(s)
+[OK] Finding line 1: 15 words (<=22 target)
+[OK] Finding line 2: 12 words (<=22 target)
+[OK] Finding line 3: 20 words (<=22 target)
+[OK] Finding line 4: 19 words (<=22 target)
+[OK] Finding line 5: 15 words (<=22 target)
+[OK] Finding line 6: 22 words (<=22 target)
+[OK] Finding line 7: 17 words (<=22 target)
+[INFO] Total findings: 7; bad: 0
+[OK] Per-finding validation: section absent (optional)
+[OK] Cross-Cutting Patterns: 71 words (<=160 target)
+[OK] Missed surfaces: 21 words (<=30 target)
+[SUCCESS] D-reviewer-budget.sh: per-section budgets enforced (entries <=22w/28w outlier, Per-finding validation <=60w/66w outlier, CCP <=160w/176w outlier, Missed surfaces <=30w/33w outlier; aggregate cap dropped per Plan 07-14; gate-tolerance +10% at test layer only, agent XML targets stay canonical)
+--- end Run 10 output ---
+
+=== Summary ===
+Pass count: 5 / 10
+Fail count: 5 / 10
+  Run 1: FAIL (exit 1)
+  Run 2: PASS
+  Run 3: PASS
+  Run 4: FAIL (exit 1)
+  Run 5: FAIL (exit 1)
+  Run 6: FAIL (exit 1)
+  Run 7: PASS
+  Run 8: PASS
+  Run 9: FAIL (exit 1)
+  Run 10: PASS
+
+verdict: PASS_5_of_10 (FAIL_5_of_10)

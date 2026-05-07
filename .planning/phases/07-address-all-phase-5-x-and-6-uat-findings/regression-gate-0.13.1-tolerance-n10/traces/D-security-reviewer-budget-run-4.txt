@@ -1,0 +1,35 @@
+## Security Review Summary
+
+Reviewed: `review-src/handler.ts` and `review-src/validate.ts` (commit `9fbd69b` -- "add unvalidated handler with JSON.parse for security-reviewer scenario")
+
+### Findings
+
+`review-src/handler.ts:1-8,review-src/validate.ts:1: imp: [A03] `validate` defined but never imported; `req.body` flows raw to `JSON.parse`. Import + call `validate` at handler entry, then schema-validate (zod/ajv) before parsing.`
+
+`review-src/handler.ts:7: imp: [A04] `JSON.parse` lacks try/catch; malformed body throws SyntaxError reachable by any client (DoS / stack leak). Wrap in try/catch, return 400 on failure.`
+
+`review-src/handler.ts:7: imp: [A03] parsed object retains attacker `__proto__`/`constructor` keys, polluting prototype if downstream merges. Use `JSON.parse(data, (k,v) => k==="__proto__"||k==="constructor"?undefined:v)` or schema validator that strips them.`
+
+`review-src/handler.ts:2: sug: [A04] `if (req.body)` falsy guard accepts arrays/objects; non-string input coerces to `"[object Object]"` and throws. Replace with `typeof req.body === "string" && req.body.length > 0`.`
+
+`review-src/handler.ts:1-3: q: [A01] `handle()` has no auth check, but the file is a library function -- is auth enforced by an outer middleware layer (Express/Fastify route guard)? Confirm before rating; library-level auth is usually wrong layer.`
+
+### Per-finding validation
+
+Validation of Finding 1: Severity revised Critical -> Important. The unused `validate` is a code-quality smell, but the actual injection risk is the absence of validation, which Findings 2 and 3 already enumerate concretely. Critical is reserved for confirmed-exploitable; this finding is the root cause but its exploit surface is double-counted.
+
+Validation of Finding 2: Severity revised Critical -> Important. Synchronous DoS is exploitable by any client, but most Node HTTP frameworks (Express 5+, Fastify, Koa) catch synchronous handler throws and return 500 without crashing the process. Crit requires confirmed process-crash; absent framework context this is Important + verify deployment.
+
+Validation of Finding 3: Severity confirmed Important. Prototype pollution requires a downstream merge sink to be exploitable; not visible in scope. Important is correct; would escalate to Critical if a `_.merge`/`Object.assign(target, parsed)` sink were confirmed downstream.
+
+Validation of Finding 5: Severity revised Important -> Question. `handle()` is a plain function export, not a route binding. Whether auth is missing depends on how the caller wires it (Express middleware chain, Fastify hook, manual gate). Cannot rate without that context.
+
+### Threat Patterns
+
+Findings 1, 2, 3 share a single root: no input validation before `JSON.parse`. Fixing Finding 1 (calling a real schema validator, not the trivial `x != null` stub) collapses Findings 2 and 3 simultaneously -- a schema validator rejects malformed JSON (closing DoS) and strips `__proto__`/`constructor` keys (closing prototype pollution). Finding 4 (falsy guard) compounds Finding 2: non-string body coerces and triggers the same uncaught SyntaxError path. Finding 5 (auth) is orthogonal -- it gates whether attackers reach the chain at all; if auth is absent the other findings escalate one severity tier each.
+
+### Missed surfaces (optional)
+
+Downstream consumers of `handle()`'s return value are out of scope but determine whether Finding 3 is Important or Critical -- audit any `Object.assign`/spread/`_.merge` sinks that receive the parsed payload.
+
+**Verdict scope:** scope: security-threats

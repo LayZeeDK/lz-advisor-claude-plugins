@@ -1,0 +1,35 @@
+## Review Summary
+
+Reviewed: `review-src/handler.ts`, `review-src/validate.ts` (commit c8a0944 -- "add unvalidated handler with JSON.parse for reviewer scenario")
+
+### Findings
+
+`review-src/handler.ts:7: crit: `JSON.parse(data)` throws `SyntaxError` on malformed input; uncaught exception leaks to caller. Wrap in try/catch and return validation error.`
+
+`review-src/handler.ts:2-7: imp: pre-parsed object body coerces to `"[object Object]"` then throws. Add `typeof data === 'string'` guard or branch on type.`
+
+`review-src/handler.ts:2: imp: `validate` exported but never imported or invoked; untrusted body reaches `JSON.parse` with no gate. Import `validate` and call before `process`; reject on false.`
+
+`review-src/handler.ts:2: sug: truthy check drops legitimate `0` / `false` / `""` bodies. Use `req.body != null` and let validation decide.`
+
+`review-src/validate.ts:1: imp: `validate` only checks `!= null`; insufficient as schema gate. Replace with structural/schema validation (zod, ajv) matching expected payload.`
+
+### Per-finding validation
+
+Validation of Finding 1: Confirmed Critical. `JSON.parse` on untrusted boundary input with no try/catch is a textbook unhandled-exception defect; in Express the rejection becomes an unhandled promise rejection or 500 with stack leak depending on framework config. Severity stands.
+
+Validation of Finding 2: Confirmed Important. Express `express.json()` middleware is the default in modern stacks and produces parsed objects; double-parsing is a frequent regression. The two failure modes (string-not-JSON and non-string) share one fix: a type guard plus try/catch. Severity stands.
+
+Validation of Finding 3: Confirmed Important, leaning Critical when combined with Finding 1. The dead `validate` export is the smoking gun -- the author intended a validation gate that was never wired. This converts Finding 1 from "missing error handling" to "missing security boundary." Severity stands as Important on its own; see cross-cutting note.
+
+Validation of Finding 4: Confirmed Suggestion. Standalone the truthy check is a minor correctness gap; combined with Finding 3 (no real validation), it becomes the only filter on input shape, which is inadequate but not the root cause. Severity stands.
+
+### Cross-Cutting Patterns
+
+Findings 1, 2, 3, and 4 share one root cause: absent input-validation boundary. The handler trusts `req.body` shape and type implicitly, the dead `validate` import shows the gate was planned but never wired, and `JSON.parse` is doing double duty as both parser and (accidental) type-checker. Single fix collapses all four: import `validate`, replace its body with a real schema check (zod/ajv), call it on `req.body` before `process`, and have `process` accept already-typed input so `JSON.parse` disappears entirely. Attack chain: a malicious or malformed POST body crashes the handler (Finding 1), and absent validation (Finding 3) means there is no defense in depth -- any route mounting `handle` is a DoS vector via 1-byte invalid JSON.
+
+### Missed surfaces (optional)
+
+Check whether `handle`'s caller (route registration) has framework-level error middleware; without it, Finding 1 escalates to process-crash on Node's `unhandledRejection` default in Node 15+.
+
+**Verdict scope:** scope: api-correctness

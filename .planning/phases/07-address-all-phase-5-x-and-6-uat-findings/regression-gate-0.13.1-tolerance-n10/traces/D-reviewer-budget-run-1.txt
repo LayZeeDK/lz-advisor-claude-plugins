@@ -1,0 +1,37 @@
+## Review Summary
+
+Reviewed: `review-src/handler.ts` and `review-src/validate.ts` -- commit `087fd0c` ("add unvalidated handler with JSON.parse for reviewer scenario")
+
+### Findings
+
+`review-src/handler.ts:7: crit: `JSON.parse(data)` throws `SyntaxError` on malformed input; uncaught propagates to caller. Wrap in try/catch and return null or throw typed error.`
+
+`review-src/validate.ts:1: imp: `validate` exported but never imported by `handler.ts`; dead code and handler skips validation before `JSON.parse`. Import and call `validate(req.body)` before `process()`.`
+
+`review-src/handler.ts:2: sug: truthy check `if (req.body)` rejects empty string and `0` but those are not valid JSON-body shapes for HTTP request bodies in normal frameworks. Use `if (req.body != null)` for clarity, but practical impact low.`
+
+`review-src/handler.ts:3: imp: `process()` return value is `any`/untyped; downstream callers receive unknown shape. Add return-type schema or run `validate` on parsed result, not raw input.`
+
+`review-src/handler.ts:1: imp: parameter `req` and `data` lack type annotations in TypeScript module; defeats type-checking purpose. Type as `{ body?: unknown }` and `string` respectively.`
+
+`review-src/validate.ts:1: imp: `validate(x) { return x != null }` is meaningless as JSON-body validator -- accepts any non-null value including arrays, numbers, malformed strings. Replace with schema check (zod, ajv) or at minimum `typeof x === 'string'` before `JSON.parse`.`
+
+### Per-finding validation
+
+Validation of Finding 1: Confirmed Critical. `JSON.parse` on attacker-controlled `req.body` with no guard is a denial-of-service vector -- a single malformed POST crashes the handler and, depending on framework, the worker. Standard remediation is try/catch returning a 400-equivalent sentinel.
+
+Validation of Finding 2: Confirmed Important, leaning Critical-adjacent. The dead `validate` import is the symptom; the disease is that `handler.ts` performs zero input validation before `JSON.parse`. Even wired up, the current `validate` body (`x != null`) does not prevent the SyntaxError in Finding 1 because non-null strings can still be malformed JSON. Fix requires both wiring AND strengthening the validator.
+
+Validation of Finding 3: Revise to Suggestion. In practice Express/Fastify/Koa never deliver `0` or `""` as `req.body` -- bodies are objects, strings, or `undefined`. The truthiness check is imprecise but the failure modes you describe are theoretical. Real risk is style/readability, not correctness.
+
+### Cross-Cutting Patterns
+
+Findings 1, 2, 4, and 6 share a root cause: the module treats `req.body` as trusted, structured input when it is untyped attacker-controlled bytes. A single `parseAndValidate(body: unknown): Result<T, Error>` boundary function -- typed input, schema-validated output, exception-free return -- collapses all four findings. The TypeScript-without-types pattern (Finding 5) compounds this: the compiler cannot warn about the missing validation hop because nothing is typed at the boundary. Recommend zod or ajv at the entry point and strict mode in `tsconfig.json`.
+
+### Missed surfaces (optional)
+
+Check whether `handler.ts` is wired into a route registration file; if `process()` return value flows to `res.json()` without sanitization, prototype-pollution via `__proto__` keys in parsed JSON becomes reachable.
+
+---
+
+**Verdict scope:** scope: api-correctness
