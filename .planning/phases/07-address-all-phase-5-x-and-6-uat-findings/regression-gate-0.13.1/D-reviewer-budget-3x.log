@@ -1,0 +1,109 @@
+# D-reviewer-budget.sh 3x re-run on plugin 0.13.1
+# Plan: Phase 8 step 1 mech fix gate (WR-01/02/03 [GAPS-3] closure)
+# Generated: 2026-05-07T08:31:53Z
+# Plugin version: 0.13.1
+# Contract: per-section budgets per Plan 07-14 <output_constraints> XML; aggregate cap dropped; WR-01/02/03 [GAPS-3] mech fix landed
+# Fixture: .planning/phases/05.4-address-uat-findings-a-k/smoke-tests/D-reviewer-budget.sh
+
+=== Run 1 ===
+Run 1: EXIT 1 (FAIL)
+
+--- Run 1 output (full) ---
+[OK] Reviewer output sections present: Findings=1 CCP=1
+[INFO] Fragment-grammar shape detected: 4 finding line(s)
+[OK] Finding line 1: 15 words (<=22 target)
+[OK] Finding line 2: 14 words (<=22 target)
+[OK] Finding line 3: 19 words (<=22 target)
+[WARN] Finding line 4: 24 words (>22 target but <=28 outlier; acceptable)
+[INFO] Total findings: 4; bad: 0
+[INFO] Per-finding validation: 2 entries
+[OK] Per-finding validation entry 1: 54 words (<=60 cap)
+[ERROR] Per-finding validation entry 2: 65 words (>60 cap)
+[OK] Cross-Cutting Patterns: 86 words (<=160 cap)
+[OK] Missed surfaces: 21 words (<=30 cap)
+--- reviewer output (last 200 lines) ---
+No `<verify_request>` blocks in the reviewer response. Rendering output.
+
+## Review Summary
+
+Reviewed: `review-src/handler.ts`, `review-src/validate.ts` (commit `04ee7e0` -- "add unvalidated handler with JSON.parse for reviewer scenario")
+
+### Findings
+
+`review-src/handler.ts:7: crit: `JSON.parse` unguarded; malformed body throws `SyntaxError` to caller. Wrap in try/catch returning typed error result.`
+`review-src/handler.ts:2: imp: truthy check drops `0`/`false`/`""` as null. Use `req.body !== undefined && req.body !== null`.`
+`review-src/handler.ts:2-7: crit: pre-parsed object body coerces to `"[object Object]"` and throws under Express/Fastify. Branch on `typeof data === 'string'` before `JSON.parse`.`
+`review-src/validate.ts:1 + review-src/handler.ts:2: imp: exported `validate` never imported by handler; dead guard. Import and call before `process`, or remove the export.`
+`review-src/validate.ts:1: sug: `!= null` is the idiomatic null-or-undefined check; not a defect. Keep as-is or replace with explicit `!== null && !== undefined` for lint-strictness only.`
+
+### Per-finding validation
+
+Validation of Finding 3: Raising to Critical alongside Finding 1. In any realistic deployment behind `express.json()` or Fastify's default JSON parser, `req.body` is an object on every JSON request -- this is not an edge case but the default path. `JSON.parse({...})` throws on the first real request, making the handler dead-on-arrival in production. Severity revision: Important -> Critical.
+
+Validation of Finding 5: Downgrading from Suggestion to non-issue. `x != null` is the canonical JS idiom for "neither null nor undefined" and is explicitly permitted by `eslint-plugin-eqeqeq` via the `"smart"` / `"allow-null"` options. The "coercion surface" concern in the initial framing does not apply: `!= null` returns `true` for `0`, `false`, `""` -- which is the correct behavior for a null/undefined guard. Keep unless project lint config forbids.
+
+### Cross-Cutting Patterns
+
+Findings 1, 2, 3, and 4 share a single root cause: the handler has no input contract. There is no type for `req`, no runtime check that `req.body` is a string before parsing, no schema validation of the parsed result, and the one validation helper that exists is unwired. A single zod/valibot schema applied at the handler entry -- with `req.body` normalized to string-or-object first -- collapses all four findings. Findings 1 and 3 are both Critical; either alone breaks the handler on first non-trivial input.
+
+### Missed surfaces (optional)
+
+`req` and `data` are implicitly `any` (no TS annotations); enabling `noImplicitAny` would have surfaced findings 2 and 3 at compile time.
+
+**Verdict scope:** scope: api-correctness
+--- end Run 1 output ---
+
+=== Run 2 ===
+Run 2: EXIT 0 (PASS)
+
+--- Run 2 output (full) ---
+[OK] Reviewer output sections present: Findings=1 CCP=1
+[INFO] Fragment-grammar shape detected: 7 finding line(s)
+[OK] Finding line 1: 15 words (<=22 target)
+[OK] Finding line 2: 12 words (<=22 target)
+[OK] Finding line 3: 18 words (<=22 target)
+[OK] Finding line 4: 18 words (<=22 target)
+[OK] Finding line 5: 22 words (<=22 target)
+[OK] Finding line 6: 17 words (<=22 target)
+[OK] Finding line 7: 13 words (<=22 target)
+[INFO] Total findings: 7; bad: 0
+[INFO] Per-finding validation: 4 entries
+[OK] Per-finding validation entry 1: 33 words (<=60 cap)
+[OK] Per-finding validation entry 2: 34 words (<=60 cap)
+[OK] Per-finding validation entry 3: 32 words (<=60 cap)
+[OK] Per-finding validation entry 4: 34 words (<=60 cap)
+[OK] Cross-Cutting Patterns: 71 words (<=160 cap)
+[OK] Missed surfaces: 21 words (<=30 cap)
+[SUCCESS] D-reviewer-budget.sh: per-section budgets enforced (entries <=22w/28w outlier, Per-finding validation <=60w, CCP <=160w, Missed surfaces <=30w; aggregate cap dropped per Plan 07-14)
+--- end Run 2 output ---
+
+=== Run 3 ===
+Run 3: EXIT 0 (PASS)
+
+--- Run 3 output (full) ---
+[OK] Reviewer output sections present: Findings=1 CCP=1
+[INFO] Fragment-grammar shape detected: 5 finding line(s)
+[OK] Finding line 1: 16 words (<=22 target)
+[OK] Finding line 2: 18 words (<=22 target)
+[OK] Finding line 3: 15 words (<=22 target)
+[OK] Finding line 4: 19 words (<=22 target)
+[OK] Finding line 5: 17 words (<=22 target)
+[INFO] Total findings: 5; bad: 0
+[INFO] Per-finding validation: 4 entries
+[OK] Per-finding validation entry 1: 50 words (<=60 cap)
+[OK] Per-finding validation entry 2: 48 words (<=60 cap)
+[OK] Per-finding validation entry 3: 39 words (<=60 cap)
+[OK] Per-finding validation entry 4: 27 words (<=60 cap)
+[OK] Cross-Cutting Patterns: 95 words (<=160 cap)
+[OK] Missed surfaces: 18 words (<=30 cap)
+[SUCCESS] D-reviewer-budget.sh: per-section budgets enforced (entries <=22w/28w outlier, Per-finding validation <=60w, CCP <=160w, Missed surfaces <=30w; aggregate cap dropped per Plan 07-14)
+--- end Run 3 output ---
+
+=== Summary ===
+Pass count: 2 / 3
+Fail count: 1 / 3
+  Run 1: FAIL (exit 1)
+  Run 2: PASS
+  Run 3: PASS
+
+verdict: PASS_2_of_3 (FAIL_1_of_3)
