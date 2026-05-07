@@ -1,0 +1,37 @@
+## Security Review Summary
+
+Reviewed: `review-src/handler.ts` and `review-src/validate.ts` -- commit a93cc3a (`add unvalidated handler with JSON.parse for security-reviewer scenario`)
+
+### Findings
+
+`review-src/handler.ts:7: crit: [A04] unguarded JSON.parse(req.body) on unauthenticated input throws SyntaxError, crashing handler. Wrap in try/catch returning 400.`
+
+`review-src/handler.ts:2-4: crit: [A03] validate() never invoked; truthy check admits any non-empty body to parser. Call validate(req.body) with schema check (Zod/Ajv) before process.`
+
+`review-src/handler.ts:7: sug: [A03] JSON.parse preserves __proto__ key; not exploitable in isolation -- requires downstream Object.assign/spread/recursive-merge sink. Strip __proto__/constructor/prototype keys post-parse or use Object.create(null) reviver.`
+
+`review-src/handler.ts:1: sug: [A04] implicit any on req hides missing string-type contract on req.body. Annotate req: { body: string } and enable noImplicitAny in tsconfig.`
+
+`review-src/handler.ts:2: imp: [A05] no content-type check, no body size limit. Reject non-application/json and bodies over fixed byte cap before parsing.`
+
+`review-src/handler.ts:1: imp: [A01] no authentication/authorization gate before handler executes. Add auth middleware upstream or in-handler reject.`
+
+### Per-finding validation
+
+Validation of Finding 1: Confirmed Critical. Unauthenticated trivially-triggered DoS with stack-trace disclosure on default Node error handlers maps cleanly to A04 Insecure Design (missing failure-mode design) more than A05; either tag defensible. Severity holds.
+
+Validation of Finding 2: Confirmed Critical mapping but A04 Insecure Design fits better than A03 Injection -- the dead-code `validate()` is a design failure, not an injection sink itself. The injection risk materializes via Findings 1 and 3 downstream.
+
+Validation of Finding 3: Severity revised DOWN from Important to Suggestion. `JSON.parse` alone does NOT pollute `Object.prototype` in V8/Node 20+; the parsed object owns a `__proto__` data property without traversing the prototype chain. Exploitation REQUIRES a downstream unsafe merge (`_.merge`, `Object.assign` with recursive walk, hand-rolled deep-merge). No such sink exists in the reviewed two files. Risk is latent: any future caller that deep-merges the return value reactivates Critical severity. Mitigate at the source (parser reviver) to make the function safe-by-construction.
+
+Validation of Finding 4: Confirmed Suggestion. Defense-in-depth; not exploitable directly.
+
+### Threat Patterns
+
+Findings 1 + 2 chain into the dominant attack: unauthenticated client sends malformed body -> truthy guard passes -> unguarded `JSON.parse` throws -> handler crash / stack-trace leak. Finding 6 (missing auth) amplifies blast radius -- every other finding becomes unauthenticated-reachable. Finding 3 is dormant but pre-positions a prototype-pollution gadget for any future caller that deep-merges `process()` output; pair with Finding 2's missing schema validation and the gadget becomes live the moment a downstream merge is added. Finding 4's implicit `any` is the type-system root cause that allowed Findings 1-2 to ship without compile-time detection of the missing validator wiring.
+
+### Missed surfaces (optional)
+
+Caller(s) of `handle()` were not in scope -- audit any consumer that performs `Object.assign`, spread, or recursive merge on the return value to confirm Finding 3 stays dormant.
+
+**Verdict scope:** scope: security-threats

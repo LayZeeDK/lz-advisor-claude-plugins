@@ -1,0 +1,35 @@
+## Security Review Summary
+
+Reviewed: `review-src/handler.ts` and `review-src/validate.ts` (commit c573b74 -- "add unvalidated handler with JSON.parse for security-reviewer scenario")
+
+---
+
+### Findings
+
+`review-src/handler.ts:7: crit: [A03] JSON.parse on attacker-controlled `req.body` enables prototype pollution via `__proto__`/`constructor.prototype` keys, poisoning Object.prototype process-wide. Use safe parser (e.g., `secure-json-parse`) or strip `__proto__`/`constructor` post-parse.`
+`review-src/handler.ts:7: imp: [A05] Unhandled `SyntaxError` from `JSON.parse` on malformed body crashes handler / leaks stack trace. Wrap in try/catch, return 400 with generic message.`
+`review-src/handler.ts:1-3: imp: [A01] Exported `validate` from `validate.ts` never imported; truthy `if (req.body)` is sole gate. Import and invoke `validate(req.body)` before `process()`, reject on false.`
+`review-src/validate.ts:1: sug: [A04] `validate(x) { return x != null }` is a null-check, not a schema validator -- accepts any non-null value including hostile JSON. Replace with schema check (zod/ajv) asserting string + size cap before parse.`
+`review-src/handler.ts:1: sug: [A04] Implicit-any `req` permits non-string `req.body`; `JSON.parse(object)` coerces to `"[object Object]"` and throws. Type `req: { body: string }` and assert `typeof === 'string'`.`
+
+**Per-finding validation**
+
+Validation of Finding 1: Confirmed Critical. A03 mapping is correct (injection via parser-level prototype mutation). Node.js `JSON.parse` does honor `__proto__` as own-property on result rather than mutating `Object.prototype` directly, but downstream merge/assign sinks (common in handlers) propagate the pollution -- treat as Critical given unknown downstream consumers and zero mitigation cost.
+
+Validation of Finding 2: Confirmed Important. A01 fits (control-gate absent). Could also tag A04 (design defect: validator exists but is unwired). Keep A01 as primary -- the access-control framing matches OWASP guidance for missing authorization/validation gates.
+
+Validation of Finding 3: Confirmed Important; consider merging presentation with Finding 1 since both originate at line 7. Kept separate here because remediation differs (try/catch vs. safe parser); both fixes are required.
+
+Validation of Finding 4: Downgraded to Suggestion (you had Suggestion -- confirmed). Split recommended: the type-contract issue and the validator-semantics issue are distinct. Emitted as two findings above (`validate.ts:1` schema-weakness + `handler.ts:1` implicit-any).
+
+### Threat Patterns
+
+Findings 2, 3, and 1 chain into a single unauthenticated exploit path: missing `validate()` invocation (F2) -> raw attacker JSON reaches `JSON.parse` (F1) -> malformed payload throws uncaught `SyntaxError` (F3) for DoS, OR well-formed payload with `__proto__` poisons runtime (F1). Finding 4/5 (weak validator + implicit-any) is the systemic root: there is no type-or-schema boundary at the trust edge, so even wiring `validate()` would not stop pollution. Fix order: (a) wrap `JSON.parse` in try/catch, (b) replace `validate` with schema check, (c) wire it before `process()`.
+
+**Missed surfaces (optional)**
+
+No HTTP framework wiring shown -- verify top-level error boundary exists in the server entry; an uncaught `SyntaxError` in Express without `express.json()` and without error middleware terminates the worker.
+
+---
+
+**Verdict scope:** scope: security-threats

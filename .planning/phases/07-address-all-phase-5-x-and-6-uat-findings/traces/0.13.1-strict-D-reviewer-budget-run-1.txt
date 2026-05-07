@@ -1,0 +1,29 @@
+No `<verify_request>` blocks in the reviewer response. Rendering output.
+
+## Review Summary
+
+Reviewed: `review-src/handler.ts`, `review-src/validate.ts` (commit `04ee7e0` -- "add unvalidated handler with JSON.parse for reviewer scenario")
+
+### Findings
+
+`review-src/handler.ts:7: crit: `JSON.parse` unguarded; malformed body throws `SyntaxError` to caller. Wrap in try/catch returning typed error result.`
+`review-src/handler.ts:2: imp: truthy check drops `0`/`false`/`""` as null. Use `req.body !== undefined && req.body !== null`.`
+`review-src/handler.ts:2-7: crit: pre-parsed object body coerces to `"[object Object]"` and throws under Express/Fastify. Branch on `typeof data === 'string'` before `JSON.parse`.`
+`review-src/validate.ts:1 + review-src/handler.ts:2: imp: exported `validate` never imported by handler; dead guard. Import and call before `process`, or remove the export.`
+`review-src/validate.ts:1: sug: `!= null` is the idiomatic null-or-undefined check; not a defect. Keep as-is or replace with explicit `!== null && !== undefined` for lint-strictness only.`
+
+### Per-finding validation
+
+Validation of Finding 3: Raising to Critical alongside Finding 1. In any realistic deployment behind `express.json()` or Fastify's default JSON parser, `req.body` is an object on every JSON request -- this is not an edge case but the default path. `JSON.parse({...})` throws on the first real request, making the handler dead-on-arrival in production. Severity revision: Important -> Critical.
+
+Validation of Finding 5: Downgrading from Suggestion to non-issue. `x != null` is the canonical JS idiom for "neither null nor undefined" and is explicitly permitted by `eslint-plugin-eqeqeq` via the `"smart"` / `"allow-null"` options. The "coercion surface" concern in the initial framing does not apply: `!= null` returns `true` for `0`, `false`, `""` -- which is the correct behavior for a null/undefined guard. Keep unless project lint config forbids.
+
+### Cross-Cutting Patterns
+
+Findings 1, 2, 3, and 4 share a single root cause: the handler has no input contract. There is no type for `req`, no runtime check that `req.body` is a string before parsing, no schema validation of the parsed result, and the one validation helper that exists is unwired. A single zod/valibot schema applied at the handler entry -- with `req.body` normalized to string-or-object first -- collapses all four findings. Findings 1 and 3 are both Critical; either alone breaks the handler on first non-trivial input.
+
+### Missed surfaces (optional)
+
+`req` and `data` are implicitly `any` (no TS annotations); enabling `noImplicitAny` would have surfaced findings 2 and 3 at compile time.
+
+**Verdict scope:** scope: api-correctness

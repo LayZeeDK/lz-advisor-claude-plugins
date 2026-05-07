@@ -1,0 +1,33 @@
+## Security Review Summary
+
+Reviewed: `review-src/handler.ts` and `review-src/validate.ts` (commit `04d4feb` -- "add unvalidated handler with JSON.parse for security-reviewer scenario")
+
+### Findings
+
+`review-src/handler.ts:7: imp: [A04] uncaught `JSON.parse(data)` throws SyntaxError on malformed body, leaking stack or crashing process. Wrap in try/catch, return 400.`
+`review-src/handler.ts:7: sug: [A08] raw parsed object returned without schema allowlist; latent prototype-pollution sink if merged downstream. Add schema validation (zod/ajv) + reject `__proto__`/`constructor` keys before return.`
+`review-src/handler.ts:3: imp: [A04] `validate()` from `validate.ts` defined but never imported; `if (req.body)` admits `"null"`, `"false"`, `""` edge cases. Wire `validate()` (and strengthen its `!= null` check) into `handle()` before `process()`.`
+`review-src/validate.ts:1: sug: [A04] `validate(x)` only checks `x != null`; insufficient as input-validation contract (passes any string, including malformed JSON). Replace with type/shape check or schema validator.`
+`review-src/handler.ts:7: imp: [A09] uncaught exception path provides no logging hook; security monitoring blind to malformed-payload probes. Log parse failures at warn level with request id, no body content.`
+`review-src/handler.ts:1: sug: [A04] no body size limit; large payload triggers JSON.parse memory blowup (DoS). Enforce max body size at framework layer before `handle()`.`
+`review-src/handler.ts:1: q: [A05] `req`/`req.body` typed as `any` (implicit). Is body pre-parsed by framework (Express json middleware) or raw string? Affects whether `JSON.parse` is even correct.`
+
+### Per-finding validation
+
+Validation of Finding 1: Confirm Critical -> revise to Important. Re-tag A03 -> A04 (Insecure Design): no injection sink (parsed value is not eval'd or executed); the threat is missing-design-control around untrusted parse. Exploitability is trivial unauthenticated DoS, but absent confirmation the handler is wired to a public endpoint with no upstream try/catch, Critical overstates blast radius. Important matches "exploitable under specific conditions, partial mitigation present (framework-level error middleware likely)."
+
+Validation of Finding 2: Confirm A08 mapping; revise Critical -> Suggestion. Pollution requires a downstream merge/assign that is not present in this diff; the finding is latent/defense-in-depth, not confirmed-exploitable. V8's `JSON.parse` skips `__proto__` assignment, so the realistic vector is `constructor.prototype` via downstream `_.merge` -- which depends on code not in scope.
+
+Validation of Finding 3: Re-tag A07 -> A04. No authn/identity surface here; the gap is a missing design control (validation wired but unused). Important holds.
+
+Validation of Finding 4: Confirm; A09 mapping accurate for the logging-blind aspect, but the primary threat (uncaught throw) overlaps Finding 1's A04. Kept as separate emit for the monitoring dimension.
+
+### Threat Patterns
+
+Findings 1 + 3 chain: missing `validate()` wiring (F3) leaves `if (req.body)` as the sole guard, so malformed/edge-case bodies reach `JSON.parse` (F1) and throw uncaught. F2 is downstream-conditional -- only exploitable if a caller merges the returned object; flag for caller audit. F5 (logging) compounds F1: without parse-failure telemetry, repeated probes (recon for F2 sinks) go undetected. F6 (size limit) is independent DoS vector orthogonal to malformed-JSON DoS in F1.
+
+### Missed surfaces (optional)
+
+Callers of `handle()` not in scope; audit any `Object.assign`/spread/`_.merge` consuming its return value to confirm or refute F2 exploitability, plus framework body-parser config for size caps.
+
+**Verdict scope:** scope: security-threats

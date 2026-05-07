@@ -1,0 +1,35 @@
+## Security Review Summary
+
+Reviewed: `review-src/handler.ts` and `review-src/validate.ts` -- two new files added in commit `8092b5b` (add unvalidated handler with JSON.parse for security-reviewer scenario)
+
+### Findings
+
+`review-src/handler.ts:7: imp: [A04]` `JSON.parse(req.body)` without try/catch throws SyntaxError on malformed input, leaking stacks or crashing process. Wrap in try/catch, return 400.
+
+`review-src/handler.ts:1-4: crit: [A04]` `validate()` exported but never imported; `handle()` passes `req.body` straight to parser. Import and gate `process(req.body)` behind schema validation (zod/ajv), not the null-check.
+
+`review-src/validate.ts:1: imp: [A04]` `validate(x) => x != null` is a null-check mislabeled as validation, creating false security posture. Replace with schema validator enforcing type, shape, and key allowlist (reject `__proto__`, `constructor`, `prototype`).
+
+`review-src/handler.ts:7: imp: [A03]` `JSON.parse` returns attacker-controlled graph including `__proto__`/`constructor` keys; downstream merge/spread pollutes `Object.prototype` process-wide. Use reviver that strips `__proto__`/`constructor`/`prototype`, or `Object.create(null)` containers, or schema validator that rejects those keys.
+
+`review-src/handler.ts:1,6, review-src/validate.ts:1: sug: [A04]` implicit `any` on `req`, `data`, `x` defeats type-time guards; `JSON.parse(Buffer)` coerces silently. Enable `noImplicitAny`, type `req: {body: string}`, narrow before parse.
+
+### Per-finding validation
+
+Validation of Finding 1: Confirm A04 Insecure Design as primary (A05 secondary). Severity revised Critical -> Important: unhandled SyntaxError destabilizes one request handler; process-wide crash depends on unverified host (Express swallows; raw `http` crashes). Unresolved hedge: host framework unspecified. Verify host runtime before downgrading further.
+
+Validation of Finding 2: Confirm Critical. A04 Insecure Design fits better than A01 -- this is a missing-control design defect, not a bypassed access check. The dead-code validator is the root enabler for Findings 1, 3, 4.
+
+Validation of Finding 3: Confirm A03 Injection mapping and Important severity. Exploitability gated on downstream consumer behavior (merge/spread/property-walk), which is not in scope; if any consumer uses `lodash.merge` or `Object.assign` on the result, escalate to Critical.
+
+Validation of Finding 4: Confirm Suggestion + A04. Defense-in-depth; not directly exploitable but removes the type-time guard that would have surfaced Findings 1-3 at compile time.
+
+### Threat Patterns
+
+Findings 1, 2, 3 form a single amplified chain rooted in Finding 2: the unwired `validate()` lets any anonymous HTTP body reach `JSON.parse` (Finding 1: malformed -> DoS / stack leak) AND lets `__proto__`-bearing payloads through (Finding 3: prototype pollution persisting for process lifetime). Finding 2 is the keystone -- wiring a real schema validator before `process()` neutralizes 1 and 3 simultaneously. Finding 4 is the type-system gap that allowed the keystone to ship undetected; fixing it (strict mode + typed `req`) would have made the missing import a compile error.
+
+### Missed surfaces (optional)
+
+Downstream consumers of `handle()`'s return value are out of scope but determine Finding 3's true blast radius; audit any caller using `Object.assign`, spread, or `lodash.merge` on the parsed result.
+
+**Verdict scope:** scope: security-threats

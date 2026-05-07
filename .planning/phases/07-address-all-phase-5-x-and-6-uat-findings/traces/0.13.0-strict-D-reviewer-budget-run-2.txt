@@ -1,0 +1,18 @@
+## Review Summary
+
+Reviewed: `review-src/handler.ts` and `review-src/validate.ts` (commit `1f7b9a3`)
+
+### Findings
+
+`review-src/handler.ts:7: crit: unguarded JSON.parse throws SyntaxError on malformed body, crashing handler. Wrap in try/catch and return typed error.`
+`review-src/handler.ts:1-4: imp: validate exported but never imported; req.body bypasses guard. Import validate and gate before process.`
+`review-src/handler.ts:2: imp: braceless if violates CLAUDE.md mandate. Add { } block around return.`
+`review-src/handler.ts:1,6, review-src/validate.ts:1: imp: implicit any on handle/process/validate params and returns disables type checking. Annotate (req: Request, data: string): unknown and validate(x: unknown): x is NonNullable<unknown>.`
+
+### Cross-Cutting Patterns
+
+Findings 1, 2, and 4 share a single root cause: missing input-validation discipline at the module boundary. `handle` accepts untyped input, skips the available `validate` guard, and forwards raw bytes to `JSON.parse` without exception handling -- the type system, the runtime guard, and the parser all fail open. A single zod or io-ts schema at `handle`'s entry would close all three: it types `req`, replaces the trivial `validate`, and surfaces parse errors as typed results. Finding 3 (braces) is independent style/consistency enforcement but compounds review noise around the same `if` line that finding 2 wants to extend with the validate call -- fixing 2 forces the brace fix anyway.
+
+Severity confirmations: all four match initial assessments. Finding 1 is Critical because unhandled SyntaxError on user-controlled input is a trivially-triggered DoS. Finding 2 is Important (not Critical) only because Finding 1's crash masks the validation gap -- if Finding 1 is fixed without Finding 2, the validation gap becomes the next correctness defect.
+
+**Verdict scope:** scope: api-correctness

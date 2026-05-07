@@ -1,0 +1,45 @@
+No `<verify_request>` blocks in the response -- no escalation needed. Rendering output now.
+
+---
+
+## Review Summary
+
+Reviewed: commit `6075c12` -- `review-src/handler.ts` and `review-src/validate.ts` (new files)
+
+### Findings
+
+`review-src/handler.ts:7: crit:` `JSON.parse(data)` unguarded; malformed body throws `SyntaxError` to caller. Wrap in try/catch returning 400 or null.
+
+`review-src/handler.ts:2-3: imp:` `req.body` type assumption unverified; pre-parsed object bodies (Express/Fastify) coerce to `"[object Object]"` then throw. Type-check input or document contract.
+
+`review-src/handler.ts:2: imp:` `validate` exported but never invoked; raw `req.body` flows to `JSON.parse` unchecked. Import and gate `process()` behind `validate(req.body)`.
+
+`review-src/handler.ts:2: sug:` braceless `if` violates CLAUDE.md control-flow rule. Add `{ }` and blank lines around `if`/`return`.
+
+`review-src/handler.ts:1,6, review-src/validate.ts:1: sug:` implicit `any` on all params/returns defeats TS. Add `req: IncomingMessage`, `data: string`, return types.
+
+`review-src/validate.ts:1: imp:` `x != null` is weakest possible check; passes `""`, `0`, `false`, `"not-json"`. Tighten to `typeof x === 'string' && x.length > 0` for the JSON.parse path.
+
+### Per-finding validation
+
+Validation of Finding 1: Confirmed Critical. `JSON.parse` is the canonical unhandled-throw vector in Node HTTP handlers; a single malformed POST crashes the worker if no framework-level error boundary catches it. Fix is mechanical (try/catch) and non-negotiable.
+
+Validation of Finding 2: Confirmed Important. The contract ambiguity is the real defect -- the code works in raw `http.createServer` with string bodies and breaks under Express with `express.json()`. Without a JSDoc or type annotation, the next maintainer cannot tell which framework this targets. Severity holds at Important; becomes Critical if deployed behind body-parser.
+
+Validation of Finding 3: Confirmed Important, sharpening to near-Critical given Finding 1. The exported-but-unused `validate` is dead code that signals intent without enforcement -- worse than no validator, because it suggests the boundary is guarded when it is not. Wire it in or delete it.
+
+Validation of Finding 4: Confirmed Suggestion. Pure style-rule compliance; no behavioral impact. Severity correct.
+
+Validation of Finding 5: Confirmed Suggestion, but note that proper typing would have surfaced Finding 2 at compile time (`req.body: unknown` forces a narrow). Typing is the structural fix that makes Findings 1-3 harder to reintroduce.
+
+### Cross-Cutting Patterns
+
+Findings 1, 2, 3, and 6 share one root cause: the handler has no input-validation boundary. `validate.ts` exists as the obvious home for that boundary but is orphaned, and `validate` itself (`x != null`) is too weak to serve the purpose even if wired in. The structural fix is a single typed parser at the entry: `function parseBody(raw: unknown): Result<T, Error>` that narrows `unknown`, runs a real schema check (zod/valibot), and returns a discriminated union. That collapses Findings 1-3 and 6 into one change and makes Finding 5's typing improvements load-bearing rather than cosmetic. Finding 4 is independent style cleanup.
+
+### Missed surfaces (optional)
+
+No tests accompany either file; absent a test asserting `handle({body: "not-json"})` does not throw, regressions on Finding 1 will ship silently.
+
+---
+
+**Verdict scope:** scope: api-correctness

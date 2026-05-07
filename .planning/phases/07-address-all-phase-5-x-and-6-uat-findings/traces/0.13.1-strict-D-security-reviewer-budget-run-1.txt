@@ -1,0 +1,39 @@
+## Security Review Summary
+
+Reviewed: `review-src/handler.ts` and `review-src/validate.ts` (commit 1730f24 -- "add unvalidated handler with JSON.parse for security-reviewer scenario")
+
+---
+
+### Findings
+
+`review-src/handler.ts:7: imp: [A04]` `JSON.parse(data)` unwrapped throws SyntaxError on malformed body, crashing handler. Wrap in try/catch, return 400 on parse failure.
+
+`review-src/handler.ts:1-8: imp: [A04]` `req.body` flows raw into `JSON.parse` and back to caller with no schema check. Validate with zod/ajv schema before returning.
+
+`review-src/handler.ts:7: imp: [A03]` `JSON.parse` preserves attacker-controlled `__proto__`/`constructor` keys enabling prototype pollution downstream. Reject keys via reviver: `JSON.parse(data, (k,v) => k==='__proto__'||k==='constructor'?undefined:v)`.
+
+`review-src/validate.ts:1: imp: [A04]` `validate` returns `x != null`, accepting `{}`, `[]`, `0`, `""`, `false` -- trivial auth/precondition bypass. Replace with explicit schema validation (zod/ajv) per call site.
+
+`review-src/handler.ts:1-8: imp: [A04]` No body-size/depth guard before `JSON.parse`; large/deeply-nested payload exhausts CPU+heap (JSON bomb). Enforce `express.json({limit:'100kb'})` or pre-parse byte-length check.
+
+### Per-finding validation
+
+**Finding 1 (unhandled SyntaxError):** Confirmed exploitable but severity revised to Important. DoS-via-uncaught-exception requires the caller to also lack a try/catch and the framework to lack a default error boundary. Express 4+ catches sync throws in handlers and returns 500; only crashes the process under raw `http.createServer` without a domain. Critical only if confirmed unhandled at framework layer -- Important as packaged.
+
+**Finding 2 (unvalidated raw input):** Confirmed but severity revised to Important. "Critical" requires a confirmed downstream sink (SQL, eval, Object.assign target). Diff shows neither; blast radius depends on unscoped consumers. Tag is A04 (Insecure Design -- missing input contract) rather than A03; no injection sink is present in the reviewed code.
+
+**Finding 3 (prototype pollution):** Confirmed Important. Modern Node (>=v22) ignores `__proto__` in `JSON.parse` for own-property assignment (sets it as own key, not prototype), so pollution requires a downstream merge/assign helper. Real risk; reviver fix is the canonical mitigation (OWASP Prototype Pollution Prevention Cheat Sheet).
+
+**Finding 4 (validate no-op):** Confirmed Important. Severity hinges on whether `validate` gates a security boundary; not visible in diff. `Assuming validate is used upstream of authorization or sensitive sinks (unverified), this is Critical. Verify call sites before downgrading.`
+
+**Finding 5 (no size limit):** Confirmed Important. Node `JSON.parse` is O(n) with no recursion limit; 100MB body parses in seconds, deep nesting hits stack limits. Standard mitigation is framework body-limit middleware, not a custom guard.
+
+### Threat Patterns
+
+Findings 1, 2, 3, 5 chain on the single unguarded `JSON.parse` sink: an unauthenticated attacker submits a single crafted body that (a) crashes the worker via malformed JSON (F1), (b) exhausts memory via a JSON bomb (F5), or (c) seeds a `__proto__` payload (F3) that detonates when any downstream merge/assign helper consumes the F2 unvalidated return value. Finding 4 is an independent design weakness that compounds the chain: if `validate` gates the F2 consumer, the prototype-polluted object passes the `!= null` check trivially, removing the last barrier. Highest-priority sequence: (1) framework body-limit + try/catch wrapper (closes F1+F5), (2) reviver-based prototype-key strip (closes F3), (3) replace `validate` with schema validation at call sites (closes F2+F4 together).
+
+**Missed surfaces (optional):** Downstream consumers of `handle()`'s return value are out of scope but determine true blast radius -- audit any `Object.assign`, spread-merge, or lodash `_.merge` call accepting this object.
+
+---
+
+**Verdict scope:** scope: security-threats

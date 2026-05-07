@@ -1,0 +1,39 @@
+## Security Review Summary
+
+Reviewed: `review-src/handler.ts` and `review-src/validate.ts` (commit `0d54f5f` -- "add unvalidated handler with JSON.parse for security-reviewer scenario")
+
+---
+
+### Findings
+
+`review-src/handler.ts:7: crit: [A04] unhandled JSON.parse(req.body) throws SyntaxError on malformed input, crashing process (unauth DoS). Wrap in try/catch, return 400.`
+
+`review-src/handler.ts:2-3: crit: [A04] validate() never invoked; req.body flows directly to JSON.parse with no schema/size/content-type gate. Add zod/ajv schema + size cap before parse.`
+
+`review-src/handler.ts:7: imp: [A03] JSON.parse returns objects with __proto__/constructor keys; downstream spread/merge poisons Object.prototype. Use JSON.parse(data, (k,v)=> k==='__proto__'?undefined:v) or secure-json-parse.`
+
+`review-src/handler.ts:1,6: sug: [A04] implicit-any on req and data removes boundary type contract; non-string data silently yields null from JSON.parse(String(obj)). Type as {body: string}, enable noImplicitAny.`
+
+`review-src/validate.ts:1: imp: [A04] validate(x){return x!=null} is security-theater -- passes "",[],"",{},0,false,{__proto__:...}. Replace with schema validator (zod) or delete to avoid false assurance.`
+
+### Per-finding validation
+
+Validation of Finding 1: Confirmed Critical. Unauthenticated external attacker, one-line malformed-JSON payload, full process DoS in default Express config where synchronous throws from handlers escape to the default error handler and may leak stack via `err.stack` in 500 response. Severity holds.
+
+Validation of Finding 2: Confirmed Critical as a design flaw, but exploitability rides on Findings 1 and 3 -- it is the enabling gap, not a standalone vuln. Keep Critical because it is the root cause that gates both DoS and prototype-pollution paths.
+
+Validation of Finding 3: Revise upward to Critical-conditional. If any downstream code spreads/merges the return value (common in Express middleware chains and config builders), unauth attacker achieves process-wide prototype pollution affecting all requests. Severity: Important when downstream sinks unverified; escalates to Critical if `Object.assign`/spread on parse result exists elsewhere. Unresolved hedge: downstream consumers of `handle()` return value not in scope. Verify sink shape before committing fix scope.
+
+Validation of Finding 5: Revise upward from Suggestion to Important. A misleadingly-named `validate()` export in a security-adjacent module is worse than no helper -- future maintainers wire it in believing it sanitizes. The integrity-of-design risk justifies Important.
+
+### Threat Patterns
+
+Findings 1, 2, 3 form the canonical unauthenticated-attack chain: missing validation gate (F2) lets malformed body reach unguarded `JSON.parse` (F1) for trivial DoS, OR lets `__proto__`-laden body reach the same sink (F3) for prototype pollution if the return value is later merged. F2 is the shared root; fixing it (schema + sanitizer + try/catch) closes F1 and F3 simultaneously. F4 (implicit-any) and F5 (sham `validate`) are systemic design weaknesses that allowed F1-F3 to ship -- type discipline and a real validator would have surfaced the gaps at PR time.
+
+### Missed surfaces (optional)
+
+Callers of `handle()` are out of scope; verify no `Object.assign({}, handle(req))` or `{...handle(req)}` sinks exist before closing F3 -- that determines whether prototype pollution is theoretical or live.
+
+---
+
+**Verdict scope:** scope: security-threats
