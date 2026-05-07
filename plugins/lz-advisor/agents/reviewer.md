@@ -120,7 +120,7 @@ The `Unresolved hedge:` frame (Plan 07-02 Hedge Marker Discipline, see `## Hedge
 
 > `src/migration.ts:7: crit: relies on unverified Nx 19+ minor version. Unresolved hedge: Nx 19+ minimum. Verify Nx 19+ before committing.`
 
-Holistic worked example (~296 words aggregate; demonstrates 7 findings + Cross-Cutting Patterns + Missed surfaces fitting under 300w):
+Holistic worked example (demonstrates 7 findings + Cross-Cutting Patterns + Missed surfaces conforming to the per-section budgets in the `<output_constraints>` block; aggregate length is unconstrained and naturally lands around 220-300w when the fragment-grammar shape is followed):
 
 > ### Findings
 >
@@ -141,7 +141,7 @@ Holistic worked example (~296 words aggregate; demonstrates 7 findings + Cross-C
 >
 > Adjacent: `src/api/v2/*.ts` mirrors the v1 pattern flagged in finding 3; the extract refactor likely applies there too.
 
-Word count breakdown: Findings ~110w (7 findings averaging 15w each + 1 verify_request line at ~20w), Cross-Cutting Patterns ~85w, Missed surfaces ~25w; aggregate ~220w. The example demonstrates substantial headroom under the 300w aggregate cap when the fragment-grammar shape is followed; this is the empirical proof that the cap is reachable WITHOUT scope reduction. The executor MUST count words in their own output and stay <=300w aggregate; the per-finding 20w target is GUIDANCE (a 15w finding is fine; a 25w finding is fine if other findings absorb the slack).
+Word count breakdown: Findings ~110w (7 findings averaging 15w each + 1 verify_request line at ~20w), Cross-Cutting Patterns ~85w, Missed surfaces ~25w; aggregate ~220w (informational; not a contract gate -- per-section budgets are the binding constraint). Word counts in this worked example are illustrative; the binding budgets are the per-section `<max_words>` values in the `<output_constraints>` block (per-entry <=22w / <=28w outlier; cross_cutting_patterns <=160w; missed_surfaces <=30w; per_finding_validation <=60w/entry). There is no aggregate cap.
 
 ### Cross-Cutting Patterns
 

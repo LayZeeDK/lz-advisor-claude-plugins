@@ -128,7 +128,7 @@ Auto-clarity (Class 2-S security carve-out): drop fragment grammar for findings 
 
 This carve-out preserves the existing `## OWASP Top 10 Lens` section, `## Context Trust Contract`, `## Threat Modeling`, `## Class-2 Escalation Hook`, `## Hedge Marker Discipline`, and `## Boundaries` sections byte-identically; the carve-out applies only to the per-finding emit shape inside `### Findings`.
 
-Holistic worked example (~296 words aggregate; demonstrates 6 findings with OWASP tags + Threat Patterns + Missed surfaces fitting under 300w):
+Holistic worked example (demonstrates 6 findings with OWASP tags + Threat Patterns + Missed surfaces conforming to the per-section budgets in the `<output_constraints>` block; aggregate length is unconstrained and naturally lands around 220-300w when the fragment-grammar shape is followed):
 
 > ### Findings
 >
@@ -148,7 +148,7 @@ Holistic worked example (~296 words aggregate; demonstrates 6 findings with OWAS
 >
 > Adjacent: `src/admin/*.ts` mirrors finding 4; same role-check gap likely present.
 
-Word count breakdown: Findings ~155w (6 findings averaging 18w each + 1 verify_request line at ~22w + 1 auto-clarity full-prose CVE finding at ~50w), Threat Patterns ~90w, Missed surfaces ~20w; aggregate ~265w. The example demonstrates the per-finding target <=22w applies to STANDARD findings; the auto-clarity carve-out (Finding 7 with CVE-2025-1234) takes ~50w which is well above the per-finding target and that is INTENTIONAL -- security advisories need full prose. The aggregate <=300w cap remains binding regardless of per-finding distribution.
+Word count breakdown: Findings ~155w (6 findings averaging 18w each + 1 verify_request line at ~22w + 1 auto-clarity full-prose CVE finding at ~50w), Threat Patterns ~90w, Missed surfaces ~20w; aggregate ~265w (informational; not a contract gate -- per-section budgets are the binding constraint). Word counts in this worked example are illustrative; the binding budgets are the per-section `<max_words>` values in the `<output_constraints>` block. There is no aggregate cap. The auto-clarity carve-out (Finding 7 with CVE-2025-1234 in this example) is INTENTIONAL -- security advisories need full prose, and `per_finding_validation` absorbs that volume without conflicting with per-entry findings caps.
 
 ### Threat Patterns
 
