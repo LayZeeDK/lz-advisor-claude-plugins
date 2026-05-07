@@ -15,7 +15,7 @@ description: >
   fix bugs, or run security audits -- those are handled by sibling
   skills lz-advisor.execute, lz-advisor.review, and
   lz-advisor.security-review respectively.
-version: 0.13.0
+version: 0.13.1
 allowed-tools: Agent(lz-advisor:advisor), Read, Glob, Bash(git:*), Write, WebSearch, WebFetch
 ---
 
