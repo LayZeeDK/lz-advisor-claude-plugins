@@ -18,6 +18,49 @@
 # emergent surface drove ~50-100w of overshoot; not stochastic outlier per Plan 07-12 protocol).
 set -eu
 
+# Optional flags:
+#   --from-trace <file>     Replay mode: skip scratch + `claude -p`; use <file>
+#                           as the agent text output and run parsers against it.
+#                           Free (no API spend). Useful for parser-iteration
+#                           testing against captured traces.
+#   --capture-trace <file>  Live mode: preserve agent text output to <file>
+#                           before scratch cleanup. Combine with default mode
+#                           to build a trace cache for future replay.
+#   --help, -h              Print this usage block and exit.
+TRACE_INPUT=""
+TRACE_CAPTURE=""
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --from-trace)
+      TRACE_INPUT="${2:?--from-trace requires a path}"
+      shift 2
+      ;;
+    --capture-trace)
+      TRACE_CAPTURE="${2:?--capture-trace requires a path}"
+      shift 2
+      ;;
+    --help|-h)
+      cat <<'USAGE'
+Usage: bash D-security-reviewer-budget.sh [--from-trace <file>] [--capture-trace <file>]
+
+Default mode (no flags): seed scratch repo, invoke `claude -p` against
+/lz-advisor.security-review, capture agent text output, run parsers.
+
+--capture-trace <file>: preserve agent text output to <file> before scratch
+  cleanup. Combine with default mode to build a trace cache.
+
+--from-trace <file>: replay mode -- skip scratch + `claude -p`; use <file>
+  as the agent text output and run parsers against it. Free (no API spend).
+USAGE
+      exit 0
+      ;;
+    *)
+      echo "[ERROR] Unknown argument: $1" >&2
+      exit 64
+      ;;
+  esac
+done
+
 # Windows Git Bash compat: suppress argv path translation for native binaries
 # (claude.exe, rg.exe, node.exe) and convert POSIX paths to Windows form so
 # rg.exe can resolve them. No-op on Linux / macOS (cygpath unavailable).
@@ -29,27 +72,46 @@ else
   to_native() { printf '%s' "$1"; }
 fi
 
-PLUGIN_DIR="$(to_native "$(git rev-parse --show-toplevel)/plugins/lz-advisor")"
+# Always set up SCRATCH (parsers write intermediate files like findings-body.txt
+# under $SCRATCH; needed in both live and replay modes).
 SCRATCH="$(to_native "$(mktemp -d -t lz-advisor-d-security-reviewer-XXXX)")"
 trap 'rm -rf "$SCRATCH"' EXIT
 
-cd "$SCRATCH"
-git init -q
-git commit -q --allow-empty -m "seed"
+if [ -n "$TRACE_INPUT" ]; then
+  # Replay mode: skip scratch repo + claude invocation entirely.
+  if [ ! -f "$TRACE_INPUT" ]; then
+    echo "[ERROR] --from-trace file not found: $TRACE_INPUT" >&2
+    exit 1
+  fi
+  OUT="$TRACE_INPUT"
+  echo "[INFO] Replay mode: using trace $TRACE_INPUT (skipping claude -p)"
+else
+  # Live mode: full scratch setup + claude invocation.
+  PLUGIN_DIR="$(to_native "$(git rev-parse --show-toplevel)/plugins/lz-advisor")"
 
-# Seed scratch repo with representative source files for security-reviewer to scan.
-# Pattern mirrors DEF-response-structure.sh Finding F block (lines 82-87).
-mkdir -p review-src
-printf 'export function handle(req) {\n  if (req.body) return process(req.body);\n  return null;\n}\n\nfunction process(data) {\n  return JSON.parse(data);\n}\n' > review-src/handler.ts
-printf 'export function validate(x) { return x != null; }\n' > review-src/validate.ts
-git add review-src/handler.ts review-src/validate.ts
-git commit -q -m "add unvalidated handler with JSON.parse for security-reviewer scenario"
+  cd "$SCRATCH"
+  git init -q
+  git commit -q --allow-empty -m "seed"
 
-OUT="$SCRATCH/D-security-reviewer-output.txt"
-claude --model sonnet --effort medium --plugin-dir "$PLUGIN_DIR" \
-  --dangerously-skip-permissions \
-  -p "/lz-advisor.security-review Review the last commit." \
-  --verbose > "$OUT" 2>&1 || true
+  # Seed scratch repo with representative source files for security-reviewer to scan.
+  # Pattern mirrors DEF-response-structure.sh Finding F block (lines 82-87).
+  mkdir -p review-src
+  printf 'export function handle(req) {\n  if (req.body) return process(req.body);\n  return null;\n}\n\nfunction process(data) {\n  return JSON.parse(data);\n}\n' > review-src/handler.ts
+  printf 'export function validate(x) { return x != null; }\n' > review-src/validate.ts
+  git add review-src/handler.ts review-src/validate.ts
+  git commit -q -m "add unvalidated handler with JSON.parse for security-reviewer scenario"
+
+  OUT="$SCRATCH/D-security-reviewer-output.txt"
+  claude --model sonnet --effort medium --plugin-dir "$PLUGIN_DIR" \
+    --dangerously-skip-permissions \
+    -p "/lz-advisor.security-review Review the last commit." \
+    --verbose > "$OUT" 2>&1 || true
+
+  if [ -n "$TRACE_CAPTURE" ]; then
+    cp "$OUT" "$TRACE_CAPTURE"
+    echo "[INFO] Trace captured to $TRACE_CAPTURE"
+  fi
+fi
 
 FAIL=0
 
