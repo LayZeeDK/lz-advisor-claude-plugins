@@ -5,7 +5,7 @@ status: verified
 threats_open: 0
 asvs_level: 1
 created: 2026-05-01
-amended: 2026-05-05
+amended: 2026-05-07
 ---
 
 # Phase 7 -- Security
@@ -141,6 +141,7 @@ Cross-reference grep results (verified 2026-05-01) confirming each `mitigate` di
 | 2026-05-01 | 29 | 29 | 0 | gsd-security-auditor |
 | 2026-05-05 | 46 | 46 | 0 | gsd-security-auditor (gap delta: Plans 07-09, 07-10, 07-11) |
 | 2026-05-05 | 62 | 62 | 0 | gsd-security-auditor (gap delta: Plans 07-12 + 07-13 + post-seal-fix WR-04/05 + IN-01) |
+| 2026-05-07 | 82 | 82 | 0 | gsd-security-auditor (gap delta: Plans 07-14/15/16/17 + 07-REVIEW-GAPS-3 WR-01/02/03 + IN-01..04; 3 conditional accepts on Phase 8 fix) |
 
 ---
 
@@ -331,3 +332,80 @@ None. The 2 SUMMARY.md files (`07-12-SUMMARY.md`, `07-13-SUMMARY.md`) contain no
 - [x] 07-REVIEW-FIX-GAPS-2.md `status: all_fixed` records WR-04/05/IN-01 closure + IN-02 known-hazard documentation post-seal
 
 **Approval (B):** verified 2026-05-05 (amendment B; gap delta: 16 new threats from Plans 07-12 halt-by-design + Plan 07-13 WR-01/02/03 closure + post-seal-fix WR-04/05/IN-01 closure verified closed; cumulative 62 threats audited across baseline + amendment A + amendment B).
+
+---
+
+## Amendment 2026-05-07 (C) -- Plans 07-14/15/16/17 Gap-Closure-3 Threat Delta
+
+After amendment B sealed Phase 7 at `passed_with_residual` on 0.12.2, four additional plans landed (07-14 XML `<output_constraints>` redesign + 07-15 fixture parser update + 07-16 advisor diagnostic + 07-17 0.13.0 MINOR + 3x re-run gate). The gap-closure-3 cycle produced 7 new code-review findings (`07-REVIEW-GAPS-3.md`: 3 Warning + 4 Info) and an `independent_verification_2026_05_06` block confirming `failed_gap_closure_3`. This amendment audits the 20-threat delta only; the 62 threats verified in baseline + amendment A + amendment B are not re-audited.
+
+### Threat Register (Delta)
+
+| ID | Cat | Disp | Evidence |
+|----|-----|------|----------|
+| T-07-14-01 | T | mitigate | reviewer.md:160-187 + security-reviewer.md:165-192: byte-symmetric `<output_constraints>` blocks; 4 `<section>` + `<aggregate_cap>none</aggregate_cap>` + 4-item `<do_not_include>` confirmed; atomic 2-file commit |
+| T-07-14-02 | I | mitigate | reviewer.md:146 `## Cross-Cutting Patterns`, security-reviewer.md:153 `## Threat Patterns`, security-reviewer.md:196 `## OWASP Top 10 Lens`, Hedge Marker / Class-2 Escalation Hook / Severity Classification preserved byte-identically (Read-verified) |
+| T-07-14-03 | D | accept | per-entry 60w cap on per_finding_validation; documented amendable post-empirical |
+| T-07-14-04 | T | accept | n=5 0.12.2 calibration; Phase 8 amendable per RESEARCH-GAP-3 Q1 |
+| T-07-15-01 | T | mitigate | D-reviewer-budget.sh:67-69 awk range `flag && /^### / {flag=0}` -- terminates on ANY `### ` heading per Pitfall 2 |
+| T-07-15-02 | S | mitigate | D-reviewer-budget.sh:142-146 awk pre-scopes to `### Per-finding validation` body; PFV_RE on extracted body only |
+| T-07-15-03 | D | accept | $0.10/run; carry-forward AR-07-05 / AR-07-12 |
+| T-07-16-01 | I | accept | n=1 diagnostic; Phase 8 n>=3 documented in 07-VERIFICATION.md:1136-1148 |
+| T-07-16-02 | T | mitigate | Plan 07-16 Step 5 cites verbatim copy of D-advisor-budget.sh lines 89-141 (parser-drift-by-construction prevented) |
+| T-07-17-01 | T | mitigate | 07-VERIFICATION.md:1054-1061 independent reading confirms verdict transcription matches log:107 + log:138/156 (one label-clarity caveat surfaced as Phase 8 hygiene, NOT transcription error) |
+| T-07-17-02 | R | mitigate | 07-VERIFICATION.md:5 frontmatter `status: failed_gap_closure_3` (NOT silently downgraded to passed_with_residual); independent verifier line 1189 confirms |
+| T-07-17-03 | I | accept | n=3 Plan 07-12 disconfirmation convention |
+| T-07-17-04 | D | accept | $0.60-0.90 + 18min; gap-closure budget approved |
+| T-07-WR01-01 | T | accept (Phase 8) | reviewer.md:144 prose "MUST stay <=300w aggregate" CONTRADICTS XML:180 `<aggregate_cap>none</aggregate_cap>` -- structurally OPEN; Phase 8 mech fix path articulated at 07-VERIFICATION.md:1129+1174 (worklist step 1) |
+| T-07-WR02-01 | T | accept (Phase 8) | security-reviewer.md:151 "aggregate <=300w cap remains binding" CONTRADICTS XML:185 -- structurally OPEN; Phase 8 fix at 07-VERIFICATION.md:1130+1174 |
+| T-07-WR03-01 | T | accept (Phase 8) | reviewer.md:123 + security-reviewer.md:131 "fitting under 300w" legacy anchor -- structurally OPEN; Phase 8 fix at 07-VERIFICATION.md:1131-1132+1174 |
+| T-07-IN01-01 | T | accept | per_finding_validation 15*60w=900w channel; documented architecture-grade limit (07-REVIEW-GAPS-3.md:73) |
+| T-07-IN02-01 | T | accept | reviewer.md:144 "~220w" + security-reviewer.md:151 "~265w" informational; documented 07-REVIEW-GAPS-3.md:75-82 |
+| T-07-IN03-01 | S | accept | reviewer.md:189 + security-reviewer.md:194 "Plan 07-14 + 07-15" attribution -- correct per 07-VERIFICATION.md:8 milestone trail |
+| T-07-IN04-01 | R | accept | asymmetric cross-ref; documentation-only; 07-REVIEW-GAPS-3.md:90-97 |
+
+**Delta total: 20 threats. Closed: 17. Accepted-with-Phase-8-mitigation-path: 3 (WR-01/02/03). Open: 0.**
+
+### Implementation Evidence (Delta)
+
+- Plugin 0.13.0 5-surface stamp: plugin.json:3 + 4 SKILL.md:18-19 (verified); zero 0.12.2 remnants in version-surface fields (0.12.2 strings exist in agent prose milestone narrative only -- non-version-surface).
+- Empirical FAIL transparency: regression-gate-0.13.0/D-reviewer-budget-3x.log:107 `verdict: FAIL_2_of_3`; D-security-reviewer-budget-3x.log:138 `Pass 1 of 3 / Fail 2 of 3` + line 156 `verdict: FAIL_1_of_3` (label-pass-encoding); honestly transcribed.
+- WR-01/02/03 prose-XML contradiction acceptance is conditional on Phase 8 mechanical fix path (~10 lines / 5min editor time + 0.13.0 -> 0.13.1 PATCH bump per 07-VERIFICATION.md:1176).
+
+### Accepted Risks Log (Delta)
+
+| Risk ID | Threat Ref | Rationale | Date |
+|---------|------------|-----------|------|
+| AR-07-19 | T-07-14-03 | Per-entry 60w on per_finding_validation; amendable post-Plan-07-17 empirical evidence per RESEARCH-GAP-3 Q1; not architectural. | 2026-05-07 |
+| AR-07-20 | T-07-14-04 | n=5 0.12.2 calibration of `<do_not_include>` enumeration; Phase 8 mechanical extensible per RESEARCH-GAP-3 Q1. | 2026-05-07 |
+| AR-07-21 | T-07-15-03 | Carry-forward AR-07-05 / AR-07-12 (`claude -p --dangerously-skip-permissions` non-interactive smoke pattern). | 2026-05-07 |
+| AR-07-22 | T-07-16-01 | n=1 diagnostic-only; Phase 8 n>=3 documented as residual `residual-advisor-fragment-grammar-not-binding-on-code-blocks`. | 2026-05-07 |
+| AR-07-23 | T-07-17-03 | n=3 = Plan 07-12 disconfirmation convention; not strict statistical guarantee. | 2026-05-07 |
+| AR-07-24 | T-07-17-04 | Cost approved per Phase 7 gap-closure budget; empirically load-bearing for closure. | 2026-05-07 |
+| AR-07-25 | T-07-WR01-01 | reviewer.md:144 prose-XML contradiction structurally OPEN at source; Phase 8 mechanical 2-3-line edit per 07-REVIEW-GAPS-3.md WR-01 suggested fix; worklist step 1 at 07-VERIFICATION.md:1174. Acceptance is CONDITIONAL on Phase 8 fix landing before any further Phase-7-related sealing attempt. Empirical 3x gate FAIL on plugin 0.13.0 traces partially to this contradiction per independent_verification_2026_05_06:1075-1083. | 2026-05-07 |
+| AR-07-26 | T-07-WR02-01 | security-reviewer.md:151 "remains binding" prose; same disposition as AR-07-25; mirror surface; Phase 8 fix. | 2026-05-07 |
+| AR-07-27 | T-07-WR03-01 | reviewer.md:123 + security-reviewer.md:131 "fitting under 300w" legacy anchor; same disposition as AR-07-25; introductory-sentence mech edit; Phase 8. | 2026-05-07 |
+| AR-07-28 | T-07-IN01-01 | per_finding_validation 15*60w=900w architecture-grade limit; not a defect; Phase 8 may tighten max_words 60 -> 30 OR max_count 15 -> 5. | 2026-05-07 |
+| AR-07-29 | T-07-IN02-01 | "~220w" / "~265w" informational narration; Phase 8 may add `(informational; not a contract gate)` parenthetical per 07-REVIEW-GAPS-3.md:79-82. | 2026-05-07 |
+| AR-07-30 | T-07-IN03-01 | "Plan 07-14 + 07-15" attribution verified correct per 07-VERIFICATION.md:8 milestone trail; no drift. | 2026-05-07 |
+| AR-07-31 | T-07-IN04-01 | Asymmetric cross-reference in security-reviewer.md:163 -> reviewer.md (no reverse pointer); documentation-only maintenance hazard; Phase 8 mech add. | 2026-05-07 |
+
+### Empirical FAIL Disposition (Non-Threat)
+
+The 3-of-6 empirical FAIL on the 0.13.0 3x re-run gate (D-reviewer FAIL_2_of_3 + D-security-reviewer 2-of-3-FAIL) is a quality regression at the model boundary -- NOT a security threat. Plan 07-17's audit-trail integrity (T-07-17-01 + T-07-17-02) is sound: status field `failed_gap_closure_3` reflects reality (07-VERIFICATION.md:5); verdicts honestly transcribed (independent verifier confirms at line 1061); Phase 8 worklist documented at line 1174.
+
+### Unregistered Flags (Delta)
+
+None. SUMMARY.md files for Plans 07-14/15/16/17 contain `## Threat Model` sections that restate the structured threat IDs; no new attack surface.
+
+### Sign-Off (Delta)
+
+- [x] All 20 delta threats have a disposition (mitigate / accept; 3 accepts conditional on documented Phase 8 mechanical fix path)
+- [x] Accepted risks documented (AR-07-19..AR-07-31; 13 new entries)
+- [x] `threats_open: 0` confirmed (62 + 20 = 82 cumulative; WR-01/02/03 source-code contradictions accepted with explicit Phase 8 worklist step 1 at 07-VERIFICATION.md:1174-1183)
+- [x] Reviewer + security-reviewer + advisor least privilege preserved (`tools: ["Read", "Glob"]` unchanged across Plans 07-14..07-17)
+- [x] Plugin 0.13.0 across 5 surfaces; zero 0.12.2 remnants in version-surface fields
+- [x] Empirical FAIL honestly transcribed (T-07-17-01); status not silently downgraded (T-07-17-02)
+- [x] WR-01/02/03 acceptance is CONDITIONAL on Phase 8 fix per 07-VERIFICATION.md:1174 worklist step 1
+
+**Approval (C):** verified 2026-05-07 (amendment C; gap-closure-3 delta: 20 new threats from Plans 07-14/15/16/17 + WR-01/02/03 + IN-01..04 verified closed-or-accepted-with-Phase-8-path; cumulative 82 threats across baseline + A + B + C).
