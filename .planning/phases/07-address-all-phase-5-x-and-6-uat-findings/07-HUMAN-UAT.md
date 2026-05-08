@@ -1,14 +1,15 @@
 ---
-status: partial
+status: complete
 phase: 07-address-all-phase-5-x-and-6-uat-findings
 source: [07-VERIFICATION.md]
 started: 2026-05-03T00:05:00Z
-updated: 2026-05-04T23:55:00Z
+updated: 2026-05-08T11:30:00Z
+note: Test 2 + Test 3 originally `pending` (plugin 0.12.1 regression-gate) are now resolved on plugin 0.13.1 by 07-UAT-REPLAY-0.13.1.md (2026-05-08 8-session UAT) plus the n=10 statistical gate (regression-gate-0.13.1-tolerance-n10/) which supersedes the n=3 sampling Test 2 specified. See 07-VERIFICATION.md closure_amendment_2026_05_08_uat_replay_0_13_1.
 ---
 
 ## Current Test
 
-[plugin 0.12.0 UAT complete (Test 1 PASSED with residuals); plugin 0.12.1 empirical regression-gate pending (Test 2 + Test 3 — added 2026-05-04 after Plans 07-10 + 07-11 structural closure of the 2 in-phase 0.12.0 residuals)]
+[testing complete -- Test 1 PASSED on 0.12.0; Test 2 + Test 3 resolved on 0.13.1 by 07-UAT-REPLAY-0.13.1.md (2026-05-08) and regression-gate-0.13.1-tolerance-n10/ statistical baseline]
 
 ## Tests
 

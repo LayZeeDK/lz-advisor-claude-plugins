@@ -1,5 +1,5 @@
 ---
-status: gaps_found
+status: complete
 phase: 07-address-all-phase-5-x-and-6-uat-findings
 source:
   - 07-01-SUMMARY.md
@@ -11,7 +11,8 @@ source:
   - 07-07-SUMMARY.md
   - 07-08-SUMMARY.md
 started: 2026-05-01T22:56:29Z
-updated: 2026-05-02T23:00:00Z
+updated: 2026-05-08T11:30:00Z
+note: Tests 2-5 originally `skipped` (deferred to manual Compodoc UAT) are now resolved by 07-UAT-REPLAY-0.13.1.md (2026-05-08 8-session UAT against ngx-smart-components on plugin 0.13.1; PASSED_WITH_RESIDUAL); see 07-VERIFICATION.md closure_amendment_2026_05_08_uat_replay_0_13_1 for the supersession block.
 ---
 
 ## Current Test
