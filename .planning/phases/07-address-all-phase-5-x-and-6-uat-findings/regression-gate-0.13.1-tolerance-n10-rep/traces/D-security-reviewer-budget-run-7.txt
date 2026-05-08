@@ -1,0 +1,29 @@
+## Security Review Summary
+
+Reviewed: commit `8098f2d` -- 6 files added (`src/components/user-item.component.ts`, `src/components/user-list.component.ts`, `src/services/cache.service.ts`, `src/services/data.service.ts`, `src/types/api.ts`, `src/utils/validators.ts`)
+
+### Findings
+
+`src/services/data.service.ts:24: imp: [A03]` `query` interpolated raw into URL; attacker injects `&admin=true` or breaks server query parsing. Use `HttpParams` (`{ params: { q: query } }`) so HttpClient URL-encodes.
+
+`src/services/data.service.ts:10-12: imp: [A03]` `id: string` interpolated into path enables `../admin` traversal and segment injection. Call `parseId(id)` from validators.ts and reject null; type param as `number`.
+
+`src/services/data.service.ts:19-21: imp: [A01]` `deleteUser` shares the path-injection sink; traversal pivots a DELETE to arbitrary endpoints (e.g., `/users/../admin/keys`). Same `parseId` gate plus `encodeURIComponent`.
+
+`src/utils/validators.ts:16-18: imp: [A03]` `sanitizeHtml` regex is bypassable (entities, attribute handlers, partial tags); misleads callers into trusting `[innerHTML]` sinks. Delete the helper and route untrusted HTML through Angular `DomSanitizer.sanitize(SecurityContext.HTML, ...)`.
+
+`src/services/data.service.ts:15-17: sug: [A04]` `createUser(data: any)` posts unvalidated payload; enables prototype-shape and field-injection abuse downstream. Type as `Omit<User,'id'|'createdAt'>` and validate with a schema (zod) before POST.
+
+`src/services/data.service.ts:1-30: sug: [A09]` No error handling / logging on HTTP failures; attacker probing IDOR / traversal leaves no signal. Add `catchError` with structured logging (no PII) and surface 4xx to caller.
+
+`src/services/data.service.ts:6: q: [A07]` `baseUrl` hardcoded to `https://api.example.com` -- is auth (bearer / cookie / CSRF token) attached via HttpInterceptor, or are these requests unauthenticated? If cookie-based, confirm SameSite + CSRF token on POST/DELETE.
+
+### Threat Patterns
+
+Findings 1+2+3 chain into a confirmed XSS-to-API-pivot path: a compromised or attacker-shaped API response (reachable via F1 query injection or F2 path traversal redirecting the call to an attacker-controlled segment) flows back as `any`-typed payload, gets rendered, and if any consumer pipes a `User.name`/`email` field through `sanitizeHtml` into `[innerHTML]` (F3), achieves DOM XSS in the app origin. F2 + F4 share a root cause: pervasive `any` typing in `data.service.ts` defeats the type system that `types/api.ts` (`User`, `ApiResponse<T>`) was designed to provide -- tightening signatures closes both at once. F2's traversal severity is amplified for `deleteUser` (A01 destructive side-effect) versus `getUser` (read-only). F3 is the highest-leverage fix: removing the false-safety helper forces callers onto Angular's built-in escaping.
+
+**Missed surfaces (optional):** Review the two presentation components for `[innerHTML]`, `bypassSecurityTrust*`, and `Router.navigateByUrl` sinks consuming `User` fields; review `cache.service.ts` for unbounded growth / key collision enabling cache poisoning across users.
+
+---
+
+**Verdict scope:** scope: security-threats

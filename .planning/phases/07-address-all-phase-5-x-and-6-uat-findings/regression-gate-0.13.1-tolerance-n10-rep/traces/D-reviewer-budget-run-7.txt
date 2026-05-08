@@ -1,0 +1,33 @@
+No `<verify_request>` blocks in the response. Here is the final output.
+
+---
+
+## Review Summary
+
+Reviewed: commit `e4d96c4` -- 6 new Angular library files (`src/components/`, `src/services/`, `src/types/api.ts`, `src/utils/validators.ts`)
+
+### Findings
+
+`src/services/data.service.ts:24: imp: confirmed.` Unencoded `query` enables param smuggling (`&admin=1`) and breaks on spaces/`+`/`#`. Use `HttpParams` or `encodeURIComponent`.
+
+`src/services/data.service.ts:10-26: imp: confirmed.` `any` defeats existing `User`/`ApiResponse<T>` types. Type as `Promise<ApiResponse<User>>` / `Promise<ApiResponse<User[]>>` and `data: Omit<User,'id'|'createdAt'>`.
+
+`src/services/cache.service.ts:12-14: imp: confirmed.` Re-`set` leaks prior timer that evicts new entry at old TTL. Store handle in entry; `clearTimeout` before re-arming; also clear on `delete`/`clear`.
+
+`src/utils/validators.ts:16-18: crit: severity raised from Important.` Name `sanitizeHtml` invites trust; regex misses `javascript:` URIs, attribute-only payloads, entity-encoded vectors, and malformed tags (`<img src=x onerror=...`). Replace with DOMPurify or Angular `DomSanitizer`, or rename `stripTags` with a doc warning.
+
+`src/utils/validators.ts:20-23: imp: severity raised from Suggestion.` Return type `number | null` is structurally incompatible with `User.id: string`; silent breakage at first call site. Return `string | null` after validation, or delete until a real caller defines the contract.
+
+### Per-finding validation
+
+Validation of Finding 4: Raised to Critical. `sanitizeHtml` is a security-boundary name; callers will reasonably bind output via `[innerHTML]` assuming safety. The regex `/<[^>]*>/g` does not address `javascript:` href schemes, surviving `on*` handlers when input lacks `>`, double-encoded payloads, or SVG/MathML vectors. A wrong-named primitive is worse than no primitive -- it is load-bearing under the Severity Classification's "security flaw that affects users in normal operation" clause.
+
+Validation of Finding 5: Raised to Important. Type mismatch between `parseId: number | null` and `User.id: string` is not stylistic -- the first caller wiring `parseId(route.params.id)` into a `User` lookup will get a TS2345 error, or worse, a runtime mismatch if `as any` papers over it. The cross-module contract is broken today, not theoretically.
+
+### Cross-Cutting Patterns
+
+Findings 2 and 5 share a root cause: `src/types/api.ts` defines a typed contract that the rest of the library ignores. `DataService` returns `any`; `parseId` invents an incompatible `number` shape. A single pass binding both modules to `User`/`ApiResponse<T>` closes both. Findings 1 and 4 share a security-boundary-naming pattern: primitives whose names (`sanitizeHtml`, untyped `query` param) imply guarantees the implementations do not deliver -- both warrant Angular-native replacements (`HttpParams`, `DomSanitizer`).
+
+**Missed surfaces (optional):** `isUrl` regex accepts `http://` schemes -- if used as an allow-list for outbound links or redirects, downgrade-attack risk; worth a follow-up review of call sites.
+
+**Verdict scope:** scope: api-correctness

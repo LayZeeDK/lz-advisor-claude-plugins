@@ -1,0 +1,41 @@
+## Review Summary
+
+Reviewed: commit `5c38fcc` -- 6 new files in `src/` (`components/user-item.component.ts`, `components/user-list.component.ts`, `services/cache.service.ts`, `services/data.service.ts`, `types/api.ts`, `utils/validators.ts`)
+
+### Findings
+
+`src/services/cache.service.ts:12-14: imp: confirmed. `set()` leaks prior timer; second call with longer TTL evicted by stale timer. Store timer handle per key, `clearTimeout` on overwrite and in `clear()`.`
+
+`src/services/cache.service.ts:17-22: imp: `get()` returns stale entry between expiry instant and timer fire (timer drift, throttled tabs). Also never deletes expired entry on read. Delete-on-read when `expires <= Date.now()`.`
+
+`src/services/data.service.ts:23-24: crit: confirmed. Unencoded `query` enables parameter injection (`foo&admin=true`) and URL truncation on `#`. Use `HttpParams` or `encodeURIComponent`.`
+
+`src/services/data.service.ts:10-11,19-20: crit: confirmed. Unencoded path `id` allows segment injection via `/` and query split via `?`. Wrap with `encodeURIComponent(id)`.`
+
+`src/services/data.service.ts:11,15,20,24: imp: `Promise<any>` / `any[]` defeats `User` typing already defined in `api.ts`. Type as `Promise<User>` / `Promise<User[]>`; type `createUser` payload as `Omit<User,'id'|'createdAt'>`.`
+
+`src/services/data.service.ts:9: sug: hardcoded `baseUrl`. Inject via `InjectionToken<string>` for env config and tests.`
+
+`src/utils/validators.ts:16-18: imp: confirmed but reframe. Regex strip is not HTML sanitization regardless of unclosed-tag edge case -- misses entity-encoded payloads, attribute-only vectors, `<svg/onload=>` variants. Rename to `stripTags` or delegate to `DomSanitizer`/DOMPurify; current name invites misuse.`
+
+`src/utils/validators.ts:20-23: imp: upgrade from Suggestion. Type mismatch with `User.id: string` is a real bug -- callers either re-stringify (silent precision loss for ids > 2^53) or bypass the validator. Return `string | null` after `/^\d+$/` test, or split into `isValidId` predicate.`
+
+`src/utils/validators.ts:2: imp: `URL_RE` rejects valid hosts: IPv4 literals, `localhost`, punycode/IDN, ports, userinfo. Use `URL` constructor in try/catch instead of regex.`
+
+`src/utils/validators.ts:1: sug: `EMAIL_RE` accepts `a@b.c` but rejects quoted locals and `+` tagging is fine; acceptable for UX gate, document as "format check, not RFC 5322".`
+
+`src/types/api.ts:1-6: sug: `createdAt: string` loses Date semantics. Either brand as ISO string (`type IsoDateString = string & {__iso: true}`) or parse at boundary.`
+
+`src/components/user-item.component.ts:8: imp: `<li>` with `(click)` lacks keyboard handler / role. Not accessible. Add `(keydown.enter)`/`(keydown.space)` and `role="button"` `tabindex="0"`, or use `<button>`.`
+
+`src/components/user-item.component.ts:14: sug: missing `changeDetection: ChangeDetectionStrategy.OnPush`. With signal inputs, OnPush is the intended pairing.`
+
+`src/components/user-list.component.ts:20: sug: same -- add `OnPush`. `count` computed is fine but redundant vs `users().length` inline.`
+
+### Cross-Cutting Patterns
+
+Findings 2 and 3 share a root cause: string-template URL construction without an `HttpParams` / `encodeURIComponent` boundary. A single helper or migration to `HttpClient`'s params option fixes both. Findings 4 and 5 share a different root cause: `validators.ts` conflates "format check" with "safety guarantee" and uses naming (`sanitizeHtml`, `parseId`) that overpromises -- the file needs a naming/contract pass, not just per-function fixes. Finding 1 is independent (lifecycle bug). Across services, `Promise<any>` usage in `DataService` despite `User` existing in `api.ts` indicates the types file is defined but unused -- a wiring gap, not a missing-types gap.
+
+Missed surfaces: `UserItemComponent` click handler lacks keyboard equivalent and ARIA role -- accessibility gap on an interactive `<li>`. Both components missing `OnPush` despite signal-input pairing.
+
+**Verdict scope:** scope: api-correctness

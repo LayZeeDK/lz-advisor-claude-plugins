@@ -1,0 +1,43 @@
+## Review Summary
+
+Reviewed: commit `709c2ce` -- 6 new files in `src/` (2 components, 2 services, 1 type module, 1 utilities module)
+
+### Findings
+
+`src/services/cache.service.ts:13-14: imp: stale timer evicts refreshed entry on key overwrite; `clear()` leaves timers live. Store timer handle in entry; cancel on overwrite/clear.`
+
+`src/services/cache.service.ts:13: sug: unbounded `setTimeout` keeps Node event loop alive. Call `.unref()` on returned handle in non-browser contexts.`
+
+`src/services/data.service.ts:23-24: crit: unencoded `query` enables param injection; `&admin=true` payload alters request semantics. Wrap with `encodeURIComponent(query)` or use `HttpParams`.`
+
+`src/services/data.service.ts:10-11: imp: unencoded `id` allows path traversal (`../admin`) and breaks on `/`, spaces, `#`. Use `encodeURIComponent(id)`.`
+
+`src/utils/validators.ts:16-18: crit: `sanitizeHtml` is not XSS-safe; unclosed tags + entity-encoded payloads bypass. Rename to `stripWellFormedTags` or replace with DOMPurify / `DomSanitizer`.`
+
+`src/services/data.service.ts:10,15,23: sug: `any` discards defined `User` interface. Type returns as `Promise<User>` / `Promise<User[]>` and parameter as `User` (or `Omit<User,'id'>`).`
+
+`src/utils/validators.ts:20-22: imp: `parseId` accepts `1.5`, `1e2`, `0x10`, leading/trailing whitespace. Add `Number.isInteger(n)` and prefer regex pre-check `/^\d+$/`.`
+
+`src/services/data.service.ts:15: sug: `createUser` POST body typed `any` -- callers can pass anything. Constrain to `Omit<User,'id'>` or a `CreateUserDto`.`
+
+`src/services/cache.service.ts:1-20: imp: no max-size bound; long-lived service grows unbounded under high-cardinality keys. Add LRU cap or document expected key cardinality.`
+
+### Per-finding validation
+
+Validation of Finding 1: Confirmed Important. Race is real and reproducible: `set('k',v,1000)` then `set('k',v2,5000)` at t=500 evicts at t=1000 despite expiry t=5500. `get` guard masks reads but `has`/iteration would observe the gap. Fix: store `{value, expires, handle}` and `clearTimeout(prev.handle)` before re-setting; iterate `store.values()` in `clear()` cancelling each handle.
+
+Validation of Finding 2: Query-string case escalated to Critical -- injection of arbitrary query params is a correctness + light security defect that triggers under normal user input (any `&` in search). Path case remains Important; traversal is mitigated by server-side routing in most stacks but the URL malforms on common chars (`/`, space).
+
+Validation of Finding 3: Escalated to Critical if any caller renders the output as HTML. The name `sanitizeHtml` implies XSS defense; shipping a function under that name that fails on `<img src=x onerror=alert(1)` is a footgun regardless of current call sites. If purely cosmetic stripping was intended, rename. Angular ships `DomSanitizer` -- prefer it.
+
+Validation of Finding 5: Confirmed Important (raised from Suggestion). `Number("")` returns `0` (filtered by `>0`) but `Number(" 5 ")` returns `5`, `Number("1e10")` returns `1e10`, `Number("0x10")` returns `16` -- silent acceptance of non-canonical IDs causes URL/DB drift. Tighten with `/^[1-9]\d*$/` regex.
+
+### Cross-Cutting Patterns
+
+Findings 2, 3, 5, and 7 share a root cause: untrusted string input flows into URLs, HTML, and numeric coercion without canonicalization at the boundary. Introduce a single `validators.ts`-owned encode/parse layer (`encodePathSegment`, `encodeQueryValue`, strict `parseId`) and route all external input through it; keep `sanitizeHtml` out of that layer entirely or replace with `DomSanitizer`. Findings 1 and 9 share a resource-lifetime gap in `CacheService` -- timers and entries lack explicit lifecycle management; an `OnDestroy` hook plus per-entry handle tracking closes both.
+
+### Missed surfaces (optional)
+
+Components were not packaged; check whether either component calls `sanitizeHtml` and binds to `[innerHTML]`, which would convert Finding 3 from latent to active XSS.
+
+**Verdict scope:** scope: api-correctness

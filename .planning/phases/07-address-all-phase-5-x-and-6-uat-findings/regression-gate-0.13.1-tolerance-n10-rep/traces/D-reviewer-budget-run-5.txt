@@ -1,0 +1,29 @@
+## Review Summary
+
+Reviewed: `src/` -- 6 files added in commit `9ce1eac` (components, services, types, utils)
+
+### Findings
+
+`src/services/data.service.ts:24: crit: query interpolated raw into URL enables param injection. Use HttpParams or encodeURIComponent(query).`
+
+`src/services/cache.service.ts:12-26: imp: clear() leaves setTimeout handles live; later set() of same key gets evicted by stale timer. Track handle per key, clearTimeout on delete/clear/overwrite.`
+
+`src/services/cache.service.ts:13: imp: set() of existing key leaks prior timer too (same root cause). Cancel old handle before scheduling new one.`
+
+`src/utils/validators.ts:16-18: crit: sanitizeHtml name implies XSS safety but regex bypassed by entities, nested tags (<scr<script>ipt>), and is unused for attribute vectors. Rename stripTags; route real sanitization through DomSanitizer.`
+
+`src/services/data.service.ts:10-27: imp: any defeats the existing User/ApiResponse<T> contracts. Type as Promise<ApiResponse<User>> / (data: Omit<User,'id'|'createdAt'>).`
+
+`src/utils/validators.ts:20-23: imp: parseId returns number but User.id is string -- callers cannot feed result into getUser(id: string) without coercion. Either change User.id to number or have parseId return validated string. Severity raised from Suggestion: type contract mismatch will produce runtime bugs at every call site, not cosmetic.`
+
+`src/services/data.service.ts:24: imp: listUsers ignores empty/whitespace query -- sends ?q= which the backend may interpret as "match all". Guard or trim before request.`
+
+### Cross-Cutting Patterns
+
+Findings 1, 3, and 4 share a root cause: the service/util layer treats strings as opaque payloads with no validation, encoding, or typing at trust boundaries. The DataService accepts `any`, builds URLs by interpolation, and `sanitizeHtml` is the only "defense" -- which itself is unsound. Attack chain: a caller takes user input -> `sanitizeHtml` (false safety) -> `DataService.listUsers` (no encoding) -> server receives attacker-controlled query parameters. Fix the boundary in one pass: typed DTOs (Finding 4) + HttpParams (Finding 1) + remove/rename sanitizeHtml (Finding 3). Findings 2 and 5 are independent: timer-handle bookkeeping and an id-type contract mismatch between `parseId` and `User.id`.
+
+### Missed surfaces (optional)
+
+`src/types/api.ts` `ApiResponse<T>.error: string | null` -- no error code/shape; consumers cannot distinguish error classes. Worth a follow-up once DataService is typed.
+
+**Verdict scope:** scope: api-correctness

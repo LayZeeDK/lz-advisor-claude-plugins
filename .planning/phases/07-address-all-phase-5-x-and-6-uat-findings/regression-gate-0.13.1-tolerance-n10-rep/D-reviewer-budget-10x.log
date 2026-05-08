@@ -1,0 +1,450 @@
+# D-reviewer-budget.sh 10x re-run on plugin 0.13.1 (assembled via parser replay against captured traces)
+# Generated: 2026-05-08T07:56:49Z
+# Plugin version: 0.13.1
+# Contract: per-section budgets per Plan 07-14 <output_constraints> XML; aggregate cap dropped; smoke +10% gate tolerance applied
+# Fixture: .planning/phases/05.4-address-uat-findings-a-k/smoke-tests/D-reviewer-budget.sh
+# Trace cache: .planning/phases/07-address-all-phase-5-x-and-6-uat-findings/regression-gate-0.13.1-tolerance-n10-rep/traces (10 runs preserved for future --from-trace replay)
+
+=== Run 1 ===
+Run 1: EXIT 1 (FAIL)
+
+--- Run 1 output (full) ---
+[INFO] Replay mode: using trace .planning/phases/07-address-all-phase-5-x-and-6-uat-findings/regression-gate-0.13.1-tolerance-n10-rep/traces/D-reviewer-budget-run-1.txt (skipping claude -p)
+[OK] Reviewer output sections present: Findings=1 CCP=1
+[INFO] Fragment-grammar shape detected: 12 finding line(s)
+[WARN] Finding line 1: 25 words (>22 target but <=28 outlier; acceptable)
+[WARN] Finding line 2: 26 words (>22 target but <=28 outlier; acceptable)
+[OK] Finding line 3: 16 words (<=22 target)
+[OK] Finding line 4: 10 words (<=22 target)
+[ERROR] Finding line 5: 33 words (>28 outlier soft cap; target <=22w)
+[ERROR] Finding line 6: 39 words (>28 outlier soft cap; target <=22w)
+[OK] Finding line 7: 18 words (<=22 target)
+[WARN] Finding line 8: 23 words (>22 target but <=28 outlier; acceptable)
+[OK] Finding line 9: 21 words (<=22 target)
+[OK] Finding line 10: 18 words (<=22 target)
+[OK] Finding line 11: 11 words (<=22 target)
+[OK] Finding line 12: 13 words (<=22 target)
+[INFO] Total findings: 12; bad: 2
+[OK] Per-finding validation: section absent (optional)
+[OK] Cross-Cutting Patterns: 120 words (<=160 target)
+[OK] Missed surfaces: section absent (optional)
+--- reviewer output (last 200 lines) ---
+## Review Summary
+
+Reviewed: commit `5c38fcc` -- 6 new files in `src/` (`components/user-item.component.ts`, `components/user-list.component.ts`, `services/cache.service.ts`, `services/data.service.ts`, `types/api.ts`, `utils/validators.ts`)
+
+### Findings
+
+`src/services/cache.service.ts:12-14: imp: confirmed. `set()` leaks prior timer; second call with longer TTL evicted by stale timer. Store timer handle per key, `clearTimeout` on overwrite and in `clear()`.`
+
+`src/services/cache.service.ts:17-22: imp: `get()` returns stale entry between expiry instant and timer fire (timer drift, throttled tabs). Also never deletes expired entry on read. Delete-on-read when `expires <= Date.now()`.`
+
+`src/services/data.service.ts:23-24: crit: confirmed. Unencoded `query` enables parameter injection (`foo&admin=true`) and URL truncation on `#`. Use `HttpParams` or `encodeURIComponent`.`
+
+`src/services/data.service.ts:10-11,19-20: crit: confirmed. Unencoded path `id` allows segment injection via `/` and query split via `?`. Wrap with `encodeURIComponent(id)`.`
+
+`src/services/data.service.ts:11,15,20,24: imp: `Promise<any>` / `any[]` defeats `User` typing already defined in `api.ts`. Type as `Promise<User>` / `Promise<User[]>`; type `createUser` payload as `Omit<User,'id'|'createdAt'>`.`
+
+`src/services/data.service.ts:9: sug: hardcoded `baseUrl`. Inject via `InjectionToken<string>` for env config and tests.`
+
+`src/utils/validators.ts:16-18: imp: confirmed but reframe. Regex strip is not HTML sanitization regardless of unclosed-tag edge case -- misses entity-encoded payloads, attribute-only vectors, `<svg/onload=>` variants. Rename to `stripTags` or delegate to `DomSanitizer`/DOMPurify; current name invites misuse.`
+
+`src/utils/validators.ts:20-23: imp: upgrade from Suggestion. Type mismatch with `User.id: string` is a real bug -- callers either re-stringify (silent precision loss for ids > 2^53) or bypass the validator. Return `string | null` after `/^\d+$/` test, or split into `isValidId` predicate.`
+
+`src/utils/validators.ts:2: imp: `URL_RE` rejects valid hosts: IPv4 literals, `localhost`, punycode/IDN, ports, userinfo. Use `URL` constructor in try/catch instead of regex.`
+
+`src/utils/validators.ts:1: sug: `EMAIL_RE` accepts `a@b.c` but rejects quoted locals and `+` tagging is fine; acceptable for UX gate, document as "format check, not RFC 5322".`
+
+`src/types/api.ts:1-6: sug: `createdAt: string` loses Date semantics. Either brand as ISO string (`type IsoDateString = string & {__iso: true}`) or parse at boundary.`
+
+`src/components/user-item.component.ts:8: imp: `<li>` with `(click)` lacks keyboard handler / role. Not accessible. Add `(keydown.enter)`/`(keydown.space)` and `role="button"` `tabindex="0"`, or use `<button>`.`
+
+`src/components/user-item.component.ts:14: sug: missing `changeDetection: ChangeDetectionStrategy.OnPush`. With signal inputs, OnPush is the intended pairing.`
+
+`src/components/user-list.component.ts:20: sug: same -- add `OnPush`. `count` computed is fine but redundant vs `users().length` inline.`
+
+### Cross-Cutting Patterns
+
+Findings 2 and 3 share a root cause: string-template URL construction without an `HttpParams` / `encodeURIComponent` boundary. A single helper or migration to `HttpClient`'s params option fixes both. Findings 4 and 5 share a different root cause: `validators.ts` conflates "format check" with "safety guarantee" and uses naming (`sanitizeHtml`, `parseId`) that overpromises -- the file needs a naming/contract pass, not just per-function fixes. Finding 1 is independent (lifecycle bug). Across services, `Promise<any>` usage in `DataService` despite `User` existing in `api.ts` indicates the types file is defined but unused -- a wiring gap, not a missing-types gap.
+
+Missed surfaces: `UserItemComponent` click handler lacks keyboard equivalent and ARIA role -- accessibility gap on an interactive `<li>`. Both components missing `OnPush` despite signal-input pairing.
+
+**Verdict scope:** scope: api-correctness
+--- end Run 1 output ---
+
+=== Run 2 ===
+Run 2: EXIT 0 (PASS)
+
+--- Run 2 output (full) ---
+[INFO] Replay mode: using trace .planning/phases/07-address-all-phase-5-x-and-6-uat-findings/regression-gate-0.13.1-tolerance-n10-rep/traces/D-reviewer-budget-run-2.txt (skipping claude -p)
+[OK] Reviewer output sections present: Findings=1 CCP=1
+[INFO] Fragment-grammar shape detected: 4 finding line(s)
+[OK] Finding line 1: 16 words (<=22 target)
+[OK] Finding line 2: 9 words (<=22 target)
+[OK] Finding line 3: 19 words (<=22 target)
+[WARN] Finding line 4: 23 words (>22 target but <=28 outlier; acceptable)
+[INFO] Total findings: 4; bad: 0
+[OK] Per-finding validation: section absent (optional)
+[OK] Cross-Cutting Patterns: 72 words (<=160 target)
+[OK] Missed surfaces: section absent (optional)
+[SUCCESS] D-reviewer-budget.sh: per-section budgets enforced (entries <=22w/28w outlier, Per-finding validation <=60w/66w outlier, CCP <=160w/176w outlier, Missed surfaces <=30w/33w outlier; aggregate cap dropped per Plan 07-14; gate-tolerance +10% at test layer only, agent XML targets stay canonical)
+--- end Run 2 output ---
+
+=== Run 3 ===
+Run 3: EXIT 1 (FAIL)
+
+--- Run 3 output (full) ---
+[INFO] Replay mode: using trace .planning/phases/07-address-all-phase-5-x-and-6-uat-findings/regression-gate-0.13.1-tolerance-n10-rep/traces/D-reviewer-budget-run-3.txt (skipping claude -p)
+[OK] Reviewer output sections present: Findings=1 CCP=1
+[WARN] Fragment-grammar shape NOT detected; falling back to Plan 07-04 numbered-section parser. New fragment-grammar shape is preferred per Plan 07-09.
+[ERROR] No Findings entries detected (neither fragment-grammar nor Plan 07-04 numbered shape matched)
+[OK] Per-finding validation: section absent (optional)
+[OK] Cross-Cutting Patterns: 95 words (<=160 target)
+[OK] Missed surfaces: 21 words (<=30 target)
+--- reviewer output (last 200 lines) ---
+## Review Summary
+
+Reviewed: Last commit `3a78329` -- 6 new files (Angular standalone components, HTTP data service, TTL cache service, type definitions, validators utility)
+
+### Findings
+
+`src/services/data.service.ts:10-12,23-24` -- **imp: confirmed.** Raw `id`/`query` interpolated without `encodeURIComponent`. Wrap both with `encodeURIComponent` or use `HttpParams`.
+
+`src/utils/validators.ts:16-18` -- **crit: regex-strip mislabeled `sanitizeHtml` invites XSS via javascript: URIs, malformed tags, attribute vectors.** Replace with DOMPurify or Angular `DomSanitizer`; rename to `stripTags` if cosmetic only.
+
+`src/utils/validators.ts:20-23` -- **imp: confirmed.** `parseId` returns `number|null` while `User.id: string`; validator unreachable from `DataService.getUser(string)`. Align return type to `string|null` and reuse via guard at call sites.
+
+`src/types/api.ts:2` -- **imp:** `User.id: string` contradicts numeric-positive invariant in `parseId`. Pick one: brand the string or change `id` to `number`.
+
+`src/services/cache.service.ts:17-21` -- **imp:** stale entries leak when timer is delayed/backgrounded. Add `this.store.delete(key)` in expired branch before `return undefined`.
+
+`src/services/cache.service.ts:13-14` -- **sug:** `setTimeout` runs in Angular zone, triggering CD on eviction. Wrap in `ngZone.runOutsideAngular(() => setTimeout(...))`.
+
+`src/services/data.service.ts:10,23` -- **sug:** `Promise<any>`/`Promise<any[]>` discards typing; service returns untyped data into typed `User` consumers. Type as `Promise<User>`/`Promise<User[]>`.
+
+`src/services/cache.service.ts:13` -- **sug:** no eviction on overwrite -- `set` of existing key schedules a second timer; first still fires and deletes the new value early. Clear prior timer handle on overwrite.
+
+### Per-finding validation
+
+**Finding 2 severity raised to Critical.** The function name `sanitizeHtml` is the load-bearing issue: any future consumer reading the API surface will assume safety guarantees the implementation does not provide. Regex tag-stripping is listed in the OWASP XSS Filter Evasion Cheat Sheet as a known-broken pattern. If even one downstream `[innerHTML]` binding trusts this output, it is a direct XSS vector. The naming is the trap; rename or replace.
+
+**Finding 3 split into two.** 3a: return-type mismatch (fix: change `parseId` return to `string|null`). 3b: invariant leak via `User.id: string`. The fixes are independent.
+
+**Finding 4 severity adjustment.** The stale-entry leak (4a) is Important, not Suggestion -- under realistic conditions (backgrounded tabs throttle `setTimeout` to >=1s, mobile Safari to minutes) the Map grows unboundedly with stale data that `get()` refuses to return but refuses to evict. Zone issue (4b) remains Suggestion.
+
+### Cross-Cutting Patterns
+
+Findings 1, 2, and 3 share a root cause: the boundary between untrusted string input and typed/structured consumers is not enforced. `DataService` accepts raw strings, `sanitizeHtml` pretends to enforce a boundary it does not, and `parseId` enforces a boundary whose result is discarded by the type system. A single input-validation layer (`zod`/`io-ts` schemas at service entry, `HttpParams` for URL construction, DOMPurify for HTML) would close all three.
+
+Findings 4a and the overwrite-timer finding share a separate root cause: ad-hoc `setTimeout` lifecycle without handle tracking. A `Map<string, {value, expires, timerId}>` with `clearTimeout` on overwrite/delete fixes both.
+
+**Missed surface:** components consuming `DataService` likely bind results without `User`-typing through `Promise<any>`; worth checking whether `[innerHTML]` is used anywhere alongside `sanitizeHtml`.
+
+**Verdict scope:** scope: api-correctness
+--- end Run 3 output ---
+
+=== Run 4 ===
+Run 4: EXIT 0 (PASS)
+
+--- Run 4 output (full) ---
+[INFO] Replay mode: using trace .planning/phases/07-address-all-phase-5-x-and-6-uat-findings/regression-gate-0.13.1-tolerance-n10-rep/traces/D-reviewer-budget-run-4.txt (skipping claude -p)
+[OK] Reviewer output sections present: Findings=1 CCP=1
+[INFO] Fragment-grammar shape detected: 8 finding line(s)
+[OK] Finding line 1: 20 words (<=22 target)
+[OK] Finding line 2: 15 words (<=22 target)
+[OK] Finding line 3: 16 words (<=22 target)
+[OK] Finding line 4: 14 words (<=22 target)
+[OK] Finding line 5: 19 words (<=22 target)
+[OK] Finding line 6: 14 words (<=22 target)
+[OK] Finding line 7: 16 words (<=22 target)
+[OK] Finding line 8: 18 words (<=22 target)
+[INFO] Total findings: 8; bad: 0
+[INFO] Per-finding validation: 4 entries
+[OK] Per-finding validation entry 1: 44 words (<=60 target)
+[OK] Per-finding validation entry 2: 50 words (<=60 target)
+[OK] Per-finding validation entry 3: 50 words (<=60 target)
+[OK] Per-finding validation entry 4: 36 words (<=60 target)
+[OK] Cross-Cutting Patterns: 80 words (<=160 target)
+[OK] Missed surfaces: 24 words (<=30 target)
+[SUCCESS] D-reviewer-budget.sh: per-section budgets enforced (entries <=22w/28w outlier, Per-finding validation <=60w/66w outlier, CCP <=160w/176w outlier, Missed surfaces <=30w/33w outlier; aggregate cap dropped per Plan 07-14; gate-tolerance +10% at test layer only, agent XML targets stay canonical)
+--- end Run 4 output ---
+
+=== Run 5 ===
+Run 5: EXIT 1 (FAIL)
+
+--- Run 5 output (full) ---
+[INFO] Replay mode: using trace .planning/phases/07-address-all-phase-5-x-and-6-uat-findings/regression-gate-0.13.1-tolerance-n10-rep/traces/D-reviewer-budget-run-5.txt (skipping claude -p)
+[OK] Reviewer output sections present: Findings=1 CCP=1
+[INFO] Fragment-grammar shape detected: 7 finding line(s)
+[OK] Finding line 1: 12 words (<=22 target)
+[OK] Finding line 2: 22 words (<=22 target)
+[OK] Finding line 3: 18 words (<=22 target)
+[WARN] Finding line 4: 26 words (>22 target but <=28 outlier; acceptable)
+[OK] Finding line 5: 12 words (<=22 target)
+[ERROR] Finding line 6: 45 words (>28 outlier soft cap; target <=22w)
+[OK] Finding line 7: 20 words (<=22 target)
+[INFO] Total findings: 7; bad: 1
+[OK] Per-finding validation: section absent (optional)
+[OK] Cross-Cutting Patterns: 102 words (<=160 target)
+[OK] Missed surfaces: 21 words (<=30 target)
+--- reviewer output (last 200 lines) ---
+## Review Summary
+
+Reviewed: `src/` -- 6 files added in commit `9ce1eac` (components, services, types, utils)
+
+### Findings
+
+`src/services/data.service.ts:24: crit: query interpolated raw into URL enables param injection. Use HttpParams or encodeURIComponent(query).`
+
+`src/services/cache.service.ts:12-26: imp: clear() leaves setTimeout handles live; later set() of same key gets evicted by stale timer. Track handle per key, clearTimeout on delete/clear/overwrite.`
+
+`src/services/cache.service.ts:13: imp: set() of existing key leaks prior timer too (same root cause). Cancel old handle before scheduling new one.`
+
+`src/utils/validators.ts:16-18: crit: sanitizeHtml name implies XSS safety but regex bypassed by entities, nested tags (<scr<script>ipt>), and is unused for attribute vectors. Rename stripTags; route real sanitization through DomSanitizer.`
+
+`src/services/data.service.ts:10-27: imp: any defeats the existing User/ApiResponse<T> contracts. Type as Promise<ApiResponse<User>> / (data: Omit<User,'id'|'createdAt'>).`
+
+`src/utils/validators.ts:20-23: imp: parseId returns number but User.id is string -- callers cannot feed result into getUser(id: string) without coercion. Either change User.id to number or have parseId return validated string. Severity raised from Suggestion: type contract mismatch will produce runtime bugs at every call site, not cosmetic.`
+
+`src/services/data.service.ts:24: imp: listUsers ignores empty/whitespace query -- sends ?q= which the backend may interpret as "match all". Guard or trim before request.`
+
+### Cross-Cutting Patterns
+
+Findings 1, 3, and 4 share a root cause: the service/util layer treats strings as opaque payloads with no validation, encoding, or typing at trust boundaries. The DataService accepts `any`, builds URLs by interpolation, and `sanitizeHtml` is the only "defense" -- which itself is unsound. Attack chain: a caller takes user input -> `sanitizeHtml` (false safety) -> `DataService.listUsers` (no encoding) -> server receives attacker-controlled query parameters. Fix the boundary in one pass: typed DTOs (Finding 4) + HttpParams (Finding 1) + remove/rename sanitizeHtml (Finding 3). Findings 2 and 5 are independent: timer-handle bookkeeping and an id-type contract mismatch between `parseId` and `User.id`.
+
+### Missed surfaces (optional)
+
+`src/types/api.ts` `ApiResponse<T>.error: string | null` -- no error code/shape; consumers cannot distinguish error classes. Worth a follow-up once DataService is typed.
+
+**Verdict scope:** scope: api-correctness
+--- end Run 5 output ---
+
+=== Run 6 ===
+Run 6: EXIT 1 (FAIL)
+
+--- Run 6 output (full) ---
+[INFO] Replay mode: using trace .planning/phases/07-address-all-phase-5-x-and-6-uat-findings/regression-gate-0.13.1-tolerance-n10-rep/traces/D-reviewer-budget-run-6.txt (skipping claude -p)
+[OK] Reviewer output sections present: Findings=1 CCP=1
+[INFO] Fragment-grammar shape detected: 13 finding line(s)
+[OK] Finding line 1: 16 words (<=22 target)
+[OK] Finding line 2: 20 words (<=22 target)
+[OK] Finding line 3: 20 words (<=22 target)
+[ERROR] Finding line 4: 44 words (>28 outlier soft cap; target <=22w)
+[OK] Finding line 5: 18 words (<=22 target)
+[OK] Finding line 6: 13 words (<=22 target)
+[OK] Finding line 7: 15 words (<=22 target)
+[OK] Finding line 8: 14 words (<=22 target)
+[OK] Finding line 9: 15 words (<=22 target)
+[ERROR] Finding line 10: 30 words (>28 outlier soft cap; target <=22w)
+[OK] Finding line 11: 18 words (<=22 target)
+[OK] Finding line 12: 22 words (<=22 target)
+[OK] Finding line 13: 17 words (<=22 target)
+[INFO] Total findings: 13; bad: 2
+[OK] Per-finding validation: section absent (optional)
+[OK] Cross-Cutting Patterns: 72 words (<=160 target)
+[OK] Missed surfaces: section absent (optional)
+--- reviewer output (last 200 lines) ---
+## Review Summary
+
+Reviewed: commit `f586777` -- 6 new files: `src/components/user-item.component.ts`, `src/components/user-list.component.ts`, `src/services/cache.service.ts`, `src/services/data.service.ts`, `src/types/api.ts`, `src/utils/validators.ts`
+
+### Findings
+
+`src/services/data.service.ts:24: imp: confirmed -- raw `query` interpolation breaks on `&`/`=`/`#`/`+`/space and enables parameter injection. Use `HttpParams` or `encodeURIComponent(query)`.`
+
+`src/services/cache.service.ts:13-14: imp: confirmed -- repeated `set` for same key leaks timers; second timer evicts live entry. Store timer id, `clearTimeout` before re-scheduling.`
+
+`src/utils/validators.ts:16-18: imp: confirmed -- regex tag-strip is not XSS-safe (attribute handlers, encoded entities, `javascript:` URLs). Rename to `stripTags` or delegate to `DomSanitizer`/DOMPurify.`
+
+`src/services/data.service.ts:10,15,19,24: sug: confirmed -- `User` and `ApiResponse<T>` exist but are unused. Type returns as `Promise<User>` / `Promise<User[]>` and `data: Omit<User,'id'|'createdAt'>`.`
+
+`src/services/cache.service.ts:18-22: sug: confirmed but raise to imp under repeated-`set` interaction -- stale entry combined with finding 2's leaked timers means a fresh entry can be evicted by an old timer pointing at a key whose stale read already returned `undefined`. Delete entry inline on expiry read.`
+
+`src/components/user-list.component.ts:13: crit: template has `</ul></ul>` -- mismatched closing tag. Angular compiler will error or render broken DOM. Remove inner `</ul>`.`
+
+`src/services/data.service.ts:8: imp: hardcoded `https://api.example.com` baseUrl. Inject via `InjectionToken` or `environment` for testability and env separation.`
+
+`src/utils/validators.ts:2: imp: `URL_RE` rejects ports (`:8080`), userinfo, IPv4/IPv6 literals, localhost, IDN. Use `URL` constructor in try/catch instead.`
+
+`src/components/user-item.component.ts:8-13: sug: clickable `<li>` lacks keyboard handler / role. Add `(keydown.enter)="select()"`, `tabindex="0"`, `role="button"` or use `<button>`.`
+
+`src/services/data.service.ts:19: imp: `deleteUser` swallows response; no error typing or 404 handling. Callers cannot distinguish success from not-found.`
+
+`src/services/cache.service.ts:24: imp: `clear()` does not cancel pending timers. After `clear()`, scheduled `store.delete(key)` calls are harmless but timers remain pending until TTL -- minor leak in tests/SSR. Track and clear all timer ids.`
+
+`src/utils/validators.ts:21: sug: `parseId` returns `number` but `User.id` is `string`. Type mismatch -- either align id types or rename to `parsePositiveInt`.`
+
+`src/services/data.service.ts:10-25: imp: `firstValueFrom` without subscription cleanup is fine, but no error mapping; HTTP errors propagate as raw `HttpErrorResponse`. Wrap with `catchError` -> domain error.`
+
+`src/components/user-list.component.ts:18: sug: `count` signal is trivial wrapper over `users().length`; inline `{{ users().length }}` or keep but document why memoized.`
+
+### Cross-Cutting Patterns
+
+Findings 1, 3, 8 share a root cause: ad-hoc string parsing/building instead of platform primitives (`HttpParams`, `URL`, `DomSanitizer`). Findings 2 and 11 share the timer-lifecycle gap in `CacheService` -- no owned handle on scheduled work. Findings 4, 7, 10, 13 cluster around `DataService` lacking a typed, testable, error-mapped boundary; the `User`/`ApiResponse<T>` types exist but the service ignores them. The template bug (finding 6) is the only critical correctness issue and is independent.
+
+**Verdict scope:** scope: api-correctness
+--- end Run 6 output ---
+
+=== Run 7 ===
+Run 7: EXIT 1 (FAIL)
+
+--- Run 7 output (full) ---
+[INFO] Replay mode: using trace .planning/phases/07-address-all-phase-5-x-and-6-uat-findings/regression-gate-0.13.1-tolerance-n10-rep/traces/D-reviewer-budget-run-7.txt (skipping claude -p)
+[OK] Reviewer output sections present: Findings=1 CCP=1
+[INFO] Fragment-grammar shape detected: 5 finding line(s)
+[OK] Finding line 1: 15 words (<=22 target)
+[OK] Finding line 2: 14 words (<=22 target)
+[WARN] Finding line 3: 23 words (>22 target but <=28 outlier; acceptable)
+[ERROR] Finding line 4: 35 words (>28 outlier soft cap; target <=22w)
+[ERROR] Finding line 5: 36 words (>28 outlier soft cap; target <=22w)
+[INFO] Total findings: 5; bad: 2
+[INFO] Per-finding validation: 2 entries
+[WARN] Per-finding validation entry 1: 63 words (>60 target but <=66 outlier; acceptable)
+[OK] Per-finding validation entry 2: 50 words (<=60 target)
+[OK] Cross-Cutting Patterns: 68 words (<=160 target)
+[OK] Missed surfaces: section absent (optional)
+--- reviewer output (last 200 lines) ---
+No `<verify_request>` blocks in the response. Here is the final output.
+
+---
+
+## Review Summary
+
+Reviewed: commit `e4d96c4` -- 6 new Angular library files (`src/components/`, `src/services/`, `src/types/api.ts`, `src/utils/validators.ts`)
+
+### Findings
+
+`src/services/data.service.ts:24: imp: confirmed.` Unencoded `query` enables param smuggling (`&admin=1`) and breaks on spaces/`+`/`#`. Use `HttpParams` or `encodeURIComponent`.
+
+`src/services/data.service.ts:10-26: imp: confirmed.` `any` defeats existing `User`/`ApiResponse<T>` types. Type as `Promise<ApiResponse<User>>` / `Promise<ApiResponse<User[]>>` and `data: Omit<User,'id'|'createdAt'>`.
+
+`src/services/cache.service.ts:12-14: imp: confirmed.` Re-`set` leaks prior timer that evicts new entry at old TTL. Store handle in entry; `clearTimeout` before re-arming; also clear on `delete`/`clear`.
+
+`src/utils/validators.ts:16-18: crit: severity raised from Important.` Name `sanitizeHtml` invites trust; regex misses `javascript:` URIs, attribute-only payloads, entity-encoded vectors, and malformed tags (`<img src=x onerror=...`). Replace with DOMPurify or Angular `DomSanitizer`, or rename `stripTags` with a doc warning.
+
+`src/utils/validators.ts:20-23: imp: severity raised from Suggestion.` Return type `number | null` is structurally incompatible with `User.id: string`; silent breakage at first call site. Return `string | null` after validation, or delete until a real caller defines the contract.
+
+### Per-finding validation
+
+Validation of Finding 4: Raised to Critical. `sanitizeHtml` is a security-boundary name; callers will reasonably bind output via `[innerHTML]` assuming safety. The regex `/<[^>]*>/g` does not address `javascript:` href schemes, surviving `on*` handlers when input lacks `>`, double-encoded payloads, or SVG/MathML vectors. A wrong-named primitive is worse than no primitive -- it is load-bearing under the Severity Classification's "security flaw that affects users in normal operation" clause.
+
+Validation of Finding 5: Raised to Important. Type mismatch between `parseId: number | null` and `User.id: string` is not stylistic -- the first caller wiring `parseId(route.params.id)` into a `User` lookup will get a TS2345 error, or worse, a runtime mismatch if `as any` papers over it. The cross-module contract is broken today, not theoretically.
+
+### Cross-Cutting Patterns
+
+Findings 2 and 5 share a root cause: `src/types/api.ts` defines a typed contract that the rest of the library ignores. `DataService` returns `any`; `parseId` invents an incompatible `number` shape. A single pass binding both modules to `User`/`ApiResponse<T>` closes both. Findings 1 and 4 share a security-boundary-naming pattern: primitives whose names (`sanitizeHtml`, untyped `query` param) imply guarantees the implementations do not deliver -- both warrant Angular-native replacements (`HttpParams`, `DomSanitizer`).
+
+**Missed surfaces (optional):** `isUrl` regex accepts `http://` schemes -- if used as an allow-list for outbound links or redirects, downgrade-attack risk; worth a follow-up review of call sites.
+
+**Verdict scope:** scope: api-correctness
+--- end Run 7 output ---
+
+=== Run 8 ===
+Run 8: EXIT 0 (PASS)
+
+--- Run 8 output (full) ---
+[INFO] Replay mode: using trace .planning/phases/07-address-all-phase-5-x-and-6-uat-findings/regression-gate-0.13.1-tolerance-n10-rep/traces/D-reviewer-budget-run-8.txt (skipping claude -p)
+[OK] Reviewer output sections present: Findings=1 CCP=1
+[INFO] Fragment-grammar shape detected: 3 finding line(s)
+[OK] Finding line 1: 17 words (<=22 target)
+[OK] Finding line 2: 20 words (<=22 target)
+[OK] Finding line 3: 9 words (<=22 target)
+[INFO] Total findings: 3; bad: 0
+[INFO] Per-finding validation: 4 entries
+[OK] Per-finding validation entry 1: 43 words (<=60 target)
+[OK] Per-finding validation entry 2: 41 words (<=60 target)
+[OK] Per-finding validation entry 3: 45 words (<=60 target)
+[OK] Per-finding validation entry 4: 31 words (<=60 target)
+[OK] Cross-Cutting Patterns: 107 words (<=160 target)
+[OK] Missed surfaces: 21 words (<=30 target)
+[SUCCESS] D-reviewer-budget.sh: per-section budgets enforced (entries <=22w/28w outlier, Per-finding validation <=60w/66w outlier, CCP <=160w/176w outlier, Missed surfaces <=30w/33w outlier; aggregate cap dropped per Plan 07-14; gate-tolerance +10% at test layer only, agent XML targets stay canonical)
+--- end Run 8 output ---
+
+=== Run 9 ===
+Run 9: EXIT 0 (PASS)
+
+--- Run 9 output (full) ---
+[INFO] Replay mode: using trace .planning/phases/07-address-all-phase-5-x-and-6-uat-findings/regression-gate-0.13.1-tolerance-n10-rep/traces/D-reviewer-budget-run-9.txt (skipping claude -p)
+[OK] Reviewer output sections present: Findings=1 CCP=1
+[INFO] Fragment-grammar shape detected: 4 finding line(s)
+[WARN] Finding line 1: 23 words (>22 target but <=28 outlier; acceptable)
+[OK] Finding line 2: 16 words (<=22 target)
+[WARN] Finding line 3: 24 words (>22 target but <=28 outlier; acceptable)
+[WARN] Finding line 4: 24 words (>22 target but <=28 outlier; acceptable)
+[INFO] Total findings: 4; bad: 0
+[INFO] Per-finding validation: 5 entries
+[WARN] Per-finding validation entry 1: 65 words (>60 target but <=66 outlier; acceptable)
+[OK] Per-finding validation entry 2: 35 words (<=60 target)
+[OK] Per-finding validation entry 3: 37 words (<=60 target)
+[OK] Per-finding validation entry 4: 53 words (<=60 target)
+[OK] Per-finding validation entry 5: 32 words (<=60 target)
+[OK] Cross-Cutting Patterns: 101 words (<=160 target)
+[OK] Missed surfaces: 22 words (<=30 target)
+[SUCCESS] D-reviewer-budget.sh: per-section budgets enforced (entries <=22w/28w outlier, Per-finding validation <=60w/66w outlier, CCP <=160w/176w outlier, Missed surfaces <=30w/33w outlier; aggregate cap dropped per Plan 07-14; gate-tolerance +10% at test layer only, agent XML targets stay canonical)
+--- end Run 9 output ---
+
+=== Run 10 ===
+Run 10: EXIT 1 (FAIL)
+
+--- Run 10 output (full) ---
+[INFO] Replay mode: using trace .planning/phases/07-address-all-phase-5-x-and-6-uat-findings/regression-gate-0.13.1-tolerance-n10-rep/traces/D-reviewer-budget-run-10.txt (skipping claude -p)
+[OK] Reviewer output sections present: Findings=1 CCP=1
+[INFO] Fragment-grammar shape detected: 3 finding line(s)
+[OK] Finding line 1: 16 words (<=22 target)
+[ERROR] Finding line 2: 35 words (>28 outlier soft cap; target <=22w)
+[ERROR] Finding line 3: 43 words (>28 outlier soft cap; target <=22w)
+[INFO] Total findings: 3; bad: 2
+[OK] Per-finding validation: section absent (optional)
+[OK] Cross-Cutting Patterns: 83 words (<=160 target)
+[OK] Missed surfaces: 26 words (<=30 target)
+--- reviewer output (last 200 lines) ---
+No `<verify_request>` blocks present. Rendering final output.
+
+---
+
+## Review Summary
+
+Reviewed: commit `715d79b` -- 6 new files (`src/components/`, `src/services/`, `src/types/`, `src/utils/`)
+
+### Findings
+
+`src/services/cache.service.ts:13-14: imp: stale timer deletes refreshed entry. Track timer per key in Map; clearTimeout before setTimeout on overwrite.`
+
+`src/services/data.service.ts:24: crit: unencoded query param enables param injection and request truncation on `&`/`=`/`#`. Wrap with `encodeURIComponent(query)`. Severity raised from Important: untrusted UI input flowing to a query string is a standard injection surface, not an edge case.`
+
+`src/services/data.service.ts:11,20: imp: unencoded path segment allows `/` traversal to sibling endpoints. Apply `encodeURIComponent(id)` in both `getUser` and `deleteUser`; consider regex/whitelist guard at boundary.`
+
+`src/utils/validators.ts:16-18: crit: `sanitizeHtml` name implies XSS-safety but regex misses unclosed tags, quoted `>`, comments, and entity-encoded payloads. Replace with DOMPurify or rename to `stripWellFormedTags` to drop the security implication. Severity raised from Important: misleading security primitive is worse than none -- callers will trust it.`
+
+`src/utils/validators.ts:20-22 vs src/types/api.ts:2: imp: `parseId` returns `number` while `User.id` is `string`; round-trip via `String(n)` loses leading zeros/precision >2^53. Align contract: either return validated `string` or change `User.id` to `number`.`
+
+`src/services/data.service.ts:7,11,24: sug: `Promise<any[]>` and `Promise<any>` defeat the `User` interface that exists in `api.ts`. Type as `Promise<User>` / `Promise<User[]>`.`
+
+`src/services/cache.service.ts: imp: timer reference leaks prevent GC of `CacheService` in test teardown and short-lived injectors. Add `ngOnDestroy` clearing all pending timers.`
+
+### Cross-Cutting Patterns
+
+Findings 2, 3, and 6 share a root cause: `DataService` treats string inputs as pre-trusted and pre-typed. A single boundary layer (typed request builder using `HttpParams` for queries + `encodeURIComponent` for path segments + `User`-typed responses) eliminates all three. Findings 1 and the timer-leak observation share a root cause: `CacheService` lacks lifecycle ownership of its timers -- both fix together with a `Map<string, ReturnType<typeof setTimeout>>`. Finding 4 stands alone as a misleading-API-name issue; finding 5 is a domain-model inconsistency independent of the rest.
+
+### Missed surfaces (optional)
+
+Components were listed in scope but not packaged; if either component calls `sanitizeHtml` and binds via `[innerHTML]`, finding 4 escalates to Critical at the call site.
+
+**Verdict scope:** scope: api-correctness
+--- end Run 10 output ---
+
+=== Summary ===
+Pass count: 4 / 10
+Fail count: 6 / 10
+  Run 1: FAIL (exit 1)
+  Run 2: PASS
+  Run 3: FAIL (exit 1)
+  Run 4: PASS
+  Run 5: FAIL (exit 1)
+  Run 6: FAIL (exit 1)
+  Run 7: FAIL (exit 1)
+  Run 8: PASS
+  Run 9: PASS
+  Run 10: FAIL (exit 1)
+
+verdict: PASS_4_of_10 (FAIL_6_of_10)

@@ -1,0 +1,41 @@
+## Security Review Summary
+
+Reviewed: Last commit (`7157333`) -- 6 new files: `src/components/user-item.component.ts`, `src/components/user-list.component.ts`, `src/services/cache.service.ts`, `src/services/data.service.ts`, `src/types/api.ts`, `src/utils/validators.ts`
+
+---
+
+### Findings
+
+`src/utils/validators.ts:16-18: crit: [A03] regex `/<[^>]*>/g` strips tags only, missing attribute handlers, `javascript:` URLs, entity-encoded payloads, malformed tags. Replace with DOMPurify or Angular `DomSanitizer.sanitize(SecurityContext.HTML, ...)`.`
+
+`src/services/data.service.ts:24: imp: [A03] `query` interpolated raw into URL allows parameter smuggling (`&admin=true`) and fragment truncation. Use `HttpParams` or `encodeURIComponent(query)`.`
+
+`src/services/data.service.ts:10,20: imp: [A03] `id` interpolated into path enables traversal (`../admin`) and segment injection. Validate `id` against `/^[A-Za-z0-9-]+$/` and `encodeURIComponent`.`
+
+`src/services/cache.service.ts:13-15: imp: [A04] unbounded `Map` with user-derived keys enables heap exhaustion DoS. Add max-entry LRU cap (e.g., 500) and key length limit.`
+
+`src/services/data.service.ts:10,15,19,23: sug: [A04] `any` typing disables compile-time validation of API shapes. Adopt existing `ApiResponse<User>` from `src/types/api.ts` plus runtime guard (zod / io-ts).`
+
+### Per-finding validation
+
+Validation of Finding 1: Critical confirmed. Function name `sanitizeHtml` invites callers to trust output for `[innerHTML]` sinks; the regex misses `<img src=x onerror=...>` (tag preserved if no `>` until after payload), encoded variants (`&lt;script&gt;`), and `javascript:` href schemes. Angular's default interpolation `{{ }}` escapes, but any caller passing this through `bypassSecurityTrustHtml` is exploitable. Severity holds.
+
+Validation of Finding 2: Important confirmed. Angular `HttpClient.get(url: string)` does NOT percent-encode the URL string -- only `HttpParams` values are encoded. Raw `&`, `#`, space in `query` reach server unmodified. Combined with Finding 1, an XSS payload reflected by the API into a downstream sink chains.
+
+Validation of Finding 3: Important confirmed; consider escalation to Critical if the API uses path-based authorization (e.g., `/users/me` vs `/users/admin`). `encodeURIComponent` alone is insufficient against `..` -- it does not encode dots. Allowlist validation is mandatory.
+
+Validation of Finding 4: Important confirmed. `setTimeout` per entry also leaks timer handles under churn. Bounded LRU (e.g., `lru-cache` package) addresses both memory and timer pressure.
+
+Validation of Finding 5: Suggestion confirmed. Type erosion is a defense-in-depth gap, not a direct vulnerability; runtime validation at the HTTP boundary closes it.
+
+### Threat Patterns
+
+Findings 2/3 (URL injection) chain with Finding 4 (unbounded cache): an attacker cycles crafted `query` values that both smuggle parameters server-side AND populate distinct cache keys, achieving simultaneous SSRF-adjacent abuse and client heap exhaustion. Findings 1 and 5 chain on the response path: untyped `any` API responses flow into a misnamed `sanitizeHtml` that callers may trust for `innerHTML`, yielding stored XSS if the API echoes attacker data. Angular template interpolation `{{ user().name }}` IS safe (auto-escapes via `SecurityContext.HTML`); residual XSS risk exists ONLY if a future change switches to `[innerHTML]`, `bypassSecurityTrust*`, or routes data into `href`/`src` bindings -- rename `sanitizeHtml` to `stripTags` to remove the false-safety affordance.
+
+### Missed surfaces (optional)
+
+`createUser(data: any)` body is unvalidated before POST; cache invalidation on `deleteUser` is absent (stale PII served post-deletion); no CSRF token handling visible on mutating verbs.
+
+---
+
+**Verdict scope:** scope: security-threats

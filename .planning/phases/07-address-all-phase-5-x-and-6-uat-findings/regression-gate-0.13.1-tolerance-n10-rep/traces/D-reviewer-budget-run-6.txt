@@ -1,0 +1,39 @@
+## Review Summary
+
+Reviewed: commit `f586777` -- 6 new files: `src/components/user-item.component.ts`, `src/components/user-list.component.ts`, `src/services/cache.service.ts`, `src/services/data.service.ts`, `src/types/api.ts`, `src/utils/validators.ts`
+
+### Findings
+
+`src/services/data.service.ts:24: imp: confirmed -- raw `query` interpolation breaks on `&`/`=`/`#`/`+`/space and enables parameter injection. Use `HttpParams` or `encodeURIComponent(query)`.`
+
+`src/services/cache.service.ts:13-14: imp: confirmed -- repeated `set` for same key leaks timers; second timer evicts live entry. Store timer id, `clearTimeout` before re-scheduling.`
+
+`src/utils/validators.ts:16-18: imp: confirmed -- regex tag-strip is not XSS-safe (attribute handlers, encoded entities, `javascript:` URLs). Rename to `stripTags` or delegate to `DomSanitizer`/DOMPurify.`
+
+`src/services/data.service.ts:10,15,19,24: sug: confirmed -- `User` and `ApiResponse<T>` exist but are unused. Type returns as `Promise<User>` / `Promise<User[]>` and `data: Omit<User,'id'|'createdAt'>`.`
+
+`src/services/cache.service.ts:18-22: sug: confirmed but raise to imp under repeated-`set` interaction -- stale entry combined with finding 2's leaked timers means a fresh entry can be evicted by an old timer pointing at a key whose stale read already returned `undefined`. Delete entry inline on expiry read.`
+
+`src/components/user-list.component.ts:13: crit: template has `</ul></ul>` -- mismatched closing tag. Angular compiler will error or render broken DOM. Remove inner `</ul>`.`
+
+`src/services/data.service.ts:8: imp: hardcoded `https://api.example.com` baseUrl. Inject via `InjectionToken` or `environment` for testability and env separation.`
+
+`src/utils/validators.ts:2: imp: `URL_RE` rejects ports (`:8080`), userinfo, IPv4/IPv6 literals, localhost, IDN. Use `URL` constructor in try/catch instead.`
+
+`src/components/user-item.component.ts:8-13: sug: clickable `<li>` lacks keyboard handler / role. Add `(keydown.enter)="select()"`, `tabindex="0"`, `role="button"` or use `<button>`.`
+
+`src/services/data.service.ts:19: imp: `deleteUser` swallows response; no error typing or 404 handling. Callers cannot distinguish success from not-found.`
+
+`src/services/cache.service.ts:24: imp: `clear()` does not cancel pending timers. After `clear()`, scheduled `store.delete(key)` calls are harmless but timers remain pending until TTL -- minor leak in tests/SSR. Track and clear all timer ids.`
+
+`src/utils/validators.ts:21: sug: `parseId` returns `number` but `User.id` is `string`. Type mismatch -- either align id types or rename to `parsePositiveInt`.`
+
+`src/services/data.service.ts:10-25: imp: `firstValueFrom` without subscription cleanup is fine, but no error mapping; HTTP errors propagate as raw `HttpErrorResponse`. Wrap with `catchError` -> domain error.`
+
+`src/components/user-list.component.ts:18: sug: `count` signal is trivial wrapper over `users().length`; inline `{{ users().length }}` or keep but document why memoized.`
+
+### Cross-Cutting Patterns
+
+Findings 1, 3, 8 share a root cause: ad-hoc string parsing/building instead of platform primitives (`HttpParams`, `URL`, `DomSanitizer`). Findings 2 and 11 share the timer-lifecycle gap in `CacheService` -- no owned handle on scheduled work. Findings 4, 7, 10, 13 cluster around `DataService` lacking a typed, testable, error-mapped boundary; the `User`/`ApiResponse<T>` types exist but the service ignores them. The template bug (finding 6) is the only critical correctness issue and is independent.
+
+**Verdict scope:** scope: api-correctness

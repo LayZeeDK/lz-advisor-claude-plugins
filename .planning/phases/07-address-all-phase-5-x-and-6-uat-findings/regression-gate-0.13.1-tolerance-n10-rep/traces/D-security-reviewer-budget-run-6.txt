@@ -1,0 +1,27 @@
+## Security Review Summary
+
+Reviewed: commit `2a8bc59` -- 6 new files (`src/components/user-item.component.ts`, `src/components/user-list.component.ts`, `src/services/cache.service.ts`, `src/services/data.service.ts`, `src/types/api.ts`, `src/utils/validators.ts`)
+
+### Findings
+
+`src/services/data.service.ts:24: imp: [A03] `query` interpolated into URL without `encodeURIComponent`; attacker injects `&admin=true` or `#frag` to alter request semantics. Use `HttpParams` or `encodeURIComponent(query)`.`
+`src/services/data.service.ts:11,20: imp: [A03] `id` interpolated into path; `../admin` or `1/roles` traverses to unintended endpoints. `encodeURIComponent(id)` and reject `/`, `..` server-side.`
+`src/utils/validators.ts:16-18: crit: [A03] `sanitizeHtml` regex `/<[^>]*>/g` bypassed by nested/malformed tags and HTML entities; downstream `innerHTML` executes payload. Delete function; use Angular `DomSanitizer` or DOMPurify.`
+`src/services/data.service.ts:15-17: imp: [A08] `createUser(data: any)` forwards untyped payload enabling mass-assignment (`role: 'admin'`). Define `CreateUserDto` interface + field allowlist before POST.`
+`src/services/cache.service.ts:13: sug: [A04] raw caller-supplied `key` permits cross-tenant cache overwrite within SPA session. Namespace keys (`users:${id}`) and reject untrusted input as key.`
+
+### Per-finding validation
+
+Validation of Finding 3: Severity escalated from Important to Critical. Regex-based HTML stripping that is named `sanitizeHtml` will be trusted by downstream consumers and bound to `[innerHTML]` or assigned to `Element.innerHTML`; the bypasses (nested tags, HTML entities, SVG event handlers) are trivially exploitable with no auth prerequisite. The function's existence is the vulnerability -- delete it rather than patch it.
+
+Validation of Finding 5: Confirmed Suggestion. Exploitability requires attacker-controlled key input AND a victim session sharing the same `CacheService` instance; Angular services are typically per-injector, so cross-user blast radius depends on whether this lib is used in SSR/shared-worker contexts. Severity holds at Suggestion absent that confirmation.
+
+### Threat Patterns
+
+Findings 1+2+3 chain into a server-to-client XSS path: path/query injection (1, 2) lets an attacker steer requests to endpoints returning attacker-controlled HTML, which `sanitizeHtml` (3) fails to strip before any consumer binds it to `innerHTML`. Address Finding 3 first -- highest blast radius (browser code execution against every end-user), zero auth prerequisite, and the function's name guarantees misuse by downstream callers. Findings 1+4 chain for backend mass-assignment if `query` reaches a search endpoint that echoes filters into create/update flows.
+
+### Missed surfaces (optional)
+
+`user-item.component.ts` and `user-list.component.ts` were not inspected for `[innerHTML]` bindings or `bypassSecurityTrust*` calls -- the actual XSS sink for Finding 3 likely lives there.
+
+**Verdict scope:** scope: security-threats

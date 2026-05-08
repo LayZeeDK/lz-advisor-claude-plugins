@@ -1,0 +1,33 @@
+## Security Review Summary
+
+Reviewed: commit `fd605bb` -- 6 files added (`src/components/user-item.component.ts`, `src/components/user-list.component.ts`, `src/services/cache.service.ts`, `src/services/data.service.ts`, `src/types/api.ts`, `src/utils/validators.ts`)
+
+### Findings
+
+`src/services/data.service.ts:24: imp: [A03]` `query` interpolated into URL without `encodeURIComponent`; attacker injects `&admin=true` query params. Wrap with `encodeURIComponent(query)` or use `HttpParams`.
+
+`src/services/data.service.ts:10-11: imp: [A01]` unencoded `id` in path enables traversal (`../admin`) to hit unintended endpoints. Apply `encodeURIComponent(id)` and validate id format (UUID/numeric).
+
+`src/services/data.service.ts:19-20: imp: [A01]` same path-traversal vector on DELETE; blast radius higher (destructive). Encode `id` and reject non-allowlisted shapes before request.
+
+`src/utils/validators.ts:16-18: crit: [A03]` regex `/<[^>]*>/g` trivially bypassed (`<img src=x onerror=...>`, nested tags, entities); misleading name implies XSS safety. Replace with DOMPurify or Angular `DomSanitizer.sanitize(SecurityContext.HTML, ...)`.
+
+`src/services/cache.service.ts:12-14: sug: [A04]` re-`set` leaks prior `setTimeout`; old timer evicts new entry early, silently dropping cached auth/permission data. Track timer per key, `clearTimeout` before reassigning.
+
+`src/services/data.service.ts:15-17: sug: [A08]` `createUser(data: any)` POSTs unvalidated payload; prototype-pollution keys (`__proto__`, `constructor`) reach backend. Define typed DTO, allowlist fields, reject reserved keys client-side.
+
+### Per-finding validation
+
+Validation of Finding 3: Confirm Critical. Regex tag-stripping is a documented anti-pattern (OWASP XSS Filter Evasion Cheat Sheet); the function name `sanitizeHtml` is the load-bearing risk -- it invites callers to bypass Angular's default contextual escaping via `bypassSecurityTrustHtml` or `[innerHTML]` after a "sanitize" step that does not sanitize. Highest-priority fix.
+
+Validation of Finding 2/3 (path traversal): Severity holds at Important rather than Critical because exploitability depends on backend routing behavior (whether the API normalizes `..` server-side or treats path segments literally). On a strict REST router the impact is bounded; on a permissive proxy/gateway it escalates.
+
+### Threat Patterns
+
+Findings 1+2+3 (`data.service`) share a root cause: string-template URL construction without encoding -- systemic input-handling gap across every endpoint method. Finding 4 (`sanitizeHtml`) is the dominant chain risk: any consumer calling `sanitizeHtml(userInput)` then binding to `[innerHTML]` yields stored/reflected XSS with full session-token blast radius per the threat model. Finding 6 (`any` typing) compounds 4 -- unvalidated POST bodies can round-trip through the backend and re-render via the same unsafe sanitizer. Highest-priority fix: replace `sanitizeHtml` with DOMPurify/`DomSanitizer` and rename to prevent false-safety reuse.
+
+**Missed surfaces (not in scope of packaged findings):** Angular template files and any `[innerHTML]` / `bypassSecurityTrust*` call sites; HTTP interceptor / auth-token handling; `baseUrl` configurability (SSRF if user-controlled).
+
+---
+
+**Verdict scope:** scope: security-threats

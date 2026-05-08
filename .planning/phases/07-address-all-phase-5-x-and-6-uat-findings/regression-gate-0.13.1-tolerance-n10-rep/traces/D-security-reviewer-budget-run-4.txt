@@ -1,0 +1,31 @@
+## Security Review Summary
+
+Reviewed: Last commit (1d86537) -- 6 new Angular library files: `src/components/user-item.component.ts`, `src/components/user-list.component.ts`, `src/services/cache.service.ts`, `src/services/data.service.ts`, `src/types/api.ts`, `src/utils/validators.ts`
+
+### Findings
+
+`src/services/data.service.ts:24: imp: [A03] `query` interpolated into URL without encoding; attacker injects `&admin=true` or alters query semantics. Use `HttpParams` or `encodeURIComponent(query)`.`
+
+`src/services/data.service.ts:11,19: imp: [A03] `id` interpolated into URL path enables traversal (`../admin`) on `GET`/`DELETE`. Validate `id` against `^[A-Za-z0-9_-]+$` and `encodeURIComponent` before interpolation.`
+
+`src/utils/validators.ts:16-18: crit: [A03] `sanitizeHtml` regex `/<[^>]*>/g` bypassed by nested tags (`<scr<script>ipt>`), entities, dangling attributes; unsafe as XSS boundary. Delete function; rely on Angular's default interpolation or `DomSanitizer.sanitize(SecurityContext.HTML, ...)` (DOMPurify under the hood).`
+
+`src/services/data.service.ts:10,15,20,24: sug: [A08] `any` request/response types skip schema validation; compromised API propagates malicious shapes unchecked. Define typed interfaces and validate responses with `zod`/`io-ts` before returning.`
+
+`src/services/cache.service.ts:12-15: sug: [A04] orphan `setTimeout` from prior `set` evicts refreshed entry; auth token/session may silently disappear. Track timer per key in a `Map<string, ReturnType<typeof setTimeout>>` and `clearTimeout` before scheduling new one.`
+
+### Per-finding validation
+
+Validation of Finding 3: Escalating Important -> Critical. The function name `sanitizeHtml` invites callers to trust output as an XSS boundary; the regex is trivially bypassable and provides false security worse than no function. If output reaches `[innerHTML]`, exploitation is one-step. Severity escalates because the misleading API is itself the design flaw, independent of current call sites.
+
+Validation of Finding 2: Confirming Important. Angular's `HttpClient` does not normalize `..` in path segments; backend behaviour depends on server. Exploitability conditional on backend not rejecting traversal -- still warrants input validation client-side as defense-in-depth.
+
+### Threat Patterns
+
+Findings 1+2+4 chain: untyped `any` inputs (4) flow into unencoded URL interpolation (1, 2), so any caller that forwards URL/query params from `ActivatedRoute` without validation creates an unauthenticated injection path to arbitrary backend resources -- especially severe for `deleteUser`. Finding 3 is an independent XSS landmine: if any component binds a `sanitizeHtml` result to `[innerHTML]`, attacker-controlled API data (also unvalidated per finding 4) reaches DOM. Finding 5 is isolated but amplifies finding 4 when cached values are auth tokens. Systemic root: no trust boundary between attacker-controlled strings and sinks (URL, DOM, cache).
+
+### Missed surfaces (optional)
+
+Components not reviewed: check templates for `[innerHTML]`, `bypassSecurityTrustHtml`, and `Router.navigateByUrl` with attacker-controlled fragments; CacheService lacks key namespacing across users (cross-tenant leakage risk on shared browser).
+
+**Verdict scope:** scope: security-threats

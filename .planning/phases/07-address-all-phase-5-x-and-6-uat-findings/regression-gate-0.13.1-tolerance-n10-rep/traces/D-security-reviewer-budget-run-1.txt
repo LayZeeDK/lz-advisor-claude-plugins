@@ -1,0 +1,33 @@
+## Security Review Summary
+
+Reviewed: 6 files from commit `6f9f224` -- `src/services/data.service.ts`, `src/services/cache.service.ts`, `src/components/user-item.component.ts`, `src/components/user-list.component.ts`, `src/types/api.ts`, `src/utils/validators.ts`
+
+### Findings
+
+`src/services/data.service.ts:11,19: imp: [A03]` `id` interpolated into URL path without `encodeURIComponent` enables path/query injection (`../`, `?injected=1`). Use `encodeURIComponent(id)` and validate against UUID/numeric regex.
+
+`src/services/data.service.ts:24: imp: [A03]` `query` concatenated raw into query string allows parameter injection (`foo&admin=true`). Use `HttpParams` or `encodeURIComponent`.
+
+`src/utils/validators.ts:17-19: imp: [A03]` `sanitizeHtml` regex misses attribute XSS (`onerror=`), `javascript:` URLs, entity-encoded payloads. Replace with DOMPurify or Angular `DomSanitizer.sanitize(SecurityContext.HTML, ...)`; rename to avoid implying safety.
+
+`src/services/data.service.ts:10,15,16,23: sug: [A08]` `any` response typing skips shape validation, amplifying injected-response blast radius. Define interfaces and validate with zod/io-ts at the HTTP boundary.
+
+`src/services/cache.service.ts:12-14: sug: [A05]` Unbounded `ttlMs` and no max store size enable client-side memory DoS via attacker-influenced keys. Cap `ttlMs` (e.g., 24h), enforce LRU max-entries, clear prior `setTimeout` on overwrite to prevent timer leaks.
+
+### Per-finding validation
+
+Validation of Finding 1: Confirmed Important. Unauthenticated client-side path injection; severity bounded by API server-side authorization. If API trusts path tokens for tenant scoping, escalates to Critical -- verify server-side authz before downgrading.
+
+Validation of Finding 3: Confirmed Important. The function name `sanitizeHtml` is itself a hazard -- callers will trust it. Recommend renaming to `stripTags` AND replacing with DOMPurify; the naming change alone reduces misuse risk.
+
+Validation of Finding 5: Confirmed Suggestion. Additional issue beyond the report: overwriting an existing key leaks the prior `setTimeout` handle (never cleared), so repeated `set(sameKey,...)` accumulates pending timers -- a second DoS vector independent of Map growth.
+
+### Threat Patterns
+
+Findings 1+2+3+4 chain into an end-to-end XSS path: attacker-controlled `id`/`query` (F1, F2) traverses to an attacker-influenced API endpoint, response is accepted as `any` without shape validation (F4), then a downstream component renders a field through `sanitizeHtml` (F3) which fails to block attribute-based XSS -- arbitrary JS in user's browser. Each finding alone is Important/Suggestion; chained, the composite is Critical. F5 is independent (availability, not confidentiality/integrity). Root cause across F1-F4: missing trust boundary between attacker input, network egress, network ingress, and DOM sink -- no single layer validates.
+
+### Missed surfaces (optional)
+
+Components consuming `DataService` responses and rendering via `[innerHTML]` were not in scope; verify no template binds raw `any` fields to `innerHTML` or `bypassSecurityTrustHtml`.
+
+**Verdict scope:** scope: security-threats

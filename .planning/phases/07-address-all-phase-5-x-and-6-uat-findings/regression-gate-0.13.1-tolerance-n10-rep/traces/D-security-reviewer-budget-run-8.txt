@@ -1,0 +1,39 @@
+## Security Review Summary
+
+Reviewed: commit `3c09f49` -- `src/services/data.service.ts`, `src/services/cache.service.ts`, `src/utils/validators.ts`, `src/components/user-item.component.ts`, `src/components/user-list.component.ts`, `src/types/api.ts`
+
+### Findings
+
+`src/services/data.service.ts:24: imp: [A03] `query` interpolated raw into URL enables param smuggling via `&`/`#`. Use `HttpParams` or `encodeURIComponent(query)`.`
+
+`src/services/data.service.ts:11,19: imp: [A01] `id` path-interpolated unencoded; `../admin` reaches unintended endpoints, irreversible on DELETE. Validate via `parseId` + `encodeURIComponent`.`
+
+`src/utils/validators.ts:16-18: crit: [A03] `sanitizeHtml` regex misses event handlers, `javascript:` URIs, encoded payloads; consumers binding to `[innerHTML]` get XSS. Replace with Angular `DomSanitizer` or DOMPurify.`
+
+`src/services/data.service.ts:15-16: sug: [A08] `createUser(data: any)` allows mass-assignment via untyped payload. Type `data: CreateUserDto` + field allow-list before POST.`
+
+`src/services/data.service.ts:1-26: sug: [A01] No `HttpClientXsrfModule` / `provideHttpClient(withXsrfConfiguration())` for POST/DELETE. Wire XSRF provider; confirm server emits XSRF-TOKEN cookie.`
+
+`src/services/data.service.ts:8: sug: [A05] `baseUrl` hardcoded to `https://api.example.com`; no env config, no per-env allow-list. Inject via `InjectionToken` from environment.`
+
+`src/services/data.service.ts:10,15,19,23: sug: [A04] Return type `Promise<any>` erases response shape; downstream callers cannot rely on validation. Type to `User`/`ApiResponse<User>` and validate at boundary.`
+
+`src/services/cache.service.ts:14: sug: [A04] `setTimeout` eviction races with manual `set` overwrite; stale timer deletes fresh entry. Track timer per key + `clearTimeout` on overwrite.`
+
+`src/utils/validators.ts:2: sug: [A03] `URL_RE` accepts only http(s) but lacks anchor against credentials (`user:pass@`) or unicode homograph hosts. Prefer `new URL()` parse + protocol allow-list.`
+
+### Per-finding validation
+
+Validation of Finding 3: Escalating from Important to Critical. The function name `sanitizeHtml` is a security-affordance lie -- any consumer reasonably trusts the output for `[innerHTML]` binding. Combined with Finding 4's `any`-typed server responses flowing into components, this is a confirmed XSS sink waiting for a caller. Angular's default interpolation `{{ }}` is safe, but the function's existence invites unsafe bypass patterns.
+
+Validation of Finding 5: Confirming Suggestion. Angular's XSRF protection is opt-in and only effective when the server sets `XSRF-TOKEN` cookie; without server-side context this is defense-in-depth, not exploitable in isolation. Unresolved hedge: server CSRF posture (unverified). Verify cookie-session vs. bearer-token auth before committing.
+
+### Threat Patterns
+
+Findings 1+2+4 chain into a server-side attack surface: untyped `any` payloads (4) plus unencoded path/query interpolation (1, 2) mean any caller passing user-influenced strings (search box, route param) reaches the API with attacker-shaped requests -- IDOR via `getUser('../admin')`, parameter smuggling via `listUsers('x&role=admin')`, mass-assignment via `createUser(formData)`. Findings 3+7 chain client-side: `any` return types (7) flow unvalidated server responses into components, and the false-safety `sanitizeHtml` (3) is the likely sink when a developer adds `[innerHTML]` binding for rich-text fields. Finding 5 (CSRF) compounds 2's irreversible DELETE: cross-origin form-submit + path traversal = destructive blind request.
+
+### Missed surfaces (optional)
+
+`CacheService` accepts arbitrary `key: string` with no namespacing -- two callers using key `"user"` collide and poison each other's cached state; review cache-key derivation across consumers.
+
+**Verdict scope:** scope: security-threats

@@ -1,0 +1,341 @@
+# D-security-reviewer-budget.sh 10x re-run on plugin 0.13.1 (assembled via parser replay against captured traces)
+# Generated: 2026-05-08T07:57:16Z
+# Plugin version: 0.13.1
+# Contract: per-section budgets per Plan 07-14 <output_constraints> XML; aggregate cap dropped; smoke +10% gate tolerance applied
+# Fixture: .planning/phases/05.4-address-uat-findings-a-k/smoke-tests/D-security-reviewer-budget.sh
+# Trace cache: .planning/phases/07-address-all-phase-5-x-and-6-uat-findings/regression-gate-0.13.1-tolerance-n10-rep/traces (10 runs preserved for future --from-trace replay)
+
+=== Run 1 ===
+Run 1: EXIT 1 (FAIL)
+
+--- Run 1 output (full) ---
+[INFO] Replay mode: using trace .planning/phases/07-address-all-phase-5-x-and-6-uat-findings/regression-gate-0.13.1-tolerance-n10-rep/traces/D-security-reviewer-budget-run-1.txt (skipping claude -p)
+[OK] Security-reviewer output sections present: Findings=1 TP=1
+[WARN] Fragment-grammar shape NOT detected; falling back to Plan 07-04 numbered-section parser. New fragment-grammar shape is preferred per Plan 07-09.
+[ERROR] No Findings entries detected (neither fragment-grammar nor Plan 07-04 numbered shape matched)
+[INFO] Per-finding validation: 3 entries
+[OK] Per-finding validation entry 1: 29 words (<=60 target)
+[OK] Per-finding validation entry 2: 30 words (<=60 target)
+[OK] Per-finding validation entry 3: 33 words (<=60 target)
+[OK] Threat Patterns: 87 words (<=160 target)
+[OK] Missed surfaces: 23 words (<=30 target)
+--- security-reviewer output (last 200 lines) ---
+## Security Review Summary
+
+Reviewed: 6 files from commit `6f9f224` -- `src/services/data.service.ts`, `src/services/cache.service.ts`, `src/components/user-item.component.ts`, `src/components/user-list.component.ts`, `src/types/api.ts`, `src/utils/validators.ts`
+
+### Findings
+
+`src/services/data.service.ts:11,19: imp: [A03]` `id` interpolated into URL path without `encodeURIComponent` enables path/query injection (`../`, `?injected=1`). Use `encodeURIComponent(id)` and validate against UUID/numeric regex.
+
+`src/services/data.service.ts:24: imp: [A03]` `query` concatenated raw into query string allows parameter injection (`foo&admin=true`). Use `HttpParams` or `encodeURIComponent`.
+
+`src/utils/validators.ts:17-19: imp: [A03]` `sanitizeHtml` regex misses attribute XSS (`onerror=`), `javascript:` URLs, entity-encoded payloads. Replace with DOMPurify or Angular `DomSanitizer.sanitize(SecurityContext.HTML, ...)`; rename to avoid implying safety.
+
+`src/services/data.service.ts:10,15,16,23: sug: [A08]` `any` response typing skips shape validation, amplifying injected-response blast radius. Define interfaces and validate with zod/io-ts at the HTTP boundary.
+
+`src/services/cache.service.ts:12-14: sug: [A05]` Unbounded `ttlMs` and no max store size enable client-side memory DoS via attacker-influenced keys. Cap `ttlMs` (e.g., 24h), enforce LRU max-entries, clear prior `setTimeout` on overwrite to prevent timer leaks.
+
+### Per-finding validation
+
+Validation of Finding 1: Confirmed Important. Unauthenticated client-side path injection; severity bounded by API server-side authorization. If API trusts path tokens for tenant scoping, escalates to Critical -- verify server-side authz before downgrading.
+
+Validation of Finding 3: Confirmed Important. The function name `sanitizeHtml` is itself a hazard -- callers will trust it. Recommend renaming to `stripTags` AND replacing with DOMPurify; the naming change alone reduces misuse risk.
+
+Validation of Finding 5: Confirmed Suggestion. Additional issue beyond the report: overwriting an existing key leaks the prior `setTimeout` handle (never cleared), so repeated `set(sameKey,...)` accumulates pending timers -- a second DoS vector independent of Map growth.
+
+### Threat Patterns
+
+Findings 1+2+3+4 chain into an end-to-end XSS path: attacker-controlled `id`/`query` (F1, F2) traverses to an attacker-influenced API endpoint, response is accepted as `any` without shape validation (F4), then a downstream component renders a field through `sanitizeHtml` (F3) which fails to block attribute-based XSS -- arbitrary JS in user's browser. Each finding alone is Important/Suggestion; chained, the composite is Critical. F5 is independent (availability, not confidentiality/integrity). Root cause across F1-F4: missing trust boundary between attacker input, network egress, network ingress, and DOM sink -- no single layer validates.
+
+### Missed surfaces (optional)
+
+Components consuming `DataService` responses and rendering via `[innerHTML]` were not in scope; verify no template binds raw `any` fields to `innerHTML` or `bypassSecurityTrustHtml`.
+
+**Verdict scope:** scope: security-threats
+--- end Run 1 output ---
+
+=== Run 2 ===
+Run 2: EXIT 0 (PASS)
+
+--- Run 2 output (full) ---
+[INFO] Replay mode: using trace .planning/phases/07-address-all-phase-5-x-and-6-uat-findings/regression-gate-0.13.1-tolerance-n10-rep/traces/D-security-reviewer-budget-run-2.txt (skipping claude -p)
+[OK] Security-reviewer output sections present: Findings=1 TP=1
+[INFO] Fragment-grammar shape detected (security): 6 finding line(s)
+[OK] Finding line 1: 14 words (<=22 target)
+[OK] Finding line 2: 13 words (<=22 target)
+[OK] Finding line 3: 19 words (<=22 target)
+[OK] Finding line 4: 15 words (<=22 target)
+[OK] Finding line 5: 18 words (<=22 target)
+[OK] Finding line 6: 16 words (<=22 target)
+[INFO] Total findings: 6; bad: 0
+[INFO] Per-finding validation: 3 entries
+[OK] Per-finding validation entry 1: 31 words (<=60 target)
+[OK] Per-finding validation entry 2: 41 words (<=60 target)
+[OK] Per-finding validation entry 3: 35 words (<=60 target)
+[OK] Threat Patterns: 80 words (<=160 target)
+[OK] Missed surfaces: 19 words (<=30 target)
+[SUCCESS] D-security-reviewer-budget.sh: per-section budgets enforced (entries <=22w/28w outlier, Per-finding validation <=60w/66w outlier, Threat Patterns <=160w/176w outlier, Missed surfaces <=30w/33w outlier; aggregate cap dropped per Plan 07-14; gate-tolerance +10% at test layer only, agent XML targets stay canonical)
+--- end Run 2 output ---
+
+=== Run 3 ===
+Run 3: EXIT 0 (PASS)
+
+--- Run 3 output (full) ---
+[INFO] Replay mode: using trace .planning/phases/07-address-all-phase-5-x-and-6-uat-findings/regression-gate-0.13.1-tolerance-n10-rep/traces/D-security-reviewer-budget-run-3.txt (skipping claude -p)
+[OK] Security-reviewer output sections present: Findings=1 TP=1
+[INFO] Fragment-grammar shape detected (security): 3 finding line(s)
+[OK] Finding line 1: 21 words (<=22 target)
+[OK] Finding line 2: 16 words (<=22 target)
+[OK] Finding line 3: 19 words (<=22 target)
+[INFO] Total findings: 3; bad: 0
+[INFO] Per-finding validation: 5 entries
+[OK] Per-finding validation entry 1: 51 words (<=60 target)
+[OK] Per-finding validation entry 2: 42 words (<=60 target)
+[OK] Per-finding validation entry 3: 32 words (<=60 target)
+[OK] Per-finding validation entry 4: 22 words (<=60 target)
+[OK] Per-finding validation entry 5: 20 words (<=60 target)
+[OK] Threat Patterns: 107 words (<=160 target)
+[OK] Missed surfaces: 25 words (<=30 target)
+[SUCCESS] D-security-reviewer-budget.sh: per-section budgets enforced (entries <=22w/28w outlier, Per-finding validation <=60w/66w outlier, Threat Patterns <=160w/176w outlier, Missed surfaces <=30w/33w outlier; aggregate cap dropped per Plan 07-14; gate-tolerance +10% at test layer only, agent XML targets stay canonical)
+--- end Run 3 output ---
+
+=== Run 4 ===
+Run 4: EXIT 1 (FAIL)
+
+--- Run 4 output (full) ---
+[INFO] Replay mode: using trace .planning/phases/07-address-all-phase-5-x-and-6-uat-findings/regression-gate-0.13.1-tolerance-n10-rep/traces/D-security-reviewer-budget-run-4.txt (skipping claude -p)
+[OK] Security-reviewer output sections present: Findings=1 TP=1
+[INFO] Fragment-grammar shape detected (security): 3 finding line(s)
+[OK] Finding line 1: 17 words (<=22 target)
+[ERROR] Finding line 2: 29 words (>28 outlier soft cap; target <=22w)
+[WARN] Finding line 3: 28 words (>22 target but <=28 outlier; acceptable)
+[INFO] Total findings: 3; bad: 1
+[INFO] Per-finding validation: 2 entries
+[OK] Per-finding validation entry 1: 53 words (<=60 target)
+[OK] Per-finding validation entry 2: 31 words (<=60 target)
+[OK] Threat Patterns: 92 words (<=160 target)
+[OK] Missed surfaces: 25 words (<=30 target)
+--- security-reviewer output (last 200 lines) ---
+## Security Review Summary
+
+Reviewed: Last commit (1d86537) -- 6 new Angular library files: `src/components/user-item.component.ts`, `src/components/user-list.component.ts`, `src/services/cache.service.ts`, `src/services/data.service.ts`, `src/types/api.ts`, `src/utils/validators.ts`
+
+### Findings
+
+`src/services/data.service.ts:24: imp: [A03] `query` interpolated into URL without encoding; attacker injects `&admin=true` or alters query semantics. Use `HttpParams` or `encodeURIComponent(query)`.`
+
+`src/services/data.service.ts:11,19: imp: [A03] `id` interpolated into URL path enables traversal (`../admin`) on `GET`/`DELETE`. Validate `id` against `^[A-Za-z0-9_-]+$` and `encodeURIComponent` before interpolation.`
+
+`src/utils/validators.ts:16-18: crit: [A03] `sanitizeHtml` regex `/<[^>]*>/g` bypassed by nested tags (`<scr<script>ipt>`), entities, dangling attributes; unsafe as XSS boundary. Delete function; rely on Angular's default interpolation or `DomSanitizer.sanitize(SecurityContext.HTML, ...)` (DOMPurify under the hood).`
+
+`src/services/data.service.ts:10,15,20,24: sug: [A08] `any` request/response types skip schema validation; compromised API propagates malicious shapes unchecked. Define typed interfaces and validate responses with `zod`/`io-ts` before returning.`
+
+`src/services/cache.service.ts:12-15: sug: [A04] orphan `setTimeout` from prior `set` evicts refreshed entry; auth token/session may silently disappear. Track timer per key in a `Map<string, ReturnType<typeof setTimeout>>` and `clearTimeout` before scheduling new one.`
+
+### Per-finding validation
+
+Validation of Finding 3: Escalating Important -> Critical. The function name `sanitizeHtml` invites callers to trust output as an XSS boundary; the regex is trivially bypassable and provides false security worse than no function. If output reaches `[innerHTML]`, exploitation is one-step. Severity escalates because the misleading API is itself the design flaw, independent of current call sites.
+
+Validation of Finding 2: Confirming Important. Angular's `HttpClient` does not normalize `..` in path segments; backend behaviour depends on server. Exploitability conditional on backend not rejecting traversal -- still warrants input validation client-side as defense-in-depth.
+
+### Threat Patterns
+
+Findings 1+2+4 chain: untyped `any` inputs (4) flow into unencoded URL interpolation (1, 2), so any caller that forwards URL/query params from `ActivatedRoute` without validation creates an unauthenticated injection path to arbitrary backend resources -- especially severe for `deleteUser`. Finding 3 is an independent XSS landmine: if any component binds a `sanitizeHtml` result to `[innerHTML]`, attacker-controlled API data (also unvalidated per finding 4) reaches DOM. Finding 5 is isolated but amplifies finding 4 when cached values are auth tokens. Systemic root: no trust boundary between attacker-controlled strings and sinks (URL, DOM, cache).
+
+### Missed surfaces (optional)
+
+Components not reviewed: check templates for `[innerHTML]`, `bypassSecurityTrustHtml`, and `Router.navigateByUrl` with attacker-controlled fragments; CacheService lacks key namespacing across users (cross-tenant leakage risk on shared browser).
+
+**Verdict scope:** scope: security-threats
+--- end Run 4 output ---
+
+=== Run 5 ===
+Run 5: EXIT 0 (PASS)
+
+--- Run 5 output (full) ---
+[INFO] Replay mode: using trace .planning/phases/07-address-all-phase-5-x-and-6-uat-findings/regression-gate-0.13.1-tolerance-n10-rep/traces/D-security-reviewer-budget-run-5.txt (skipping claude -p)
+[OK] Security-reviewer output sections present: Findings=1 TP=1
+[INFO] Fragment-grammar shape detected (security): 4 finding line(s)
+[OK] Finding line 1: 16 words (<=22 target)
+[OK] Finding line 2: 20 words (<=22 target)
+[WARN] Finding line 3: 28 words (>22 target but <=28 outlier; acceptable)
+[OK] Finding line 4: 21 words (<=22 target)
+[INFO] Total findings: 4; bad: 0
+[INFO] Per-finding validation: 2 entries
+[OK] Per-finding validation entry 1: 59 words (<=60 target)
+[OK] Per-finding validation entry 2: 53 words (<=60 target)
+[OK] Threat Patterns: 58 words (<=160 target)
+[OK] Missed surfaces: 21 words (<=30 target)
+[SUCCESS] D-security-reviewer-budget.sh: per-section budgets enforced (entries <=22w/28w outlier, Per-finding validation <=60w/66w outlier, Threat Patterns <=160w/176w outlier, Missed surfaces <=30w/33w outlier; aggregate cap dropped per Plan 07-14; gate-tolerance +10% at test layer only, agent XML targets stay canonical)
+--- end Run 5 output ---
+
+=== Run 6 ===
+Run 6: EXIT 0 (PASS)
+
+--- Run 6 output (full) ---
+[INFO] Replay mode: using trace .planning/phases/07-address-all-phase-5-x-and-6-uat-findings/regression-gate-0.13.1-tolerance-n10-rep/traces/D-security-reviewer-budget-run-6.txt (skipping claude -p)
+[OK] Security-reviewer output sections present: Findings=1 TP=1
+[INFO] Fragment-grammar shape detected (security): 4 finding line(s)
+[OK] Finding line 1: 19 words (<=22 target)
+[OK] Finding line 2: 21 words (<=22 target)
+[OK] Finding line 3: 17 words (<=22 target)
+[OK] Finding line 4: 19 words (<=22 target)
+[INFO] Total findings: 4; bad: 0
+[INFO] Per-finding validation: 2 entries
+[OK] Per-finding validation entry 1: 56 words (<=60 target)
+[OK] Per-finding validation entry 2: 42 words (<=60 target)
+[OK] Threat Patterns: 79 words (<=160 target)
+[OK] Missed surfaces: 23 words (<=30 target)
+[SUCCESS] D-security-reviewer-budget.sh: per-section budgets enforced (entries <=22w/28w outlier, Per-finding validation <=60w/66w outlier, Threat Patterns <=160w/176w outlier, Missed surfaces <=30w/33w outlier; aggregate cap dropped per Plan 07-14; gate-tolerance +10% at test layer only, agent XML targets stay canonical)
+--- end Run 6 output ---
+
+=== Run 7 ===
+Run 7: EXIT 1 (FAIL)
+
+--- Run 7 output (full) ---
+[INFO] Replay mode: using trace .planning/phases/07-address-all-phase-5-x-and-6-uat-findings/regression-gate-0.13.1-tolerance-n10-rep/traces/D-security-reviewer-budget-run-7.txt (skipping claude -p)
+[OK] Security-reviewer output sections present: Findings=1 TP=1
+[WARN] Fragment-grammar shape NOT detected; falling back to Plan 07-04 numbered-section parser. New fragment-grammar shape is preferred per Plan 07-09.
+[ERROR] No Findings entries detected (neither fragment-grammar nor Plan 07-04 numbered shape matched)
+[OK] Per-finding validation: section absent (optional)
+[OK] Threat Patterns: 116 words (<=160 target)
+[OK] Missed surfaces: section absent (optional)
+--- security-reviewer output (last 200 lines) ---
+## Security Review Summary
+
+Reviewed: commit `8098f2d` -- 6 files added (`src/components/user-item.component.ts`, `src/components/user-list.component.ts`, `src/services/cache.service.ts`, `src/services/data.service.ts`, `src/types/api.ts`, `src/utils/validators.ts`)
+
+### Findings
+
+`src/services/data.service.ts:24: imp: [A03]` `query` interpolated raw into URL; attacker injects `&admin=true` or breaks server query parsing. Use `HttpParams` (`{ params: { q: query } }`) so HttpClient URL-encodes.
+
+`src/services/data.service.ts:10-12: imp: [A03]` `id: string` interpolated into path enables `../admin` traversal and segment injection. Call `parseId(id)` from validators.ts and reject null; type param as `number`.
+
+`src/services/data.service.ts:19-21: imp: [A01]` `deleteUser` shares the path-injection sink; traversal pivots a DELETE to arbitrary endpoints (e.g., `/users/../admin/keys`). Same `parseId` gate plus `encodeURIComponent`.
+
+`src/utils/validators.ts:16-18: imp: [A03]` `sanitizeHtml` regex is bypassable (entities, attribute handlers, partial tags); misleads callers into trusting `[innerHTML]` sinks. Delete the helper and route untrusted HTML through Angular `DomSanitizer.sanitize(SecurityContext.HTML, ...)`.
+
+`src/services/data.service.ts:15-17: sug: [A04]` `createUser(data: any)` posts unvalidated payload; enables prototype-shape and field-injection abuse downstream. Type as `Omit<User,'id'|'createdAt'>` and validate with a schema (zod) before POST.
+
+`src/services/data.service.ts:1-30: sug: [A09]` No error handling / logging on HTTP failures; attacker probing IDOR / traversal leaves no signal. Add `catchError` with structured logging (no PII) and surface 4xx to caller.
+
+`src/services/data.service.ts:6: q: [A07]` `baseUrl` hardcoded to `https://api.example.com` -- is auth (bearer / cookie / CSRF token) attached via HttpInterceptor, or are these requests unauthenticated? If cookie-based, confirm SameSite + CSRF token on POST/DELETE.
+
+### Threat Patterns
+
+Findings 1+2+3 chain into a confirmed XSS-to-API-pivot path: a compromised or attacker-shaped API response (reachable via F1 query injection or F2 path traversal redirecting the call to an attacker-controlled segment) flows back as `any`-typed payload, gets rendered, and if any consumer pipes a `User.name`/`email` field through `sanitizeHtml` into `[innerHTML]` (F3), achieves DOM XSS in the app origin. F2 + F4 share a root cause: pervasive `any` typing in `data.service.ts` defeats the type system that `types/api.ts` (`User`, `ApiResponse<T>`) was designed to provide -- tightening signatures closes both at once. F2's traversal severity is amplified for `deleteUser` (A01 destructive side-effect) versus `getUser` (read-only). F3 is the highest-leverage fix: removing the false-safety helper forces callers onto Angular's built-in escaping.
+
+**Missed surfaces (optional):** Review the two presentation components for `[innerHTML]`, `bypassSecurityTrust*`, and `Router.navigateByUrl` sinks consuming `User` fields; review `cache.service.ts` for unbounded growth / key collision enabling cache poisoning across users.
+
+---
+
+**Verdict scope:** scope: security-threats
+--- end Run 7 output ---
+
+=== Run 8 ===
+Run 8: EXIT 0 (PASS)
+
+--- Run 8 output (full) ---
+[INFO] Replay mode: using trace .planning/phases/07-address-all-phase-5-x-and-6-uat-findings/regression-gate-0.13.1-tolerance-n10-rep/traces/D-security-reviewer-budget-run-8.txt (skipping claude -p)
+[OK] Security-reviewer output sections present: Findings=1 TP=1
+[INFO] Fragment-grammar shape detected (security): 7 finding line(s)
+[OK] Finding line 1: 14 words (<=22 target)
+[OK] Finding line 2: 21 words (<=22 target)
+[OK] Finding line 3: 15 words (<=22 target)
+[OK] Finding line 4: 14 words (<=22 target)
+[OK] Finding line 5: 15 words (<=22 target)
+[OK] Finding line 6: 20 words (<=22 target)
+[OK] Finding line 7: 21 words (<=22 target)
+[INFO] Total findings: 7; bad: 0
+[INFO] Per-finding validation: 2 entries
+[OK] Per-finding validation entry 1: 58 words (<=60 target)
+[OK] Per-finding validation entry 2: 39 words (<=60 target)
+[OK] Threat Patterns: 93 words (<=160 target)
+[OK] Missed surfaces: 26 words (<=30 target)
+[SUCCESS] D-security-reviewer-budget.sh: per-section budgets enforced (entries <=22w/28w outlier, Per-finding validation <=60w/66w outlier, Threat Patterns <=160w/176w outlier, Missed surfaces <=30w/33w outlier; aggregate cap dropped per Plan 07-14; gate-tolerance +10% at test layer only, agent XML targets stay canonical)
+--- end Run 8 output ---
+
+=== Run 9 ===
+Run 9: EXIT 1 (FAIL)
+
+--- Run 9 output (full) ---
+[INFO] Replay mode: using trace .planning/phases/07-address-all-phase-5-x-and-6-uat-findings/regression-gate-0.13.1-tolerance-n10-rep/traces/D-security-reviewer-budget-run-9.txt (skipping claude -p)
+[OK] Security-reviewer output sections present: Findings=1 TP=1
+[WARN] Fragment-grammar shape NOT detected; falling back to Plan 07-04 numbered-section parser. New fragment-grammar shape is preferred per Plan 07-09.
+[ERROR] No Findings entries detected (neither fragment-grammar nor Plan 07-04 numbered shape matched)
+[INFO] Per-finding validation: 1 entries
+[OK] Per-finding validation entry 1: 46 words (<=60 target)
+[OK] Threat Patterns: 82 words (<=160 target)
+[OK] Missed surfaces: section absent (optional)
+--- security-reviewer output (last 200 lines) ---
+## Security Review Summary
+
+Reviewed: commit `fd605bb` -- 6 files added (`src/components/user-item.component.ts`, `src/components/user-list.component.ts`, `src/services/cache.service.ts`, `src/services/data.service.ts`, `src/types/api.ts`, `src/utils/validators.ts`)
+
+### Findings
+
+`src/services/data.service.ts:24: imp: [A03]` `query` interpolated into URL without `encodeURIComponent`; attacker injects `&admin=true` query params. Wrap with `encodeURIComponent(query)` or use `HttpParams`.
+
+`src/services/data.service.ts:10-11: imp: [A01]` unencoded `id` in path enables traversal (`../admin`) to hit unintended endpoints. Apply `encodeURIComponent(id)` and validate id format (UUID/numeric).
+
+`src/services/data.service.ts:19-20: imp: [A01]` same path-traversal vector on DELETE; blast radius higher (destructive). Encode `id` and reject non-allowlisted shapes before request.
+
+`src/utils/validators.ts:16-18: crit: [A03]` regex `/<[^>]*>/g` trivially bypassed (`<img src=x onerror=...>`, nested tags, entities); misleading name implies XSS safety. Replace with DOMPurify or Angular `DomSanitizer.sanitize(SecurityContext.HTML, ...)`.
+
+`src/services/cache.service.ts:12-14: sug: [A04]` re-`set` leaks prior `setTimeout`; old timer evicts new entry early, silently dropping cached auth/permission data. Track timer per key, `clearTimeout` before reassigning.
+
+`src/services/data.service.ts:15-17: sug: [A08]` `createUser(data: any)` POSTs unvalidated payload; prototype-pollution keys (`__proto__`, `constructor`) reach backend. Define typed DTO, allowlist fields, reject reserved keys client-side.
+
+### Per-finding validation
+
+Validation of Finding 3: Confirm Critical. Regex tag-stripping is a documented anti-pattern (OWASP XSS Filter Evasion Cheat Sheet); the function name `sanitizeHtml` is the load-bearing risk -- it invites callers to bypass Angular's default contextual escaping via `bypassSecurityTrustHtml` or `[innerHTML]` after a "sanitize" step that does not sanitize. Highest-priority fix.
+
+Validation of Finding 2/3 (path traversal): Severity holds at Important rather than Critical because exploitability depends on backend routing behavior (whether the API normalizes `..` server-side or treats path segments literally). On a strict REST router the impact is bounded; on a permissive proxy/gateway it escalates.
+
+### Threat Patterns
+
+Findings 1+2+3 (`data.service`) share a root cause: string-template URL construction without encoding -- systemic input-handling gap across every endpoint method. Finding 4 (`sanitizeHtml`) is the dominant chain risk: any consumer calling `sanitizeHtml(userInput)` then binding to `[innerHTML]` yields stored/reflected XSS with full session-token blast radius per the threat model. Finding 6 (`any` typing) compounds 4 -- unvalidated POST bodies can round-trip through the backend and re-render via the same unsafe sanitizer. Highest-priority fix: replace `sanitizeHtml` with DOMPurify/`DomSanitizer` and rename to prevent false-safety reuse.
+
+**Missed surfaces (not in scope of packaged findings):** Angular template files and any `[innerHTML]` / `bypassSecurityTrust*` call sites; HTTP interceptor / auth-token handling; `baseUrl` configurability (SSRF if user-controlled).
+
+---
+
+**Verdict scope:** scope: security-threats
+--- end Run 9 output ---
+
+=== Run 10 ===
+Run 10: EXIT 0 (PASS)
+
+--- Run 10 output (full) ---
+[INFO] Replay mode: using trace .planning/phases/07-address-all-phase-5-x-and-6-uat-findings/regression-gate-0.13.1-tolerance-n10-rep/traces/D-security-reviewer-budget-run-10.txt (skipping claude -p)
+[OK] Security-reviewer output sections present: Findings=1 TP=1
+[INFO] Fragment-grammar shape detected (security): 4 finding line(s)
+[OK] Finding line 1: 15 words (<=22 target)
+[WARN] Finding line 2: 24 words (>22 target but <=28 outlier; acceptable)
+[WARN] Finding line 3: 24 words (>22 target but <=28 outlier; acceptable)
+[OK] Finding line 4: 16 words (<=22 target)
+[INFO] Total findings: 4; bad: 0
+[INFO] Per-finding validation: 2 entries
+[OK] Per-finding validation entry 1: 51 words (<=60 target)
+[OK] Per-finding validation entry 2: 30 words (<=60 target)
+[OK] Threat Patterns: 79 words (<=160 target)
+[OK] Missed surfaces: 15 words (<=30 target)
+[SUCCESS] D-security-reviewer-budget.sh: per-section budgets enforced (entries <=22w/28w outlier, Per-finding validation <=60w/66w outlier, Threat Patterns <=160w/176w outlier, Missed surfaces <=30w/33w outlier; aggregate cap dropped per Plan 07-14; gate-tolerance +10% at test layer only, agent XML targets stay canonical)
+--- end Run 10 output ---
+
+=== Summary ===
+Pass count: 6 / 10
+Fail count: 4 / 10
+  Run 1: FAIL (exit 1)
+  Run 2: PASS
+  Run 3: PASS
+  Run 4: FAIL (exit 1)
+  Run 5: PASS
+  Run 6: PASS
+  Run 7: FAIL (exit 1)
+  Run 8: PASS
+  Run 9: FAIL (exit 1)
+  Run 10: PASS
+
+verdict: PASS_6_of_10 (FAIL_4_of_10)

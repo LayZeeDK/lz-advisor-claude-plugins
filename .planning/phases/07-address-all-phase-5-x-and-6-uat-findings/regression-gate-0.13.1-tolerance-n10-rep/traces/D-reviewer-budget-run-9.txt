@@ -1,0 +1,37 @@
+## Review Summary
+
+Reviewed: commit `6d77030` -- 6 new files (`src/components/`, `src/services/`, `src/types/api.ts`, `src/utils/validators.ts`)
+
+### Findings
+
+`src/services/cache.service.ts:13-14: crit: re-set leaks prior timer that deletes fresh entry early; clear() also leaks handles. Track timer handle per key in map; clearTimeout on set/delete/clear.`
+
+`src/services/data.service.ts:24: crit: unencoded query enables param injection and path truncation via & and #. Use HttpParams or encodeURIComponent(query).`
+
+`src/services/data.service.ts:10,15,20,24: imp: any discards existing User/ApiResponse<T> contract; callsite shape errors go undetected. Type as Promise<User>, Promise<User[]>, Omit<User,'id'|'createdAt'> input.`
+
+`src/utils/validators.ts:16-18: crit: regex sanitizer bypassable via entities, malformed tags, decoded HTML; name implies security gate. Delete; use DomSanitizer.sanitize(SecurityContext.HTML, ...) or rename to stripTags with non-security JSDoc.`
+
+`src/utils/validators.ts:20-23: imp: parseId returns number but User.id: string; double-conversion at every callsite, divergence risk. Either return string (validated) or change User.id to number; pick one representation.`
+
+### Per-finding validation
+
+Validation of Finding 1: Confirm Critical (revised from Important). This is silent data loss in normal operation -- any cache consumer that re-sets a key with a longer TTL will observe the entry vanish at the original (shorter) TTL. The `expires` field on the stored record is computed but never consulted on read, so the timer is the sole eviction mechanism; cancelling it on overwrite is mandatory, not optional.
+
+Validation of Finding 2: Confirm Critical (revised from Important). Parameter injection is exploitable today by any caller passing user-controlled search input; `#` truncation also breaks correctness for benign inputs containing fragments. Both manifest in normal operation, not edge cases.
+
+Validation of Finding 3: Confirm Important. Not crash-class, but `any` propagates through every consumer, defeating the point of having `types/api.ts`. `createUser` should accept `Omit<User, 'id' | 'createdAt'>` and the list endpoint likely wraps in `ApiResponse<User[]>` -- worth confirming the server contract.
+
+Validation of Finding 4: Revise to Critical. The function name `sanitizeHtml` will be read as a security primitive by future maintainers regardless of original intent; a regex-based stripper is a known-bad pattern (OWASP XSS Filter Evasion Cheat Sheet). Severity hinges on intent: if security, Critical; if cosmetic strip-tags, rename and downgrade. Treat as Critical until rename lands.
+
+Validation of Finding 5: Confirm Suggestion, leaning Important. Not a current bug because no caller bridges the two yet, but the API surface guarantees future drift. Decide representation now while the library has zero external consumers.
+
+### Cross-Cutting Patterns
+
+Findings 2, 3, and 5 share a root cause: the API boundary (`DataService` + `types/api.ts` + `validators.ts`) was scaffolded without a single source of truth for request/response shape. `any` in the service, unencoded URL interpolation, and ID-type drift all stem from the service skipping the typed contract that already exists one directory over. A single typed wrapper (`HttpParams` + `ApiResponse<User>` + consistent `id` representation) closes all three. Findings 1 and 4 are independent correctness defects -- timer lifecycle and security-gate naming respectively -- but share the pattern of implementations whose signatures over-promise relative to behavior (`set` implies replace-semantics; `sanitizeHtml` implies safety).
+
+### Missed surfaces (optional)
+
+`user-item` / `user-list` components were not packaged; verify they do not bind unsanitized strings to `[innerHTML]` or pass raw input into `listUsers(query)`.
+
+**Verdict scope:** scope: api-correctness

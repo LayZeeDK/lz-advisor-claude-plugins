@@ -1,0 +1,39 @@
+## Review Summary
+
+Reviewed: Last commit `3a78329` -- 6 new files (Angular standalone components, HTTP data service, TTL cache service, type definitions, validators utility)
+
+### Findings
+
+`src/services/data.service.ts:10-12,23-24` -- **imp: confirmed.** Raw `id`/`query` interpolated without `encodeURIComponent`. Wrap both with `encodeURIComponent` or use `HttpParams`.
+
+`src/utils/validators.ts:16-18` -- **crit: regex-strip mislabeled `sanitizeHtml` invites XSS via javascript: URIs, malformed tags, attribute vectors.** Replace with DOMPurify or Angular `DomSanitizer`; rename to `stripTags` if cosmetic only.
+
+`src/utils/validators.ts:20-23` -- **imp: confirmed.** `parseId` returns `number|null` while `User.id: string`; validator unreachable from `DataService.getUser(string)`. Align return type to `string|null` and reuse via guard at call sites.
+
+`src/types/api.ts:2` -- **imp:** `User.id: string` contradicts numeric-positive invariant in `parseId`. Pick one: brand the string or change `id` to `number`.
+
+`src/services/cache.service.ts:17-21` -- **imp:** stale entries leak when timer is delayed/backgrounded. Add `this.store.delete(key)` in expired branch before `return undefined`.
+
+`src/services/cache.service.ts:13-14` -- **sug:** `setTimeout` runs in Angular zone, triggering CD on eviction. Wrap in `ngZone.runOutsideAngular(() => setTimeout(...))`.
+
+`src/services/data.service.ts:10,23` -- **sug:** `Promise<any>`/`Promise<any[]>` discards typing; service returns untyped data into typed `User` consumers. Type as `Promise<User>`/`Promise<User[]>`.
+
+`src/services/cache.service.ts:13` -- **sug:** no eviction on overwrite -- `set` of existing key schedules a second timer; first still fires and deletes the new value early. Clear prior timer handle on overwrite.
+
+### Per-finding validation
+
+**Finding 2 severity raised to Critical.** The function name `sanitizeHtml` is the load-bearing issue: any future consumer reading the API surface will assume safety guarantees the implementation does not provide. Regex tag-stripping is listed in the OWASP XSS Filter Evasion Cheat Sheet as a known-broken pattern. If even one downstream `[innerHTML]` binding trusts this output, it is a direct XSS vector. The naming is the trap; rename or replace.
+
+**Finding 3 split into two.** 3a: return-type mismatch (fix: change `parseId` return to `string|null`). 3b: invariant leak via `User.id: string`. The fixes are independent.
+
+**Finding 4 severity adjustment.** The stale-entry leak (4a) is Important, not Suggestion -- under realistic conditions (backgrounded tabs throttle `setTimeout` to >=1s, mobile Safari to minutes) the Map grows unboundedly with stale data that `get()` refuses to return but refuses to evict. Zone issue (4b) remains Suggestion.
+
+### Cross-Cutting Patterns
+
+Findings 1, 2, and 3 share a root cause: the boundary between untrusted string input and typed/structured consumers is not enforced. `DataService` accepts raw strings, `sanitizeHtml` pretends to enforce a boundary it does not, and `parseId` enforces a boundary whose result is discarded by the type system. A single input-validation layer (`zod`/`io-ts` schemas at service entry, `HttpParams` for URL construction, DOMPurify for HTML) would close all three.
+
+Findings 4a and the overwrite-timer finding share a separate root cause: ad-hoc `setTimeout` lifecycle without handle tracking. A `Map<string, {value, expires, timerId}>` with `clearTimeout` on overwrite/delete fixes both.
+
+**Missed surface:** components consuming `DataService` likely bind results without `User`-typing through `Promise<any>`; worth checking whether `[innerHTML]` is used anywhere alongside `sanitizeHtml`.
+
+**Verdict scope:** scope: api-correctness

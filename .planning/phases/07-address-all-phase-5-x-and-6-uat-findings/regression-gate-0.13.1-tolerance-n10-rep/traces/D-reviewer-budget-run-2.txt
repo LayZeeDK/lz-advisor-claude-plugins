@@ -1,0 +1,35 @@
+No `<verify_request>` blocks present. Output below.
+
+---
+
+## Review Summary
+
+Reviewed: commit `cacfc02` -- 6 new files (`src/components/user-item.component.ts`, `src/components/user-list.component.ts`, `src/services/cache.service.ts`, `src/services/data.service.ts`, `src/types/api.ts`, `src/utils/validators.ts`)
+
+### Findings
+
+`src/services/cache.service.ts:12-27: imp: orphaned timers leak across overwrites and survive clear(). Store timer ID in entry; clearTimeout on set/delete/clear.`
+
+`src/services/data.service.ts:23-26: crit: unencoded query enables param injection. Use HttpParams or encodeURIComponent(query).`
+
+`src/utils/validators.ts:16-18: crit: sanitizeHtml strips only tags, lets attribute-context payloads through. Rename to stripTags or use DomSanitizer/DOMPurify; escape &lt;&gt;"' for attribute safety.`
+
+`src/utils/validators.ts:20-23: imp: parseId returns number but User.id is string -- type mismatch invites String(null)="null" bug. Align return type to string|null or change User.id to number.`
+
+Validation notes:
+
+Finding 1 confirmed Important. The orphaned-timer-after-clear case is the more dangerous variant -- a re-set on the same key post-clear will be silently deleted at the original deadline, producing nondeterministic cache misses. Fix requires storing the `ReturnType<typeof setTimeout>` handle alongside `value`/`expires` and clearing it in `set`, `delete`, and `clear`.
+
+Finding 2: severity revised from Important to Critical. Raw interpolation of caller-controlled `query` into a URL is a textbook injection surface; `&admin=true` or `#` truncation can reach server-side filter logic. Angular's `HttpParams` auto-encodes; preferred over manual `encodeURIComponent`.
+
+Finding 3: severity revised from Important to Critical. Function name `sanitizeHtml` is a security contract; callers will trust output in `[innerHTML]` or attribute bindings. The regex is also bypassable via malformed tags (`<img src=x onerror=alert(1)`) on incomplete input. Replace with Angular's `DomSanitizer.sanitize(SecurityContext.HTML, ...)` or DOMPurify; at minimum rename to `stripTags` to remove the security-guarantee implication.
+
+Finding 4 confirmed Suggestion, bordering on Important if `parseId` is wired to User-ID validation paths. The `String(null) === "null"` coercion bug is real and subtle -- worth flagging now before adoption spreads.
+
+### Cross-Cutting Patterns
+
+Findings 2 and 3 share a root cause: trusting raw string input at output boundaries (URL construction, HTML rendering) without delegating to framework-provided escaping primitives (`HttpParams`, `DomSanitizer`). Both libraries ship with Angular and should be the default. Findings 1 and 4 are independent: Finding 1 is a resource-lifecycle bug; Finding 4 is a type-contract drift between `types/api.ts` and `utils/validators.ts` that suggests no shared review of the domain model when validators were authored.
+
+**Missed surfaces (optional):** `data.service.ts` likely has sibling write methods (POST/PUT user) not in scope; verify they use `HttpClient` body serialization rather than URL interpolation for the same injection class.
+
+**Verdict scope:** scope: api-correctness

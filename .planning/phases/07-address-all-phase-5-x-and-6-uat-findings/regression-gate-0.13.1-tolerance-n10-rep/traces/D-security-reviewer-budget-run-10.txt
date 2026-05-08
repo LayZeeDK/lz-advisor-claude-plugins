@@ -1,0 +1,27 @@
+## Security Review Summary
+
+Reviewed: last commit (`93b97c3`) -- 6 new files: `src/services/data.service.ts`, `src/services/cache.service.ts`, `src/utils/validators.ts`, `src/components/user-item.component.ts`, `src/components/user-list.component.ts`, `src/types/api.ts`
+
+### Findings
+
+`src/services/data.service.ts:24: imp: [A03] raw `query` interpolated into URL; `&`/`#`/`=` inject extra params or fragments. Use `HttpParams` or `encodeURIComponent(query)`.`
+`src/services/data.service.ts:10,19: imp: [A03] unvalidated `id` interpolated into path enables traversal (`../admin`) on same origin. Validate `id` against `/^[A-Za-z0-9_-]+$/` and `encodeURIComponent`.`
+`src/utils/validators.ts:16-18: imp: [A04] `sanitizeHtml` regex strip misses `javascript:` URIs, encoded entities, and event-handler payloads -- false XSS guarantee. Delete and rely on Angular `DomSanitizer.sanitize(SecurityContext.HTML, ...)` or DOMPurify.`
+`src/services/cache.service.ts:18: sug: [A08] `entry.value as T` cast without runtime shape check; cross-caller key collision yields type confusion. Namespace keys per consumer or validate via Zod/io-ts before return.`
+`src/services/data.service.ts:14-16: sug: [A04] `createUser(data: any)` forwards untyped payload enabling mass-assignment. Define `CreateUserDto` interface + allowlist fields client-side before POST.`
+
+### Per-finding validation
+
+Validation of Finding 3: Severity confirmed Important but recategorized A04 (Insecure Design) over A03 -- the threat is a misleading security primitive callers will trust, not an injection sink itself. Not a false positive despite Angular's auto-escaping: the function's existence invites `[innerHTML]` use where Angular bypasses escaping unless `DomSanitizer` runs. Recommend deletion rather than hardening.
+
+Validation of Finding 5: Recategorized A03 -> A04. Mass-assignment is a design weakness on the client; actual injection lives server-side. Severity stays Suggestion since server is the authoritative validation boundary; client allowlist is defense-in-depth.
+
+### Threat Patterns
+
+Findings 1+2 share root cause: string-template URL construction without `HttpParams`/encoding -- a systemic pattern across `data.service.ts` that should be fixed library-wide, not per-method. Findings 3+5 chain: a consumer trusting `sanitizeHtml` (F3) to clean form input before passing to `createUser` (F5) gets neither client-side validation nor real sanitization, and the server receives attacker-shaped payloads that may later render via `[innerHTML]` triggering stored XSS. Finding 4 is independent but amplifies F5 if cached user objects are returned to security-decision code paths.
+
+### Missed surfaces (optional)
+
+`user-item`/`user-list` components not reviewed -- check for `[innerHTML]`, `bypassSecurityTrust*` calls, and `Router.navigateByUrl` with user-controlled fragments.
+
+**Verdict scope:** scope: security-threats

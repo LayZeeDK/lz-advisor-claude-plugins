@@ -1,0 +1,37 @@
+## Security Review Summary
+
+Reviewed: commit d06065e -- 6 new TypeScript files (`src/services/data.service.ts`, `src/services/cache.service.ts`, `src/components/user-item.component.ts`, `src/components/user-list.component.ts`, `src/types/api.ts`, `src/utils/validators.ts`)
+
+### Findings
+
+`src/services/data.service.ts:11-13,20-22: crit: [A03] URL path injection via unencoded `id` in `getUser`/`deleteUser` enables endpoint traversal (`1/../admin`). Wrap with `encodeURIComponent(id)`.`
+
+`src/services/data.service.ts:24-27: imp: [A03] Query injection via unencoded `query` allows extra param smuggling (`x&role=admin`). Use `HttpParams` or `encodeURIComponent`.`
+
+`src/utils/validators.ts:16-18: imp: [A03] Regex `sanitizeHtml` bypassed by nested/entity-encoded payloads (`<<script>script>`). Replace with DOMPurify or Angular `DomSanitizer`.`
+
+`src/services/cache.service.ts:17-21: sug: [A08] Blind `as T` cast in `get<T>` masks shape drift across callers sharing keys. Add runtime validator (zod/io-ts) at retrieval.`
+
+`src/services/data.service.ts:15-17: imp: [A04] `createUser(data: any)` forwards unvalidated payload; no schema gate. Define `CreateUserDto` + validate (zod) before `http.post`.`
+
+`src/services/data.service.ts:0: sug: [A05] `baseUrl` source unverified -- if env-derived from untrusted config, SSRF-adjacent risk. Verify baseUrl is build-time constant before committing.`
+
+`src/services/data.service.ts:11-27: sug: [A09] No error handling/logging on HTTP failures; silent rejection masks abuse signals. Add `catchError` with structured logging.`
+
+### Per-finding validation
+
+Validation of Finding 1: Confirmed Critical. Path traversal in REST URL composition is directly exploitable when `id` originates from route params or form input; `encodeURIComponent` percent-encodes `/`, `?`, `#`, `..` segments. OWASP A03 mapping correct.
+
+Validation of Finding 3: Confirmed Important. Regex-based tag stripping is a documented anti-pattern (OWASP XSS Prevention Cheat Sheet). Severity stays Important rather than Critical because Angular's default interpolation auto-escapes; the function is dangerous only when output is bound via `[innerHTML]` -- verify caller before escalating.
+
+Validation of Finding 5: Revised from Important to Important under [A04] Insecure Design rather than [A03]. The `any` typing is a design-level trust gap; injection only manifests if the backend mishandles. Validation at the boundary is the design fix.
+
+### Threat Patterns
+
+Findings 1+4 chain: an attacker-controlled `id` like `"admin"` traverses to `/users/admin`, response cached under attacker-influenced key; subsequent `get<User>` returns admin payload cast as `User` with no shape check, propagating privileged data into UI. Findings 2+5 chain: unencoded `query` reflects attacker params to backend, while `createUser(any)` permits round-tripping the same untrusted shape -- shared root cause is absent input contract at the service boundary. Finding 3 is independent but compounds if sanitized output feeds `[innerHTML]` rendering of cached (Finding 4) responses.
+
+### Missed surfaces (optional)
+
+Adjacent: Angular component templates not reviewed -- check for `[innerHTML]`, `bypassSecurityTrust*` calls, and `Renderer2.setAttribute` sinks consuming these service outputs.
+
+**Verdict scope:** scope: security-threats

@@ -1,0 +1,27 @@
+## Security Review Summary
+
+Reviewed: commit `585e275` -- 6 files added (`src/components/user-item.component.ts`, `src/components/user-list.component.ts`, `src/services/cache.service.ts`, `src/services/data.service.ts`, `src/types/api.ts`, `src/utils/validators.ts`)
+
+### Findings
+
+`src/services/data.service.ts:23-25: imp: [A03] `query` interpolated into URL without `encodeURIComponent`; attacker injects `&role=admin` to pivot params. Use HttpParams or encodeURIComponent(query).`
+`src/services/data.service.ts:10-12,19-21: imp: [A01] `id` path-interpolated unsanitized; `../admin` traverses to unintended endpoints, IDOR on deleteUser. Validate via `parseId` + encodeURIComponent.`
+`src/services/data.service.ts:1-27: imp: [A07] all four HTTP methods omit Authorization header; no HttpInterceptor wired. Add auth interceptor providing bearer token; reject calls without session.`
+`src/utils/validators.ts:16-18: imp: [A03] `sanitizeHtml` strips tags only; leaves `javascript:` URIs + event-handler payloads intact, misleading future consumers. Replace with DOMPurify or Angular `DomSanitizer.sanitize(SecurityContext.HTML, ...)`; or rename `stripTags` to remove false guarantee.`
+`src/utils/validators.ts:2: sug: [A04] `URL_RE` `(?:[a-z0-9-]+\.)+` nested quantifier risks ReDoS on long dot-less hosts. Anchor-bound + cap input length pre-test, or rewrite with `URL` constructor.`
+
+### Per-finding validation
+
+Validation of Finding 3: Severity holds at Important rather than Critical. Unauthenticated state-mutating calls (`createUser`, `deleteUser`) are exploitable only if the backend itself fails to enforce auth; if backend rejects unauthenticated requests with 401, client-side absence is a functional bug not a vulnerability. Treat as Important pending backend posture confirmation. Unresolved hedge: backend auth enforcement (unverified). Verify backend rejects unauthenticated mutations before downgrading.
+
+Validation of Finding 4: Severity holds at Important despite Angular auto-escaping. Angular's `{{ }}` interpolation and property bindings auto-escape, so within this component tree the output is safe. The risk is forward-looking: the misleading name invites misuse in `[innerHTML]`, `bypassSecurityTrustHtml`, or SSR contexts where escaping does not apply. Rename or replace to prevent latent XSS when reused.
+
+### Threat Patterns
+
+Findings 1 + 2 + 3 chain: unauthenticated `deleteUser(id)` plus path-interpolation traversal yields an unauthenticated cross-tenant deletion path if any caller forwards URL-segment-bearing input; the missing auth interceptor removes the last gate. Finding 4 is independent but compounds with Finding 1 if query results render via a future `[innerHTML]` binding trusting `sanitizeHtml`. Finding 5 is isolated DoS surface.
+
+### Missed surfaces (optional)
+
+`CacheService` stores unbounded entries with per-entry `setTimeout`; large key spaces enable memory-exhaustion DoS and timer leaks -- not in scoped findings.
+
+**Verdict scope:** scope: security-threats

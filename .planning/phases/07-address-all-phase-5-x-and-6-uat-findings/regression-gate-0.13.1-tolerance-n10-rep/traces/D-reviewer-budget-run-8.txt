@@ -1,0 +1,41 @@
+## Review Summary
+
+Reviewed: commit `6cbc88f` -- 6 new files (`src/components/user-item.component.ts`, `src/components/user-list.component.ts`, `src/services/cache.service.ts`, `src/services/data.service.ts`, `src/types/api.ts`, `src/utils/validators.ts`)
+
+### Findings
+
+`src/services/data.service.ts:11,24: crit: unencoded `id` and `query` interpolation enables path traversal and parameter injection. Wrap both with `encodeURIComponent`.`
+
+`src/services/cache.service.ts:14-15: imp: orphaned timer evicts refreshed entry early on repeat `set()`. Store handle in parallel Map; `clearTimeout` before re-registering.`
+
+`src/utils/validators.ts:16-18: imp: `sanitizeHtml` strips tags only; `javascript:` URIs and event-handler payloads survive. Rename to `stripTags` or delegate to DOMPurify / Angular `DomSanitizer`.`
+
+`src/services/data.service.ts:10,15,19,23: sug: `any` defeats checker despite existing `User` / `ApiResponse<T>` types. Type to `Promise<User>`, `Promise<User[]>`, `CreateUserDto`.`
+
+`src/utils/validators.ts:20-22: sug: `parseId("1.5")` returns 1.5; floats leak through. Add `Number.isInteger(n)` guard.`
+
+`src/services/cache.service.ts: imp: lazy expiry check missing on `get()` -- expired entries returned between TTL and timer fire if event loop is stalled. Compare `Date.now()` against `expires` in `get()`.`
+
+`src/services/data.service.ts: imp: `firstValueFrom` without takeUntil/destroy means in-flight requests outlive component teardown. Acceptable for service-level fetches but verify no subscription leaks at component layer.`
+
+`src/components/user-list, user-item: q: do components call `sanitizeHtml` output into `[innerHTML]` bindings? If yes, finding 3 escalates to crit.`
+
+### Per-finding validation
+
+Validation of Finding 1: Confirmed and escalated to Critical. Path-segment injection in `getUser` is worse than the query-param case because `/users/../admin` resolves server-side to a different resource. Both sites need `encodeURIComponent`; the query-param case alone would be Important, but the path traversal lifts the pair to Critical.
+
+Validation of Finding 2: Confirmed Important. Concrete trigger: any debounced search box or refresh-on-focus pattern that calls `cache.set(key, ...)` twice within the first TTL window evicts the refreshed value early. Fix is mechanical -- store `Map<string, ReturnType<typeof setTimeout>>`, `clearTimeout` prior handle in `set()` and `delete()`.
+
+Validation of Finding 3: Confirmed Important; escalation to Critical depends on caller context (see Finding 8). The regex `/<[^>]*>/g` also fails on malformed input like `<img src=x onerror=alert(1)` (no closing `>`) -- the entire string survives untouched. Rename is the cheap fix; proper sanitization requires DOMPurify or `DomSanitizer.bypassSecurityTrustHtml` discipline.
+
+Validation of Finding 5: Confirmed Suggestion. Also flag: `Number("  1  ")` returns 1 (whitespace tolerated), `Number("")` returns 0 (filtered by `> 0`), `Number("0x10")` returns 16. If IDs are decimal integers only, use `/^[1-9]\d*$/.test(raw)` then `Number(raw)`.
+
+### Cross-Cutting Patterns
+
+Findings 1 and 3 share a root cause: untrusted-string handling without canonical encoding/sanitization at the boundary. Both rely on ad-hoc string manipulation where a platform primitive exists (`encodeURIComponent`, DOMPurify). Findings 2 and 6 share a root cause in `CacheService`: TTL state is split across the Map entry and an uncoordinated timer, so the two can disagree -- a single source of truth (lazy expiry on `get()`, with the timer as opportunistic cleanup) eliminates both bugs. Finding 4 is independent but compounds Finding 1: typed payloads would not have prevented the injection but would surface mis-shaped query objects at compile time, nudging callers toward `HttpParams` (which encodes automatically).
+
+### Missed surfaces (optional)
+
+Verify `user-list.component` and `user-item.component` for `[innerHTML]` bindings consuming `sanitizeHtml` output, and for `HttpParams` vs string-concat usage at call sites of `DataService.listUsers`.
+
+**Verdict scope:** scope: api-correctness

@@ -1,0 +1,33 @@
+No `<verify_request>` blocks present. Rendering final output.
+
+---
+
+## Review Summary
+
+Reviewed: commit `715d79b` -- 6 new files (`src/components/`, `src/services/`, `src/types/`, `src/utils/`)
+
+### Findings
+
+`src/services/cache.service.ts:13-14: imp: stale timer deletes refreshed entry. Track timer per key in Map; clearTimeout before setTimeout on overwrite.`
+
+`src/services/data.service.ts:24: crit: unencoded query param enables param injection and request truncation on `&`/`=`/`#`. Wrap with `encodeURIComponent(query)`. Severity raised from Important: untrusted UI input flowing to a query string is a standard injection surface, not an edge case.`
+
+`src/services/data.service.ts:11,20: imp: unencoded path segment allows `/` traversal to sibling endpoints. Apply `encodeURIComponent(id)` in both `getUser` and `deleteUser`; consider regex/whitelist guard at boundary.`
+
+`src/utils/validators.ts:16-18: crit: `sanitizeHtml` name implies XSS-safety but regex misses unclosed tags, quoted `>`, comments, and entity-encoded payloads. Replace with DOMPurify or rename to `stripWellFormedTags` to drop the security implication. Severity raised from Important: misleading security primitive is worse than none -- callers will trust it.`
+
+`src/utils/validators.ts:20-22 vs src/types/api.ts:2: imp: `parseId` returns `number` while `User.id` is `string`; round-trip via `String(n)` loses leading zeros/precision >2^53. Align contract: either return validated `string` or change `User.id` to `number`.`
+
+`src/services/data.service.ts:7,11,24: sug: `Promise<any[]>` and `Promise<any>` defeat the `User` interface that exists in `api.ts`. Type as `Promise<User>` / `Promise<User[]>`.`
+
+`src/services/cache.service.ts: imp: timer reference leaks prevent GC of `CacheService` in test teardown and short-lived injectors. Add `ngOnDestroy` clearing all pending timers.`
+
+### Cross-Cutting Patterns
+
+Findings 2, 3, and 6 share a root cause: `DataService` treats string inputs as pre-trusted and pre-typed. A single boundary layer (typed request builder using `HttpParams` for queries + `encodeURIComponent` for path segments + `User`-typed responses) eliminates all three. Findings 1 and the timer-leak observation share a root cause: `CacheService` lacks lifecycle ownership of its timers -- both fix together with a `Map<string, ReturnType<typeof setTimeout>>`. Finding 4 stands alone as a misleading-API-name issue; finding 5 is a domain-model inconsistency independent of the rest.
+
+### Missed surfaces (optional)
+
+Components were listed in scope but not packaged; if either component calls `sanitizeHtml` and binds via `[innerHTML]`, finding 4 escalates to Critical at the call site.
+
+**Verdict scope:** scope: api-correctness
