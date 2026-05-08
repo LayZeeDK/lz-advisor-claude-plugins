@@ -1,0 +1,1 @@
+/lz-advisor.review Review the Compodoc + Storybook integration commits I just made on this branch (uat-replay-0.13.1). Focus on API correctness, code quality, and adherence to the canonical Storybook + Compodoc + Angular signal patterns. Write findings to @plans/review-report.md.

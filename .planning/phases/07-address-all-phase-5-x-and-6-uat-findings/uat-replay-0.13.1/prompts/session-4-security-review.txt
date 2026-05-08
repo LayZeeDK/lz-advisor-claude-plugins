@@ -1,0 +1,1 @@
+/lz-advisor.security-review Security review the Compodoc + Storybook integration commits I just made on this branch (uat-replay-0.13.1). Focus on supply-chain risks, dependency vulnerabilities, runtime injection patterns, and any documentation-generation security concerns. Write findings to @plans/security-review-report.md.

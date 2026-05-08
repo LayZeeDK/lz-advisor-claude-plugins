@@ -1,0 +1,1 @@
+/lz-advisor.execute Read @plans/fix-review-findings.plan.md and execute the plan end-to-end. Resolve every review finding documented in the plan and commit the fixes.
