@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: executing
-stopped_at: Phase 7 context gathered
-last_updated: "2026-05-06T13:43:45.696Z"
-last_activity: 2026-05-06 -- Phase 07 execution started
+status: ready_to_plan_phase_8
+stopped_at: Phase 7 verification complete (passed_with_residual_on_0_13_1); Phase 8 entry added to ROADMAP.md
+last_updated: "2026-05-08T11:30:00Z"
+last_activity: 2026-05-08 -- Phase 07 verification close-out (E.1 + E.4 + E.3 + closure_amendment_2026_05_08_uat_replay_0_13_1); plugin 0.13.0 -> 0.13.1 PATCH bump; 3 documented residuals carry to Phase 8
 progress:
-  total_phases: 13
-  completed_phases: 11
-  total_plans: 66
-  completed_plans: 61
-  percent: 92
+  total_phases: 14
+  completed_phases: 13
+  total_plans: 83
+  completed_plans: 78
+  percent: 93
 ---
 
 # Project State
@@ -21,16 +21,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-10)
 
 **Core value:** Near-Opus intelligence at Sonnet cost for coding tasks, through strategic advisor consultation at high-leverage moments
-**Current focus:** Phase 07 — address-all-phase-5-x-and-6-uat-findings
+**Current focus:** Phase 08 — ready to plan (Phase 7 sealed `passed_with_residual_on_0_13_1` 2026-05-08)
 
 ## Current Position
 
-Phase: 07 (address-all-phase-5-x-and-6-uat-findings) — EXECUTING
-Plan: 1 of 17
-Status: Executing Phase 07
-Last activity: 2026-05-06 -- Phase 07 execution started
+Phase: 07 (address-all-phase-5-x-and-6-uat-findings) — VERIFICATION COMPLETE (status: passed_with_residual_on_0_13_1 on plugin 0.13.1; 17 of 17 plans complete; 07-VERIFICATION.md closure_amendment_2026_05_08_uat_replay_0_13_1 supersedes 2026-05-06 failure verdict via WR-01/02/03 mech fix + +10% smoke-gate tolerance + n=10 statistical gate (E.1) + E.4 representative-fixture diagnostic + E.3 8-session Compodoc UAT replay)
+Phase 8: NOT YET PLANNED — entry added to ROADMAP.md with goal + requirements + depends-on; 3 NEW residuals from Phase 7 closure (residual-wip-discipline-reversal P0; residual-shape-regression-parser P1; residual-pfv-outlier-cap P1) + carry-forward backlog (residual-advisor-fragment-grammar-not-binding-on-code-blocks P2; WR-04/05 P3; P8-03 / P8-12 / P8-18 P3; Class-2 Escalation Hook observability P3).
 
-Next: Plan the Phase 6 follow-up phase. Recommended entry: `/gsd-discuss-phase 7` to gather context for a phase that bundles the four 06-VERIFICATION.md amendment surfaces (trust-contract rewrite, ToolSearch-availability rule, Class 2-S taxonomy, scope-disambiguated provenance) WITH Phase 7 Findings A, B (B.1 + B.2), C, D. Alternative: `/gsd-add-phase` to add the phase first, then `/gsd-plan-milestone-gaps` to derive plans from the captured gaps.
+Next: `/gsd-plan-phase 8` to produce executable plans from the Phase 8 ROADMAP entry. Recommended bundling per closure amendment phase_8_worklist field: P0 wip-reversal as 1 plan; P1 + P1 parser fixes as 1 plan (both fixture-parser-layer changes verifiable via --from-trace replay against captured shape-regression traces in `traces/`); P2 advisor n>=3 as measurement plan + conditional structural plan; P3 items sequence by evidence weight.
+
+Last activity: 2026-05-08 -- Phase 07 verification close-out (E.1 statistical gate + E.4 fixture-design diagnostic + E.3 8-session UAT replay + closure_amendment_2026_05_08_uat_replay_0_13_1 + plugin 0.13.0 -> 0.13.1 PATCH bump)
 
 Progress: [##########] 100%
 
