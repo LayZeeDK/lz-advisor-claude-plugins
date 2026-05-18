@@ -1307,7 +1307,7 @@ Real-world surface produces materially cleaner output than canonical scratch (sh
 **carry_forward_phase_8_residuals_from_prior_amendments:**
 
 - **residual-advisor-fragment-grammar-not-binding-on-code-blocks** (from Plan 07-16 + closure_amendment_2026_05_06): advisor SD aggregate 155w / 100w cap on session-1-plan.jsonl; 3 of 9 items (3, 5, 7) over per-item outlier cap; items carry inline configuration code. n=1 fixture-grade FAIL; Phase 8 needs n>=3 across heterogeneous scenarios before declaring structural advisor redesign needed.
-- **WR-04/05 schema parity wave** (deferred from Plan 07-13 closure): mechanical 1-line edits each; bundle with any Phase 8 schema-touching plan.
+- **WR-04/05 schema parity wave** (pre_closed_on_main_2026_05_05 via commits `7f28903` + `5ea449f`; Phase 8 Plan 5 reconciliation confirmed zero remaining lexicon hits via `git grep -nF "Severity: High" plugins/lz-advisor/` and `git grep -nF "high|medium" plugins/lz-advisor/`).
 - **P8-03 / P8-12 / P8-18** (carry-forward from prior memories): Pre-Verified Contradiction Rule (P8-03); Cross-Skill Hedge Tracking (P8-12); Self-anchor through advisor narrative SD prose (P8-18).
 - **Class-2 Escalation Hook conditional firing observability** (from Plan 07-13 PARTIAL row): security-reviewer Class-2 emission against real prompts; needs designed trigger scenario.
 
@@ -1336,7 +1336,7 @@ Phase 7 closure: status `passed_with_residual_on_0_13_1` with 3 documented resid
 2. **residual-shape-regression-parser** (P1 -- closes 25% of canonical-scratch FAILs). Parser regex update; --from-trace replay against 5 captured shape-regression traces verifies fix.
 3. **residual-pfv-outlier-cap** (P1 -- closes 15-30% of canonical-scratch FAILs depending on whether D-reviewer also raised). Threshold update on D-security-reviewer-budget.sh; n=3 fresh re-runs.
 4. **residual-advisor-fragment-grammar-not-binding-on-code-blocks** (P2 -- needs n>=3 fixture-grade re-runs first; if confirmed, structural advisor redesign).
-5. **WR-04/05 schema parity** (P3 -- mechanical edits; bundle with any schema-touching plan).
+5. **WR-04/05 schema parity** (P3 -- PRE-CLOSED on main 2026-05-05 via commits `7f28903` + `5ea449f`. Phase 8 Plan 5 reconciles planning trail. No further work required.).
 6. **P8-03 / P8-12 / P8-18** (P3 -- carry-forward by evidence weight).
 7. **Class-2 Escalation Hook conditional firing observability** (P3 -- needs designed trigger scenario).
 
