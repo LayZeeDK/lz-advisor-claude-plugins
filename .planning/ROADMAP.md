@@ -251,7 +251,7 @@ Closure: 2026-05-08 `closure_amendment_2026_05_08_uat_replay_0_13_1` supersedes 
 **Plans:** 8 plans (7 firm + 1 conditional auto-extend; Plan 4 also conditional)
 
 Plans:
-- [ ] 08-01-wip-discipline-reversal-PLAN.md -- P0 wip-discipline reversal; remove rule from execute SKILL.md + path-d from E-fixture + GAP-G2 from REQUIREMENTS.md; atomic 5-surface 0.13.1 -> 0.14.0 MINOR
+- [x] 08-01-wip-discipline-reversal-PLAN.md -- P0 wip-discipline reversal; remove rule from execute SKILL.md + path-d from E-fixture + GAP-G2 from REQUIREMENTS.md; atomic 5-surface 0.13.1 -> 0.14.0 MINOR
 - [ ] 08-02-shape-pfv-parser-bundle-PLAN.md -- P1 SHAPE regex loosening + PFV outlier_soft_cap 66w -> 75w on D-security-reviewer-budget.sh; --from-trace replay + n=3 fresh re-runs
 - [ ] 08-03-advisor-fragment-grammar-measurement-PLAN.md -- P2 measurement; D-advisor-budget.sh parser extension with code-block flag; n=3 fixture-grade across Compodoc + feature + refactor; emits 08-MEASUREMENT.md with compound OR-gate decision
 - [ ] 08-03.5-advisor-fragment-grammar-measurement-extension-PLAN.md -- CONDITIONAL on Plan 3 = INCONCLUSIVE; n=2 more sessions (total n=5); re-evaluates gate

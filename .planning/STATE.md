@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: Ready to execute
-stopped_at: Phase 8 context gathered
-last_updated: "2026-05-18T21:10:18.368Z"
-last_activity: 2026-05-18 -- Phase 08 planning complete
+stopped_at: Completed 08-01-PLAN.md
+last_updated: "2026-05-18T21:29:30.498Z"
+last_activity: 2026-05-18
 progress:
   total_phases: 14
   completed_phases: 12
   total_plans: 74
-  completed_plans: 65
-  percent: 88
+  completed_plans: 66
+  percent: 89
 ---
 
 # Project State
@@ -21,16 +21,17 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-10)
 
 **Core value:** Near-Opus intelligence at Sonnet cost for coding tasks, through strategic advisor consultation at high-leverage moments
-**Current focus:** Phase 08 — ready to plan (Phase 7 sealed `passed_with_residual_on_0_13_1` 2026-05-08)
+**Current focus:** Phase 08 — Resolve Phase 7 sealing residuals + reverse wip-discipline + clear Phase 8 carry-forward backlog
 
 ## Current Position
 
-Phase: 07 (address-all-phase-5-x-and-6-uat-findings) — VERIFICATION COMPLETE (status: passed_with_residual_on_0_13_1 on plugin 0.13.1; 17 of 17 plans complete; 07-VERIFICATION.md closure_amendment_2026_05_08_uat_replay_0_13_1 supersedes 2026-05-06 failure verdict via WR-01/02/03 mech fix + +10% smoke-gate tolerance + n=10 statistical gate (E.1) + E.4 representative-fixture diagnostic + E.3 8-session Compodoc UAT replay)
+Phase: 08 (Resolve Phase 7 sealing residuals + reverse wip-discipline + clear Phase 8 carry-forward backlog) — EXECUTING
+Plan: 2 of 8
 Phase 8: NOT YET PLANNED — entry added to ROADMAP.md with goal + requirements + depends-on; 3 NEW residuals from Phase 7 closure (residual-wip-discipline-reversal P0; residual-shape-regression-parser P1; residual-pfv-outlier-cap P1) + carry-forward backlog (residual-advisor-fragment-grammar-not-binding-on-code-blocks P2; WR-04/05 P3; P8-03 / P8-12 / P8-18 P3; Class-2 Escalation Hook observability P3).
 
 Next: `/gsd-plan-phase 8` to produce executable plans from the Phase 8 ROADMAP entry. Recommended bundling per closure amendment phase_8_worklist field: P0 wip-reversal as 1 plan; P1 + P1 parser fixes as 1 plan (both fixture-parser-layer changes verifiable via --from-trace replay against captured shape-regression traces in `traces/`); P2 advisor n>=3 as measurement plan + conditional structural plan; P3 items sequence by evidence weight.
 
-Last activity: 2026-05-18 -- Phase 08 planning complete
+Last activity: 2026-05-18
 
 Progress: [##########] 100%
 
@@ -64,6 +65,7 @@ Progress: [##########] 100%
 
 *Updated after each plan completion*
 | Phase 05.6 P01 | 25min | 4 tasks | 10 files |
+| Phase 08 P01 | 10min | 3 tasks | 8 files |
 
 ## Accumulated Context
 
@@ -92,6 +94,8 @@ Recent decisions affecting current work:
 - [Phase 06]: Bifurcate Phase 7 Finding C across question-class axes -- security-review skill breaks the API-correctness chain (out of scope) but extends the security-clearance chain (imprimatur attached to commits with unverified API claims); add NEW fourth guard: scope-disambiguated provenance markers on verdicts
 - [Phase 06]: Add Phase 7 Finding D for word-budget regression on security-reviewer agent (~412w vs 300w cap, ~37% over) -- mirrors original DEF Word-budget regression pattern; cross-cutting concern that word-budget is currently soft-style not hard-rule layer in agent prompts
 - [Phase 06]: Phase 6 follow-up UAT cycle COMPLETE (5 of 5 manual UATs); ready for follow-up phase planning -- recommend /gsd-discuss-phase 7 to gather context for a phase bundling the 4 amendment surfaces with the 4 Phase 7 findings (A, B.1+B.2, C, D)
+- [Phase 08]: Cost-cliff allowance section in execute SKILL.md refactored (renamed to Pre-commit validation scope): long-running async validations now wait for completion rather than routing to wip: commits
+- [Phase 08]: Plugin atomically at 0.14.0 across all 5 surfaces; MINOR bump signals skill-behavior contract change (wip-discipline rule removed); per D-04 version cadence is not load-bearing in pre-release
 
 ### Pending Todos
 
@@ -121,6 +125,6 @@ Recent decisions affecting current work:
 
 ## Session Continuity
 
-Last session: 2026-05-18T20:17:15.748Z
-Stopped at: Phase 8 context gathered
+Last session: 2026-05-18T21:29:30.490Z
+Stopped at: Completed 08-01-PLAN.md
 Resume next: plan the follow-up phase. Recommend `/gsd-discuss-phase 7` to gather context, then `/gsd-plan-phase 7` to produce the executable plan that bundles the 4 amendment surfaces with the 4 Phase 7 findings.
