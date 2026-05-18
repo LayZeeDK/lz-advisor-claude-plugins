@@ -633,22 +633,25 @@ Phase 8 depends on the following local tools / runtimes. Probed availability:
 | A8 | Plan 4 escalation to per-section `<output_constraints>` XML mirrors security-reviewer.md lines 165-192 [VERIFIED by reading security-reviewer.md] | Plan 4 escalation path; Architecture Pattern 4 | None; the canonical XML is intact. The planner adapts it for advisor's single-section nature. |
 | A9 | `claude -p` invocation pattern for n=3 measurement uses sonnet + medium effort + --plugin-dir + --verbose [CITED: project CLAUDE.md Skill Verification convention; existing D-advisor-budget.sh line 49-52] | Plan 3 invocation pattern | None. |
 
-## Open Questions
+## Open Questions (RESOLVED)
 
 1. **Plan 5 reconciliation -- no-op or repurpose?**
    - What we know: WR-04 + WR-05 already landed (commits `7f28903` + `5ea449f`). Current line 317 reads `Severity: Important`; line 376 reads `severity="<critical|important|suggestion>"`. Zero remaining lexicon hits.
    - What's unclear: Whether the planner should ship Plan 5 as a verification-only audit step (recording that WR-04/05 are already closed) OR repurpose it (e.g., a CONTEXT.md / REQUIREMENTS.md / VERIFICATION.md reconciliation step removing stale deferral references).
    - Recommendation: Plan 5 becomes a SHORT planning-trail reconciliation plan (delete the WR-04/05 row from Phase 7 closure_amendment carry-forward; close the WR-04/05 deferral with a one-line note). Plan 5 ships ~5-10 lines of `.planning/` file edits (REQUIREMENTS.md if WR-04/05 had a row; STATE.md if Phase 7 closure is referenced; CONTEXT.md / DISCUSSION-LOG.md cleanup) and zero plugin surface edits. This preserves the 7-plan structure (D-01 locked) without manufacturing a fake mechanical edit.
+   - **RESOLVED:** Plan 5 repurposed as planning-trail reconciliation per user decision 2026-05-18; pre-closed-on-main WR-04/05 ack + 07-VERIFICATION.md closure_amendment update + 08-05-SUMMARY.md trail document.
 
 2. **Plan 3 scenario prompt composition for feature implementation + refactor scenarios.**
    - What we know: Compodoc prompt is locked per memory `project_compodoc_uat_initial_plan_prompt.md`.
    - What's unclear: The other two scenario prompts. CONTEXT.md suggests: feature impl = "add a debounced search input component to my Angular library"; refactor = "extract a shared validation utility from these 3 components".
    - Recommendation: Use the CONTEXT.md suggestions verbatim. Both are realistic and exercise different code-block density patterns (feature = new code with TypeScript interfaces / signal API; refactor = restructuring with `git mv` / barrel exports).
+   - **RESOLVED:** CONTEXT.md suggestions adopted -- Compodoc prompt verbatim from memory; feature impl = "debounced search input"; refactor = "extract validation utility".
 
 3. **Plan 4 escalation trigger ambiguity -- when does "structural binding fails" fire?**
    - What we know: CONTEXT D-02 says escalation triggers if "fragment-grammar template structurally can't bind on code blocks (e.g., per-item parser detects inline code that the fragment grammar consistently fails to wrap correctly across all 3 runs)."
    - What's unclear: What constitutes "consistently fails to wrap correctly" mechanically. Is it >=3/3 runs where ALL code-block items exceed per-item cap? >=2/3 runs?
    - Recommendation: Tie escalation to a binary 3/3 condition: if all 3 runs in `08-MEASUREMENT.md` show >=1 code-block item over per-item cap AND the code-block items collectively account for >=50% of the over-cap items, escalate. This is conservative; default to fragment-grammar template extension otherwise.
+   - **RESOLVED:** Plan 4 D-02 disposition rule encodes the trigger mechanically via D1/D2/both/neither branches; escalation path (per-section `<output_constraints>` XML) is the bound for "structural binding fails" without needing a separate runtime gate.
 
 ## Security Domain
 
