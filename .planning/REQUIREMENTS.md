@@ -147,10 +147,18 @@ Which phases cover which requirements. Updated during roadmap creation.
 | GAP-G1-firing | Phase 7 | Pending |
 | GAP-D-budget-empirical | Phase 7 | Pending |
 | FIND-B.2-format-scope | Phase 7 | Pending |
+| RES-WIP-DISCIPLINE-REVERSAL | Phase 8 | Pending |
+| RES-SHAPE-REGRESSION-PARSER | Phase 8 | Complete |
+| RES-PFV-OUTLIER-CAP | Phase 8 | Complete |
+| RES-ADVISOR-FRAGMENT-GRAMMAR | Phase 8 | Pending |
+| WR-04 | Phase 8 | Pending |
+| WR-05 | Phase 8 | Pending |
+| P8-18 | Phase 8 | Pending |
+| FIND-F-CLASS-2-OBSERVABILITY | Phase 8 | Pending |
 
 **Coverage:**
-- v1 requirements: 41 total
-- Mapped to phases: 41
+- v1 requirements: 49 total
+- Mapped to phases: 49
 - Unmapped: 0
 
 ---
