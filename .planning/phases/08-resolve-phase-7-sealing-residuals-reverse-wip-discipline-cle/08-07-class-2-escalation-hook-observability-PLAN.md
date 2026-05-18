@@ -3,7 +3,7 @@ phase: 08-resolve-phase-7-sealing-residuals-reverse-wip-discipline-cle
 plan: 07
 type: execute
 wave: 2
-depends_on: []
+depends_on: [01]
 files_modified:
   - .planning/phases/05.4-address-uat-findings-a-k/smoke-tests/F-class-2-escalation.sh
   - .planning/phases/08-resolve-phase-7-sealing-residuals-reverse-wip-discipline-cle/08-class-2-trigger-session.jsonl
@@ -129,6 +129,11 @@ Standard fixture pattern (from B-pv-validation.sh / D-security-reviewer-budget.s
     - .planning/phases/08-resolve-phase-7-sealing-residuals-reverse-wip-discipline-cle/08-RESEARCH.md (Plan 7 CVE candidates table + Plan 7 trigger scenario file structure)
     - .planning/phases/08-resolve-phase-7-sealing-residuals-reverse-wip-discipline-cle/08-CONTEXT.md (Plan 7 description + Claude's Discretion fixture extension vs standalone)
   </read_first>
+  <action>
+    This is a checkpoint:human-verify task. The operator (executor agent) performs the automated steps below to capture the trigger UAT trace. After the trace is captured, the executor presents the assertions for human spot-check approval before plan 7 closes.
+
+    All concrete steps (scratch repo seeding, claude -p invocation, trace assertions) are documented verbatim in <how-to-verify> below. The operator follows them as a script. The human approves once the trace shows at least assertion (a) PASS.
+  </action>
   <what-built>
     A scratch repo containing a deliberately-vulnerable package version + a source file calling the vulnerable function. The claude -p invocation runs /lz-advisor.security-review against this scenario. The expected agent behavior is to emit `<verify_request class="2">` (or class="2-S") because security-reviewer cannot resolve the CVE-class question from [Read, Glob] alone -- it needs WebSearch / WebFetch authority.
   </what-built>
