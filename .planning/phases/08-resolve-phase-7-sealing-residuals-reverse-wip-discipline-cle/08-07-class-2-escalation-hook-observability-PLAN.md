@@ -10,7 +10,7 @@ files_modified:
 autonomous: false
 requirements: [FIND-F-CLASS-2-OBSERVABILITY]
 requirements_addressed: [FIND-F-CLASS-2-OBSERVABILITY]
-target_version: 0.14.0
+target_version_at_merge: 0.14.0
 tags: [class-2-observability, cve-trigger, security-reviewer, uat, new-smoke-fixture]
 
 must_haves:

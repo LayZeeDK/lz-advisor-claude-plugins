@@ -11,7 +11,7 @@ files_modified:
 autonomous: true
 requirements: [WR-04, WR-05]
 requirements_addressed: [WR-04, WR-05]
-target_version: 0.14.0
+target_version_at_merge: 0.14.0
 tags: [planning-trail-reconciliation, doc-only, no-plugin-changes]
 
 must_haves:

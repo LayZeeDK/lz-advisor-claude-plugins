@@ -10,7 +10,7 @@ files_modified:
 autonomous: true
 requirements: [RES-SHAPE-REGRESSION-PARSER, RES-PFV-OUTLIER-CAP]
 requirements_addressed: [RES-SHAPE-REGRESSION-PARSER, RES-PFV-OUTLIER-CAP]
-target_version: 0.14.0
+target_version_at_merge: 0.14.0
 tags: [smoke-fixture-parser, regex-change, threshold-change, trace-replay]
 
 must_haves:

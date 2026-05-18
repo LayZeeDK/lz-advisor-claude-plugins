@@ -11,7 +11,7 @@ files_modified:
 autonomous: true
 requirements: [RES-ADVISOR-FRAGMENT-GRAMMAR]
 requirements_addressed: [RES-ADVISOR-FRAGMENT-GRAMMAR]
-target_version: 0.14.0
+target_version_at_merge: 0.14.0
 tags: [measurement, parser-extension, fixture-grade, compound-or-gate]
 
 must_haves:
