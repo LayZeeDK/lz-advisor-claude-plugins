@@ -237,7 +237,7 @@ Refactor prompt (CONTEXT.md suggested):
     Use Edit tool for surgical insertions; the existing per-item logging is preserved verbatim.
   </action>
   <verify>
-    <automated>bash -n .planning/phases/05.4-address-uat-findings-a-k/smoke-tests/D-advisor-budget.sh && grep -n "CODE_BLOCK_RE\|\\[ITEM\\] idx=" .planning/phases/05.4-address-uat-findings-a-k/smoke-tests/D-advisor-budget.sh</automated>
+    <automated>bash -n .planning/phases/05.4-address-uat-findings-a-k/smoke-tests/D-advisor-budget.sh && git grep -n "CODE_BLOCK_RE\|\\[ITEM\\] idx=" -- .planning/phases/05.4-address-uat-findings-a-k/smoke-tests/D-advisor-budget.sh</automated>
   </verify>
   <acceptance_criteria>
     - `bash -n D-advisor-budget.sh` exits 0
