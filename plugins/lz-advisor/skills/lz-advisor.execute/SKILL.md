@@ -191,99 +191,16 @@ N. **Validate** (or Verify, Test, Confirm)
    - Verify: <observable conditions>
 ```
 
-The `Run:` directive is an EXECUTOR-BOUND action, not a USER-FACING instruction. Execute the `<command>` as a Bash invocation BEFORE the commit that ships the related changes. The post-commit summary may surface the result to the user, but the verification itself runs pre-commit. Failure to execute the `Run:` directive before the commit is a verify-skip violation and triggers the cost-cliff allowance below.
+The `Run:` directive is an EXECUTOR-BOUND action, not a USER-FACING instruction. Execute the `<command>` as a Bash invocation BEFORE the commit that ships the related changes. The post-commit summary may surface the result to the user, but the verification itself runs pre-commit.
 
-### Cost-cliff allowance for long-running async validations
+### Pre-commit validation scope
 
 Cheap synchronous validations execute pre-commit:
 
 - `npm ls`, `npm install`, `git grep`, `git check-ignore`, `git status`, `lint`, `tsc --noEmit`, `tsc --noEmit --pretty`, `jest --bail`, focused test runs
 - Commands expected to complete in under 30 seconds on a warm dev machine
 
-Long-running async validations move to a `wip:` prefixed commit + `## Outstanding Verification` section in the commit body listing the pending checks:
-
-- `nx storybook`, `nx test`, `nx test-storybook`, `nx serve*`, `nx run-many` over many projects (more than 3)
-- Full test suites lasting longer than 30 seconds
-- Dev-server startup or watch-mode commands
-
-`wip:` commit body shape:
-
-```
-wip: <subject describing partial deliverable>
-
-<body explaining what is in and what is pending>
-
-## Outstanding Verification
-
-- Run: `nx storybook ngx-smart-components` -- verify Docs tab renders Compodoc descriptions
-- Run: `nx test-storybook ngx-smart-components` -- verify play-test assertions pass
-
-Verified: <any cheap-validation claim already executed>
-```
-
-### Subject-prefix discipline when Outstanding Verification is populated
-
-When a commit body contains a `## Outstanding Verification` section listing one or more pending `Run:` directives, the commit subject MUST use the `wip:` prefix (canonical form `wip:` lowercase; `chore(wip):` and `wip(<scope>):` also accepted by the smoke fixture regex `^wip(\(.+\))?:|^chore\(wip\):`). This rule applies to every commit -- the parent commit that introduced the Outstanding Verification, AND every follow-up commit that ships while ANY entry in the section remains pending.
-
-The rule's purpose is BRANCH-STATE preservation, not per-commit narrative. While even one Outstanding Verification entry remains pending, the branch is in a known-incomplete state regardless of whether your latest commit's own claim is verified. Shipping a non-`wip:` follow-up (e.g., `fix:` or `feat:`) while Outstanding Verification is populated masks the incomplete state from `git log --oneline` audit and from the `E-verify-before-commit.sh` smoke fixture's path-d gate.
-
-Carve-out: when a follow-up commit ONLY records additional `Verified: <claim>` trailers for items already listed in the parent's Outstanding Verification section -- with ZERO file changes (`git diff --stat HEAD~1..HEAD` shows no files modified) -- the subject MAY drop the `wip:` prefix and use `docs(wip-resolve):` or simply close the wip parent via `git commit --amend` after the verification runs. A trailer-only follow-up is a documentation update of the parent's verification status, not new substantive work, so it does not extend the wip state.
-
-Convert the `wip:` chain to a regular commit (or follow up with a non-wip commit body that omits the `## Outstanding Verification` section entirely) once ALL Outstanding Verification entries from the parent have been executed. The conversion records verification outcomes either as additional `Verified:` trailers OR as a new commit body section `## Verified Outstanding`.
-
-The motivation: branch-state semantics ensure that a reviewer auditing `git log --oneline` can immediately see "the last 3 commits are still `wip:`, so the long-running validation hasn't completed yet" without reading every commit body. Per-commit semantics break this audit by allowing a `fix:` or `feat:` to appear mid-chain while Outstanding Verification is pending, falsely signaling completion.
-
-### Worked example: wip subject + Outstanding Verification
-
-Three commit shapes in sequence, exercising the rule and its carve-out:
-
-**Shape 1 (CORRECT): Parent wip commit with Outstanding Verification.**
-
-```
-wip: set up Compodoc + Storybook integration with signal-based component API
-
-Implements pv-1 contract from the plan (`@storybook/angular@10.3.5` `compodoc: true` executor + signal-based label/clicked symbols on the demo component).
-
-## Outstanding Verification
-
-- Run: `nx build-storybook ngx-smart-components` -- verify documentation.json is generated and Storybook bundle includes it
-- Run: `nx reset` -- verify Nx cache invalidation does not break the Compodoc target
-
-Verified: @compodoc/compodoc 1.2.1 is present as a transitive dep (rg confirmed in node_modules)
-Verified: documentation.json added to .gitignore before first build (per advisor Critical block)
-```
-
-**Shape 2 (INCORRECT, per-commit reading): Follow-up fix while parent's Outstanding Verification is still pending.**
-
-```
-fix(storybook): add type declaration for generated documentation.json
-
-Adds a `documentation.d.ts` ambient declaration so the IDE stops flagging `import docJson from '../documentation.json'` as a TS2307 missing-module error.
-
-## Outstanding Verification
-
-- Run: `nx build-storybook ngx-smart-components` -- verify documentation.json is generated and Storybook bundle includes it
-- Run: `nx reset` -- verify Nx cache invalidation does not break the Compodoc target
-
-Verified: tsc --noEmit on .storybook/tsconfig.json exits clean after the .d.ts addition
-```
-
-This shape is the per-commit reading: the follow-up's OWN claim (the .d.ts addition) is verified, so the executor reasons "my subject can be `fix:`". The reading breaks branch-state semantics: a reviewer scanning `git log --oneline` sees `wip: ... / fix(storybook): ...` and infers the long-running validation completed between the two commits, when in fact `nx build-storybook` and `nx reset` are still pending. The `## Outstanding Verification` section is duplicated into the follow-up because the entries remain pending, but the subject lies about branch state.
-
-The CORRECT subject for this commit is `wip(storybook): add type declaration for generated documentation.json` (or `wip: ...`). The body's Outstanding Verification section stays populated until the long-running validations actually run.
-
-**Shape 3 (CORRECT carve-out): Trailer-only follow-up closes Outstanding Verification entries.**
-
-```
-docs(wip-resolve): record nx build-storybook + nx reset verifications
-
-Verified: nx build-storybook ngx-smart-components produced documentation.json (4.2 KB) and Storybook bundle includes the Compodoc JSON load
-Verified: nx reset cleared the Nx cache cleanly; subsequent build-storybook re-ran the Compodoc target without stale artifacts
-```
-
-This commit ships ZERO file changes (`git diff --stat HEAD~1..HEAD` returns no files); its sole content is two `Verified:` trailers closing out the parent's Outstanding Verification entries. The subject drops the `wip:` prefix per the carve-out: a trailer-only follow-up records the verification outcome but does not introduce new substantive work, so it does not extend the wip state. After this commit, a subsequent commit may use `fix:` or `feat:` because the Outstanding Verification entries have been documented as completed.
-
-Equivalent alternative: amend the parent wip commit via `git commit --amend` to add the trailers and rewrite the subject from `wip:` to `feat:` or `fix:`. The amend approach loses the verification-outcome timestamp but consolidates the wip chain into a single final commit. Both approaches are acceptable; pick based on whether downstream consumers (CI, code review tooling) prefer a clean linear history (amend) or an auditable verification trail (separate trailer-only commit).
+For long-running async validations (`nx storybook`, `nx test`, `nx test-storybook`, `nx serve*`, `nx run-many` over many projects, full test suites lasting longer than 30 seconds, dev-server startup or watch-mode commands), wait for completion before committing. Do not commit before the validation finishes; the commit must reflect the actual verified state. Record completed verifications via `Verified:` trailers.
 
 ### `Verified:` trailer convention
 
@@ -308,7 +225,7 @@ Silent revert of advisor `**Critical:**` content based on un-grounded internal r
 
 Before the final advisor consultation, make the deliverable durable.
 
-0. Apply Phase 3.5 verify-before-commit rules from `<verify_before_commit>` -- resolve hedge markers, execute plan Run: directives, route long-running validations to a `wip:` commit if necessary, and record verifications via `Verified:` trailers. The commit you make in step 3 must reflect either completed verifications or a `wip:` prefix with an Outstanding Verification body section.
+0. Apply Phase 3.5 verify-before-commit rules from `<verify_before_commit>` -- resolve hedge markers, execute plan Run: directives, and record verifications via `Verified:` trailers.
 1. Write all files -- ensure nothing remains only in memory or tool output
 2. Run tests if applicable and fix failures
 3. Commit the changes: stage specific files by name (never use `git add .` or
