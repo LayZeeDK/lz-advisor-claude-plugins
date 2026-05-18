@@ -156,9 +156,9 @@ D-02 compound OR-gate evaluation logic:
 - If INCONCLUSIVE: Plan 3.5 auto-extend to n=5 (D-03)
 ```
 
-Compodoc prompt (locked per memory `project_compodoc_uat_initial_plan_prompt.md`):
+Compodoc prompt (locked per memory `project_compodoc_uat_initial_plan_prompt.md`; use VERBATIM, do not paraphrase):
 ```
-/lz-advisor.plan Set up Compodoc with Storybook for my Angular library that uses signal-based input()/output() functions with JSDoc descriptions.
+/lz-advisor.plan Set up Compodoc with Storybook in this Nx Angular library. Add a sample input and a sample output to our component using the input() and output() signal functions. The Docs tab should render JSDoc descriptions for the component, the input, and the output.
 ```
 
 Feature implementation prompt (CONTEXT.md suggested):
@@ -337,7 +337,8 @@ Refactor prompt (CONTEXT.md suggested):
     ```
 
     Scenario prompts (verbatim from CONTEXT.md / memory):
-    - **Scenario 1 (Compodoc):** `/lz-advisor.plan Set up Compodoc with Storybook for my Angular library that uses signal-based input()/output() functions with JSDoc descriptions.`
+    - **Scenario 1 (Compodoc):** `/lz-advisor.plan Set up Compodoc with Storybook in this Nx Angular library. Add a sample input and a sample output to our component using the input() and output() signal functions. The Docs tab should render JSDoc descriptions for the component, the input, and the output.`
+      - **Use this prompt verbatim. Memory `project_compodoc_uat_initial_plan_prompt.md` locks it as canonical baseline; do not paraphrase.**
     - **Scenario 2 (Feature impl):** `/lz-advisor.plan Add a debounced search input component to my Angular library. It should use the signal-based control flow, accept placeholder text, and emit search events after 300ms debounce.`
     - **Scenario 3 (Refactor):** `/lz-advisor.plan Extract a shared validation utility from these 3 components: UserForm, AddressForm, PaymentForm. Each currently has duplicate email + phone + zipcode validators. Place the shared utility in libs/shared-validators.`
 
