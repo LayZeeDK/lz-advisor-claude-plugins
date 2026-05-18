@@ -256,6 +256,6 @@ Plans:
 - [ ] 08-03-advisor-fragment-grammar-measurement-PLAN.md -- P2 measurement; D-advisor-budget.sh parser extension with code-block flag; n=3 fixture-grade across Compodoc + feature + refactor; emits 08-MEASUREMENT.md with compound OR-gate decision
 - [ ] 08-03.5-advisor-fragment-grammar-measurement-extension-PLAN.md -- CONDITIONAL on Plan 3 = INCONCLUSIVE; n=2 more sessions (total n=5); re-evaluates gate
 - [ ] 08-04-advisor-fragment-grammar-structural-PLAN.md -- CONDITIONAL on Plan 3 (or 3.5) = FAIL; disposition-driven fix to advisor.md (D1 / D2 / both / escalation to per-section XML); atomic 5-surface PATCH or MINOR bump
-- [ ] 08-05-wr-04-05-reconciliation-trail-cleanup-PLAN.md -- P3 planning-trail reconciliation (WR-04/05 already pre-closed on main via commits 7f28903 + 5ea449f); zero plugin surface changes
+- [x] 08-05-wr-04-05-reconciliation-trail-cleanup-PLAN.md -- P3 planning-trail reconciliation (WR-04/05 already pre-closed on main via commits 7f28903 + 5ea449f); zero plugin surface changes
 - [ ] 08-06-advisor-narrative-sd-pv-extension-PLAN.md -- P3 P8-18; Rule 5b extension in context-packaging.md + new smoke fixture G-advisor-narrative-sd-pv.sh
 - [ ] 08-07-class-2-escalation-hook-observability-PLAN.md -- P3 FIND-F; designed CVE-2025-68154 trigger UAT + new smoke fixture F-class-2-escalation.sh

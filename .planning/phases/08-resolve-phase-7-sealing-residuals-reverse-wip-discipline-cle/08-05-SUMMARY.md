@@ -156,3 +156,15 @@ None.
 ## Threat Flags
 
 None. Doc-only reconciliation; no plugin surface modified; no new network endpoints, auth paths, file access patterns, or schema changes at trust boundaries introduced.
+
+## Self-Check: PASSED
+
+- File `.planning/phases/08-resolve-phase-7-sealing-residuals-reverse-wip-discipline-cle/08-05-SUMMARY.md` -- FOUND
+- File `.planning/REQUIREMENTS.md` (modified) -- FOUND
+- File `.planning/phases/07-address-all-phase-5-x-and-6-uat-findings/07-VERIFICATION.md` (modified) -- FOUND
+- Commit `43dd565` (Task 2: 07-VERIFICATION reclassification) -- FOUND
+- Commit `aa6220e` (Task 3: REQUIREMENTS + SUMMARY) -- FOUND
+- `git diff 43dd565^..HEAD -- plugins/lz-advisor/` -- 0 lines (zero plugin surface change confirmed)
+- `git grep -n "pre_closed_on_main_2026_05_05" .planning/phases/07-address-all-phase-5-x-and-6-uat-findings/07-VERIFICATION.md` -- 1 match (line 1310)
+- `git grep -n "PRE-CLOSED" .planning/phases/07-address-all-phase-5-x-and-6-uat-findings/07-VERIFICATION.md` -- 1 match (line 1339)
+- REQUIREMENTS.md WR-04 + WR-05 rows now `Complete` with pre-closure provenance
