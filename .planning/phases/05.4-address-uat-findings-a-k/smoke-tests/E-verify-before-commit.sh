@@ -7,9 +7,8 @@
 #   (b) Commit body has "Verified:" trailer AND JSONL trace has corresponding tool_use
 #   (c) Commit body has "Verified:" trailer AND JSONL trace shows Bash tool_use
 #       (combined with path b -- kept as a defensive alias)
-# Phase 8 Plan 01 reduced the contract: wip-discipline rule removed from plugin
-# per user directive rejecting wip: commits as workflow choice
-# (feedback_no_wip_commits.md, 2026-05-03). The negative-assertion path, the
+# Phase 8 Plan 01 reduced the contract per user directive
+# (feedback_no_wip_commits, 2026-05-03). The negative-assertion path, the
 # manual auditor replay flag, and the synthesized in-process scenario have been
 # removed in lockstep with that contract reduction. Only the three positive
 # paths a, b, c remain.
@@ -122,10 +121,10 @@ if [ "$TRAILER_PRESENT" -ge 1 ] && [ "$TOOL_USE_PRESENT" -ge 1 ]; then
   echo "[OK] Path (b) verify-trailer: commit body has $TRAILER_PRESENT Verified: trailer(s) AND $TOOL_USE_PRESENT Bash tool_use event(s)"
 fi
 
-# Path (c): same as path (b) under the post-Phase-8 contract (wip-discipline
-# removed). Retained as a defensive alias so the smoke fixture's TOTAL_PATHS
-# accounting is unaffected by the contract reduction. A future cleanup may
-# collapse paths (b) and (c) into one assertion.
+# Path (c): same as path (b) under the post-Phase-8 reduced contract.
+# Retained as a defensive alias so the smoke fixture's TOTAL_PATHS accounting
+# is unaffected by the contract reduction. A future cleanup may collapse
+# paths (b) and (c) into one assertion.
 PATH_C=0
 if [ "$TRAILER_PRESENT" -ge 1 ] && [ "$TOOL_USE_PRESENT" -ge 1 ]; then
   PATH_C=1
