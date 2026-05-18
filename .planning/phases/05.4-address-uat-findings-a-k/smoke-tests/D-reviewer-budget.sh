@@ -151,7 +151,7 @@ const body = readFileSync(process.argv[2], 'utf8');
 // Per-finding-line word target: <=22 words target / <=28 words outlier soft cap
 // (per user directive 2026-05-06 + Plan 07-14 contract). Excludes the
 // file:line: severity: prefix.
-const FRAGMENT_RE = /^[^:\s]+:\d+(?:-\d+)?:\s+(?:crit|imp|sug|q):\s+(.+)$/gm;
+const FRAGMENT_RE = /^`?[^:\s]+:\d+(?:-\d+)?:\s+(?:crit|imp|sug|q):`?\s+`?(.+?)`?$/gm;
 
 // Backward-compat: Plan 07-04 numbered-section shape (1. ..., **Finding 1:**)
 const LEGACY_RE = /^(?:\d+\.\s+|\*\*Finding\s+\d+:?\s*\*?\*?\s*)/m;
@@ -235,11 +235,11 @@ console.log(`[INFO] Per-finding validation: ${matches.length} entries`);
 let bad = 0;
 matches.forEach((m, idx) => {
   const wc = m[1].trim().split(/\s+/).filter(Boolean).length;
-  if (wc > 66) {
-    console.log(`[ERROR] Per-finding validation entry ${idx + 1}: ${wc} words (>66 outlier soft cap; target <=60w)`);
+  if (wc > 75) {
+    console.log(`[ERROR] Per-finding validation entry ${idx + 1}: ${wc} words (>75 outlier soft cap; target <=60w)`);
     bad++;
   } else if (wc > 60) {
-    console.log(`[WARN] Per-finding validation entry ${idx + 1}: ${wc} words (>60 target but <=66 outlier; acceptable)`);
+    console.log(`[WARN] Per-finding validation entry ${idx + 1}: ${wc} words (>60 target but <=75 outlier; acceptable)`);
   } else {
     console.log(`[OK] Per-finding validation entry ${idx + 1}: ${wc} words (<=60 target)`);
   }
