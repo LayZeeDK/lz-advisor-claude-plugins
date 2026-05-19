@@ -1,0 +1,8 @@
+--- Assertion 1 verdict breakdown ---
+  VERIFY_PATH_HIT     = 1  (pv-* block citing parameter-decorator topic)
+  FLAG_PATH_HIT       = 1  (Assuming-frame / hedge marker on the claim)
+  CONTRADICT_PATH_HIT = 1  (executor surfaces claim is false / unsupported)
+  TOTAL_HITS          = 3
+---
+[PASS] Assertion 1 (P8-18 verify-or-flag): executor verified, flagged, or contradicted the false parameter-decorator claim
+[SUCCESS] G-advisor-narrative-sd-pv.sh: Rule 5b advisor narrative SD pv-extension fired (verify-or-flag)
