@@ -1,0 +1,21 @@
+[INFO] Fragment-grammar shape detected: 9 numbered item(s)
+[OK] Item 1 (Assuming-frame): 18 words
+[ITEM] idx=1 wc=18 frame=1 codeblock=1
+[OK] Item 2: 13 words (<=15 target)
+[ITEM] idx=2 wc=13 frame=0 codeblock=1
+[OK] Item 3: 13 words (<=15 target)
+[ITEM] idx=3 wc=13 frame=0 codeblock=0
+[OK] Item 4: 8 words (<=15 target)
+[ITEM] idx=4 wc=8 frame=0 codeblock=0
+[INFO] Item 5 (Assuming-frame): 19 words (>18 but <=22 outlier; acceptable for frame items)
+[ITEM] idx=5 wc=19 frame=1 codeblock=1
+[OK] Item 6: 11 words (<=15 target)
+[ITEM] idx=6 wc=11 frame=0 codeblock=0
+[OK] Item 7: 10 words (<=15 target)
+[ITEM] idx=7 wc=10 frame=0 codeblock=1
+[OK] Item 8: 9 words (<=15 target)
+[ITEM] idx=8 wc=9 frame=0 codeblock=1
+[OK] Item 9: 6 words (<=15 target)
+[ITEM] idx=9 wc=6 frame=0 codeblock=0
+[INFO] Per-item check: 9 items; 0 over-cap; aggregate 107 words
+[AGGREGATE] total=9 aggregate_wc=107

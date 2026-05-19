@@ -1,0 +1,7 @@
+1. Use RxJS interop pattern: `toSignal(toObservable(query).pipe(debounceTime(300)), { initialValue: '' })` in constructor injection context.
+2. Add `effect(() => searchChange.emit(debouncedQuery()))` in constructor to wire debounced signal to `output<string>()`.
+3. Set `changeDetection: ChangeDetectionStrategy.OnPush` on `@Component` decorator; standard for signal-based library components.
+4. Create `src/lib/search-input/search-input.component.ts` as standalone with `query = signal('')`, `placeholder = input<string>('')`, `searchChange = output<string>()`.
+5. Template uses `@if (placeholder()) { ... }` and `[ngModel]="query()" (ngModelChange)="query.set($event)"`; import `FormsModule`.
+6. Export via `src/public-api.ts` barrel: `export * from './lib/search-input/search-input.component';`.
+7. Assuming ng-packagr build (unverified), do verify `peerDependencies` include `@angular/core` and `@angular/forms`. Verify ng-packagr before acting.
