@@ -150,7 +150,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | RES-WIP-DISCIPLINE-REVERSAL | Phase 8 | Pending |
 | RES-SHAPE-REGRESSION-PARSER | Phase 8 | Complete |
 | RES-PFV-OUTLIER-CAP | Phase 8 | Complete |
-| RES-ADVISOR-FRAGMENT-GRAMMAR | Phase 8 | Pending |
+| RES-ADVISOR-FRAGMENT-GRAMMAR | Phase 8 | Complete |
 | WR-04 | Phase 8 | Complete (pre-closed on main 2026-05-05 via commit 7f28903; reconciled in Phase 8 Plan 5) |
 | WR-05 | Phase 8 | Complete (pre-closed on main 2026-05-05 via commit 5ea449f; reconciled in Phase 8 Plan 5) |
 | P8-18 | Phase 8 | Pending |
