@@ -254,8 +254,8 @@ Plans:
 - [x] 08-01-wip-discipline-reversal-PLAN.md -- P0 wip-discipline reversal; remove rule from execute SKILL.md + path-d from E-fixture + GAP-G2 from REQUIREMENTS.md; atomic 5-surface 0.13.1 -> 0.14.0 MINOR
 - [x] 08-02-shape-pfv-parser-bundle-PLAN.md -- P1 SHAPE regex loosening + PFV outlier_soft_cap 66w -> 75w on D-security-reviewer-budget.sh; --from-trace replay + n=3 fresh re-runs
 - [x] 08-03-advisor-fragment-grammar-measurement-PLAN.md -- P2 measurement; D-advisor-budget.sh parser extension with code-block flag; n=3 fixture-grade across Compodoc + feature + refactor; emits 08-MEASUREMENT.md with compound OR-gate decision
-- [ ] 08-03.5-advisor-fragment-grammar-measurement-extension-PLAN.md -- CONDITIONAL on Plan 3 = INCONCLUSIVE; n=2 more sessions (total n=5); re-evaluates gate
+- [x] 08-03.5-advisor-fragment-grammar-measurement-extension-PLAN.md -- CONDITIONAL on Plan 3 = INCONCLUSIVE; n=2 more sessions (total n=5); re-evaluates gate
 - [ ] 08-04-advisor-fragment-grammar-structural-PLAN.md -- CONDITIONAL on Plan 3 (or 3.5) = FAIL; disposition-driven fix to advisor.md (D1 / D2 / both / escalation to per-section XML); atomic 5-surface PATCH or MINOR bump
 - [x] 08-05-wr-04-05-reconciliation-trail-cleanup-PLAN.md -- P3 planning-trail reconciliation (WR-04/05 already pre-closed on main via commits 7f28903 + 5ea449f); zero plugin surface changes
 - [x] 08-06-advisor-narrative-sd-pv-extension-PLAN.md -- P3 P8-18; Rule 5b extension in context-packaging.md + new smoke fixture G-advisor-narrative-sd-pv.sh (PASSED 3/3 paths on first live run, plugin 0.13.1)
-- [ ] 08-07-class-2-escalation-hook-observability-PLAN.md -- P3 FIND-F; designed CVE-2025-68154 trigger UAT + new smoke fixture F-class-2-escalation.sh
+- [x] 08-07-class-2-escalation-hook-observability-PLAN.md -- P3 FIND-F; designed CVE-2025-68154 trigger UAT + new smoke fixture F-class-2-escalation.sh

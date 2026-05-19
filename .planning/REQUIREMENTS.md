@@ -154,7 +154,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | WR-04 | Phase 8 | Complete (pre-closed on main 2026-05-05 via commit 7f28903; reconciled in Phase 8 Plan 5) |
 | WR-05 | Phase 8 | Complete (pre-closed on main 2026-05-05 via commit 5ea449f; reconciled in Phase 8 Plan 5) |
 | P8-18 | Phase 8 | Complete (Rule 5b extended with fifth sub-rule + G-advisor-narrative-sd-pv.sh PASSED 3/3 paths on plugin 0.13.1 -- Plan 08-06) |
-| FIND-F-CLASS-2-OBSERVABILITY | Phase 8 | Pending |
+| FIND-F-CLASS-2-OBSERVABILITY | Phase 8 | Complete |
 
 **Coverage:**
 - v1 requirements: 49 total

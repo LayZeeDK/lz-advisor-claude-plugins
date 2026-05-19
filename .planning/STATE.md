@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: Ready to execute
-stopped_at: Completed 08-06-PLAN.md
-last_updated: "2026-05-19T07:30:00.000Z"
+stopped_at: Completed 08-07-PLAN.md
+last_updated: "2026-05-19T07:24:39.178Z"
 last_activity: 2026-05-19
 progress:
   total_phases: 14
   completed_phases: 12
   total_plans: 74
-  completed_plans: 69
-  percent: 93
+  completed_plans: 71
+  percent: 96
 ---
 
 # Project State
@@ -26,7 +26,7 @@ See: .planning/PROJECT.md (updated 2026-04-10)
 ## Current Position
 
 Phase: 08 (Resolve Phase 7 sealing residuals + reverse wip-discipline + clear Phase 8 carry-forward backlog) — EXECUTING
-Plan: 6 of 8
+Plan: 7 of 8
 Phase 8: NOT YET PLANNED — entry added to ROADMAP.md with goal + requirements + depends-on; 3 NEW residuals from Phase 7 closure (residual-wip-discipline-reversal P0; residual-shape-regression-parser P1; residual-pfv-outlier-cap P1) + carry-forward backlog (residual-advisor-fragment-grammar-not-binding-on-code-blocks P2; WR-04/05 P3; P8-03 / P8-12 / P8-18 P3; Class-2 Escalation Hook observability P3).
 
 Next: `/gsd-plan-phase 8` to produce executable plans from the Phase 8 ROADMAP entry. Recommended bundling per closure amendment phase_8_worklist field: P0 wip-reversal as 1 plan; P1 + P1 parser fixes as 1 plan (both fixture-parser-layer changes verifiable via --from-trace replay against captured shape-regression traces in `traces/`); P2 advisor n>=3 as measurement plan + conditional structural plan; P3 items sequence by evidence weight.
@@ -70,6 +70,7 @@ Progress: [##########] 100%
 | Phase 08 P05 | 10min | 3 tasks | 3 files |
 | Phase 08 P03 | 30min | 2 tasks | 15 files |
 | Phase 08 P06 | 15min | 2 tasks | 3 files |
+| Phase 08 P07 | 30min | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -105,6 +106,7 @@ Recent decisions affecting current work:
 - [Phase 08]: Phase 8 Plan 5 repurposed to planning-trail reconciliation; WR-04/05 pre-closed on main 2026-05-05 via commits 7f28903 + 5ea449f; SUMMARY documents discovery + zero plugin diff
 - [Phase 08]: [Phase 08]: Plan 03 P2 measurement complete -- D-02 compound OR-gate verdict PASS on n=3 (Compodoc 80w / feature 85w / refactor 107w; mean 90.7w; 1/3 D1 < 2/3 threshold; 0/3 D2 > 110w). P2 residual residual-advisor-fragment-grammar-not-binding-on-code-blocks closes structurally; Plan 08-04 does NOT ship; Plan 08-03.5 does NOT spawn.
 - [Phase 08]: Plan 06 P8-18 closes empirically -- Rule 5b extended with fifth sub-rule (Advisor narrative SD self-anchor); new G-advisor-narrative-sd-pv.sh smoke fixture with 3-path verdict (verify/flag/contradict) PASSED on first live run on plugin 0.13.1 (3/3 paths fired against deliberately-false TypeScript 5 parameter decorator claim). No Phase 9 structural follow-up triggered.
+- [Phase 08]: Plan 8 Class-2 Hook observability: 3 trigger scenarios (systeminformation@5.27.13, cross-spawn@7.0.3, vendored-CVE) all show executor pre-emption resolves Class 2-S questions BEFORE consultation; Hook correctly designed as fallback path. F-class-2-escalation.sh fixture built for Phase 9 regression vehicle.
 
 ### Pending Todos
 
@@ -134,6 +136,6 @@ Recent decisions affecting current work:
 
 ## Session Continuity
 
-Last session: 2026-05-19T06:38:20.390Z
-Stopped at: Completed 08-03-PLAN.md
+Last session: 2026-05-19T07:24:39.172Z
+Stopped at: Completed 08-07-PLAN.md
 Resume next: plan the follow-up phase. Recommend `/gsd-discuss-phase 7` to gather context, then `/gsd-plan-phase 7` to produce the executable plan that bundles the 4 amendment surfaces with the 4 Phase 7 findings.
