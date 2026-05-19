@@ -147,7 +147,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | GAP-G1-firing | Phase 7 | Pending |
 | GAP-D-budget-empirical | Phase 7 | Pending |
 | FIND-B.2-format-scope | Phase 7 | Pending |
-| RES-WIP-DISCIPLINE-REVERSAL | Phase 8 | Pending |
+| RES-WIP-DISCIPLINE-REVERSAL | Phase 8 | Complete (Plan 08-01: removed wip-discipline contract from execute SKILL.md + E-fixture + GAP-G2 row; atomic 5-surface bump 0.13.1 -> 0.14.0) |
 | RES-SHAPE-REGRESSION-PARSER | Phase 8 | Complete |
 | RES-PFV-OUTLIER-CAP | Phase 8 | Complete |
 | RES-ADVISOR-FRAGMENT-GRAMMAR | Phase 8 | Complete |
