@@ -95,6 +95,18 @@ const ADVISOR_FRAGMENT_RE = /^\d+\.\s+(.+?)\.\s*$/gm;
 // lacks the trailing `.` of `before acting.` -- frame detection accepts both forms.
 const ASSUMING_FRAME_RE = /Assuming\s+.+?\s+\(unverified\),\s+do\s+.+?\.\s+Verify\s+.+?\s+before\s+acting\b/;
 
+// Code-block detection (Phase 8 Plan 03 measurement extension):
+// Per Plan 07-16 fixture-grade evidence (items 3, 5, 7 carried inline code), Phase 8 D-02
+// gate's D1 disjunct requires per-item code-block flag to attribute fix surface to fragment-grammar
+// template extension vs density example audit. CODE_BLOCK_RE matches:
+//   * Single-backtick inline code: `setCompodocJson(...)`
+//   * Triple-or-more backtick fence opener: ```ts (or ````)
+//   * <code> HTML tag (uncommon in advisor SD; included for completeness)
+//   * 4+ space indented continuation (rare in single-line items; included for completeness)
+// Bounded character classes only; no nested quantifiers on user-controlled input (input is
+// captured agent output, not network input).
+const CODE_BLOCK_RE = /`[^`]+`|`{3,}|<code[\s>]|\n {4,}/;
+
 const matches = [...body.matchAll(ADVISOR_FRAGMENT_RE)];
 
 if (matches.length === 0) {
@@ -113,6 +125,7 @@ matches.forEach((m, idx) => {
   const itemBody = m[1].trim();
   const wc = itemBody.split(/\s+/).filter(Boolean).length;
   const isFrame = ASSUMING_FRAME_RE.test(itemBody);
+  const hasCodeBlock = CODE_BLOCK_RE.test(itemBody);
   total++;
   aggregateWc += wc;
 
@@ -135,9 +148,19 @@ matches.forEach((m, idx) => {
       console.log(`[OK] Item ${idx + 1}: ${wc} words (<=15 target)`);
     }
   }
+
+  // Structured log emission for Phase 8 Plan 03 08-MEASUREMENT.md ingestion.
+  // Format: [ITEM] idx=N wc=W frame=0|1 codeblock=0|1
+  // Consumed by measurement-collator.mjs (ITEM_RE in collator parses per-item flags).
+  console.log(`[ITEM] idx=${idx + 1} wc=${wc} frame=${isFrame ? 1 : 0} codeblock=${hasCodeBlock ? 1 : 0}`);
 });
 
 console.log(`[INFO] Per-item check: ${total} items; ${bad} over-cap; aggregate ${aggregateWc} words`);
+
+// Structured aggregate log for Phase 8 Plan 03 collator ingestion.
+// Format: [AGGREGATE] total=N aggregate_wc=W
+console.log(`[AGGREGATE] total=${total} aggregate_wc=${aggregateWc}`);
+
 process.exit(bad === 0 ? 0 : 1);
 EOF
 
