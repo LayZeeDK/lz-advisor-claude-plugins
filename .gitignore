@@ -1,6 +1,10 @@
 /.claude/*.local.json
 /.claude/*.local.md
 
+# Ephemeral Claude Code session state (subagent worktrees, scratch scripts)
+/.claude/tmp/
+/.claude/worktrees/
+
 # Eval pipeline outputs (regenerated on re-run)
 evals/**/outputs/
 
