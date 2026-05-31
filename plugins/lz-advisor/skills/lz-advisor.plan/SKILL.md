@@ -15,7 +15,7 @@ description: >
   fix bugs, or run security audits -- those are handled by sibling
   skills lz-advisor.execute, lz-advisor.review, and
   lz-advisor.security-review respectively.
-version: 0.14.1
+version: 0.14.2
 allowed-tools: Agent(lz-advisor:advisor), Read, Glob, Bash(git:*), Write, WebSearch, WebFetch
 ---
 
@@ -187,13 +187,13 @@ This convention closes the silent-resolve sub-pattern observed in 7th UAT (plan-
 (Continue for all steps. Each step includes file paths and specific
 changes -- matching the granularity of a detailed implementation plan.)
 
-**Emit a change-surface-matched Validate step.** When the plan's Steps change a build, dev-server, lint, or other tool-runtime configuration (not only source code), add a final `**Validate**` step whose `Run:` command matches the dominant change surface, using the same surface-to-target mapping the execute skill applies in its `### Select the verify target by change surface (E.3)` rule: a build-config change validates with the build target (`nx build` / `nx build-storybook`); a dev-server config change validates with the dev-server target (`nx storybook` / `nx serve`); a source change validates with the unit-test target (`nx test`); a lint-config change validates with the lint target. Shape the step so the execute skill's E.2 plan-step rule executes it pre-commit:
+**Emit a change-surface-matched Validate step.** When the plan's Steps change a build, dev-server, lint, or other tool-runtime configuration (not only source code), add a final `**Validate**` step whose `Run:` command matches the dominant change surface, per the canonical surface-to-target mapping in `@${CLAUDE_PLUGIN_ROOT}/references/verify-target-selection.md`. Shape the step as the numbered **Validate** step below; its `Run:` command is an executor-bound action the executor runs pre-commit (before the commit that ships the related changes):
 
 N. **Validate**
    - Run: `<command matched to the change surface>`
    - Verify: <observable conditions, e.g., "Storybook ready! on the dev-server port" or "build completed successfully">
 
-A unit-test command does not validate a config change -- it exercises the source, not the changed config surface. When the plan names the right target here, the execute skill follows it (this is the empirically-proven mitigation path: a plan that named an explicit `Run: nx storybook` step made the executor verify the correct surface). Omit the Validate step only when the plan changes source code alone and an existing test target already covers it.
+A unit-test command does not validate a config change -- it exercises the source, not the changed config surface. Naming the right target here is the empirically-proven mitigation path: the executor then verifies the correct surface instead of defaulting to the unit-test target. Omit the Validate step only when the plan changes source code alone and an existing test target already covers it.
 
 ## Key Decisions
 
