@@ -1,5 +1,5 @@
 ---
-status: complete
+status: gaps_found
 phase: 08-resolve-phase-7-sealing-residuals-reverse-wip-discipline-cle
 kind: natural-uat
 scenario: compodoc-storybook-signals
@@ -15,6 +15,38 @@ source:
 started: 2026-05-31
 updated: 2026-05-31
 ---
+
+## AMENDMENT 2026-05-31 (supersedes "COMPLETE" conclusions below)
+
+After the 8 sessions were recorded as PASS, the user ran `nx storybook` (the dev-server) and
+found it **BROKEN** -- `SB_FRAMEWORK_ANGULAR_0001 (AngularLegacyBuildOptionsError)`. This
+amendment supersedes the overstated "complete / build-verified / browserTarget-removal-correct"
+conclusions in the body below.
+
+**Corrected findings:**
+
+1. **`nx storybook` dev-server is broken (GAP-DEVSERVER).** `@storybook/angular`'s
+   `checkForLegacyBuildOptions` throws when `options.angularBrowserTarget` is undefined; the
+   config uses the legacy `browserTarget`, not the modern `angularBrowserTarget`. The error
+   points to `npx storybook automigrate`.
+2. **CAUSATION CORRECTION (my earlier hypothesis was WRONG):** restoring the removed
+   `browserTarget` self-reference produces the IDENTICAL error, so the dev-server break is
+   **PRE-EXISTING** in the scaffold -- NOT caused by the Session-5 browserTarget removal.
+   `nx build-storybook` (build path) works; `nx storybook` (dev-server path) never did here.
+3. **The Docs-tab deliverable was only ever verified at the DATA layer** (`documentation.json`
+   contains the JSDoc), **never rendered** in a browser. No session ran `nx storybook`.
+4. **S9 sharpened, not softened:** the verify-target gap (plugin executor used `nx test` /
+   `build-storybook`; orchestrator "closed" S9 with `build-storybook` + `validate-docs-json`)
+   meant a broken primary deliverable went UNDETECTED across all 8 sessions. The "build-layer
+   PASS" / "S9 closed favorably" / "cold-start smoke pass" statements below are amended: they
+   verified the wrong target. Treat them as data-layer-only.
+5. **Classification:** S9, S10, and GAP-DEVSERVER are reclassified as **Phase 8 gaps** (not
+   Phase 9 / not backlog) -- surfaced by /gsd-verify-work 8 against the shipped 0.14.0 plugin.
+   See ROADMAP.md "Phase 8 gaps" + the Gaps section at the bottom of this file. GAP-DEVSERVER
+   is being fixed via a /lz-advisor plugin fix loop (which also serves as the S9 demonstration).
+
+The S1-S11 session records below remain accurate for what they measured; only the cross-cutting
+"deliverable works / UAT complete" conclusions are corrected by this amendment.
 
 ## Purpose
 
@@ -871,9 +903,23 @@ headline: |
 
 ## Gaps
 
-[no blocking gaps. All findings (S1-S11) are non-blocking Phase 9 candidates, prioritized above.
-The UAT goal -- exercise all 4 skills end-to-end on ngx-smart-components following the review +
-code-review reports -- is fully met. lz-advisor 0.14.0 validated as-shipped.]
+See the AMENDMENT block at the top of this file. The "[no blocking gaps]" claim that was here
+is RETRACTED -- the dev-server discovery (2026-05-31) revealed a broken primary deliverable that
+the verify-target gap (S9) hid. Three Phase 8 gaps now feed /gsd-execute-phase 8 --gaps-only:
+
+- **GAP-S9 (execute-skill verify-target match):** confirmed 2x (Sessions 5 + 7b). Executor
+  verified Storybook/Nx-config changes with `nx test` / no build instead of the affected target.
+  CONCRETE CONSEQUENCE: the broken `nx storybook` dev-server went undetected for all 8 sessions.
+  Fix: lz-advisor.execute Phase 3.5 guidance to match verify target to change surface.
+- **GAP-S10 (final-advisor maxTurns exhaustion):** recurrence of project_advisor_maxturns_exhaustion.
+  Fix: prompt-side trust-packed-context for the final review consult (NOT a maxTurns increase).
+- **GAP-DEVSERVER (ngx-smart-components `nx storybook` broken):** AngularLegacyBuildOptionsError;
+  Storybook-10 needs `angularBrowserTarget` / `npx storybook automigrate`. PRE-EXISTING (not the
+  browserTarget removal -- restore fails identically). Fix via /lz-advisor plugin fix loop,
+  verifying with `nx storybook` (doubles as the S9 demonstration). Docs-tab deliverable was only
+  verified at the data layer (documentation.json), never rendered.
+
+GAP-S9 and GAP-S10 require changes to the lz-advisor PLUGIN; GAP-DEVSERVER is in the target repo.
 
 ## Notes
 

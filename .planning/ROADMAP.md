@@ -260,16 +260,9 @@ Plans:
 - [x] 08-06-advisor-narrative-sd-pv-extension-PLAN.md -- P3 P8-18; Rule 5b extension in context-packaging.md + new smoke fixture G-advisor-narrative-sd-pv.sh (PASSED 3/3 paths on first live run, plugin 0.13.1)
 - [x] 08-07-class-2-escalation-hook-observability-PLAN.md -- P3 FIND-F; designed CVE-2025-68154 trigger UAT + new smoke fixture F-class-2-escalation.sh
 
-### Phase 9: lz-advisor execute-skill verify-target match + final-advisor trust-packed-context refinements (S9+S10)
+**Phase 8 gaps (surfaced by /gsd-verify-work 8 natural Compodoc UAT, 2026-05-31; see 08-NATURAL-UAT-COMPODOC.md):**
+- [ ] GAP-S9 -- execute-skill Phase 3.5 verify-target mismatch (confirmed 2x: Sessions 5 + 7b). Executor verified Storybook/Nx-config changes with `nx test` / no build instead of the affected target; CONCRETE CONSEQUENCE: a broken `nx storybook` dev-server (non-renderable Docs tab) went undetected through all 8 sessions because nobody ran the dev-server target. Fix: add execute-skill guidance to match the Phase 3.5 verify target to the change surface (Storybook/Nx-config change -> run the affected target / `nx graph`).
+- [ ] GAP-S10 -- final-advisor maxTurns exhaustion (recurrence of project_advisor_maxturns_exhaustion). Phase 5 final consult burned its 3-turn budget disk-hunting for a file already packed in the prompt; no numbered synthesis. Fix is prompt-side (strengthen "trust packed context" for the final review consult / pack post-change content), NOT a maxTurns increase.
+- [ ] GAP-DEVSERVER -- ngx-smart-components `nx storybook` broken (AngularLegacyBuildOptionsError; Storybook-10 needs `angularBrowserTarget` / `npx storybook automigrate`). PRE-EXISTING (not caused by the browserTarget removal -- restoring it fails identically). Fix via plugin fix loop (/lz-advisor.plan + /lz-advisor.execute), verifying with `nx storybook` -- doubles as the S9 demonstration vehicle. The Docs-tab deliverable was only ever verified at the data layer (documentation.json), never rendered.
 
-**Goal:** Close the two important non-blocking findings from the 2026-05-31 Compodoc natural UAT (full 8-session record in `.planning/phases/08-resolve-phase-7-sealing-residuals-reverse-wip-discipline-cle/08-NATURAL-UAT-COMPODOC.md`).
-
-- **S9 -- Phase 3.5 verify-target mismatch (confirmed 2-occurrence pattern, Sessions 5 + 7b):** the execute skill verifies Storybook/Nx-config changes with `nx test` or no build instead of the affected target (`build-storybook` / the new target / `nx graph`). All work was correct but unverified by the executor (orchestrator build-verified post-hoc). Fix: add execute-skill Phase 3.5 guidance to match the verify target to the change surface.
-- **S10 -- final-advisor maxTurns exhaustion regression:** the Phase 5 final consult burned its 3-turn budget disk-hunting for a file whose content was already packed in the prompt, producing no numbered synthesis (recurrence of `project_advisor_maxturns_exhaustion`). Fix is prompt-side (strengthen "trust packed context" for the final review consult / pack post-change content), NOT a maxTurns increase.
-
-**Requirements**: TBD (derive during /gsd-plan-phase 9)
-**Depends on:** Phase 8
-**Plans:** 0 plans
-
-Plans:
-- [ ] TBD (run /gsd-plan-phase 9 to break down)
+These reopen Phase 8 for gap-closure (08-08+ plans, /gsd-execute-phase 8 --gaps-only). Reclassified from backlog 999.1 / Phase 9 per user direction 2026-05-31.
