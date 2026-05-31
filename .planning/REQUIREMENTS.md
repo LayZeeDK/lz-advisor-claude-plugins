@@ -155,12 +155,15 @@ Which phases cover which requirements. Updated during roadmap creation.
 | WR-05 | Phase 8 | Complete (pre-closed on main 2026-05-05 via commit 5ea449f; reconciled in Phase 8 Plan 5) |
 | P8-18 | Phase 8 | Complete (Rule 5b extended with fifth sub-rule + G-advisor-narrative-sd-pv.sh PASSED 3/3 paths on plugin 0.13.1 -- Plan 08-06) |
 | FIND-F-CLASS-2-OBSERVABILITY | Phase 8 | Complete |
+| GAP-S9 | Phase 8 | Complete (gap-closure 2026-05-31, Plan 08-08: execute E.3 change-surface verify-target selection + tooling-freshness clause + plan change-surface-matched Validate-step rule; defense-in-depth, no version bump) |
+| GAP-S10 | Phase 8 | Complete (gap-closure 2026-05-31, Plan 08-09: pack post-change content into execute Phase 5 final consult + advisor no-disk-hunting clause, maxTurns stays 3; atomic 5-surface 0.14.0 -> 0.14.1) |
 
 **Coverage:**
 - v1 requirements: 49 total
 - Mapped to phases: 49
+- Phase 8 gap-closure sub-findings (UAT-surfaced 2026-05-31): GAP-S9, GAP-S10 (both Complete)
 - Unmapped: 0
 
 ---
 *Requirements defined: 2026-04-10*
-*Last updated: 2026-04-10 after roadmap creation*
+*Last updated: 2026-05-31 after Phase 8 gap-closure (GAP-S9 + GAP-S10)*

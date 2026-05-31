@@ -3,6 +3,7 @@ phase: 08-resolve-phase-7-sealing-residuals-reverse-wip-discipline-cle
 verified: 2026-05-19T22:55:00Z
 status: human_needed
 score: 8/8 requirement IDs accounted for; 7/8 fully closed; 1/8 closed empirically-with-finding (FIND-F-CLASS-2-OBSERVABILITY)
+gap_closure_status: passed
 overrides_applied: 1
 overrides:
   - must_have: "Plan 7: Trace contains `<verify_request class=\"2\">` (or `class=\"2-S\"`) block emitted by security-reviewer"
@@ -182,4 +183,63 @@ The override for FIND-F-CLASS-2-OBSERVABILITY assertion (a) is justified because
 ---
 
 _Verified: 2026-05-19T22:55:00Z_
+_Verifier: Claude (gsd-verifier)_
+
+---
+
+## Gap-Closure Amendment 2026-05-31 (GAP-S9 + GAP-S10)
+
+**Trigger:** `/gsd-execute-phase 8 --gaps-only` after the 2026-05-31 natural Compodoc UAT (`08-NATURAL-UAT-COMPODOC.md`) reopened Phase 8 with two PLUGIN gaps. Only two plans ran this cycle: 08-08 (GAP-S9) and 08-09 (GAP-S10). The original 2026-05-19 sealing above is preserved verbatim; this amendment verifies ONLY the gap-closure deltas.
+
+**Gap-closure status:** passed
+
+| Req | Plan | Must-haves verified | Verdict |
+|-----|------|---------------------|---------|
+| GAP-S9 | 08-08 | 4/4 | PASS |
+| GAP-S10 | 08-09 | 4/4 | PASS |
+
+### Evidence
+
+**GAP-S9 (08-08) -- change-surface verify-target selection.** All anchors confirmed on disk via `git grep`:
+
+| Must-have | Evidence (file:line + matched anchor) |
+|-----------|----------------------------------------|
+| execute contains "Select the verify target by change surface (E.3)" | `lz-advisor.execute/SKILL.md:196` -- real line-start `### Select the verify target by change surface (E.3)` heading (anchored `^###` match returns ONLY execute; plan references it inline) |
+| execute warns about stale build-orchestrator daemon/cache returning a false verification | `lz-advisor.execute/SKILL.md:211` -- "Build orchestrators with a persistent daemon or cache (Nx, Turborepo, Gradle, watch-mode bundlers) can return a result from a cached graph that predates your change ... A stale-daemon result is not a verification." |
+| plan contains "Emit a change-surface-matched Validate step" | `lz-advisor.plan/SKILL.md:190` -- `**Emit a change-surface-matched Validate step.**` prose rule, sits between `## Steps` and `## Key Decisions` |
+| key-link: plan Validate-step Run: shape ties to execute E.2; E.3 selects target before Pre-commit validation scope | plan:190 references the execute rule by name (`### Select the verify target by change surface (E.3)`) and shapes the step as `N. **Validate** / - Run: <command matched to the change surface>` matching execute E.2 (execute:184-194); plan:196 carries the proven-mitigation fragment "made the executor verify the correct surface". Ordering confirmed: E.3 heading at execute:196 precedes `### Pre-commit validation scope` at execute:213 (selection-before-execution). E.1 (execute:178) and E.2 (execute:184) headings intact -- no sealing regression. |
+
+Supporting anchors also confirmed: generalization clause "When in doubt, run the target whose executor reads the file you edited." (execute:205); negative worked-example "never invokes the Storybook executor" (execute:207). E.3 `^###` heading scoped to execute only (no over-broadcast to review/security-review).
+
+**GAP-S10 (08-09) -- pack-then-trust final consult + atomic 0.14.1 bump.** All anchors confirmed on disk:
+
+| Must-have | Evidence (file:line + matched anchor) |
+|-----------|----------------------------------------|
+| execute Phase 5 packs post-change content into a "Relevant File Contents" block | `lz-advisor.execute/SKILL.md:275` -- "Pack the post-change content the advisor would otherwise need to locate. Include the changed files' current contents (or the commit's `git diff` / `git show`) in a `## Relevant File Contents` block ..." Ordering: sits after "the advisor does not produce that shape" and before "This is a final check, not a request for approval" (execute:277). Scoped to execute only. Budget rationale "it can exhaust that budget on disk before synthesizing" present. |
+| advisor.md final-review clause contains "do not re-locate changed files on disk" | `advisor.md:135` -- "Final-review one-shot: ... Do not re-locate changed files on disk. ... the executor has already packaged what you need under `## Relevant File Contents` ... burns your 3-turn budget before you synthesize." Sits inside `## Context Trust Contract` (heading at :112), after the existing `One-shot:` worked example (:130), before `## Verification Process` (:137). Both layers reference the SAME `## Relevant File Contents` block + `*.component.ts` trap -- pack-then-trust wired on both sides. |
+| advisor.md frontmatter STILL maxTurns: 3 and effort: high (regression check) | `advisor.md:45` -> `maxTurns: 3`; `advisor.md:43` -> `effort: high`. `git grep "maxTurns:"` returns exactly one line (the frontmatter); the only other "effort:" hit is prose at :84 (D-advisor-budget.sh narrative), not a frontmatter mutation. NOT increased -- the locked prompt-side-not-budget-increase decision held. |
+| plugin.json "0.14.1" AND all 4 SKILL.md frontmatter == 0.14.1; no 0.14.0 residue | 5-surface sync confirmed, one hit each: `plugin.json:3` (`"version": "0.14.1"`), `execute:19`, `plan:18`, `review:19`, `security-review:19` (all `version: 0.14.1`). `git grep -F "0.14.0" -- plugins/lz-advisor/` returns exit 1 (no residue anywhere). plugin.json parses as valid JSON. |
+
+Task commits confirmed present in branch history: `c020a9d` (08-08 E.3), `8a233ee` (08-08 plan Validate rule), `e186bbb` (08-09 Phase 5 packing), `807a0a2` (08-09 advisor clause), `62ec907` (08-09 5-surface bump).
+
+### Requirement traceability
+
+Both gap-closure requirement IDs are accounted for and closed:
+
+| Req | REQUIREMENTS.md status | Gap-closure verdict |
+|-----|------------------------|---------------------|
+| GAP-S9 | Not yet listed as a separate row in REQUIREMENTS.md traceability table (the table predates the 2026-05-31 UAT reopening; GAP-S9 / GAP-S10 are UAT-surfaced sub-findings of Phase 8, sourced from `08-NATURAL-UAT-COMPODOC.md`, not from the original v1 requirement set) | CLOSED at contract layer (E.3 in execute + surface-matched Validate step in plan; 4/4 must-haves verified on disk) |
+| GAP-S10 | Same as above | CLOSED via pack-then-trust (Phase 5 packing + advisor final-review clause; maxTurns held at 3; 5-surface 0.14.1 sync; 4/4 must-haves verified on disk) |
+
+Note: GAP-S9 and GAP-S10 do not appear as discrete rows in the `## Traceability` table of REQUIREMENTS.md (lines 106-157), which tracks the original v1 requirement set plus the Phase 7/8 gap-closure IDs known at roadmap time. These two IDs are 2026-05-31 UAT-surfaced PLUGIN sub-findings of the already-sealed Phase 8, documented in `08-NATURAL-UAT-COMPODOC.md` and carried in the 08-08-PLAN.md / 08-09-PLAN.md `requirements:` frontmatter. Both plan SUMMARYs record `requirements-completed: [GAP-S9]` and `[GAP-S10]` respectively. RECOMMENDATION (non-blocking): add GAP-S9 / GAP-S10 rows to the REQUIREMENTS.md traceability table mapped to Phase 8 with status `Complete (gap-closure 2026-05-31; Plans 08-08 / 08-09)` so the milestone audit's 3-source cross-reference resolves them cleanly.
+
+### Notes
+
+- **Original sealing untouched.** The 2026-05-19 sealing verification (status: human_needed, 8/8 IDs, 1 override) is preserved above this amendment in full. No fields deleted; `gap_closure_status: passed` added to frontmatter alongside the existing `status` / `score` / `human_verification` fields.
+- **Superseded human_verification item #2.** The original frontmatter `human_verification` item #2 references "5-surface atomic version sync at 0.14.0". As of this gap-closure cycle the synced version is 0.14.1 (0.14.0 -> 0.14.1 PATCH bump in Plan 08-09). The marketplace-publication concern is unchanged and still out-of-scope per D-04; only the version string it references has advanced. No action required -- the item remains a contingent, out-of-scope future-user-decision watch item.
+- **advisor maxTurns regression check: PASS.** maxTurns stayed 3 and effort stayed high. GAP-S10 was fixed prompt-side (pack-then-trust), not via a budget increase, honoring the locked decision in MEMORY `feedback_advisor_fix_approach`.
+- **No new sealing regressions.** E.1/E.2/Pre-commit-validation-scope subsections in execute, and the existing One-shot worked example in advisor.md, are all intact and correctly ordered relative to the new inserts.
+- **No new human-verification items** are introduced by this gap-closure cycle. The two pre-existing human_verification items (F-fixture re-validation; marketplace publication) remain open Phase 9 watch items, unaffected by GAP-S9 / GAP-S10.
+
+_Gap-closure verified: 2026-05-31_
 _Verifier: Claude (gsd-verifier)_

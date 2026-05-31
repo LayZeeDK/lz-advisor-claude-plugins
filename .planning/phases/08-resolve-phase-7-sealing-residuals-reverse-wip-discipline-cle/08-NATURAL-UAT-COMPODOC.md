@@ -1,5 +1,7 @@
 ---
-status: gaps_found
+status: resolved
+resolved: 2026-05-31
+resolution: "GAP-S9 -> Plan 08-08, GAP-S10 -> Plan 08-09 (both PASS 4/4, 08-VERIFICATION.md gap-closure amendment). GAP-DEVSERVER closed in target repo (commit 5485eca). Plugin 0.14.0 -> 0.14.1."
 phase: 08-resolve-phase-7-sealing-residuals-reverse-wip-discipline-cle
 kind: natural-uat
 scenario: compodoc-storybook-signals
@@ -919,12 +921,16 @@ See the AMENDMENT block at the top of this file. The "[no blocking gaps]" claim 
 is RETRACTED -- the dev-server discovery (2026-05-31) revealed a broken primary deliverable that
 the verify-target gap (S9) hid. Three Phase 8 gaps now feed /gsd-execute-phase 8 --gaps-only:
 
-- **GAP-S9 (execute-skill verify-target match):** confirmed 2x (Sessions 5 + 7b). Executor
+- **GAP-S9 (execute-skill verify-target match) -- RESOLVED 2026-05-31 (Plan 08-08).** confirmed 2x (Sessions 5 + 7b). Executor
   verified Storybook/Nx-config changes with `nx test` / no build instead of the affected target.
   CONCRETE CONSEQUENCE: the broken `nx storybook` dev-server went undetected for all 8 sessions.
-  Fix: lz-advisor.execute Phase 3.5 guidance to match verify target to change surface.
-- **GAP-S10 (final-advisor maxTurns exhaustion):** recurrence of project_advisor_maxturns_exhaustion.
-  Fix: prompt-side trust-packed-context for the final review consult (NOT a maxTurns increase).
+  Fix SHIPPED: lz-advisor.execute Phase 3.5 E.3 change-surface verify-target selection + tooling-freshness
+  clause + plan-skill change-surface-matched Validate-step rule. Verified PASS 4/4 (08-VERIFICATION.md
+  gap-closure amendment 2026-05-31).
+- **GAP-S10 (final-advisor maxTurns exhaustion) -- RESOLVED 2026-05-31 (Plan 08-09).** recurrence of project_advisor_maxturns_exhaustion.
+  Fix SHIPPED: execute Phase 5 packs post-change content (`## Relevant File Contents`) into the final
+  consult + advisor.md final-review no-disk-hunting clause (maxTurns stays 3, effort high -- prompt-side,
+  NOT a budget increase) + atomic 5-surface 0.14.0 -> 0.14.1. Verified PASS 4/4.
 - **GAP-DEVSERVER (ngx-smart-components `nx storybook` broken) -- CLOSED (commit 5485eca).**
   Root cause: start-schema.json has no default for `browserTarget`, so omitting it -> undefined ->
   `angularBrowserTarget: undefined` -> `checkForLegacyBuildOptions` throws `AngularLegacyBuildOptionsError`.
@@ -935,8 +941,9 @@ the verify-target gap (S9) hid. Three Phase 8 gaps now feed /gsd-execute-phase 8
   http://localhost:4200/") AND build-storybook (no regression). build-storybook left unchanged (its
   schema defaults browserTarget to null).
 
-GAP-S9 and GAP-S10 require changes to the lz-advisor PLUGIN (still OPEN); GAP-DEVSERVER was in the
-target repo and is now CLOSED.
+GAP-S9 and GAP-S10 required changes to the lz-advisor PLUGIN -- now CLOSED 2026-05-31 via
+`/gsd-execute-phase 8 --gaps-only` (Plans 08-08 + 08-09, plugin 0.14.1); GAP-DEVSERVER was in the
+target repo and is also CLOSED.
 
 ## Dev-Server Fix Loop (GAP-DEVSERVER closure -- sessions 8 + 9, autonomous via claude -p)
 
