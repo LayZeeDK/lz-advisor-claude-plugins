@@ -23,27 +23,39 @@ found it **BROKEN** -- `SB_FRAMEWORK_ANGULAR_0001 (AngularLegacyBuildOptionsErro
 amendment supersedes the overstated "complete / build-verified / browserTarget-removal-correct"
 conclusions in the body below.
 
-**Corrected findings:**
+**Corrected findings (FINAL -- two layers of correction; this is the resolved truth):**
 
-1. **`nx storybook` dev-server is broken (GAP-DEVSERVER).** `@storybook/angular`'s
-   `checkForLegacyBuildOptions` throws when `options.angularBrowserTarget` is undefined; the
-   config uses the legacy `browserTarget`, not the modern `angularBrowserTarget`. The error
-   points to `npx storybook automigrate`.
-2. **CAUSATION CORRECTION (my earlier hypothesis was WRONG):** restoring the removed
-   `browserTarget` self-reference produces the IDENTICAL error, so the dev-server break is
-   **PRE-EXISTING** in the scaffold -- NOT caused by the Session-5 browserTarget removal.
-   `nx build-storybook` (build path) works; `nx storybook` (dev-server path) never did here.
-3. **The Docs-tab deliverable was only ever verified at the DATA layer** (`documentation.json`
-   contains the JSDoc), **never rendered** in a browser. No session ran `nx storybook`.
-4. **S9 sharpened, not softened:** the verify-target gap (plugin executor used `nx test` /
-   `build-storybook`; orchestrator "closed" S9 with `build-storybook` + `validate-docs-json`)
-   meant a broken primary deliverable went UNDETECTED across all 8 sessions. The "build-layer
-   PASS" / "S9 closed favorably" / "cold-start smoke pass" statements below are amended: they
-   verified the wrong target. Treat them as data-layer-only.
-5. **Classification:** S9, S10, and GAP-DEVSERVER are reclassified as **Phase 8 gaps** (not
-   Phase 9 / not backlog) -- surfaced by /gsd-verify-work 8 against the shipped 0.14.0 plugin.
-   See ROADMAP.md "Phase 8 gaps" + the Gaps section at the bottom of this file. GAP-DEVSERVER
-   is being fixed via a /lz-advisor plugin fix loop (which also serves as the S9 demonstration).
+1. **`nx storybook` dev-server was broken (GAP-DEVSERVER) -- NOW FIXED (commit 5485eca).**
+   `@storybook/angular@10.3.5` start-schema.json has NO default for `browserTarget`, so omitting
+   it leaves `options.browserTarget = undefined`; start-storybook `setup()` maps that to
+   `angularBrowserTarget: undefined`, tripping `checkForLegacyBuildOptions` (`=== void 0`) ->
+   `AngularLegacyBuildOptionsError`. build-storybook's schema defaults browserTarget to `null`
+   (passes the guard), which is why the build path worked but the dev-server did not.
+2. **CAUSATION (corrected twice -- final):** the Session-5 `browserTarget` removal DID cause the
+   dev-server regression. Re-adding `"browserTarget": "ngx-smart-components:build-storybook"` to
+   the storybook target FIXES it -- verified: "Storybook ready! http://localhost:4200/".
+   My mid-session "PRE-EXISTING / restore fails identically" claim was a **false negative caused
+   by the Nx daemon serving a stale project graph** during my ad-hoc test; re-testing with
+   `NX_DAEMON=false` showed the dev-server boots. So the cascade is confirmed: reviewer's
+   false-positive `browserTarget` Critical (S3) -> Session-4 plan's schema-grounded REMOVAL ->
+   dev-server regression. The Session-2 advisor's "KEEP browserTarget" was correct throughout.
+3. **The Docs-tab deliverable was only verified at the DATA layer** (`documentation.json` has the
+   JSDoc), **never rendered** in a browser during the original 8 sessions -- because no session
+   ran `nx storybook`. The dev-server fix loop (sessions 8+9) confirmed it boots; the actual
+   in-browser Docs-tab visual render remains the one unverified link.
+4. **S9 confirmed + a MITIGATION found.** The verify-target gap (plugin executor used `nx test`/
+   `build-storybook`; orchestrator "closed" S9 with `build-storybook`+`validate-docs-json`) let a
+   real regression ship undetected -- S9's strongest evidence. BUT the dev-server FIX loop showed
+   the mitigation: the plan (session 8) included an explicit `Run: nx storybook` verify step, and
+   the execute skill (session 9) FOLLOWED it -- backgrounding `nx storybook`, checking netstat
+   :4200 + "Storybook ready!", then re-running build-storybook. So a plan-side explicit Run
+   directive on the right target makes the execute skill verify the right surface. This is a
+   concrete design hint for the GAP-S9 fix (Phase 3.5 E.2 plan-Run-directive rule works when the
+   plan names the target). The "build-layer PASS / S9 closed favorably / cold-start smoke pass"
+   statements below are amended to data-layer-only for the original 8 sessions.
+5. **Classification:** S9, S10, GAP-DEVSERVER are **Phase 8 gaps**. GAP-DEVSERVER is now CLOSED
+   (fixed via the autonomous /lz-advisor plugin fix loop, sessions 8+9). GAP-S9 and GAP-S10
+   remain open -- they require lz-advisor PLUGIN changes (separate gap-closure in the plugin repo).
 
 The S1-S11 session records below remain accurate for what they measured; only the cross-cutting
 "deliverable works / UAT complete" conclusions are corrected by this amendment.
@@ -913,13 +925,49 @@ the verify-target gap (S9) hid. Three Phase 8 gaps now feed /gsd-execute-phase 8
   Fix: lz-advisor.execute Phase 3.5 guidance to match verify target to change surface.
 - **GAP-S10 (final-advisor maxTurns exhaustion):** recurrence of project_advisor_maxturns_exhaustion.
   Fix: prompt-side trust-packed-context for the final review consult (NOT a maxTurns increase).
-- **GAP-DEVSERVER (ngx-smart-components `nx storybook` broken):** AngularLegacyBuildOptionsError;
-  Storybook-10 needs `angularBrowserTarget` / `npx storybook automigrate`. PRE-EXISTING (not the
-  browserTarget removal -- restore fails identically). Fix via /lz-advisor plugin fix loop,
-  verifying with `nx storybook` (doubles as the S9 demonstration). Docs-tab deliverable was only
-  verified at the data layer (documentation.json), never rendered.
+- **GAP-DEVSERVER (ngx-smart-components `nx storybook` broken) -- CLOSED (commit 5485eca).**
+  Root cause: start-schema.json has no default for `browserTarget`, so omitting it -> undefined ->
+  `angularBrowserTarget: undefined` -> `checkForLegacyBuildOptions` throws `AngularLegacyBuildOptionsError`.
+  CAUSED BY the Session-5 browserTarget removal (my mid-session "pre-existing/restore-fails-identically"
+  claim was a false negative from an Nx-daemon stale graph; `NX_DAEMON=false` re-test booted the server).
+  Fixed by re-adding `browserTarget` to the storybook target via the autonomous /lz-advisor plugin fix
+  loop (session 8 plan + session 9 execute); execute verified with `nx storybook` ("Storybook ready!
+  http://localhost:4200/") AND build-storybook (no regression). build-storybook left unchanged (its
+  schema defaults browserTarget to null).
 
-GAP-S9 and GAP-S10 require changes to the lz-advisor PLUGIN; GAP-DEVSERVER is in the target repo.
+GAP-S9 and GAP-S10 require changes to the lz-advisor PLUGIN (still OPEN); GAP-DEVSERVER was in the
+target repo and is now CLOSED.
+
+## Dev-Server Fix Loop (GAP-DEVSERVER closure -- sessions 8 + 9, autonomous via claude -p)
+
+Run autonomously by the orchestrator via `claude -p --plugin-dir ... --model sonnet` (the
+documented CLAUDE.md headless template; NO bypassPermissions -- the classifier blocked that, so
+the skills' own allowed-tools governed). Executor = Sonnet 4.6; advisor = Opus.
+
+### Session 8: /lz-advisor.plan (dev-server fix)
+log: natural-uat-compodoc/session-8-plan-devserver.jsonl (126 entries)
+prompt: "/lz-advisor.plan Fix the broken nx storybook dev-server ... SB_FRAMEWORK_ANGULAR_0001 ... while nx build-storybook succeeds."
+result: pass. Web-first orient fired (2 WebSearch + 4 WebFetch + 12 Bash reading executor source/schemas);
+  1 advisor consult. Plan: re-add browserTarget to the storybook target; Root Cause section nailed
+  the start-schema (no default -> undefined) vs build-schema (default null) asymmetry + the
+  checkForLegacyBuildOptions guard. INCLUDED an explicit Step 2 `Run: nx storybook ...` verify step.
+  NOTE: the plan's fix CONTRADICTED my (flawed, daemon-stale) "restore fails identically" test --
+  the plan was right, my test was wrong.
+
+### Session 9: /lz-advisor.execute (dev-server fix)
+log: natural-uat-compodoc/session-9-execute-devserver.jsonl (130 entries); env NX_DAEMON=false (orchestrator
+  set this to remove the daemon-staleness wildcard that fooled the orchestrator's own ad-hoc test).
+result: pass (STRONG). Re-derived the root cause from executor source (start-storybook setup() line
+  `angularBrowserTarget: browserTarget`; checkForLegacyBuildOptions `=== void 0`). Applied the
+  one-line fix. **Phase 3.5 verified with `nx storybook` (the CORRECT target)** -- backgrounded the
+  dev-server, checked `netstat :4200` (LISTENING) + server log ("Storybook ready! http://localhost:4200/"),
+  THEN re-ran `nx build-storybook` (no regression). Commit 5485eca, no wip:, precise Verified: trailer.
+s9_mitigation_evidence: |
+  The execute skill verified the RIGHT target here (unlike Sessions 5 + 7b) BECAUSE the plan named it
+  in an explicit `Run: nx storybook` step -- the Phase 3.5 E.2 plan-Run-directive rule fired correctly.
+  This is the concrete design hint for the GAP-S9 plugin fix: when the plan specifies the verify command
+  matching the change surface, the executor follows it. The gap is that NOTHING forces the plan (or a
+  free-form execute) to pick the right target when it isn't spelled out.
 
 ## Notes
 
