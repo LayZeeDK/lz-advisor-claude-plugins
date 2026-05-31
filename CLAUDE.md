@@ -183,7 +183,16 @@ All agents use `model: opus`, `tools: ["Read", "Glob"]`, and `maxTurns: 3` (2 to
 When phase verification produces `human_needed` items for skill testing, verify them automatically using a non-interactive CLI invocation instead of deferring to manual testing:
 
 ```bash
-claude --model sonnet --effort medium --plugin-dir plugins/lz-advisor -p "/lz-advisor.<skill-name> <realistic task prompt>" --verbose
+# Same-repo skill verification (CWD = this repo):
+claude --model sonnet --effort medium --plugin-dir plugins/lz-advisor --permission-mode auto -p "/lz-advisor.<skill-name> <realistic task prompt>" --verbose --output-format stream-json
+```
+
+For a UAT against an EXTERNAL target repo (e.g. ngx-smart-components), run with CWD = the target repo and an ABSOLUTE `--plugin-dir`, chaining sessions plan -> execute:
+
+```bash
+# CWD = target repo
+claude --model sonnet --permission-mode auto --plugin-dir "D:/projects/github/LayZeeDK/lz-advisor-claude-plugins/plugins/lz-advisor" -p "/lz-advisor.plan <one-sentence directive>" --verbose --output-format stream-json
+claude --model sonnet --permission-mode auto --plugin-dir "...plugins/lz-advisor" -p "/lz-advisor.execute Implement the plan in plans/<name>.plan.md" --verbose --output-format stream-json
 ```
 
 - Use `/lz-advisor.<skill-name>` syntax (not natural-language triggers) for reliable skill activation
@@ -195,7 +204,15 @@ claude --model sonnet --effort medium --plugin-dir plugins/lz-advisor -p "/lz-ad
 - Clean up any test artifacts (plan files, etc.) after verification
 - Update the UAT file status from `partial` to `resolved` and VERIFICATION.md status from `human_needed` to `passed`
 
-This approach was validated in Phase 2: all 3 UAT items passed via `claude -p "/lz-advisor.plan ..."` without requiring an interactive session.
+**Headless `claude -p` gotchas** (learned 2026-05-31 gap-closure UAT 0.14.1; see `.planning/phases/08-*/uat-gap-closure-0.14.1/FINDINGS.md`):
+
+- **Never put an `@file` mention in the `-p` prompt.** It breaks `/skill` slash-command recognition -- the slash command stops auto-triggering and the model falls back to the Skill TOOL, which then errors. Reference the plan by PROSE PATH instead: `-p "/lz-advisor.execute Implement the plan in plans/x.plan.md"`. The skill Reads it during orient. (The `@` mention is fine interactively, not in `-p`.)
+- **Use `--permission-mode auto`.** `acceptEdits` DENIES the skill launch (Skill tool returns `is_error`) and blocks non-git Bash like `nx`; `--dangerously-skip-permissions` works but `auto` (classifier-gated) is preferred and sufficient. The skills' own `allowed-tools` only pre-approve `Bash(git:*)`, so the executor needs `auto` to run the verify target (`nx build-storybook`, etc.).
+- **Nested `claude -p` draws on the same 5-hour session usage pool** as the parent session. A multi-session UAT can hit `out_of_credits` (HTTP 429) mid-run; budget across reset windows.
+- **Fully-qualified skill name normalizes dot -> hyphen**: `lz-advisor.execute` -> `lz-advisor:lz-advisor-execute`.
+- Grade from `--output-format stream-json` captured to a file; the advisor subagent's own tool-use (turns / glob-vs-synthesis) is in `~/.claude/projects/<cwd-hash>/<session>/subagents/agent-<id>.jsonl`.
+
+This approach was validated in Phase 2 (all 3 UAT items via `claude -p "/lz-advisor.plan ..."`) and again in Phase 8 gap-closure: GAP-S9 + GAP-S10 behaviorally proven on plugin 0.14.1 against ngx-smart-components (plan -> execute, `--permission-mode auto`).
 <!-- GSD:conventions-end -->
 
 <!-- GSD:architecture-start source:ARCHITECTURE.md -->
