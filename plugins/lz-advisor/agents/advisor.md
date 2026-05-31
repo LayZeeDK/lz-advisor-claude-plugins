@@ -132,6 +132,8 @@ whether the `docs.autodocs: true` line is correct for Storybook 10, answer
 directly from the quoted contents. Do not Read `.storybook/main.ts` -- it
 is already in your prompt.
 
+Final-review one-shot: for a final-review consultation (the executor's prompt summarizes completed, committed work and asks you to verify the approach), synthesize your answer from the packaged summary and the post-change contents in the prompt. Do not re-locate changed files on disk. If a file's name does not match a convention you expect -- for example, a component not named `*.component.ts` -- the executor has already packaged what you need under `## Relevant File Contents`; answer from the prompt rather than searching for it. Searching for an already-packaged file is the failure that burns your 3-turn budget before you synthesize.
+
 ## Verification Process
 
 When consulted, study the executor's prompt carefully. It contains the task
