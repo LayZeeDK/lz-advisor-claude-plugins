@@ -248,7 +248,7 @@ Closure: 2026-05-08 `closure_amendment_2026_05_08_uat_replay_0_13_1` supersedes 
 **Depends on:** Phase 7 (status: passed_with_residual_on_0_13_1 on plugin 0.13.1)
 
 
-**Plans:** 8 plans (7 firm + 1 conditional auto-extend; Plan 4 also conditional)
+**Plans:** 10 plans (8 original + 2 gap-closure plans for GAP-S9 / GAP-S10)
 
 Plans:
 - [x] 08-01-wip-discipline-reversal-PLAN.md -- P0 wip-discipline reversal; remove rule from execute SKILL.md + path-d from E-fixture + GAP-G2 from REQUIREMENTS.md; atomic 5-surface 0.13.1 -> 0.14.0 MINOR
@@ -259,10 +259,12 @@ Plans:
 - [x] 08-05-wr-04-05-reconciliation-trail-cleanup-PLAN.md -- P3 planning-trail reconciliation (WR-04/05 already pre-closed on main via commits 7f28903 + 5ea449f); zero plugin surface changes
 - [x] 08-06-advisor-narrative-sd-pv-extension-PLAN.md -- P3 P8-18; Rule 5b extension in context-packaging.md + new smoke fixture G-advisor-narrative-sd-pv.sh (PASSED 3/3 paths on first live run, plugin 0.13.1)
 - [x] 08-07-class-2-escalation-hook-observability-PLAN.md -- P3 FIND-F; designed CVE-2025-68154 trigger UAT + new smoke fixture F-class-2-escalation.sh
+- [ ] 08-08-PLAN.md -- GAP-S9 verify-target-by-change-surface; add execute Phase 3.5 E.3 selection heuristic + tooling-freshness clause + plan-skill change-surface-matched Validate-step rule (defense-in-depth; execute + plan SKILL.md only; no version bump)
+- [ ] 08-09-PLAN.md -- GAP-S10 final-advisor pack-then-trust; pack post-change contents/diff into execute Phase 5 final consult + advisor.md final-review no-disk-hunting clause (maxTurns stays 3) + atomic 5-surface 0.14.0 -> 0.14.1 PATCH bump
 
 **Phase 8 gaps (surfaced by /gsd-verify-work 8 natural Compodoc UAT, 2026-05-31; see 08-NATURAL-UAT-COMPODOC.md):**
 - [ ] GAP-S9 -- execute-skill Phase 3.5 verify-target mismatch (confirmed 2x: Sessions 5 + 7b). Executor verified Storybook/Nx-config changes with `nx test` / no build instead of the affected target; CONCRETE CONSEQUENCE: a broken `nx storybook` dev-server (non-renderable Docs tab) went undetected through all 8 sessions because nobody ran the dev-server target. Fix: add execute-skill guidance to match the Phase 3.5 verify target to the change surface (Storybook/Nx-config change -> run the affected target / `nx graph`).
 - [ ] GAP-S10 -- final-advisor maxTurns exhaustion (recurrence of project_advisor_maxturns_exhaustion). Phase 5 final consult burned its 3-turn budget disk-hunting for a file already packed in the prompt; no numbered synthesis. Fix is prompt-side (strengthen "trust packed context" for the final review consult / pack post-change content), NOT a maxTurns increase.
 - [x] GAP-DEVSERVER -- ngx-smart-components `nx storybook` broken (AngularLegacyBuildOptionsError). CLOSED 2026-05-31 (commit 5485eca, target repo). CAUSED BY the Session-5 browserTarget removal (start-schema has no default -> undefined -> angularBrowserTarget undefined -> checkForLegacyBuildOptions throws; build-schema defaults to null so the build path was unaffected). My mid-session "pre-existing / restore fails identically" note was a false negative from an Nx-daemon stale graph -- `NX_DAEMON=false` re-test booted the dev-server. Fixed by re-adding browserTarget to the storybook target via the autonomous /lz-advisor plugin fix loop (session 8 plan + session 9 execute); execute verified with `nx storybook` ("Storybook ready! localhost:4200") + build-storybook (no regression). Demonstrated the GAP-S9 mitigation: a plan-side explicit `Run: nx storybook` step made the executor verify the correct target.
 
-GAP-S9 + GAP-S10 keep Phase 8 open for gap-closure (08-08+ plans, /gsd-execute-phase 8 --gaps-only); both require lz-advisor PLUGIN changes. GAP-DEVSERVER (target-repo) is closed. Reclassified from backlog 999.1 / Phase 9 per user direction 2026-05-31.
+GAP-S9 + GAP-S10 keep Phase 8 open for gap-closure; both require lz-advisor PLUGIN changes. PLANNED 2026-05-31: GAP-S9 -> Plan 08-08, GAP-S10 -> Plan 08-09 (both prompt/contract edits, no runtime code; PATCH bump to 0.14.1 in 08-09). Execute via /gsd-execute-phase 8 --gaps-only. GAP-DEVSERVER (target-repo) is closed. Reclassified from backlog 999.1 / Phase 9 per user direction 2026-05-31.
