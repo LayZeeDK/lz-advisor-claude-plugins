@@ -9,6 +9,7 @@ fixed: 0
 skipped: 1
 iteration: 1
 status: none_fixed
+superseded_by: ca7137f
 ---
 
 # Phase 8: Code Review Fix Report
@@ -17,6 +18,15 @@ status: none_fixed
 **Source review:** `08-REVIEW.md` (status at fix time: `clean`)
 **Fix scope:** all (Critical + Warning + Info, via `--all`)
 **Result:** 1 finding in scope, 0 fixed, 1 skipped (deliberate, user-confirmed)
+
+> **Update (2026-05-31, superseded):** IN-01 was subsequently resolved at the
+> root by the 0.14.2 refactor (commit `ca7137f`), which extracted the
+> surface-to-target mapping into `references/verify-target-selection.md` and
+> removed the plan/execute cross-skill body references entirely -- eliminating
+> the two divergent lists rather than skipping or lock-stepping them. The skip
+> rationale below stands as the contemporaneous record; the divergence it
+> describes no longer exists. Validated by a plan+execute Compodoc UAT against
+> ngx-smart-components (see `uat-refactor-0.14.2/FINDINGS.md`).
 
 ## Summary
 
