@@ -272,6 +272,8 @@ Request ("verify the approach is sound and flag any concerns"). Do not
 fabricate `### Findings` entries with severity tags -- the advisor does
 not produce that shape.
 
+Pack the post-change content the advisor would otherwise need to locate. Include the changed files' current contents (or the commit's `git diff` / `git show`) in a `## Relevant File Contents` block in the consultation prompt -- not just a prose summary of what changed. The advisor's budget is 3 turns; if it has to find the file you changed, it can exhaust that budget on disk before synthesizing. A summary ("added `input()`/`output()` with JSDoc") tells the advisor what you did; the actual file text or diff is what lets it review the work. When a changed file does not follow the naming convention the advisor might expect (for example, a component not named `*.component.ts`), packing its contents removes the advisor's reason to search for it. The thing you want reviewed must be in the prompt, not only described.
+
 This is a final check, not a request for approval. The advisor verifies
 the approach is sound and flags concerns the executor may have missed.
 
