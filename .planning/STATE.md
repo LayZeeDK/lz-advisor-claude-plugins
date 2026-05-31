@@ -2,10 +2,10 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: Milestone complete
-stopped_at: Completed 08-07-PLAN.md
-last_updated: "2026-05-19T20:50:44.456Z"
-last_activity: 2026-05-19
+status: Phase 8 gap-closure planned (08-08 + 08-09)
+stopped_at: Planned Phase 8 gap-closure plans 08-08 (GAP-S9) + 08-09 (GAP-S10); verified by plan-checker
+last_updated: "2026-05-31"
+last_activity: 2026-05-31
 progress:
   total_phases: 14
   completed_phases: 13
@@ -25,15 +25,28 @@ See: .planning/PROJECT.md (updated 2026-04-10)
 
 ## Current Position
 
-Phase: 08
-Plan: Not started
-Phase 8: NOT YET PLANNED — entry added to ROADMAP.md with goal + requirements + depends-on; 3 NEW residuals from Phase 7 closure (residual-wip-discipline-reversal P0; residual-shape-regression-parser P1; residual-pfv-outlier-cap P1) + carry-forward backlog (residual-advisor-fragment-grammar-not-binding-on-code-blocks P2; WR-04/05 P3; P8-03 / P8-12 / P8-18 P3; Class-2 Escalation Hook observability P3).
+Phase: 08 (REOPENED for gap closure)
+Plan: 08-08 + 08-09 planned + verified (ready to execute)
 
-Next: `/gsd-plan-phase 8` to produce executable plans from the Phase 8 ROADMAP entry. Recommended bundling per closure amendment phase_8_worklist field: P0 wip-reversal as 1 plan; P1 + P1 parser fixes as 1 plan (both fixture-parser-layer changes verifiable via --from-trace replay against captured shape-regression traces in `traces/`); P2 advisor n>=3 as measurement plan + conditional structural plan; P3 items sequence by evidence weight.
+Original Phase 8 (plans 08-01..08-07) shipped at 0.14.0 and was sealed. The 2026-05-31 Compodoc
+natural UAT (/gsd-verify-work 8 against ngx-smart-components) reopened it with two PLUGIN gaps:
+- GAP-S9 (08-08): lz-advisor.execute Phase 3.5 must select the verify target by CHANGE SURFACE
+  (+ tooling-state-freshness clause) + a plan-skill change-surface-matched Validate-step rule.
+  Motivated by a real nx storybook dev-server regression that shipped undetected (verify-target gap).
+- GAP-S10 (08-09): lz-advisor.execute Phase 5 must pack post-change file CONTENT into the final
+  consult + advisor.md "synthesize, don't re-locate files" clause. maxTurns stays 3. Carries the
+  atomic 5-surface 0.14.0 -> 0.14.1 PATCH bump.
+(GAP-DEVSERVER was the target-repo dev-server fix, already CLOSED at ngx-smart-components 5485eca.)
 
-Last activity: 2026-05-19
+Both gap plans passed gsd-plan-checker on the first iteration (no blockers/warnings): concrete
+grep-verifiable actions, correct sequencing (08-09 depends_on 08-08), no over-broadcast, maxTurns
+preserved. Research was forced (per user) into 08-GAPS-RESEARCH.md (original 08-RESEARCH.md preserved).
 
-Progress: [##########] 100%
+Next: `/gsd-execute-phase 8 --gaps-only` to execute 08-08 + 08-09.
+
+Last activity: 2026-05-31
+
+Progress: [##########] 100% (original milestone) + 2 gap-closure plans pending execution
 
 ## Performance Metrics
 
