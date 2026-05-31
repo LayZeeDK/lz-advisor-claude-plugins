@@ -969,6 +969,38 @@ s9_mitigation_evidence: |
   matching the change surface, the executor follows it. The gap is that NOTHING forces the plan (or a
   free-form execute) to pick the right target when it isn't spelled out.
 
+## GAP-DEVSERVER causation -- controlled experiment (conclusive)
+
+To isolate browserTarget vs Nx-daemon staleness (the confound that gave my intermediate test a
+false negative), ran a 2x2 with the daemon freshly cleared and the LOCAL nx (`npm exec nx --`):
+
+| browserTarget | daemon              | `nx storybook` result        |
+| ------------- | ------------------- | ---------------------------- |
+| ABSENT        | fresh (on)          | BROKEN (AngularLegacyBuildOptionsError) |
+| PRESENT       | fresh (on)          | WORKS ("Storybook ready! localhost:4200") |
+| PRESENT       | NX_DAEMON=false     | WORKS (session 9)            |
+| PRESENT       | stale (cached absent config) | BROKEN -- my flawed intermediate test (false negative) |
+
+CONCLUSION: `browserTarget` is the determining variable. The committed fix (5485eca) works in a
+NORMAL daemon-on setup, not only with NX_DAEMON=false. The daemon staleness was a SEPARATE confound.
+GAP-DEVSERVER causation is now definitively: Session-5 removal caused it; re-adding fixes it.
+
+## Nx-UAT methodology lessons (from this episode -- reusable; feeds GAP-S9 reliability)
+
+1. **Use `npm exec nx -- <cmd>` (local Nx), NOT `npx nx`** -- isolates from a globally-installed Nx
+   that may differ in version/behavior. (`npx nx reset` exited 1 oddly; `npm exec nx -- reset` gave
+   a clear EPERM.)
+2. **`nx reset` between UAT runs that mutate Nx config** -- `nx reset` stops the daemon AND clears
+   the local cache + workspace data. Without it, the daemon can serve a STALE project graph (old
+   config) and silently give false verification results -- this fooled the orchestrator's ad-hoc
+   "restore fails identically" test into a wrong (twice-committed) causation claim.
+3. **Kill lingering continuous-task servers (e.g. `nx storybook` on :4200) BEFORE `nx reset`** --
+   on Windows a running server holds `.nx/workspace-data`, so `nx reset` fails with EPERM. Find via
+   `netstat -ano | rg :4200`, `taskkill //F //PID <pid>`, then reset. Continuous tasks killed by a
+   tool-timeout can survive as orphans holding the lock.
+4. Verification reliability is not just "right target" (GAP-S9) but "fresh tooling state" -- a stale
+   daemon makes even the correct target lie.
+
 ## Notes
 
 - Per `feedback_version_numbers_not_load_bearing_prerelease`: this UAT does NOT bump the
