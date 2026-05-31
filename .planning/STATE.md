@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: Phase 8 gap-closure planned (08-08 + 08-09)
-stopped_at: Planned Phase 8 gap-closure plans 08-08 (GAP-S9) + 08-09 (GAP-S10); verified by plan-checker
-last_updated: "2026-05-31"
+status: Milestone complete
+stopped_at: Completed Phase 8 gap-closure (08-08 GAP-S9 + 08-09 GAP-S10); verified PASS, plugin 0.14.1
+last_updated: "2026-05-31T19:19:16.662Z"
 last_activity: 2026-05-31
 progress:
   total_phases: 14
   completed_phases: 13
-  total_plans: 74
-  completed_plans: 73
+  total_plans: 76
+  completed_plans: 75
   percent: 99
 ---
 
@@ -21,28 +21,34 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-10)
 
 **Core value:** Near-Opus intelligence at Sonnet cost for coding tasks, through strategic advisor consultation at high-leverage moments
-**Current focus:** Phase 08 — Resolve Phase 7 sealing residuals + reverse wip-discipline + clear Phase 8 carry-forward backlog
+**Current focus:** Phase 08 — resolve-phase-7-sealing-residuals-reverse-wip-discipline-cle
 
 ## Current Position
 
-Phase: 08 (REOPENED for gap closure)
-Plan: 08-08 + 08-09 planned + verified (ready to execute)
+Phase: 08 (gap-closure COMPLETE)
+Plan: 08-08 + 08-09 executed, merged, and verified (PASS 4/4 each)
 
 Original Phase 8 (plans 08-01..08-07) shipped at 0.14.0 and was sealed. The 2026-05-31 Compodoc
-natural UAT (/gsd-verify-work 8 against ngx-smart-components) reopened it with two PLUGIN gaps:
-- GAP-S9 (08-08): lz-advisor.execute Phase 3.5 must select the verify target by CHANGE SURFACE
-  (+ tooling-state-freshness clause) + a plan-skill change-surface-matched Validate-step rule.
-  Motivated by a real nx storybook dev-server regression that shipped undetected (verify-target gap).
-- GAP-S10 (08-09): lz-advisor.execute Phase 5 must pack post-change file CONTENT into the final
-  consult + advisor.md "synthesize, don't re-locate files" clause. maxTurns stays 3. Carries the
-  atomic 5-surface 0.14.0 -> 0.14.1 PATCH bump.
+natural UAT (/gsd-verify-work 8 against ngx-smart-components) reopened it with two PLUGIN gaps,
+both now CLOSED via `/gsd-execute-phase 8 --gaps-only` (plugin 0.14.0 -> 0.14.1):
+
+- GAP-S9 (08-08) CLOSED: lz-advisor.execute Phase 3.5 now selects the verify target by CHANGE SURFACE
+  via E.3 (+ stale-daemon/cache tooling-freshness clause) + a plan-skill change-surface-matched
+  Validate-step rule. Defense-in-depth; no version bump (deferred to 08-09).
+- GAP-S10 (08-09) CLOSED: lz-advisor.execute Phase 5 packs post-change file CONTENT (`## Relevant
+  File Contents`) into the final consult + advisor.md "synthesize from packed content, do not
+  re-locate changed files on disk" clause. maxTurns stays 3, effort high (prompt-side fix verified,
+  NOT a budget increase). Atomic 5-surface 0.14.0 -> 0.14.1 PATCH bump (byte-consistent, no residue).
 (GAP-DEVSERVER was the target-repo dev-server fix, already CLOSED at ngx-smart-components 5485eca.)
 
-Both gap plans passed gsd-plan-checker on the first iteration (no blockers/warnings): concrete
-grep-verifiable actions, correct sequencing (08-09 depends_on 08-08), no over-broadcast, maxTurns
-preserved. Research was forced (per user) into 08-GAPS-RESEARCH.md (original 08-RESEARCH.md preserved).
+Execution: 2 waves (08-08 then 08-09 depends_on 08-08), worktree-isolated, both self-corrected the
+known Windows worktree-base bug non-destructively. Code review clean (0 critical / 0 warning / 1 info).
+Gap-closure verification PASS appended as amendment to 08-VERIFICATION.md (original sealing preserved).
+GAP-S9/GAP-S10 added to REQUIREMENTS.md traceability; 08-NATURAL-UAT-COMPODOC.md marked resolved.
 
-Next: `/gsd-execute-phase 8 --gaps-only` to execute 08-08 + 08-09.
+Carry-forward (pre-existing, NOT gap-closure blockers): 08-HUMAN-UAT.md still partial and the original
+08-VERIFICATION.md human_verification items (natural Class-2 escalation-hook re-validation; optional
+marketplace publication) remain open Phase 9 watch items.
 
 Last activity: 2026-05-31
 
@@ -52,7 +58,7 @@ Progress: [##########] 100% (original milestone) + 2 gap-closure plans pending e
 
 **Velocity:**
 
-- Total plans completed: 90
+- Total plans completed: 100
 - Average duration: -
 - Total execution time: 0 hours
 
@@ -70,7 +76,7 @@ Progress: [##########] 100% (original milestone) + 2 gap-closure plans pending e
 | 05.6 | 7 | - | - |
 | 06 | 7 | - | - |
 | 07 | 13 | - | - |
-| 08 | 8 | - | - |
+| 08 | 10 | - | - |
 
 **Recent Trend:**
 
