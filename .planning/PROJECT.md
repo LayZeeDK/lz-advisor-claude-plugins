@@ -31,12 +31,15 @@ Near-Opus intelligence at Sonnet cost for coding tasks, achieved through strateg
 
 ### Active
 
-- [x] Opus advisor agent (`lz-advisor:advisor`) provides concise guidance (under 100 words, enumerated steps) -- Validated in Phase 5.2 (maxTurns: 3 structural fix + behavioral confirmation)
-- [x] Skills inherit session model for executor (optimized for Sonnet 4.6) -- Validated in Phase 5
-- [x] Advisor agent uses Opus 4.6 -- Validated in Phase 1
-- [x] Advisor consultation timing follows Anthropic's suggested system prompt patterns -- Validated in Phase 5
-- [x] Advisor output is trimmed: under 100 words, enumerated steps, not explanations -- Validated in Phase 5.2 (Visibility Model + effort: high)
-- [x] Plugin components use `lz-advisor` prefix -- Validated in Phase 5.2 (skills renamed to `lz-advisor.*` dotted pattern)
+None -- v1.0 is shipped (plugin 1.0.0). Every requirement above is Validated; the full set is archived in `milestones/v1.0-REQUIREMENTS.md`. The next milestone's requirements are defined via `/gsd-new-milestone`.
+
+The items previously tracked here all shipped in v1.0 and are Validated:
+- [x] Advisor agent provides concise guidance (under 100 words, enumerated) -- Phase 5.2 (maxTurns: 3 structural fix)
+- [x] Skills inherit the session model for the executor (optimized for Sonnet 4.6) -- Phase 5
+- [x] Advisor runs on Opus (the `opus` alias; runtime-proven 2026-06-01 on Opus 4.8) -- Phase 1
+- [x] Advisor consultation timing follows Anthropic's suggested patterns -- Phase 5
+- [x] Advisor output trimmed: under 100 words, enumerated steps -- Phase 5.2
+- [x] Plugin components namespaced under `lz-advisor` -- Phase 5.2 introduced dotted `lz-advisor.*` skill names; Phase 9 reversed them to plain `<skill>` dirs so the qualified form is the clean `lz-advisor:<skill>`
 
 ### Out of Scope
 
@@ -56,6 +59,7 @@ Near-Opus intelligence at Sonnet cost for coding tasks, achieved through strateg
 - Claude Code's Agent tool supports `model: "opus"` overrides for spawning advisor agents
 - Plugin-dev and skill-creator plugins define best practices for component design
 - Skill-creator plugin is authoritative for agent skill guidelines, overriding plugin-dev overlap
+- **Shipped v1.0 (2026-06-01, plugin 1.0.0):** 4 skills (`/plan`, `/execute`, `/review`, `/security-review`) + 3 Opus agents (advisor, reviewer, security-reviewer); pure Markdown/YAML, zero external dependencies; hardened across 16 phases of UAT-driven field testing. Re-audit: 52/52 requirements, 6/6 integration, 5/5 E2E flows, 16/16 Nyquist-complete.
 
 ## Constraints
 
@@ -69,12 +73,12 @@ Near-Opus intelligence at Sonnet cost for coding tasks, achieved through strateg
 
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
-| Phase-based skills over task-type skills | Advisor timing pattern is the same regardless of task type (refactor, test, feature) -- prompt concern, not orchestration concern | -- Pending |
-| No hooks for v1 | Hooks are global (can't scope to skill execution), lack conversation context, and would add cost/noise without clear value | -- Pending |
-| Single advisor agent, multiple skills | Skills define the workflow; agent defines the advisor persona. Review variants differ by prompt, not orchestration | -- Pending |
-| Inherit session model for executor | Users choose their session model; plugin shouldn't override. Skills optimized for Sonnet 4.6 but work with any model | -- Pending |
+| Phase-based skills over task-type skills | Advisor timing pattern is the same regardless of task type (refactor, test, feature) -- prompt concern, not orchestration concern | Good (shipped v1.0) |
+| No hooks for v1 | Hooks are global (can't scope to skill execution), lack conversation context, and would add cost/noise without clear value | Good (shipped v1.0) |
+| Single advisor agent, multiple skills | Skills define the workflow; agent defines the advisor persona. Review variants differ by prompt, not orchestration | Good (shipped v1.0) |
+| Inherit session model for executor | Users choose their session model; plugin shouldn't override. Skills optimized for Sonnet 4.6 but work with any model | Good (shipped v1.0) |
 | Agent file renamed to `advisor.md` (qualified: `lz-advisor:advisor`) | Original `lz-advisor.md` produced redundant `lz-advisor:lz-advisor`. Renamed to `advisor.md` so qualified name is `lz-advisor:advisor`. Skills use `lz-advisor:advisor` as `subagent_type`. | Phase 1 UAT rename |
-| All skills use advisor pattern (no `context: fork`) | Review skills with `context: fork` + `model: opus` would be indistinguishable from `/review` + `/model opus`. Advisor pattern (Sonnet scans, packages context, Opus advises) genuinely differentiates. Consistent architecture across all skills. | -- Pending |
+| All skills use advisor pattern (no `context: fork`) | Review skills with `context: fork` + `model: opus` would be indistinguishable from `/review` + `/model opus`. Advisor pattern (Sonnet scans, packages context, Opus advises) genuinely differentiates. Consistent architecture across all skills. | Good (shipped v1.0) |
 | Conciseness calibration deferred to Phase 2 | Under 100 words constraint not respected with broad open-ended questions. Scoped skill prompts may suffice; measure with real invocations before tuning agent system prompt. | Phase 1 UAT finding |
 | Mechanism C: review scope derives from git diff, not conversation | Plan narrative claiming "file X is unchanged" previously collapsed review scope. Mechanical derivation via `git diff HEAD --name-only` + `git ls-files --others --exclude-standard` with explicit Narrative-Isolation Rule makes the reviewer robust to executor framing. | Phase 5.4 validated (D-04/D-05/D-06) |
 | Common Contract rule 5 + 5a: executor pre-verifies external claims; fetched content is untrusted source material | Executors routinely punt on "is method X still exported from package Y" rather than resolve during orient. Rule 5 mandates pre-verification with Pre-Verified Package Behavior Claims block; rule 5a wraps WebSearch/WebFetch content in `<fetched source trust="untrusted">` tags to block prompt-injection from docs. | Phase 5.4 validated (D-07/D-08/D-09/D-10) |
@@ -99,6 +103,8 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
+*Last updated: 2026-06-01 -- **v1.0 MILESTONE COMPLETE** (plugin 1.0.0). Re-audit clean on all hard gates (52/52 requirements, 6/6 integration, 5/5 flows, 16/16 Nyquist-complete); the first-audit tech_debt is resolved (Phase 10 doc-hygiene + the finding-resolution session: Phase 01 human_verification empirically closed, FIND-F closed by-design via web-deprivation re-verification, and the ADVR-04 / ADVR-06 / CLAUDE.md-effort definition drifts reconciled). Atomic 5-surface SemVer bump 0.15.0 -> 1.0.0; README "What's New" collapsed to a standalone 1.0.0 entry. Milestone archived to `milestones/v1.0-*`; ROADMAP collapsed to a milestone index; REQUIREMENTS archived + removed (fresh set comes via `/gsd-new-milestone`). Tagged `v1.0` (NOT pushed -- marketplace publication deferred per user directive until after a successful audit + completion). Advisor runtime-proven on Opus 4.8.*
+
 *Last updated: 2026-06-01 -- Phase 9 complete (plugin 0.15.0; final phase of v1.0). Reversed the Phase 5.2 D-01/D-02 skill naming: the four skill directories + `name:` frontmatter fields renamed from the dotted `lz-advisor.<skill>` pattern back to plain `<skill>` (`plan`, `execute`, `review`, `security-review`) via `git mv` (history preserved), so the qualified invocation is now the clean `lz-advisor:<skill>` instead of the redundant `lz-advisor:lz-advisor-<skill>`. Cross-reference sweep across operational surfaces only (4 SKILL.md, 3 references, 2 agents, README, .gitignore, CLAUDE.md, 4 eval JSON + conciseness-assessment.md + 4 eval workspace dirs, 11 maintained smoke fixtures); atomic 5-surface 0.14.2 -> 0.15.0 bump; the `Agent(lz-advisor:<agent>)` colon refs (D-03) and the ~362 frozen historical `.planning/` artifacts + these root planning-doc dotted refs (D-06) left UNCHANGED as accurate history. Empirically closed the open Phase 5.2 D-07 "bet on resolution" via the D-08 headless probe: all 4 skills resolve headlessly to `<command-name>/lz-advisor:<skill></command-name>` and review/security-review resolve to the PLUGIN skill, not Claude Code's built-in `/review` / `/security-review` (verified against the 4 `claude -p` session transcripts on disk). Code review clean (0 critical / 0 warning / 1 info); goal verification 10/10 decisions D-01..D-10. Canonical invocation is context-dependent (D-07): bare `/plan` interactive (picker disambiguates), qualified `/lz-advisor:plan` headless.*
 
 *Last updated: 2026-05-31 -- Post-Phase-8 refactor (plugin 0.14.2, commit ca7137f). Removed the two cross-skill body references in lz-advisor.plan (which named lz-advisor.execute's E.2/E.3 sections) per progressive disclosure (plugin-dev skill-development: information lives in SKILL.md OR a references file, not both). Extracted the canonical surface-to-target mapping + worked examples + stale-daemon caveat into `references/verify-target-selection.md`; both skills now reference the shared doc, execute keeps the load-bearing principle inline; atomic 5-surface 0.14.1 -> 0.14.2 bump. Supersedes Phase 8 REVIEW IN-01 (plan/execute mapping divergence) at the root. Validated end-to-end by a plan+execute Compodoc UAT against ngx-smart-components (uat-refactor-0.14.2/FINDINGS.md): plan emits a Validate step naming the Storybook target via the shared doc; execute E.3 verify-target selection (build-storybook, not nx test) + GAP-S10 final-consult packing both preserved; advisor final consult caught a real dev-server-target `outputs` gap (fixed same run). New convention recorded: memory feedback_no_cross_skill_body_references.*

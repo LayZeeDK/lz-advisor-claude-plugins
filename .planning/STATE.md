@@ -1,10 +1,10 @@
 ---
 gsd_state_version: 1.0
 milestone: v1.0
-milestone_name: milestone
-status: Milestone complete
+milestone_name: documentation-hygiene cleanup
+status: v1.0 milestone complete
 stopped_at: Phase 10 doc-hygiene cleanup complete
-last_updated: "2026-06-01T09:29:58Z"
+last_updated: "2026-06-01T10:45:09.150Z"
 last_activity: 2026-06-01
 progress:
   total_phases: 16
@@ -21,23 +21,22 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-10)
 
 **Core value:** Near-Opus intelligence at Sonnet cost for coding tasks, through strategic advisor consultation at high-leverage moments
-**Current focus:** Phase 10 -- milestone v1.0 documentation-hygiene cleanup (complete)
+**Current focus:** v1.0 MVP shipped (plugin 1.0.0, 2026-06-01). No active milestone -- start the next with `/gsd-new-milestone`, or publish v1.0 when ready.
 
 ## Current Position
 
-Phase: 10
-Plan: 10-01 complete (Cluster A tech-debt cleanup; see 10-VERIFICATION.md)
+Phase: -- (v1.0 milestone COMPLETE 2026-06-01)
+Plan: --
 
-Phase 10 closed the v1.0 milestone audit's Cluster A documentation-hygiene tech debt
-(`.planning/v1.0-MILESTONE-AUDIT.md`, status `tech_debt`, no critical gaps) in 4 atomic
-doc commits, plugin untouched at 0.15.0: refreshed the stale GAP-D-budget-empirical
-definition to the per-section `<output_constraints>` contract + checked off 42 satisfied
-requirement definitions (6e5181b); backfilled the README "What's New" changelog 0.6.0 ->
-0.15.0 + corrected the singular-agent prose to the 3-agent design (5fe84cb); replaced the
-forbidden `grep -q` with `rg -q` in J-narrative-isolation.sh / DEF-09-01 (1f1028f). Cluster B
-(Nyquist backfill, phases 1/2/5/5.5) and Cluster C (FIND-F watch item + 2 human_verification
-items) are accept-and-track per user decision 2026-06-01. Next: re-run `/gsd-audit-milestone`
-then `/gsd-complete-milestone v1.0`.
+v1.0 MVP shipped at plugin 1.0.0. The re-audit was clean on all hard gates (52/52
+requirements, 6/6 integration, 5/5 flows, 16/16 Nyquist-complete); the first-audit
+tech_debt was fully resolved (Phase 10 doc-hygiene + the finding-resolution session:
+Phase 01 human_verification empirically closed, FIND-F closed by-design via web-deprivation
+re-verification, and the ADVR-04 / ADVR-06 / CLAUDE.md-effort definition drifts reconciled).
+Milestone archived to `milestones/v1.0-*`; ROADMAP collapsed to a milestone index;
+REQUIREMENTS archived + removed; PROJECT.md evolved; RETROSPECTIVE.md written; tagged `v1.0`
+locally. **Marketplace publication (push `main` + the `v1.0` tag to GitHub) is DEFERRED pending
+explicit user go-ahead.** Next: `/gsd-new-milestone` for the next cycle, or publish v1.0 when ready.
 
 ### Historical position (pre-Phase-10)
 
@@ -64,7 +63,7 @@ Carry-forward (pre-existing, NOT gap-closure blockers): 08-HUMAN-UAT.md still pa
 08-VERIFICATION.md human_verification items (natural Class-2 escalation-hook re-validation; optional
 marketplace publication) remain open Phase 9 watch items.
 
-Last activity: 2026-06-01 - Completed quick task 260601-f2a: corrected the /plan "no built-in twin" mischaracterization in 09-03-SUMMARY + 09-VERIFICATION (Claude Code ships a built-in /plan; picker disambiguates via the (lz-advisor) qualifier; evidence 09-UAT.md Test 3)
+Last activity: 2026-06-01
 
 Progress: [##########] 100% (original milestone) + 2 gap-closure plans pending execution
 

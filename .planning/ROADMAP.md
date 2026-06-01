@@ -1,297 +1,43 @@
 # Roadmap: lz-advisor
 
-## Overview
+## Milestones
 
-This roadmap delivers a Claude Code marketplace plugin implementing the advisor strategy -- pairing an Opus advisor agent with Sonnet executor skills. All four skills use the same pattern: Sonnet executor scans/orients, packages context, and consults an Opus advisor agent for strategic guidance. The build order follows hard dependencies: the advisor agent must exist before any skill can reference it, the plan skill validates the consultation mechanism before the more complex execute skill builds on it, review skills reuse the proven pattern for code analysis, and polish addresses cross-cutting description optimization that requires working skills.
+- **[SHIPPED] v1.0 MVP** -- Phases 1-10 (incl. 5.1-5.6), shipped 2026-06-01 at plugin 1.0.0. Full detail: [milestones/v1.0-ROADMAP.md](milestones/v1.0-ROADMAP.md).
 
 ## Phases
 
-**Phase Numbering:**
-- Integer phases (1, 2, 3): Planned milestone work
-- Decimal phases (2.1, 2.2): Urgent insertions (marked with INSERTED)
+<details>
+<summary>[SHIPPED] v1.0 MVP (Phases 1-10) -- 2026-06-01, plugin 1.0.0</summary>
 
-Decimal phases appear between their surrounding integers in numeric order.
+- [x] Phase 1: Plugin Scaffold and Advisor Agent
+- [x] Phase 2: Plan Skill
+- [x] Phase 3: Execute Skill
+- [x] Phase 4: Review Skills
+- [x] Phase 5: Polish and Marketplace Readiness
+- [x] Phase 5.1: Advisor consultation refinements (INSERTED)
+- [x] Phase 5.2: Rename skills + advisor preamble waste (INSERTED)
+- [x] Phase 5.3: Field-test findings + Opus 4.7 UAT items (INSERTED)
+- [x] Phase 5.4: UAT findings A-K (INSERTED)
+- [x] Phase 5.5: Test #5 pipeline + proactive web-research (INSERTED)
+- [x] Phase 5.6: E-runtime regression + full Compodoc UAT (INSERTED)
+- [x] Phase 6: Address Phase 5.6 UAT findings
+- [x] Phase 7: Address all Phase 5.x + 6 UAT findings
+- [x] Phase 8: Phase 7 residuals + wip-discipline reversal + GAP-S9/S10 gap-closure
+- [x] Phase 9: Rename skills (dotted `lz-advisor.<skill>` -> plain `<skill>`)
+- [x] Phase 10: Milestone v1.0 documentation-hygiene cleanup
 
-- [ ] **Phase 1: Plugin Scaffold and Advisor Agent** - Working plugin with Opus advisor agent discoverable and invocable
-- [ ] **Phase 2: Plan Skill** - Users can get Opus-guided strategic plans before writing code
-- [ ] **Phase 3: Execute Skill** - Users can execute tasks with full executor-advisor loop
-- [ ] **Phase 4: Review Skills** - Users can get Opus-powered code and security reviews of completed work
-- [ ] **Phase 5: Polish and Marketplace Readiness** - Plugin is discoverable, documented, and ready for marketplace
+Full phase details, requirements, success criteria, and plan breakdowns are archived in [milestones/v1.0-ROADMAP.md](milestones/v1.0-ROADMAP.md).
 
-## Phase Details
+</details>
 
-### Phase 1: Plugin Scaffold and Advisor Agent
-**Goal**: A valid marketplace plugin structure with an Opus advisor agent that provides concise strategic guidance when invoked
-**Depends on**: Nothing (first phase)
-**Requirements**: INFRA-01, INFRA-02, INFRA-03, ADVR-01, ADVR-02, ADVR-03, ADVR-04, ADVR-05, ADVR-06
-**Success Criteria** (what must be TRUE):
-  1. Plugin loads without errors when installed via `--plugin-dir` (verified with `claude --debug`)
-  2. User can invoke the `lz-advisor` agent via the Agent tool and receive a response from Opus 4.6
-  3. Advisor responses are concise (under 100 words, enumerated steps) and strategic, not verbose explanations
-  4. Advisor reads project files when needed but never writes or modifies anything
-  5. Reference file for advisor timing guidance exists and stays under the 5,000-token compaction limit
-**Plans**: 2 plans
+### Next milestone (planned)
 
-Plans:
-- [x] 01-01-PLAN.md -- Plugin manifest, directory structure, and Opus advisor agent definition
-- [x] 01-02-PLAN.md -- Advisor timing reference file and plugin README
-
-### Phase 2: Plan Skill
-**Goal**: Users can invoke `/lz-advisor.plan` to get an Opus-informed strategic plan for any coding task
-**Depends on**: Phase 1
-**Requirements**: PLAN-01, PLAN-02, PLAN-03, PLAN-04, PLAN-05, PLAN-06
-**Success Criteria** (what must be TRUE):
-  1. User invokes `/lz-advisor.plan` and the executor explores the codebase before consulting the advisor
-  2. Advisor receives packaged orientation findings (not raw conversation history) and returns concise strategic direction
-  3. Executor expands advisor guidance into a detailed, actionable plan artifact (written to file or displayed)
-  4. Skill runs on the session model (Sonnet) for execution while consulting Opus only for strategic direction
-**Note from Phase 1 UAT**: Advisor conciseness constraint (under 100 words) was not respected when invoked with broad open-ended questions. Calibrate during Phase 2 -- the executor's scoped prompts may suffice, or the agent system prompt may need strengthening. Measure with real skill-driven invocations before tuning.
-**Plans**: 1 plan
-
-Plans:
-- [x] 02-01-PLAN.md -- SKILL.md with orient-consult-produce workflow and .gitkeep cleanup
-
-### Phase 3: Execute Skill
-**Goal**: Users can invoke `/lz-advisor.execute` to execute coding tasks with strategic Opus consultation at high-leverage moments
-**Depends on**: Phase 2
-**Requirements**: IMPL-01, IMPL-02, IMPL-03, IMPL-04, IMPL-05, IMPL-06, IMPL-07, IMPL-08, IMPL-09, IMPL-10
-**Success Criteria** (what must be TRUE):
-  1. Executor consults advisor before substantive work (after orientation) and packages relevant context into each consultation
-  2. Executor consults advisor when stuck (recurring errors, approach not converging) or considering a change of approach
-  3. Executor makes deliverable durable (writes files, commits) before final advisor review, then consults advisor before declaring done
-  4. When executor findings conflict with advisor guidance, the reconciliation pattern surfaces the conflict in one more advisor call rather than silently ignoring advice
-  5. Skill accepts an optional plan file (from `/lz-advisor.plan` or other sources) and uses it to inform the implementation
-**Plans**: 2 plans
-
-Plans:
-- [x] 03-01-PLAN.md -- Move advisor-timing.md to shared references/ and update plan skill output path
-- [x] 03-02-PLAN.md -- Execute skill SKILL.md with 6-phase executor-advisor loop
-
-### Phase 4: Review Skills
-**Goal**: Users can get thorough Opus-advised code quality reviews and security-focused threat analysis of completed work
-**Depends on**: Phase 1
-**Requirements**: REVW-01, REVW-02, REVW-03, REVW-04, REVW-05, REVW-06, SECR-01, SECR-02, SECR-03, SECR-04, SECR-05, SECR-06, SECR-07
-**Success Criteria** (what must be TRUE):
-  1. User invokes `/lz-advisor.review` and Sonnet scans code, packages findings, then Opus advisor provides deep quality analysis
-  2. User invokes `/lz-advisor.security-review` and Sonnet scans for attack surfaces, packages findings, then Opus advisor performs threat modeling with OWASP Top 10 lens
-  3. Both review skills produce structured output with actionable, severity-classified findings
-  4. Both review skills use the same executor-advisor pattern as plan and implement (consistent architecture)
-**Plans**: 2 plans
-
-Plans:
-- [x] 04-01-PLAN.md -- Validation script, reviewer agent, and code quality review skill
-- [x] 04-02-PLAN.md -- Security-reviewer agent and security review skill
-
-### Phase 5: Polish and Marketplace Readiness
-**Goal**: Plugin restructured for marketplace distribution, agents verified, skill descriptions optimized for discoverability, and plugin ready for publication
-**Depends on**: Phase 4
-**Requirements**: INFRA-04
-**Success Criteria** (what must be TRUE):
-  1. Plugin lives at plugins/lz-advisor/ following marketplace conventions
-  2. All agents pass plugin-dev validation with expanded system prompts (500+ words)
-  3. Every skill description optimized via run_loop.py with improved eval scores
-  4. Plugin installs from GitHub marketplace and all skills appear in user's skill list
-**Plans**: 5 plans
-
-Plans:
-- [x] 05-01-PLAN.md -- Restructure plugin to plugins/lz-advisor/ and marketplace setup
-- [x] 05-02-PLAN.md -- Agent verification and fixes against plugin-dev guidelines
-- [x] 05-03-PLAN.md -- Generate eval queries with cross-skill negatives
-- [x] 05-04-PLAN.md -- Run description optimization pipeline and measure conciseness
-- [x] 05-05-PLAN.md -- Final validation, README updates, and marketplace install test
+No active milestone. Start the next one with `/gsd-new-milestone` (questioning -> research -> requirements -> roadmap).
 
 ## Progress
 
-**Execution Order:**
-Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5
+| Milestone | Phases | Status | Completed |
+|-----------|--------|--------|-----------|
+| v1.0 MVP | 1-10 (incl. 5.1-5.6) | Complete | 2026-06-01 |
 
-| Phase | Plans Complete | Status | Completed |
-|-------|----------------|--------|-----------|
-| 1. Plugin Scaffold and Advisor Agent | 0/2 | Planning complete | - |
-| 2. Plan Skill | 0/1 | Planning complete | - |
-| 3. Execute Skill | 0/2 | Planning complete | - |
-| 4. Review Skills | 0/2 | Planning complete | - |
-| 5. Polish and Marketplace Readiness | 0/5 | Planning complete | - |
-
-### Phase 05.6: Diagnose E-runtime regression and re-run full Compodoc UAT to close Phase 5.5 Plan 06 (INSERTED)
-
-**Goal:** Diagnose and close the Finding E semantic regression in the advisor literal-frame contract for thin-context plan tasks; re-run the full 6-session Compodoc UAT against the fixed plugin to close Phase 5.5 Plan 06's D-11 gates. Gap 1 (plan-skill Orient phase uses node_modules archaeology instead of WebFetch/WebSearch for public-library tasks, surfaced via 05.6-UAT.md rerun under plugin 0.8.1) closed via Plan 05 with tool-preference prose edits + SemVer patch 0.8.1 -> 0.8.2. Gap 2 (regression of Plan 05 fix under sonnet/medium even with authoritative docs inlined) closed via Plan 06 with <context_trust_contract> + <orient_exploration_ranking> XML blocks across all 4 SKILLs + Pattern C in Rule 5 + SemVer patch 0.8.2 -> 0.8.3.
-**Requirements**: ADVR-02 (umbrella advisor-calibration requirement)
-**Depends on:** Phase 5
-**Plans:** 7/7 plans complete
-
-Plans:
-- [x] 05.6-01-PLAN.md -- Forward-capture diagnostic for Finding E regression (completed 2026-04-24)
-- [x] 05.6-02-PLAN.md -- Density bifurcation (two-example advisor density) + DEF JSONL-layer redesign (Shape 3 supersession) (completed 2026-04-24)
-- [x] 05.6-03-PLAN.md -- Plugin version bump 0.8.0 -> 0.8.1 (SemVer patch) (completed 2026-04-24)
-- [x] 05.6-04-PLAN.md -- Stage 0 DEF fix-validation + Stage 2 6-session UAT replay + VERIFICATION.md with D-11 gates (completed 2026-04-24)
-- [x] 05.6-05-PLAN.md -- Orient-phase tool-preference ranking: WebFetch over node_modules archaeology (plan + execute skills + context-packaging Rule 5 amendment) + SemVer patch 0.8.1 -> 0.8.2 (closes Gap 1 from 05.6-UAT.md)
-- [x] 05.6-06-PLAN.md -- Context Trust Contract + Orient Exploration Ranking (Pattern A + B XML blocks) replacing Plan 05's failed soft-preference bullet across all 4 SKILL.md + Pattern C in context-packaging.md Rule 5 + SemVer patch 0.8.2 -> 0.8.3 (closes Gap 2 from 05.6-UAT.md)
-- [x] 05.6-07-PLAN.md -- SKILL.md de-conflict (remove permissive Inside-node_modules clause from plan + execute SKILL.md L74/L85 leaving only the unconditional prohibition; brings plan + execute to byte-identical prohibition-only parity with review + security-review) + context-packaging.md Rule 7 (prior Strategic Direction inclusion in subsequent advisor consultations) + SemVer patch 0.8.3 -> 0.8.4 (closes Gap 3 from 05.6-UAT.md)
-
-### Phase 05.5: Resolve issues found in Phase 5.4 UAT Test #5 pipeline and ensure plan skill uses WebSearch and WebFetch to research and verify information not in pre-trained knowledge before asking the plan advisor agent, including Nx knowledge gap. Include minor and follow-up issues: plan-skill Nx-convention verification gap, security-reviewer output-shape smoke test, advisor word-budget discipline audit, verbose-prompt detection nudge. (INSERTED)
-
-**Goal:** Close 4 actionable issues from Phase 5.4 UAT Test #5 through surgical edits to plan/execute SKILLs, advisor agent, smoke-test script, and context-packaging reference: (MAJOR) plan-skill Nx-ecosystem convention knowledge gap that drove S5 to 3 advisor consultations on cache inputs / dependsOn / lint dependsOn -- closed via Common Contract rule 5 broadening (D-01) and symmetric orient-phase framework-verification cues in plan + execute SKILLs (D-02); (MODERATE) security-reviewer has no output-shape smoke-test analog to DEF-response-structure.sh -- closed by extending DEF with G and H assertion blocks against a separate security-review invocation (D-06/D-07); (MODERATE) advisor word-budget drift (S4 = 136 full / 118 numbered-only, not S1 per empirical R-03 correction) -- closed via advisor.md density example (D-04) + DEF word-count gate (D-05); (MINOR) verbose-prompt orient-loop trigger -- closed via plan-skill-only runtime reshape nudge (D-08). Bumps plugin to 0.8.0 (plugin.json + 4 SKILL.md files, correcting Phase 5.4 drift where execute/review/security-review were missed). Verified via two-stage gate: extended DEF-response-structure.sh (Stage 1) + full 6-session UAT replay with tally.mjs against fresh traces (Stage 2; D-11 per-skill gates).
-**Requirements**: D-01..D-12 (CONTEXT.md locked decisions; REQUIREMENTS.md IDs not assigned for this phase)
-**Depends on:** Phase 5.4
-**Plans:** 5/6 plans executed
-
-Plans:
-- [x] 05.5-01-PLAN.md -- Common Contract rule 5 broadening in context-packaging.md (D-01, D-03; framework conventions first-class)
-- [x] 05.5-02-PLAN.md -- Orient-phase framework cue in plan + execute SKILL.md + verbose-prompt reshape nudge in plan SKILL.md only (D-02, D-08, D-09)
-- [x] 05.5-03-PLAN.md -- Advisor density example (95-100 word worked example) in advisor.md Output Constraint (D-04)
-- [x] 05.5-04-PLAN.md -- DEF-response-structure.sh word-count gate + security-reviewer G/H assertions (D-05, D-06, D-07)
-- [x] 05.5-05-PLAN.md -- Version bump 0.8.0 across plugin.json + 4 SKILL.md files, correcting Phase 5.4 drift (D-12)
-- [ ] 05.5-06-PLAN.md -- Two-stage verification: DEF smoke test + 6-session UAT replay + tally + VERIFICATION.md with D-11 gates (D-10, D-11)
-
-### Phase 05.4: Address UAT findings A-K (INSERTED)
-
-**Goal:** Close 10 executor/agent discipline findings (A-K) surfaced in Phase 5.3 UAT by shipping a coherent "executor verifies cheaply and correctly before burdening agents" doctrine. Rewrites review/security-review scan phases to derive scope mechanically from git (Finding J), adds web tools to all four skill allowed-tools lines, introduces Pre-Verified Package Behavior Claims section and Common Contract rules 5 + 6 in context-packaging.md (Findings K + C + B + I), reworks the node_modules orientation-budget instruction (Finding A), and polishes advisor + reviewer + security-reviewer response structures with Position B Critical marker, inline Assuming X framing, and two-slot Findings + Cross-Cutting/Threat Patterns outputs (Findings D + E + F). Bumps plugin to 0.6.0. Plan 05 closes 2 live-runtime regressions (E-runtime, F-runtime) and 1 smoke-test script bug (A-smoke-script-bug) surfaced during Phase 05.4 HUMAN-UAT.
-**Requirements**: D-01..D-17 (CONTEXT.md locked decisions; REQUIREMENTS.md IDs not assigned for this phase)
-**Depends on:** Phase 5.3
-**Plans:** 7/7 plans complete
-
-Plans:
-- [x] 05.4-01-PLAN.md -- Mechanism C scope derivation in review + security-review scan phases (Finding J)
-- [x] 05.4-02-PLAN.md -- WebSearch/WebFetch + Pre-Verified Claims templates + Common Contract rule 5/5a (Findings K + C + B)
-- [x] 05.4-03-PLAN.md -- D-11 allowed-tools expansion + Common Contract rule 6 + D-14 reword + 0.6.0 version bump (Findings H + I + A)
-- [x] 05.4-04-PLAN.md -- advisor Position B Critical marker + inline Assuming X across three agents + reviewer/security-reviewer two-slot Output Constraint (Findings D + E + F)
-- [x] 05.4-05-PLAN.md -- Gap closure: strengthen advisor Assuming X + reviewer/security-reviewer literal-header output contract + review/security-review Phase 3 pass-through + HIA smoke-script REPO_ROOT capture (E-runtime + F-runtime + A-smoke-script-bug)
-
-### Phase 05.3: Resolve issues identified in field test and take the quick-260417-lhe task into account (INSERTED)
-
-**Goal:** Close Phase 5.2 field-test findings F1-F5 and the 6 open Opus 4.7 UAT items from quick task 260417-lhe in one coordinated phase: harden all three Opus agent prompts with a Context Trust Contract (positive-framing, batching directive, per-role calibration), consolidate executor context packaging into a new shared `references/context-packaging.md` reference loaded by all four SKILL.md files, add an orientation-budget instruction to plan/execute skills, and empirically validate the fixes via an 8-subagent A/B UAT on the Compodoc+Storybook scenario with a D-04 dual acceptance gate (>=80% first-try success AND <=4 advisor tool calls per consultation). Bump plugin to 0.5.0.
-**Requirements**: D-01..D-16 (CONTEXT.md locked decisions; REQUIREMENTS.md IDs not assigned for this phase)
-**Depends on:** Phase 5
-**Plans:** 5/5 plans complete
-
-Plans:
-- [x] 05.3-01-PLAN.md -- Agent prompt edits: Context Trust Contract on advisor + reviewer + security-reviewer, trim overlap in Verification/Review Process (D-06, D-07, D-08, D-09)
-- [x] 05.3-02-PLAN.md -- New shared reference `references/context-packaging.md`, 4 SKILL.md @-load swaps, D-13 orientation-budget in plan + execute (D-10, D-11, D-12, D-13)
-- [x] 05.3-03-PLAN.md -- UAT harness scaffolding (subagent prompt, grader prompt, Compodoc scenario, parse-trace.mjs) + single-UAT validation run confirming A1/A2/A3 (D-03, D-14, D-16 scaffolding)
-- [x] 05.3-04-PLAN.md -- Full 8-subagent UAT (baseline + post-fix) + grader + D-04 dual-gate verdict + VERIFICATION.md with UAT 5 human_needed (D-01, D-02, D-04, D-05, D-14, D-15, D-16 execution)
-- [x] 05.3-05-PLAN.md -- Version bump 0.4.0 -> 0.5.0 in plugin.json + 4 SKILL.md frontmatter; README.md What's New + References entries
-
-### Phase 05.2: Rename skills and resolve preamble waste for advisor agent (INSERTED)
-
-**Goal:** Rename all four skill directories and name fields to `lz-advisor.<skill>` pattern for unique user-facing shorthands, change advisor agent effort from high to medium to eliminate preamble waste, update all cross-references, bump to 0.3.0, and update Opus research doc for 4.6
-**Requirements**: RENAME-01, RENAME-02, RENAME-03, PREAMBLE-01, PREAMBLE-02, DOC-01
-**Depends on:** Phase 5
-**Plans:** 4/4 plans complete
-
-Plans:
-- [x] 05.2-01-PLAN.md -- Git mv directories, update skill frontmatter/body, advisor effort, plugin version
-- [x] 05.2-02-PLAN.md -- Update CLAUDE.md, README.md, and eval JSON query strings
-- [x] 05.2-03-PLAN.md -- Rewrite MODEL-OPTIMIZATION-OPUS.md from Opus 4.5 to 4.6
-- [x] 05.2-04-PLAN.md -- Gap closure: fix maxTurns: 1 structural blocker, restructure advisor prompt with visibility model
-
-### Phase 05.1: Advisor consultation refinements (INSERTED)
-
-**Goal:** Eliminate advisor preamble waste, preserve user-pasted source material fidelity, and add specific re-consultation triggers -- refining ADVR-02, IMPL-02, IMPL-03 through surgical edits to agent and skill files
-**Requirements**: ADVR-02, IMPL-02, IMPL-03 (refinements, no new requirements)
-**Depends on:** Phase 5
-**Plans:** 1/1 plans complete
-
-Plans:
-- [x] 05.1-01-PLAN.md -- Final Response Discipline, verbatim-vs-summary rules, re-consultation triggers, version bump
-
-### Phase 6: Address Phase 5.6 UAT findings
-
-**Goal:** Close two open behavioral gaps from Phase 5.6 Plan 07 autonomous UAT (zero WebFetch/WebSearch usage across 6 sessions; Pattern B class-conflation) by shipping a question-class-aware Pattern D in a new shared reference (`plugins/lz-advisor/references/orient-exploration.md`) `@`-loaded from all 4 SKILL.md, with mirrored cross-reference in `references/context-packaging.md` Rule 5 and SemVer patch 0.8.4 -> 0.8.5. Pre-existing KCB-economics smoke (synthetic-prompt artifact) re-runs as the load-bearing gate signal. Verified via two-stage gate: 4 smoke scripts on plugin 0.8.5 (Stage 1) + 6-session reshaped-prompt UAT replay with web-usage gate >=1 in >=4/6 sessions (Stage 2; D-11 per-skill thresholds inherit Phase 5.5/5.6 verbatim).
-**Requirements**: D-01..D-06 (CONTEXT.md locked decisions; REQUIREMENTS.md IDs not assigned for this phase)
-**Depends on:** Phase 5.6
-**Plans:** 7 plans (4 original + 3 gap-closure for amendments 2, 3, 4)
-
-Plans:
-- [x] 06-01-PLAN.md -- Create plugins/lz-advisor/references/orient-exploration.md (Pattern D 4-class taxonomy: type-symbol existence, API currency, migration/deprecation, language semantics) (D-01, D-03)
-- [x] 06-02-PLAN.md -- Wire Pattern D: @-load line in 4 SKILL.md <orient_exploration_ranking> blocks + context-packaging.md Rule 5 cross-reference + plugin version 0.8.4 -> 0.8.5 (D-02, D-06)
-- [x] 06-03-PLAN.md -- UAT replay infrastructure: copy runners + extend tally.mjs with web_uses column + compose 6 reshaped prompts per D-04 class assignments (D-04)
-- [x] 06-04-PLAN.md -- Two-stage verification gate: Stage 1 smoke (4 scripts on 0.8.5; KCB K+C+B load-bearing) + Stage 2 6-session UAT replay + tally aggregation + session-notes.md + 06-VERIFICATION.md (D-04, D-05)
-- [x] 06-05-PLAN.md -- Gap closure G1+G2: rewrite <context_trust_contract> in 4 SKILL.md byte-identically with provenance-based classification (vendor-doc vs agent-generated) + ToolSearch-availability rule (closes amendments 2 + 3) (D-01, D-02)
-- [x] 06-06-PLAN.md -- Gap closure G3: append Class 2-S sub-pattern to references/orient-exploration.md (npm audit -> GHSA -> WebSearch CVE; pv-no-known-cves / pv-cve-list block shapes; Compodoc-1.2.1 worked example) + one-line cross-reference in lz-advisor.security-review/SKILL.md (closes amendment 4) (D-01, D-02)
-- [x] 06-07-PLAN.md -- Plugin version bump 0.8.9 -> 0.9.0 across 5 surfaces + 3 regression replay UATs (plan-fixes, execute-fixes, security-review) on plugin 0.9.0 + 06-VERIFICATION.md amendment 5 downgrading PASS-with-caveat to PASS or PASS-with-residual-Phase-7-scope (closes closure criteria 3, 4, 5) (D-06, D-01, D-02)
-
-### Phase 7: Address all Phase 5.x and 6 UAT findings
-
-**Goal:** Close all Phase 5.x + 6 UAT findings (Findings A, B.1+B.2, C, D, E, F, H + GAP-G1+G2-empirical from Phase 6 amendment 5) plus the in-phase Gap 1 (ToolSearch precondition firing) + Gap 2 (wip-discipline scope ambiguity) surfaced by 8-session UAT replay on plugin 0.10.0.
-**Requirements**: FIND-A, FIND-B.1, FIND-B.2, FIND-C, FIND-D, FIND-E.1, FIND-E.2, FIND-F, FIND-G, FIND-H, FIND-silent-resolve, GAP-G1+G2-empirical, GAP-G1-firing, GAP-G2-wip-scope, GAP-D-budget-empirical
-**Depends on:** Phase 6
-**Plans:** 17 plans (13 sealed + 4 gap-closure-3 for 2026-05-06 per-section budget contract redesign)
-
-Plans:
-- [x] 07-01-PLAN.md -- Strengthen Common Contract Rule 5 with pv-* validation (Rule 5b) + ToolSearch supplement in 4 SKILL.md byte-identical canon + B-pv-validation.sh smoke fixture (FIND-B.1, FIND-B.2, FIND-H, GAP-G1+G2-empirical)
-- [x] 07-02-PLAN.md -- Hedge marker discipline in 3 agent prompts + verify-before-commit block in execute SKILL.md + scan criterion in review SKILL.md + Findings Disposition convention in plan SKILL.md (FIND-A, FIND-E.1, FIND-E.2, FIND-G, FIND-silent-resolve)
-- [x] 07-03-PLAN.md -- 4 confidence-laundering guards + scope-disambiguated provenance markers (FIND-C)
-- [x] 07-04-PLAN.md -- Word-budget structural sub-caps + 3 D-*-budget smoke fixtures (FIND-D)
-- [x] 07-05-PLAN.md -- Reviewer Class-2 escalation hook (Option 1 + Option 2) (FIND-F)
-- [x] 07-06-PLAN.md -- Plugin 0.10.0 + E-verify-before-commit.sh + UAT replay infrastructure + 8-session UAT chain + Amendment 6
-- [x] 07-07-PLAN.md -- Gap 1 closure: default-on ToolSearch + worked examples in 4 SKILL.md byte-identical canon + Rule 5b alignment + B-pv-validation.sh Assertion 5 + plugin 0.11.0 + 07-VERIFICATION amendment + 06-VERIFICATION amendment 7 (GAP-G1-firing)
-- [x] 07-08-PLAN.md -- Gap 2 closure: subject-prefix discipline + 3-shape worked example pair in lz-advisor.execute/SKILL.md + E-verify-before-commit.sh path-d assertion fired by synthesized in-process scenario + --replay flag (manual auditor tool, structural error-path) + GAP-G2-wip-scope registration + 07-VERIFICATION amendment + 06-VERIFICATION amendment 8 + Phase 7 sealing verdict (GAP-G2-wip-scope)
-- [x] 07-09-PLAN.md -- Gap closure for FIND-D word-budget regression: fragment-grammar emit template + effort de-escalation (xhigh -> medium) on reviewer + security-reviewer + smoke fixture parser update + plugin 0.12.0 + REQUIREMENTS.md GAP-D-budget-empirical registration + 07-VERIFICATION amendment 2026-05-02 + Phase 7 sealing readiness update (FIND-D, GAP-D-budget-empirical)
-- [x] 07-10-PLAN.md -- Gap closure for residual-advisor-budget (Plan 07-09 control-case residual): extend fragment-grammar emit template to agents/advisor.md (Candidate A per 07-RESEARCH-GAPS.md Gap 1; reject Candidate B effort de-escalation; reject Candidate C ALL-CAPS imperative); D-advisor-budget.sh parser update with ADVISOR_FRAGMENT_RE + ASSUMING_FRAME_RE + per-item <=15w + aggregate <=100w + backward-compat fallback (FIND-D)
-- [x] 07-11-PLAN.md -- Gap closure for residual-pre-verified-format (Plan 07-01 Rule 5b ambiguity surfaced empirically on plugin 0.12.0): D2 amendment in references/context-packaging.md (internal-prompt XML required; user-facing token-form permitted with concrete-source backing; 3 acceptable shapes enumerated; reject D1 enforcement; reject D3 status-quo) + B-pv-validation.sh Assertion 6 token-resolution check + REQUIREMENTS.md FIND-B.2 dual-surface scope amendment + plugin 0.12.0 -> 0.12.1 PATCH across 5 surfaces + 07-VERIFICATION closure_amendment_2026_05_04 closing both Plan 07-10 + Plan 07-11 (FIND-B.2)
-- [x] 07-12-PLAN.md -- Gap closure for residual-security-reviewer-budget-0_12_1 (07-RESEARCH-GAPS-2.md Gap 1; security-reviewer aggregate 326w / 300 cap on plugin 0.12.1): Direction 1A (worked-example tightening to ~260w) + Direction 1B (per-section sub-cap re-balance 250/160/30 -> 200/100/30) in agents/security-reviewer.md Output Constraint section + plugin 0.12.1 -> 0.12.2 PATCH across 5 surfaces + REQUIREMENTS.md GAP-D-budget-empirical row amendment + 07-VERIFICATION closure_amendment_2026_05_05_security_reviewer_budget (FIND-D, GAP-D-budget-empirical)
-- [x] 07-13-PLAN.md -- Gap closure for residual-severity-vocabulary-alignment (07-RESEARCH-GAPS-2.md Gap 2; 07-REVIEW.md WR-01/02/03): WR-01 mechanical text replacement at agents/security-reviewer.md:284 (Medium -> Suggestion; high-severity -> important-severity) + WR-02 mechanical text replacements at 4 surfaces (lz-advisor.security-review/SKILL.md:126,164 + references/context-packaging.md:289,388 with Surface 4 Option A full alignment) + WR-03 structural new ## Class-2 Escalation Hook section in agents/security-reviewer.md mirroring reviewer.md lines 223-249 with security-specific adaptations + plugin 0.12.1 -> 0.12.2 PATCH bundled with Plan 07-12 + 07-VERIFICATION closure_amendment_2026_05_05_severity_vocabulary_alignment + 07-REVIEW WR-01/02/03 RESOLVED (FIND-D)
-- [x] 07-14-PLAN.md -- Gap closure 3 (per-section budget contract redesign) per user directive 2026-05-06: replace aggregate-300w-cap prose in agents/{reviewer,security-reviewer}.md `## Output Constraint` with XML `<output_constraints>` block (per-finding entry <=22w/28w outlier; CCP/TP <=160w; Missed surfaces <=30w; NEW per-finding-validation <=60w optional surface; aggregate cap dropped); enumerate forbidden legacy patterns in `<do_not_include>`; preserve byte-identical canon (FIND-D, GAP-D-budget-empirical)
-- [x] 07-15-PLAN.md -- Gap closure 3 smoke-fixture parser update: D-{reviewer,security-reviewer}-budget.sh aggregate <=300w assertion REMOVED; per-finding-validation parser ADDED with 60w cap; Findings extraction awk hardened to terminate on any `### ` heading (Pitfall 2); per-finding thresholds 20w/25w -> 22w/28w outlier soft cap on D-reviewer; bash -n PASS (FIND-D, GAP-D-budget-empirical)
-- [x] 07-16-PLAN.md -- Gap closure 3 advisor diagnostic: run extract-advisor-sd.mjs against existing uat-replay-0.12.2/session-1-plan.jsonl trace to disambiguate "advisor regressed on Compodoc scenario" (UAT-REGRESSION-0.12.2 Issue 4 visual ~143w) vs "executor plan-artifact repackaging inflated visible word count"; log fixture-grade verdict (PASS/FAIL) + disposition for Plan 07-17 closure amendment; zero source-file changes (FIND-D)
-- [x] 07-17-PLAN.md -- Gap closure 3 version bump + empirical gate + closure amendment: plugin 0.12.2 -> 0.13.0 MINOR atomically across 5 surfaces (per 07-RESEARCH-GAP-3 Q4 SemVer recommendation); 3x re-run gate D-reviewer-budget.sh + D-security-reviewer-budget.sh on plugin 0.13.0 with logs to regression-gate-0.13.0/; 07-VERIFICATION.md closure_amendment_2026_05_06_per_section_budgets block; Phase 7 status reconfirmation (passed_with_residual on PASS / failed_gap_closure_3 on FAIL); residual-wip-discipline-reversal stays Phase 8 territory (FIND-D, GAP-D-budget-empirical)
-
-Closure: 2026-05-08 `closure_amendment_2026_05_08_uat_replay_0_13_1` supersedes the 2026-05-06 closure_amendment_per_section_budgets failure verdict via WR-01/02/03 mech fix (commit 8bb7b24) + atomic 5-surface 0.13.0 -> 0.13.1 PATCH bump (commit 1c30729) + +10% smoke-gate tolerance at fixture-parser layer only (commit ef97e21; per user directive 2026-05-07: agents stay aimed at canonical targets) + n=10 statistical gate (E.1; commit 35916d8) + E.4 representative-fixture diagnostic (commit 13f57de) + E.3 8-session Compodoc UAT replay (commit 93d10fd; PASSED_WITH_RESIDUAL on 0.13.1). Phase 7 final status: `passed_with_residual_on_0_13_1`. 3 documented residuals carry to Phase 8 (residual-shape-regression-parser NEW; residual-pfv-outlier-cap NEW; residual-wip-discipline-reversal UNCHANGED).
-
-### Phase 8: Resolve Phase 7 sealing residuals + reverse wip-discipline + clear Phase 8 carry-forward backlog
-
-**Goal:** Close all 3 documented residuals from `07-VERIFICATION.md closure_amendment_2026_05_08_uat_replay_0_13_1` (residual-wip-discipline-reversal P0; residual-shape-regression-parser P1; residual-pfv-outlier-cap P1) plus the carry-forward Phase 8 backlog (residual-advisor-fragment-grammar-not-binding-on-code-blocks P2 needs n>=3 fixture-grade re-runs first; WR-04/05 schema parity P3 mechanical edits; P8-03 Pre-Verified Contradiction Rule P3; P8-12 Cross-Skill Hedge Tracking P3; P8-18 Self-anchor through advisor narrative SD prose P3; Class-2 Escalation Hook conditional firing observability P3) bringing plugin from 0.13.1 to 0.14.x with the wip-discipline contract-shape change and the empirical gate hardening at the fixture-parser layer.
-
-**Requirements**: RES-WIP-DISCIPLINE-REVERSAL (P0; user directive 2026-05-03 + memory feedback_no_wip_commits.md; remove Plan 07-08 wip: rule from execute SKILL.md + path-d assertion from E-verify-before-commit.sh + GAP-G2-wip-scope row from REQUIREMENTS.md; bump 0.13.1 -> 0.14.0 MINOR); RES-SHAPE-REGRESSION-PARSER (P1 NEW; loosen smoke parser regex to accept optional leading + trailing backtick on fragment-grammar lines; 5 captured shape-regression traces in `traces/` provide --from-trace replay verification); RES-PFV-OUTLIER-CAP (P1 NEW; raise PFV outlier_soft_cap 66w -> 75-80w on D-security-reviewer-budget.sh for security carve-out, or both fixtures for symmetry; n=3 fresh re-runs verify); RES-ADVISOR-FRAGMENT-GRAMMAR (P2 carry-forward; n>=3 fixture-grade D-advisor-budget runs across heterogeneous scenarios per Plan 07-12 protocol before declaring structural advisor redesign needed); WR-04, WR-05 (P3 carry-forward; mechanical 1-line edits each; bundle with any schema-touching plan); P8-03 Pre-Verified Contradiction Rule (P3 carry-forward; open); P8-12 Cross-Skill Hedge Tracking (P3 carry-forward; open); P8-18 Self-anchor through advisor narrative SD prose (P3 carry-forward; open); FIND-F-CLASS-2-OBSERVABILITY (P3 carry-forward; security-reviewer Class-2 emission against real prompts; needs designed trigger scenario per Plan 07-13 PARTIAL row).
-
-**Depends on:** Phase 7 (status: passed_with_residual_on_0_13_1 on plugin 0.13.1)
-
-
-**Plans:** 10 plans (8 original + 2 gap-closure plans for GAP-S9 / GAP-S10)
-
-Plans:
-- [x] 08-01-wip-discipline-reversal-PLAN.md -- P0 wip-discipline reversal; remove rule from execute SKILL.md + path-d from E-fixture + GAP-G2 from REQUIREMENTS.md; atomic 5-surface 0.13.1 -> 0.14.0 MINOR
-- [x] 08-02-shape-pfv-parser-bundle-PLAN.md -- P1 SHAPE regex loosening + PFV outlier_soft_cap 66w -> 75w on D-security-reviewer-budget.sh; --from-trace replay + n=3 fresh re-runs
-- [x] 08-03-advisor-fragment-grammar-measurement-PLAN.md -- P2 measurement; D-advisor-budget.sh parser extension with code-block flag; n=3 fixture-grade across Compodoc + feature + refactor; emits 08-MEASUREMENT.md with compound OR-gate decision
-- [x] 08-03.5-advisor-fragment-grammar-measurement-extension-PLAN.md -- CONDITIONAL on Plan 3 = INCONCLUSIVE; n=2 more sessions (total n=5); re-evaluates gate
-- [x] 08-04-advisor-fragment-grammar-structural-PLAN.md -- CONDITIONAL on Plan 3 (or 3.5) = FAIL; disposition-driven fix to advisor.md (D1 / D2 / both / escalation to per-section XML); atomic 5-surface PATCH or MINOR bump
-- [x] 08-05-wr-04-05-reconciliation-trail-cleanup-PLAN.md -- P3 planning-trail reconciliation (WR-04/05 already pre-closed on main via commits 7f28903 + 5ea449f); zero plugin surface changes
-- [x] 08-06-advisor-narrative-sd-pv-extension-PLAN.md -- P3 P8-18; Rule 5b extension in context-packaging.md + new smoke fixture G-advisor-narrative-sd-pv.sh (PASSED 3/3 paths on first live run, plugin 0.13.1)
-- [x] 08-07-class-2-escalation-hook-observability-PLAN.md -- P3 FIND-F; designed CVE-2025-68154 trigger UAT + new smoke fixture F-class-2-escalation.sh
-- [x] 08-08-PLAN.md -- GAP-S9 verify-target-by-change-surface; add execute Phase 3.5 E.3 selection heuristic + tooling-freshness clause + plan-skill change-surface-matched Validate-step rule (defense-in-depth; execute + plan SKILL.md only; no version bump)
-- [x] 08-09-PLAN.md -- GAP-S10 final-advisor pack-then-trust; pack post-change contents/diff into execute Phase 5 final consult + advisor.md final-review no-disk-hunting clause (maxTurns stays 3) + atomic 5-surface 0.14.0 -> 0.14.1 PATCH bump
-
-**Phase 8 gaps (surfaced by /gsd-verify-work 8 natural Compodoc UAT, 2026-05-31; see 08-NATURAL-UAT-COMPODOC.md):**
-- [x] GAP-S9 -- execute-skill Phase 3.5 verify-target mismatch (confirmed 2x: Sessions 5 + 7b). Executor verified Storybook/Nx-config changes with `nx test` / no build instead of the affected target; CONCRETE CONSEQUENCE: a broken `nx storybook` dev-server (non-renderable Docs tab) went undetected through all 8 sessions because nobody ran the dev-server target. CLOSED 2026-05-31 via Plan 08-08: execute E.3 change-surface verify-target selection + tooling-freshness clause + plan change-surface-matched Validate-step rule (verified PASS 4/4, 08-VERIFICATION.md gap-closure amendment).
-- [x] GAP-S10 -- final-advisor maxTurns exhaustion (recurrence of project_advisor_maxturns_exhaustion). Phase 5 final consult burned its 3-turn budget disk-hunting for a file already packed in the prompt; no numbered synthesis. CLOSED 2026-05-31 via Plan 08-09: pack post-change content into execute Phase 5 final consult + advisor no-disk-hunting clause (maxTurns stays 3, prompt-side fix) + atomic 5-surface 0.14.0 -> 0.14.1 (verified PASS 4/4).
-- [x] GAP-DEVSERVER -- ngx-smart-components `nx storybook` broken (AngularLegacyBuildOptionsError). CLOSED 2026-05-31 (commit 5485eca, target repo). CAUSED BY the Session-5 browserTarget removal (start-schema has no default -> undefined -> angularBrowserTarget undefined -> checkForLegacyBuildOptions throws; build-schema defaults to null so the build path was unaffected). My mid-session "pre-existing / restore fails identically" note was a false negative from an Nx-daemon stale graph -- `NX_DAEMON=false` re-test booted the dev-server. Fixed by re-adding browserTarget to the storybook target via the autonomous /lz-advisor plugin fix loop (session 8 plan + session 9 execute); execute verified with `nx storybook` ("Storybook ready! localhost:4200") + build-storybook (no regression). Demonstrated the GAP-S9 mitigation: a plan-side explicit `Run: nx storybook` step made the executor verify the correct target.
-
-GAP-S9 + GAP-S10 keep Phase 8 open for gap-closure; both require lz-advisor PLUGIN changes. PLANNED 2026-05-31: GAP-S9 -> Plan 08-08, GAP-S10 -> Plan 08-09 (both prompt/contract edits, no runtime code; PATCH bump to 0.14.1 in 08-09). Execute via /gsd-execute-phase 8 --gaps-only. GAP-DEVSERVER (target-repo) is closed. Reclassified from backlog 999.1 / Phase 9 per user direction 2026-05-31.
-
-### Phase 9: Rename skills
-
-**Goal:** Reverse the Phase 5.2 naming decision: rename the four skill directories and their `name:` frontmatter fields from the dotted `lz-advisor.<skill>` pattern back to plain `<skill>` (`plan`, `execute`, `review`, `security-review`), sweep every dotted cross-reference out of the operational surfaces (4 SKILL.md + 3 references + 2 agents + README + .gitignore + CLAUDE.md + evals + the 11 maintained smoke fixtures), apply the context-dependent invocation policy (bare interactive forms, qualified `/lz-advisor:<skill>` headless forms), atomically bump 0.14.2 -> 0.15.0 across the 5 version surfaces, and empirically close the open Phase 5.2 D-07 "bet on resolution" via a headless `claude -p` resolution probe. The qualified `lz-advisor:<skill>` form already supplies namespacing, so the `lz-advisor.` prefix only produces the redundant `lz-advisor:lz-advisor-<skill>` normalized name.
-**Requirements**: D-01..D-10 (09-CONTEXT.md locked decisions; no REQUIREMENTS.md ID -- this phase reverses the Phase 5.2 rename and empirically closes Phase 5.2 D-07)
-**Depends on:** Phase 8
-**Plans:** 3/3 plans complete
-
-Plans:
-- [x] 09-01-PLAN.md -- Plugin core: git mv 4 skill dirs + sweep 4 SKILL.md (name + body) + 3 references + 2 agents + README + .gitignore comment + atomic 5-surface version bump 0.14.2 -> 0.15.0 (D-01/D-02/D-03/D-04/D-05/D-06/D-07/D-10)
-- [x] 09-02-PLAN.md -- Docs + evals + smoke fixtures: CLAUDE.md per-line transform + 4 eval JSON query strings + conciseness-assessment.md + git mv 4 eval workspace dirs + 11 maintained smoke-fixture qualified -p strings (D-05/D-06/D-07/D-09)
-- [x] 09-03-PLAN.md -- D-08 headless resolution probe (4 skills) + full canonical verification suite + maintained smoke-fixture re-run (D-05/D-08)
-
-### Phase 10: Milestone v1.0 documentation-hygiene cleanup
-
-**Goal:** Close the non-critical documentation-hygiene tech debt surfaced by the v1.0 milestone audit (`.planning/v1.0-MILESTONE-AUDIT.md`, status `tech_debt`, `gaps` empty -- no critical blockers) so the milestone archives with accurate planning + user-facing docs. Scope is Cluster A only (mechanical doc edits, zero plugin-behavior change): refresh the stale `GAP-D-budget-empirical` requirement definition to the shipped per-section `<output_constraints>` contract; check off all satisfied requirement-definition checkboxes in REQUIREMENTS.md; backfill the plugin README "What's New" changelog from 0.5.0 to 0.15.0; correct the singular "the lz-advisor agent" prose to the shipped three-agent design; and replace the forbidden `grep -q` with `rg -q` in the J-narrative-isolation smoke fixture (DEF-09-01).
-
-**Requirements:** None (no REQ-ID; documentation-hygiene cleanup. GAP-D-budget-empirical stays satisfied -- only its definition text was stale.)
-
-**Gap Closure:** Closes v1.0 audit tech_debt items 1, 2, 3, and 5 (Cluster A). Cluster B (Nyquist backfill for phases 1, 2, 5, 5.5) and Cluster C (FIND-F-CLASS-2-OBSERVABILITY watch item + the two human_verification items) are accept-and-track per user decision 2026-06-01.
-
-**Depends on:** Phase 9
-
-**Plans:** 1 plan
-
-Plans:
-- [x] 10-01-PLAN.md -- Doc-hygiene cluster: REQUIREMENTS.md (GAP-D definition + checkboxes), plugin README (changelog backfill + three-agent prose), J-narrative-isolation.sh (grep -> rg)
+v1.0 shipped: 16 phases, 80 plans, plugin 1.0.0. See `.planning/MILESTONES.md` for the summary and `milestones/v1.0-ROADMAP.md` for full detail.
