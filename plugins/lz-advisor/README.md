@@ -8,7 +8,7 @@ The advisor strategy pairs a stronger model (Opus 4.7, auto-selected via the `op
 
 Anthropic's internal benchmarks (measured on Opus 4.6) show that Sonnet 4.6 paired with an Opus advisor achieved +2.7 percentage points on SWE-bench Multilingual coding benchmarks at 11.9% lower cost compared to Sonnet solo. The advisor adds most value on the first call, before the approach crystallizes, and on the final check after work is complete.
 
-This plugin uses Claude Code's native Agent tool to implement the pattern -- no API keys, no external dependencies, no additional setup beyond installation. Skills orchestrate the executor-advisor loop, consulting the `lz-advisor` agent at strategic moments during task execution.
+This plugin uses Claude Code's native Agent tool to implement the pattern -- no API keys, no external dependencies, no additional setup beyond installation. The skills consult one of three Opus agents at strategic moments: `advisor` (used by `/plan` and `/execute`), `reviewer` (used by `/review`), and `security-reviewer` (used by `/security-review`).
 
 ## Skills
 
@@ -45,7 +45,7 @@ Look for `lz-advisor` in the loaded plugins output. If skills do not trigger, ve
 ## How it works
 
 - Skills run on your session model (typically Sonnet 4.6) as the executor.
-- At strategic moments, the executor consults the `lz-advisor` agent, which runs on Opus.
+- At strategic moments, the executor consults the relevant Opus agent -- `advisor` for `/plan` and `/execute`, `reviewer` for `/review`, `security-reviewer` for `/security-review`.
 - The advisor provides concise guidance -- under 100 words, enumerated steps focused on what to do.
 - The executor continues with the task, informed by the advice.
 
@@ -75,6 +75,70 @@ Opus 4.7 (released 2026-04-16) is auto-selected via the `opus` alias; no user ac
   decision table mapping skill + call site to template.
 
 ## What's New
+
+### 0.15.0
+
+- Renamed the four skills from the dotted `lz-advisor.<skill>` form back to
+  plain `<skill>` (`/plan`, `/execute`, `/review`, `/security-review`). The
+  qualified `lz-advisor:<skill>` form already provides namespacing, so the
+  `lz-advisor.` prefix only produced a redundant `lz-advisor:lz-advisor-<skill>`
+  normalized name. Reverses the 0.3.0 rename.
+
+### 0.14.0
+
+- The execute skill now selects its verification target by change surface (a
+  Storybook or build-config change is verified with the matching target, not a
+  blanket `nx test`) and packs post-change file content into the final advisor
+  consultation so the advisor synthesizes from the prompt instead of re-reading
+  files from disk.
+- Removed the `wip:` commit discipline: long-running validations now wait for
+  completion rather than routing to a work-in-progress commit.
+  (Rollup of 0.14.0, 0.14.1, and 0.14.2.)
+
+### 0.13.0
+
+- Reviewer and security-reviewer output budgets moved from a single aggregate
+  300-word cap to per-section `<output_constraints>` (per-finding <=22 words,
+  Cross-Cutting / Threat Patterns <=160 words, optional Missed surfaces <=30
+  words; no aggregate cap), after aggregate caps were found to degrade reasoning
+  quality.
+  (Rollup of 0.13.0 and 0.13.1.)
+
+### 0.10.0
+
+- Verification-chain-integrity hardening across all three agents and four
+  skills: pre-verified-claim validation, hedge-marker discipline,
+  confidence-laundering guards, default-on ToolSearch loading for deferred web
+  tools, a reviewer Class-2 escalation hook, and an aligned severity vocabulary
+  (Critical / Important / Suggestion / Question).
+  (Rollup of 0.10.0 through 0.12.2.)
+
+### 0.9.0
+
+- Added a provenance-based Context Trust Contract (vendor-doc vs.
+  agent-generated) and a question-class-aware orient-exploration ranking
+  (`references/orient-exploration.md`) so the executor prefers web research over
+  stale local `node_modules` type stubs for API-currency, migration, and
+  security-advisory questions.
+  (Rollup of 0.8.5 and 0.9.0.)
+
+### 0.8.0
+
+- Added proactive web research to the plan skill (verify framework conventions
+  before consulting the advisor), an advisor density worked example, a
+  security-review output-shape smoke test, and an advisor word-budget gate.
+  Fixed an advisor "Assuming X, do Y. Verify X." framing regression for
+  thin-context tasks.
+  (Rollup of 0.8.0 through 0.8.4.)
+
+### 0.6.0
+
+- Shipped the "executor verifies cheaply and correctly before burdening agents"
+  doctrine: the review and security-review skills derive scope mechanically from
+  git rather than from the conversation narrative, all four skills gained
+  WebSearch / WebFetch in their allowed-tools, and the three agent response
+  shapes were polished (Position B Critical marker, inline "Assuming X" framing,
+  two-slot Findings + Cross-Cutting / Threat Patterns output).
 
 ### 0.5.0
 
