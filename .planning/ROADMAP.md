@@ -268,3 +268,15 @@ Plans:
 - [x] GAP-DEVSERVER -- ngx-smart-components `nx storybook` broken (AngularLegacyBuildOptionsError). CLOSED 2026-05-31 (commit 5485eca, target repo). CAUSED BY the Session-5 browserTarget removal (start-schema has no default -> undefined -> angularBrowserTarget undefined -> checkForLegacyBuildOptions throws; build-schema defaults to null so the build path was unaffected). My mid-session "pre-existing / restore fails identically" note was a false negative from an Nx-daemon stale graph -- `NX_DAEMON=false` re-test booted the dev-server. Fixed by re-adding browserTarget to the storybook target via the autonomous /lz-advisor plugin fix loop (session 8 plan + session 9 execute); execute verified with `nx storybook` ("Storybook ready! localhost:4200") + build-storybook (no regression). Demonstrated the GAP-S9 mitigation: a plan-side explicit `Run: nx storybook` step made the executor verify the correct target.
 
 GAP-S9 + GAP-S10 keep Phase 8 open for gap-closure; both require lz-advisor PLUGIN changes. PLANNED 2026-05-31: GAP-S9 -> Plan 08-08, GAP-S10 -> Plan 08-09 (both prompt/contract edits, no runtime code; PATCH bump to 0.14.1 in 08-09). Execute via /gsd-execute-phase 8 --gaps-only. GAP-DEVSERVER (target-repo) is closed. Reclassified from backlog 999.1 / Phase 9 per user direction 2026-05-31.
+
+### Phase 9: Rename skills
+
+**Goal:** Reverse the Phase 5.2 naming decision: rename the four skill directories and their `name:` frontmatter fields from the dotted `lz-advisor.<skill>` pattern back to plain `<skill>` (`plan`, `execute`, `review`, `security-review`), sweep every dotted cross-reference out of the operational surfaces (4 SKILL.md + 3 references + 2 agents + README + .gitignore + CLAUDE.md + evals + the 11 maintained smoke fixtures), apply the context-dependent invocation policy (bare interactive forms, qualified `/lz-advisor:<skill>` headless forms), atomically bump 0.14.2 -> 0.15.0 across the 5 version surfaces, and empirically close the open Phase 5.2 D-07 "bet on resolution" via a headless `claude -p` resolution probe. The qualified `lz-advisor:<skill>` form already supplies namespacing, so the `lz-advisor.` prefix only produces the redundant `lz-advisor:lz-advisor-<skill>` normalized name.
+**Requirements**: D-01..D-10 (09-CONTEXT.md locked decisions; no REQUIREMENTS.md ID -- this phase reverses the Phase 5.2 rename and empirically closes Phase 5.2 D-07)
+**Depends on:** Phase 8
+**Plans:** 3 plans
+
+Plans:
+- [ ] 09-01-PLAN.md -- Plugin core: git mv 4 skill dirs + sweep 4 SKILL.md (name + body) + 3 references + 2 agents + README + .gitignore comment + atomic 5-surface version bump 0.14.2 -> 0.15.0 (D-01/D-02/D-03/D-04/D-05/D-06/D-07/D-10)
+- [ ] 09-02-PLAN.md -- Docs + evals + smoke fixtures: CLAUDE.md per-line transform + 4 eval JSON query strings + conciseness-assessment.md + git mv 4 eval workspace dirs + 11 maintained smoke-fixture qualified -p strings (D-05/D-06/D-07/D-09)
+- [ ] 09-03-PLAN.md -- D-08 headless resolution probe (4 skills) + full canonical verification suite + maintained smoke-fixture re-run (D-05/D-08)
