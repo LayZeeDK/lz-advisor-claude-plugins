@@ -105,48 +105,48 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| INFRA-01 | Phase 1 | Pending |
-| INFRA-02 | Phase 1 | Pending |
-| INFRA-03 | Phase 1 | Pending |
-| INFRA-04 | Phase 5 | Pending |
-| ADVR-01 | Phase 1 | Pending |
+| INFRA-01 | Phase 1 | Complete (audit v1.0 2026-06-01) |
+| INFRA-02 | Phase 1 | Complete (audit v1.0 2026-06-01) |
+| INFRA-03 | Phase 1 | Complete (audit v1.0 2026-06-01) |
+| INFRA-04 | Phase 5 | Complete (audit v1.0 2026-06-01) |
+| ADVR-01 | Phase 1 | Complete (audit v1.0 2026-06-01) |
 | ADVR-02 | Phase 1 | Complete |
-| ADVR-03 | Phase 1 | Pending |
-| ADVR-04 | Phase 1 | Pending |
-| ADVR-05 | Phase 1 | Pending |
-| ADVR-06 | Phase 1 | Pending |
-| PLAN-01 | Phase 2 | Pending |
-| PLAN-02 | Phase 2 | Pending |
-| PLAN-03 | Phase 2 | Pending |
-| PLAN-04 | Phase 2 | Pending |
-| PLAN-05 | Phase 2 | Pending |
-| PLAN-06 | Phase 2 | Pending |
-| IMPL-01 | Phase 3 | Pending |
-| IMPL-02 | Phase 3 | Pending |
-| IMPL-03 | Phase 3 | Pending |
-| IMPL-04 | Phase 3 | Pending |
-| IMPL-05 | Phase 3 | Pending |
-| IMPL-06 | Phase 3 | Pending |
-| IMPL-07 | Phase 3 | Pending |
-| IMPL-08 | Phase 3 | Pending |
-| IMPL-09 | Phase 3 | Pending |
-| IMPL-10 | Phase 3 | Pending |
-| REVW-01 | Phase 4 | Pending |
-| REVW-02 | Phase 4 | Pending |
-| REVW-03 | Phase 4 | Pending |
-| REVW-04 | Phase 4 | Pending |
-| REVW-05 | Phase 4 | Pending |
-| REVW-06 | Phase 4 | Pending |
-| SECR-01 | Phase 4 | Pending |
-| SECR-02 | Phase 4 | Pending |
-| SECR-03 | Phase 4 | Pending |
-| SECR-04 | Phase 4 | Pending |
-| SECR-05 | Phase 4 | Pending |
-| SECR-06 | Phase 4 | Pending |
-| SECR-07 | Phase 4 | Pending |
-| GAP-G1-firing | Phase 7 | Pending |
-| GAP-D-budget-empirical | Phase 7 | Pending |
-| FIND-B.2-format-scope | Phase 7 | Pending |
+| ADVR-03 | Phase 1 | Complete (audit v1.0 2026-06-01) |
+| ADVR-04 | Phase 1 | Complete (audit v1.0 2026-06-01) |
+| ADVR-05 | Phase 1 | Complete (audit v1.0 2026-06-01) |
+| ADVR-06 | Phase 1 | Complete (audit v1.0 2026-06-01) |
+| PLAN-01 | Phase 2 | Complete (audit v1.0 2026-06-01) |
+| PLAN-02 | Phase 2 | Complete (audit v1.0 2026-06-01) |
+| PLAN-03 | Phase 2 | Complete (audit v1.0 2026-06-01) |
+| PLAN-04 | Phase 2 | Complete (audit v1.0 2026-06-01) |
+| PLAN-05 | Phase 2 | Complete (audit v1.0 2026-06-01) |
+| PLAN-06 | Phase 2 | Complete (audit v1.0 2026-06-01) |
+| IMPL-01 | Phase 3 | Complete (audit v1.0 2026-06-01) |
+| IMPL-02 | Phase 3 | Complete (audit v1.0 2026-06-01) |
+| IMPL-03 | Phase 3 | Complete (audit v1.0 2026-06-01) |
+| IMPL-04 | Phase 3 | Complete (audit v1.0 2026-06-01) |
+| IMPL-05 | Phase 3 | Complete (audit v1.0 2026-06-01) |
+| IMPL-06 | Phase 3 | Complete (audit v1.0 2026-06-01) |
+| IMPL-07 | Phase 3 | Complete (audit v1.0 2026-06-01) |
+| IMPL-08 | Phase 3 | Complete (audit v1.0 2026-06-01) |
+| IMPL-09 | Phase 3 | Complete (audit v1.0 2026-06-01) |
+| IMPL-10 | Phase 3 | Complete (audit v1.0 2026-06-01) |
+| REVW-01 | Phase 4 | Complete (audit v1.0 2026-06-01) |
+| REVW-02 | Phase 4 | Complete (audit v1.0 2026-06-01) |
+| REVW-03 | Phase 4 | Complete (audit v1.0 2026-06-01) |
+| REVW-04 | Phase 4 | Complete (audit v1.0 2026-06-01) |
+| REVW-05 | Phase 4 | Complete (audit v1.0 2026-06-01) |
+| REVW-06 | Phase 4 | Complete (audit v1.0 2026-06-01) |
+| SECR-01 | Phase 4 | Complete (audit v1.0 2026-06-01) |
+| SECR-02 | Phase 4 | Complete (audit v1.0 2026-06-01) |
+| SECR-03 | Phase 4 | Complete (audit v1.0 2026-06-01) |
+| SECR-04 | Phase 4 | Complete (audit v1.0 2026-06-01) |
+| SECR-05 | Phase 4 | Complete (audit v1.0 2026-06-01) |
+| SECR-06 | Phase 4 | Complete (audit v1.0 2026-06-01) |
+| SECR-07 | Phase 4 | Complete (audit v1.0 2026-06-01) |
+| GAP-G1-firing | Phase 7 | Complete (audit v1.0 2026-06-01) |
+| GAP-D-budget-empirical | Phase 7 | Complete (audit v1.0 2026-06-01) |
+| FIND-B.2-format-scope | Phase 7 | Complete (audit v1.0 2026-06-01) |
 | RES-WIP-DISCIPLINE-REVERSAL | Phase 8 | Complete (Plan 08-01: removed wip-discipline contract from execute SKILL.md + E-fixture + GAP-G2 row; atomic 5-surface bump 0.13.1 -> 0.14.0) |
 | RES-SHAPE-REGRESSION-PARSER | Phase 8 | Complete |
 | RES-PFV-OUTLIER-CAP | Phase 8 | Complete |
@@ -166,4 +166,4 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 ---
 *Requirements defined: 2026-04-10*
-*Last updated: 2026-05-31 after Phase 8 gap-closure (GAP-S9 + GAP-S10)*
+*Last updated: 2026-06-01 -- v1.0 milestone audit marked all traceability rows Complete (52/52 satisfied; see .planning/v1.0-MILESTONE-AUDIT.md)*
