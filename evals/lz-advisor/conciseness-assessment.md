@@ -9,13 +9,13 @@ with `--verbose` flag to observe agent behavior. Measured advisor/reviewer outpu
 and quality.
 
 Adapted approach: `run_loop.py` unavailable (no ANTHROPIC_API_KEY). Used `claude -p`
-with `/lz-advisor.<skill>` syntax for reliable skill activation.
+with `/<skill>` syntax for reliable skill activation.
 
 ## Results by Skill
 
 ### lz-advisor-plan (advisor agent)
 
-**Prompt:** "/lz-advisor.plan plan the implementation for a user authentication system
+**Prompt:** "/plan plan the implementation for a user authentication system
 with JWT tokens and refresh rotation"
 
 **Advisor behavior:** Consulted once during Phase 2. Returned concise structured output:
@@ -28,7 +28,7 @@ with JWT tokens and refresh rotation"
 
 ### lz-advisor-execute (advisor agent)
 
-**Prompt:** "/lz-advisor.execute implement a rate limiting middleware for Express that
+**Prompt:** "/execute implement a rate limiting middleware for Express that
 uses Redis for distributed counting"
 
 **Advisor behavior:** Consulted pre-work (Phase 2) and for final review (Phase 5).
@@ -42,7 +42,7 @@ output was concise.
 
 ### lz-advisor-review (reviewer agent)
 
-**Prompt:** "/lz-advisor.review review the changes in plugins/lz-advisor/skills/ for
+**Prompt:** "/review review the changes in plugins/lz-advisor/skills/ for
 code quality issues"
 
 **Reviewer behavior:** Scanned all 4 SKILL.md files and 3 agent files. Packaged top
@@ -56,7 +56,7 @@ Note: reviewer hallucinated stray tags that don't exist (maxTurns: 1 limits veri
 
 ### lz-advisor-security-review (security-reviewer agent)
 
-**Prompt:** "/lz-advisor.security-review check plugins/lz-advisor/agents/ for
+**Prompt:** "/security-review check plugins/lz-advisor/agents/ for
 security vulnerabilities"
 
 **Security reviewer behavior:** Scanned agent files (Markdown only -- no attack surface).
