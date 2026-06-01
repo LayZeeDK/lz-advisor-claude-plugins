@@ -4,7 +4,7 @@ milestone: v1.0
 milestone_name: milestone
 status: Milestone complete
 stopped_at: Phase 9 context gathered
-last_updated: "2026-06-01T07:09:37.148Z"
+last_updated: "2026-06-01T08:50:45.028Z"
 last_activity: 2026-06-01
 progress:
   total_phases: 15
@@ -51,7 +51,7 @@ Carry-forward (pre-existing, NOT gap-closure blockers): 08-HUMAN-UAT.md still pa
 08-VERIFICATION.md human_verification items (natural Class-2 escalation-hook re-validation; optional
 marketplace publication) remain open Phase 9 watch items.
 
-Last activity: 2026-06-01
+Last activity: 2026-06-01 - Completed quick task 260601-f2a: corrected the /plan "no built-in twin" mischaracterization in 09-03-SUMMARY + 09-VERIFICATION (Claude Code ships a built-in /plan; picker disambiguates via the (lz-advisor) qualifier; evidence 09-UAT.md Test 3)
 
 Progress: [##########] 100% (original milestone) + 2 gap-closure plans pending execution
 
@@ -144,6 +144,7 @@ Recent decisions affecting current work:
 | # | Description | Date | Commit | Status | Directory |
 |---|-------------|------|--------|--------|-----------|
 | 260417-lhe | Assess Opus 4.7 release impact on advisor plugin and propose upgrade path | 2026-04-17 | 593920d | Verified | [260417-lhe-assess-opus-4-7-release-impact-on-adviso](./quick/260417-lhe-assess-opus-4-7-release-impact-on-adviso/) |
+| 260601-f2a | Correct /plan "no built-in twin" claim in 09-03-SUMMARY + 09-VERIFICATION (Claude Code ships a built-in /plan; picker disambiguates) | 2026-06-01 | 401b7af | - | [260601-f2a-correct-the-no-built-in-twin-claim-for-p](./quick/260601-f2a-correct-the-no-built-in-twin-claim-for-p/) |
 
 ### Roadmap Evolution
 
