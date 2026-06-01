@@ -22,7 +22,7 @@ FAIL=0
 OUT_D="$SCRATCH/D-output.txt"
 claude --model sonnet --effort medium --plugin-dir "$PLUGIN_DIR" \
   --dangerously-skip-permissions \
-  -p "/lz-advisor.plan Set up a CI pipeline for a fresh Node.js project using GitHub Actions. Run tests and lint on push." \
+  -p "/lz-advisor:plan Set up a CI pipeline for a fresh Node.js project using GitHub Actions. Run tests and lint on push." \
   --verbose > "$OUT_D" 2>&1 || true
 
 if rg -q '\*\*Critical:\*\*' "$OUT_D"; then
@@ -50,7 +50,7 @@ rm -rf "$SCRATCH/plans"
 OUT_E_JSONL="$SCRATCH/E-output.jsonl"
 claude --model sonnet --effort medium --plugin-dir "$PLUGIN_DIR" \
   --dangerously-skip-permissions \
-  -p "/lz-advisor.plan Add auth to this API. The frontend uses cookies." \
+  -p "/lz-advisor:plan Add auth to this API. The frontend uses cookies." \
   --verbose --output-format stream-json > "$OUT_E_JSONL" 2>&1 || true
 
 EXTRACTOR="$(git -C "$PLUGIN_DIR" rev-parse --show-toplevel)/.planning/phases/05.4-address-uat-findings-a-k/smoke-tests/extract-advisor-sd.mjs"
@@ -89,7 +89,7 @@ git commit -q -m "add unvalidated handler with JSON.parse"
 OUT_F="$SCRATCH/F-output.txt"
 claude --model sonnet --effort medium --plugin-dir "$PLUGIN_DIR" \
   --dangerously-skip-permissions \
-  -p "/lz-advisor.review Review the last commit." \
+  -p "/lz-advisor:review Review the last commit." \
   --verbose > "$OUT_F" 2>&1 || true
 
 HAS_FINDINGS=0
@@ -109,13 +109,13 @@ fi
 # (security-flavored analogue of reviewer's ### Findings + ### Cross-Cutting Patterns).
 # D-07: reuse the F-block review-src/handler.ts + review-src/validate.ts commit
 # fixture (already in git at this point); no new commits needed.
-# Use a SEPARATE claude -p invocation -- /lz-advisor.security-review is a different
+# Use a SEPARATE claude -p invocation -- /lz-advisor:security-review is a different
 # skill with different scan logic; re-using F's OUT_F would test reviewer output
 # against a security-reviewer expected shape, which would always fail structurally.
 OUT_GH="$SCRATCH/GH-output.txt"
 claude --model sonnet --effort medium --plugin-dir "$PLUGIN_DIR" \
   --dangerously-skip-permissions \
-  -p "/lz-advisor.security-review Review the last commit." \
+  -p "/lz-advisor:security-review Review the last commit." \
   --verbose > "$OUT_GH" 2>&1 || true
 
 HAS_SEC_FINDINGS=0

@@ -20,7 +20,7 @@ git commit -q -m "initial shim"
 OUT="$SCRATCH/kcb-output.txt"
 claude --model sonnet --effort medium --plugin-dir "$PLUGIN_DIR" \
   --dangerously-skip-permissions \
-  -p "/lz-advisor.plan Verify whether setCompodocJson is still exported from @storybook/addon-docs/angular in Storybook 10.3.5. The config claims it is." \
+  -p "/lz-advisor:plan Verify whether setCompodocJson is still exported from @storybook/addon-docs/angular in Storybook 10.3.5. The config claims it is." \
   --verbose --output-format stream-json > "$OUT" 2>&1 || true
 
 FAIL=0

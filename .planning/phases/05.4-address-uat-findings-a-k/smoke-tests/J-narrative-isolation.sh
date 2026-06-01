@@ -30,7 +30,7 @@ printf '# Plan: Auth fix\n\n## Strategic Direction\n\nFix login null handling. s
 OUT="$SCRATCH/review-output.txt"
 claude --model sonnet --effort medium --plugin-dir "$PLUGIN_DIR" \
   --dangerously-skip-permissions \
-  -p "/lz-advisor.review Review the recent changes in src/auth. See @plans/auth-fix.plan.md for context." \
+  -p "/lz-advisor:review Review the recent changes in src/auth. See @plans/auth-fix.plan.md for context." \
   --verbose > "$OUT" 2>&1 || true
 
 # Assert session.ts appears in the review output (scan did not skip it)

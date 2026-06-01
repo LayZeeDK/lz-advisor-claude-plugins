@@ -36,7 +36,7 @@ git commit -q -m "fixture: storybook+compodoc scenario"
 OUT="$SCRATCH/B-output.jsonl"
 claude --model sonnet --effort medium --plugin-dir "$PLUGIN_DIR" \
   --dangerously-skip-permissions \
-  -p "/lz-advisor.plan Verify whether @storybook/addon-docs/angular still exports setCompodocJson in Storybook 10.3.5 and document the canonical Compodoc integration pattern." \
+  -p "/lz-advisor:plan Verify whether @storybook/addon-docs/angular still exports setCompodocJson in Storybook 10.3.5 and document the canonical Compodoc integration pattern." \
   --verbose --output-format stream-json > "$OUT" 2>&1 || true
 
 # Second scenario: agent-generated input path (empirical session 4 / 7 UAT shape).
@@ -59,7 +59,7 @@ git commit -q -m "seed upstream-review.md fixture"
 OUT2="$SCRATCH2/B2-output.jsonl"
 claude --model sonnet --effort medium --plugin-dir "$PLUGIN_DIR" \
   --dangerously-skip-permissions \
-  -p "/lz-advisor.plan Address findings in @plans/upstream-review.md" \
+  -p "/lz-advisor:plan Address findings in @plans/upstream-review.md" \
   --verbose --output-format stream-json > "$OUT2" 2>&1 || true
 
 cd "$SCRATCH"

@@ -45,7 +45,7 @@ while [ $# -gt 0 ]; do
 Usage: bash F-class-2-escalation.sh [--from-trace <file>]
 
 Default mode (no flags): seed scratch repo with vendored-CVE fixture, invoke
-`claude -p /lz-advisor.security-review`, capture stream-json trace, run
+`claude -p /lz-advisor:security-review`, capture stream-json trace, run
 assertions (a)-(d).
 
 --from-trace <file>: replay mode -- skip scratch + claude -p; use <file> as
@@ -115,7 +115,7 @@ else
   TRACE="$SCRATCH/trace.jsonl"
   claude --model sonnet --effort medium --plugin-dir "$PLUGIN_DIR" \
     --dangerously-skip-permissions \
-    -p "/lz-advisor.security-review Review the last commit for security issues." \
+    -p "/lz-advisor:security-review Review the last commit for security issues." \
     --verbose --output-format stream-json > "$TRACE" 2>&1 || true
 fi
 

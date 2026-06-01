@@ -23,7 +23,7 @@ OUT_H="$SCRATCH/H-output.txt"
 printf 'let x = 1;\n' > src.ts
 claude --model sonnet --effort medium --plugin-dir "$PLUGIN_DIR" \
   --dangerously-skip-permissions \
-  -p "/lz-advisor.execute Rename src.ts to main.ts." \
+  -p "/lz-advisor:execute Rename src.ts to main.ts." \
   --verbose --output-format stream-json > "$OUT_H" 2>&1 || true
 
 if rg -q '"permission_required"|"requires_permission"' "$OUT_H"; then
@@ -35,7 +35,7 @@ fi
 
 # -------- Finding A: node_modules targeted-reads wording in plan skill ----
 # Static assertion: plan SKILL.md has the D-14 reword
-if git -C "$REPO_ROOT" grep -q "read with discipline: targeted reads only" plugins/lz-advisor/skills/lz-advisor.plan/SKILL.md; then
+if git -C "$REPO_ROOT" grep -q "read with discipline: targeted reads only" plugins/lz-advisor/skills/plan/SKILL.md; then
   echo "[OK] Finding A: reworded D-14 orientation-budget present in plan SKILL.md"
 else
   echo "[ERROR] Finding A: reworded D-14 absent from plan SKILL.md"
@@ -50,7 +50,7 @@ fi
 OUT_I="$SCRATCH/I-output.txt"
 claude --model sonnet --effort medium --plugin-dir "$PLUGIN_DIR" \
   --dangerously-skip-permissions \
-  -p "/lz-advisor.execute Check whether typescript is installed. Do not use npm or pnpm; use file reads only." \
+  -p "/lz-advisor:execute Check whether typescript is installed. Do not use npm or pnpm; use file reads only." \
   --verbose --output-format stream-json > "$OUT_I" 2>&1 || true
 
 if rg -q "Interrupted.*What should Claude do instead" "$OUT_I"; then
