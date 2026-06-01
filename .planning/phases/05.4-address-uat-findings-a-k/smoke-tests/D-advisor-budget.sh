@@ -48,7 +48,7 @@ git commit -q -m "seed package.json with representative versions"
 OUT_JSONL="$SCRATCH/D-advisor-output.jsonl"
 claude --model sonnet --effort medium --plugin-dir "$PLUGIN_DIR" \
   --dangerously-skip-permissions \
-  -p "/lz-advisor.plan Set up Compodoc with Storybook in this Nx Angular library so the Docs tab renders descriptions for component inputs and outputs." \
+  -p "/lz-advisor:plan Set up Compodoc with Storybook in this Nx Angular library so the Docs tab renders descriptions for component inputs and outputs." \
   --verbose --output-format stream-json > "$OUT_JSONL" 2>&1 || true
 
 # Extract advisor Strategic Direction from JSONL using existing extractor.

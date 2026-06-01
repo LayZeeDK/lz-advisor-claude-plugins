@@ -91,7 +91,7 @@ git commit -q -m "seed verify-before-commit fixture"
 OUT_JSONL="$SCRATCH/E-output.jsonl"
 claude --model sonnet --effort medium --plugin-dir "$PLUGIN_DIR" \
   --dangerously-skip-permissions \
-  -p "/lz-advisor.execute @plans/verify-before-commit-fixture.plan.md" \
+  -p "/lz-advisor:execute @plans/verify-before-commit-fixture.plan.md" \
   --verbose --output-format stream-json > "$OUT_JSONL" 2>&1 || true
 
 # Extract advisor Strategic Direction for path (a) check.

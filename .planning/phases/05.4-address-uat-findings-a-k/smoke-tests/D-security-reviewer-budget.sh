@@ -44,7 +44,7 @@ while [ $# -gt 0 ]; do
 Usage: bash D-security-reviewer-budget.sh [--from-trace <file>] [--capture-trace <file>]
 
 Default mode (no flags): seed scratch repo, invoke `claude -p` against
-/lz-advisor.security-review, capture agent text output, run parsers.
+/lz-advisor:security-review, capture agent text output, run parsers.
 
 --capture-trace <file>: preserve agent text output to <file> before scratch
   cleanup. Combine with default mode to build a trace cache.
@@ -104,7 +104,7 @@ else
   OUT="$SCRATCH/D-security-reviewer-output.txt"
   claude --model sonnet --effort medium --plugin-dir "$PLUGIN_DIR" \
     --dangerously-skip-permissions \
-    -p "/lz-advisor.security-review Review the last commit." \
+    -p "/lz-advisor:security-review Review the last commit." \
     --verbose > "$OUT" 2>&1 || true
 
   if [ -n "$TRACE_CAPTURE" ]; then
