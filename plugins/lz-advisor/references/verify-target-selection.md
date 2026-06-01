@@ -1,12 +1,12 @@
 # Verify Target Selection by Change Surface
 
 This is the single source of truth for choosing the verification command that
-actually exercises a change. Both `lz-advisor.plan` and `lz-advisor.execute`
+actually exercises a change. Both `plan` and `execute`
 consume this contract:
 
-- `lz-advisor.plan` names the matching command in a plan `**Validate**` step so
+- `plan` names the matching command in a plan `**Validate**` step so
   the executor runs the right target.
-- `lz-advisor.execute` selects and runs the matching target before committing
+- `execute` selects and runs the matching target before committing
   (Phase 3.5, rule E.3).
 
 Neither skill duplicates the mapping below -- both reference this file.

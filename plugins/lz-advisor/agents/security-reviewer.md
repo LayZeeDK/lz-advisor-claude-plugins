@@ -280,7 +280,7 @@ Class value: `"2-S"` for security currency / CVE / advisory questions (the secur
 
 Place the `<verify_request>` block INSIDE the `### Findings` section, immediately after the affected finding entry's analysis. Multiple verify_request blocks may be emitted (one per unresolved Class 2-S, Class-2, or Class-3 question), but each should reference its specific finding via `anchor_target`.
 
-The executor parses your `<verify_request>` blocks during the security-review skill's Phase 3 (Output) per `lz-advisor.security-review/SKILL.md` "Reviewer Escalation Hook" section. The flow is one-shot: the executor performs WebSearch / WebFetch (e.g., `npm audit` output, GHSA database, OSV / NVD CVE lookups), synthesizes pv-* blocks, and re-invokes you ONCE with the new anchors so you can close the hedge. Do NOT iterate; you will be re-invoked at most once per security review.
+The executor parses your `<verify_request>` blocks during the security-review skill's Phase 3 (Output) per `security-review/SKILL.md` "Reviewer Escalation Hook" section. The flow is one-shot: the executor performs WebSearch / WebFetch (e.g., `npm audit` output, GHSA database, OSV / NVD CVE lookups), synthesizes pv-* blocks, and re-invokes you ONCE with the new anchors so you can close the hedge. Do NOT iterate; you will be re-invoked at most once per security review.
 
 When you are RE-INVOKED with new `<pre_verified>` anchors that match the `anchor_target` values from your prior verify_request blocks, treat the anchors as authoritative per Common Contract Rule 5 -- close the hedges that the pre-emption resolved, and do not re-emit verify_request blocks for the same questions.
 

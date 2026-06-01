@@ -14,10 +14,10 @@ This plugin uses Claude Code's native Agent tool to implement the pattern -- no 
 
 | Skill | Description |
 |-------|-------------|
-| `/lz-advisor.plan` | Get an Opus-informed strategic plan before writing code. The executor orients on the codebase, consults the advisor for strategic direction, then produces an actionable plan. |
-| `/lz-advisor.execute` | Execute tasks with strategic Opus consultation at high-leverage moments. The executor works through the task, consulting the advisor before substantive work, when stuck, and before declaring done. |
-| `/lz-advisor.review` | Opus-powered code quality review of completed work. The executor scans the changes and packages context for the advisor to provide deep quality analysis. |
-| `/lz-advisor.security-review` | Opus-powered security-focused threat analysis. The executor identifies attack surfaces and packages findings for the advisor to assess threats and recommend mitigations. |
+| `/plan` | Get an Opus-informed strategic plan before writing code. The executor orients on the codebase, consults the advisor for strategic direction, then produces an actionable plan. |
+| `/execute` | Execute tasks with strategic Opus consultation at high-leverage moments. The executor works through the task, consulting the advisor before substantive work, when stuck, and before declaring done. |
+| `/review` | Opus-powered code quality review of completed work. The executor scans the changes and packages context for the advisor to provide deep quality analysis. |
+| `/security-review` | Opus-powered security-focused threat analysis. The executor identifies attack surfaces and packages findings for the advisor to assess threats and recommend mitigations. |
 
 ## Installation
 
@@ -90,8 +90,8 @@ Opus 4.7 (released 2026-04-16) is auto-selected via the `opus` alias; no user ac
   were previously inline in each SKILL.md. All four skills now
   `@`-load this reference. Closes field finding F3 (executor context
   packaging quality).
-- Added orientation-budget instruction to `lz-advisor.plan` and
-  `lz-advisor.execute` skills to stop executor over-investigation of
+- Added orientation-budget instruction to `plan` and
+  `execute` skills to stop executor over-investigation of
   bundled, minified, or `node_modules/*/dist/` files. Closes field
   finding F5.
 - Field finding F4 (executor recovery mechanism works but at high cost

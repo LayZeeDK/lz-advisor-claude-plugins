@@ -64,7 +64,7 @@ outcome with affected version range). Use the pv-* anchor to ground
 the supply-chain finding's severity in the consultation prompt; without
 this anchor, the severity assertion is theoretical, not empirical.
 
-This sub-pattern fires only inside `lz-advisor.security-review` for
+This sub-pattern fires only inside `security-review` for
 findings on third-party dependencies. Other skills' security-adjacent
 questions remain Class 2 (vendor-doc) or Class 1 (type-symbol existence).
 
@@ -146,10 +146,10 @@ This rule applies WITHIN one user-driven workflow (a sequence of skill invocatio
 
 A typical 4-skill workflow surfaces a hedge that must propagate intact:
 
-1. `/lz-advisor.review` flags Finding 4 with hedge: "Assuming `continuous: true` disables caching for this target (unverified against the installed Nx version), the practical impact is limited."
-2. User invokes `/lz-advisor.plan @review-output.md` to plan fixes. The plan-skill orient phase scans `review-output.md` for sentinels; the marker survives. Per Rule 5c, the marker either gets resolved (Read Nx docs / package.json + synthesize pv-* block) OR carries verbatim into the plan-skill consultation source material.
+1. `/review` flags Finding 4 with hedge: "Assuming `continuous: true` disables caching for this target (unverified against the installed Nx version), the practical impact is limited."
+2. User invokes `/plan @review-output.md` to plan fixes. The plan-skill orient phase scans `review-output.md` for sentinels; the marker survives. Per Rule 5c, the marker either gets resolved (Read Nx docs / package.json + synthesize pv-* block) OR carries verbatim into the plan-skill consultation source material.
 3. The plan output preserves the marker in the plan-file's `## Findings Disposition` section (per Plan 07-02 silent-resolve fix) AND -- if unresolved -- in the plan rationale.
-4. User invokes `/lz-advisor.execute @plan-output.md` to apply fixes. The execute-skill orient phase scans `plan-output.md` for sentinels; the marker survives. Per Rule 5c + Plan 07-02 `<verify_before_commit>` block, the marker triggers verification before commit, with the outcome recorded via a `Verified:` trailer.
+4. User invokes `/execute @plan-output.md` to apply fixes. The execute-skill orient phase scans `plan-output.md` for sentinels; the marker survives. Per Rule 5c + Plan 07-02 `<verify_before_commit>` block, the marker triggers verification before commit, with the outcome recorded via a `Verified:` trailer.
 
 The marker survives all 4 hops or gets resolved at the first hop where empirical verification is available. The chain breaks only when stripping occurs without verification -- the failure mode this rule prohibits.
 

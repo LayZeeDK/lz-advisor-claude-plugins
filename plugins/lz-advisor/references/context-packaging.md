@@ -4,8 +4,8 @@ This reference defines how the executor packages context into advisor,
 reviewer, and security-reviewer consultations. The goal is a prompt that
 the agent can answer without re-reading files the executor already read.
 
-The four skills in this plugin (lz-advisor.plan, lz-advisor.execute,
-lz-advisor.review, lz-advisor.security-review) share this packaging
+The four skills in this plugin (plan, execute,
+review, security-review) share this packaging
 contract. Two consultation templates -- Proposal and Verification -- cover
 every call site; the "When to Use Each Template" table at the bottom maps
 skill and call site to template.
@@ -121,7 +121,7 @@ Every advisor consultation follows these rules:
 
    d. **Never halt on failure.** Do not wait for user intervention unless the missing information blocks every possible path forward. In non-interactive automation (`claude -p`), halting is a permanent hang.
 
-7. **Include prior Strategic Direction in subsequent advisor consultations.** Each advisor (or reviewer / security-reviewer) Agent invocation is stateless: the agent has no access to the conversation history or to prior consultations within the same skill invocation. When a skill makes more than one consultation in a single run (lz-advisor.execute Phase 5 final-review after Phase 2 pre-execute, or any mid-execute reconciliation call per Phase 3), the executor MUST include the prior consultation's Strategic Direction text -- verbatim, between literal `--- Prior Strategic Direction (consultation N) ---` / `--- End Prior Strategic Direction ---` markers -- inside the new prompt's `## Source Material` section (Proposal template) or as a dedicated `## Prior Advisor Guidance` block (Verification template). Include only the agent-emitted Strategic Direction (numbered items plus any `**Critical:**` block), not the full prior prompt or the executor's own commentary.
+7. **Include prior Strategic Direction in subsequent advisor consultations.** Each advisor (or reviewer / security-reviewer) Agent invocation is stateless: the agent has no access to the conversation history or to prior consultations within the same skill invocation. When a skill makes more than one consultation in a single run (execute Phase 5 final-review after Phase 2 pre-execute, or any mid-execute reconciliation call per Phase 3), the executor MUST include the prior consultation's Strategic Direction text -- verbatim, between literal `--- Prior Strategic Direction (consultation N) ---` / `--- End Prior Strategic Direction ---` markers -- inside the new prompt's `## Source Material` section (Proposal template) or as a dedicated `## Prior Advisor Guidance` block (Verification template). Include only the agent-emitted Strategic Direction (numbered items plus any `**Critical:**` block), not the full prior prompt or the executor's own commentary.
 
    Why: Without prior context, two consecutive advisor calls can issue contradictory recommendations on the same question (observed empirically in 05.6-UAT.md Test 2: Advisor #1 said "do not use setCompodocJson; removed in Storybook 10"; Advisor #2 -- with no awareness of Advisor #1 -- recommended "use setCompodocJson from @storybook/addon-docs/angular"; reconciliation cost one extra advisor call). Including the prior Strategic Direction lets the new advisor see what was previously decided and either reaffirm, refine, or explicitly contradict with rationale -- preventing silent drift. Cost is zero added executor tokens beyond the prior SD text itself, which is short by design (the Output Constraint caps Strategic Direction at 100 words).
 
@@ -150,7 +150,7 @@ information.
 ## Proposal Consultation Template
 
 Used when the executor is asking for strategic direction before or during
-work. Call sites: lz-advisor.plan Phase 2, lz-advisor.execute Phase 2
+work. Call sites: plan Phase 2, execute Phase 2
 (pre-execute) and Phase 3 (mid-execute re-consultation; see short-form
 variant below).
 
@@ -242,7 +242,7 @@ integration for this project?
 
 ### Short-Form Variant (mid-execute re-consultation)
 
-Mid-execute re-consultations (lz-advisor.execute Phase 3) reuse the
+Mid-execute re-consultations (execute Phase 3) reuse the
 pre-execute consultation's context implicitly. Do not repackage the full
 Proposal. A 2-3 sentence message covering:
 
@@ -256,9 +256,9 @@ executor's tokens.
 ## Verification Consultation Template
 
 Used when the executor asks a reviewer to validate findings or a final-
-review call in execute. Call sites: lz-advisor.review Phase 2,
-lz-advisor.security-review Phase 2 (with Threat Model Context),
-lz-advisor.execute Phase 5 (final review).
+review call in execute. Call sites: review Phase 2,
+security-review Phase 2 (with Threat Model Context),
+execute Phase 5 (final review).
 
 ### Structure
 
@@ -334,12 +334,12 @@ across findings. Confirm or revise my initial severity assignments.
 
 | Skill | Call site | Template |
 |-------|-----------|----------|
-| lz-advisor.plan | Phase 2 (single advisor call) | Proposal |
-| lz-advisor.execute | Phase 2 (pre-execute) | Proposal |
-| lz-advisor.execute | Phase 3 (mid-execute re-consultation) | Proposal (short form) |
-| lz-advisor.execute | Phase 5 (final review) | Verification |
-| lz-advisor.review | Phase 2 | Verification |
-| lz-advisor.security-review | Phase 2 | Verification (with Threat Model Context) |
+| plan | Phase 2 (single advisor call) | Proposal |
+| execute | Phase 2 (pre-execute) | Proposal |
+| execute | Phase 3 (mid-execute re-consultation) | Proposal (short form) |
+| execute | Phase 5 (final review) | Verification |
+| review | Phase 2 | Verification |
+| security-review | Phase 2 | Verification (with Threat Model Context) |
 
 The short-form Proposal variant for Phase 3 of execute is a deliberate
 compression: those calls reuse prior context implicitly and do not need a
@@ -353,8 +353,8 @@ Verdicts emitted by skills (PASS-with-observations, security-cleared, review-app
 
 The scope tag is one of:
 
-- `scope: api-correctness` -- verdict covers public-API correctness, framework-convention adherence, integration shape, build-tool orchestration. Default for `lz-advisor.plan`, `lz-advisor.execute`, `lz-advisor.review` (when not explicitly security-focused).
-- `scope: security-threats` -- verdict covers OWASP Top 10 vulnerabilities, supply-chain risk, attack surface, threat-model coverage, CVE / advisory currency. Default for `lz-advisor.security-review`.
+- `scope: api-correctness` -- verdict covers public-API correctness, framework-convention adherence, integration shape, build-tool orchestration. Default for `plan`, `execute`, `review` (when not explicitly security-focused).
+- `scope: security-threats` -- verdict covers OWASP Top 10 vulnerabilities, supply-chain risk, attack surface, threat-model coverage, CVE / advisory currency. Default for `security-review`.
 - `scope: performance` -- verdict covers runtime performance, memory, latency, throughput, build-time. Currently no skill defaults to this; opt-in when the skill invocation is performance-focused.
 - `scope: accessibility` -- verdict covers WCAG conformance, screen-reader semantics, keyboard navigation, color contrast. Currently no skill defaults to this; opt-in when the skill invocation is a11y-focused.
 
@@ -370,7 +370,7 @@ This rule closes Finding C hop 8b: the security-review's `scope: security-threat
 
 ## Verify Request Schema
 
-The reviewer and security-reviewer agents emit `<verify_request>` blocks when they encounter a Class-2 (or Class 2-S) question that they cannot resolve from `[Read, Glob]` tool access alone AND that the executor's Phase 1 pre-emption did not anticipate. This schema defines the block's required and optional fields; the corresponding executor-side flow is documented in each skill's `<output>` block (see `lz-advisor.review/SKILL.md` "Reviewer Escalation Hook" and `lz-advisor.security-review/SKILL.md` -- not yet wired in current scope; reviewer-side wiring lands in Plan 07-05).
+The reviewer and security-reviewer agents emit `<verify_request>` blocks when they encounter a Class-2 (or Class 2-S) question that they cannot resolve from `[Read, Glob]` tool access alone AND that the executor's Phase 1 pre-emption did not anticipate. This schema defines the block's required and optional fields; the corresponding executor-side flow is documented in each skill's `<output>` block (see `review/SKILL.md` "Reviewer Escalation Hook" and `security-review/SKILL.md` -- not yet wired in current scope; reviewer-side wiring lands in Plan 07-05).
 
 ### Schema
 
@@ -414,8 +414,8 @@ The reviewer's `### Findings` entry references the verify_request via the same a
 
 The executor's flow on receiving verify_request blocks is documented in:
 
-- `lz-advisor.review/SKILL.md` Phase 3 "Reviewer Escalation Hook" section
-- `lz-advisor.security-review/SKILL.md` (when wired in a future phase -- Plan 07-05 scope is reviewer only)
+- `review/SKILL.md` Phase 3 "Reviewer Escalation Hook" section
+- `security-review/SKILL.md` (when wired in a future phase -- Plan 07-05 scope is reviewer only)
 
 The flow is one-shot: parse all verify_request blocks, perform all verifications in a single pre-pass (WebSearch + WebFetch + npm audit per class), synthesize pv-* blocks per Common Contract Rule 5b, re-invoke the reviewer (or security-reviewer) ONCE with the new anchors. Multi-round verification is forbidden per Spotify Honk one-shot principle.
 
