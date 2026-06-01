@@ -19,9 +19,9 @@ Requirements for initial release. Each maps to roadmap phases.
 - [x] **ADVR-01**: Agent definition uses `model: opus` to always run on Opus 4.6 regardless of session model
 - [x] **ADVR-02**: Agent enforces conciseness: under 100 words, enumerated steps, not explanations
 - [x] **ADVR-03**: Agent has read-only tools (Read, Glob) -- never takes write actions
-- [x] **ADVR-04**: Agent uses `maxTurns: 1` -- single strategic response, no iterative tool-call loops
+- [x] **ADVR-04**: Agent uses a small bounded `maxTurns` -- a single bounded strategic consultation, not an iterative tool-call loop. Shipped value is `3` (2 tool-use + 1 synthesis turn, per CLAUDE.md); originally specified as `1` and raised via Phase 5.2 Plan 04 + Plan 08-09. Intent (bounded, non-iterative) preserved.
 - [x] **ADVR-05**: Agent uses `effort: high` for deep strategic reasoning
-- [x] **ADVR-06**: Agent system prompt uses calm natural language (no "MUST", "CRITICAL", "ALWAYS")
+- [x] **ADVR-06**: Agent system prompt uses calm natural language -- no motivational/anxiety imperatives ("CRITICAL", "ALWAYS"). `MUST` is reserved for the literal output-contract frame only (the `Assuming X (unverified), do Y. Verify X before acting.` discipline introduced Phase 5.4+), consistent with the "reserve imperatives for compliance only" steering principle. The original "zero MUST" check was superseded by that contract.
 
 ### Plan Skill
 

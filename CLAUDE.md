@@ -68,13 +68,13 @@ plugins/lz-advisor/
 ## Plugin Manifest (plugin.json)
 ## Agent File Format
 ### Agent Configuration
-All agents use `model: opus`, `tools: ["Read", "Glob"]`, and `maxTurns: 3` (2 tool-use turns + 1 synthesis turn). `effort` varies by role: advisor uses `effort: high`, while reviewer and security-reviewer use `effort: xhigh` (the Context Trust Contract in the reviewer agents explicitly builds on the xhigh budget to permit batched verification tool use). Agent-specific fields:
+All agents use `model: opus`, `tools: ["Read", "Glob"]`, and `maxTurns: 3` (2 tool-use turns + 1 synthesis turn). `effort` varies by role: advisor uses `effort: high`, while reviewer and security-reviewer use `effort: medium` (de-escalated from `xhigh` in Phase 7 Plan 07-09; the fragment-grammar output contract keeps verification batched without the higher budget). Agent-specific fields:
 | Field | advisor.md | reviewer.md | security-reviewer.md |
 |-------|-----------|-------------|---------------------|
 | `name` | `advisor` | `reviewer` | `security-reviewer` |
 | `color` | `magenta` | `cyan` | `yellow` |
-| `effort` | `high` | `xhigh` | `xhigh` |
-| Word budget | 100 words | 300 words | 300 words |
+| `effort` | `high` | `medium` | `medium` |
+| Word budget | ~100 words | per-section `<output_constraints>` (no aggregate cap) | per-section `<output_constraints>` (no aggregate cap) |
 | Used by skill | plan, execute | review | security-review |
 | `description` | Triggering conditions + examples | Most critical field; determines when agent triggers |
 ### Key Design Constraint: Advisor Output Trimming
