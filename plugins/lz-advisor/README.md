@@ -78,106 +78,14 @@ Opus 4.7 (released 2026-04-16) is auto-selected via the `opus` alias; no user ac
 
 ### 1.0.0
 
-First stable release -- marks completion of the v1.0 milestone. The plugin is
-feature-complete: 4 skills (`/plan`, `/execute`, `/review`, `/security-review`)
-backed by 3 Opus agents (`advisor`, `reviewer`, `security-reviewer`), all using
-the same orient -> consult -> produce pattern. Hardened across 15 phases of
-UAT-driven field testing: verification-chain integrity (pre-verified-claim
-discipline, hedge-marker handling, ToolSearch-backed web verification),
-per-section output budgets for the review agents, change-surface-matched
-verification targets, and pack-then-trust final consultations. No behavior change
-from 0.15.0 -- this is the release tag for the completed milestone.
-
-### 0.15.0
-
-- Renamed the four skills from the dotted `lz-advisor.<skill>` form back to
-  plain `<skill>` (`/plan`, `/execute`, `/review`, `/security-review`). The
-  qualified `lz-advisor:<skill>` form already provides namespacing, so the
-  `lz-advisor.` prefix only produced a redundant `lz-advisor:lz-advisor-<skill>`
-  normalized name. Reverses the 0.3.0 rename.
-
-### 0.14.0
-
-- The execute skill now selects its verification target by change surface (a
-  Storybook or build-config change is verified with the matching target, not a
-  blanket `nx test`) and packs post-change file content into the final advisor
-  consultation so the advisor synthesizes from the prompt instead of re-reading
-  files from disk.
-- Removed the `wip:` commit discipline: long-running validations now wait for
-  completion rather than routing to a work-in-progress commit.
-  (Rollup of 0.14.0, 0.14.1, and 0.14.2.)
-
-### 0.13.0
-
-- Reviewer and security-reviewer output budgets moved from a single aggregate
-  300-word cap to per-section `<output_constraints>` (per-finding <=22 words,
-  Cross-Cutting / Threat Patterns <=160 words, optional Missed surfaces <=30
-  words; no aggregate cap), after aggregate caps were found to degrade reasoning
-  quality.
-  (Rollup of 0.13.0 and 0.13.1.)
-
-### 0.10.0
-
-- Verification-chain-integrity hardening across all three agents and four
-  skills: pre-verified-claim validation, hedge-marker discipline,
-  confidence-laundering guards, default-on ToolSearch loading for deferred web
-  tools, a reviewer Class-2 escalation hook, and an aligned severity vocabulary
-  (Critical / Important / Suggestion / Question).
-  (Rollup of 0.10.0 through 0.12.2.)
-
-### 0.9.0
-
-- Added a provenance-based Context Trust Contract (vendor-doc vs.
-  agent-generated) and a question-class-aware orient-exploration ranking
-  (`references/orient-exploration.md`) so the executor prefers web research over
-  stale local `node_modules` type stubs for API-currency, migration, and
-  security-advisory questions.
-  (Rollup of 0.8.5 and 0.9.0.)
-
-### 0.8.0
-
-- Added proactive web research to the plan skill (verify framework conventions
-  before consulting the advisor), an advisor density worked example, a
-  security-review output-shape smoke test, and an advisor word-budget gate.
-  Fixed an advisor "Assuming X, do Y. Verify X." framing regression for
-  thin-context tasks.
-  (Rollup of 0.8.0 through 0.8.4.)
-
-### 0.6.0
-
-- Shipped the "executor verifies cheaply and correctly before burdening agents"
-  doctrine: the review and security-review skills derive scope mechanically from
-  git rather than from the conversation narrative, all four skills gained
-  WebSearch / WebFetch in their allowed-tools, and the three agent response
-  shapes were polished (Position B Critical marker, inline "Assuming X" framing,
-  two-slot Findings + Cross-Cutting / Threat Patterns output).
-
-### 0.5.0
-
-- Added `## Context Trust Contract` section to all three Opus agents
-  (advisor, reviewer, security-reviewer). Calibrated per role:
-  advisor emphasizes compression, reviewer and security-reviewer
-  emphasize efficient batched verification. Closes Phase 5.2 field
-  findings F1 (advisor maxTurns exhaustion) and F2 (agents ignoring
-  soft anti-re-read instructions).
-- Added new shared reference file `references/context-packaging.md`
-  consolidating packaging rules (Common Contract, Proposal template,
-  Verification template, short-form variant, decision table) that
-  were previously inline in each SKILL.md. All four skills now
-  `@`-load this reference. Closes field finding F3 (executor context
-  packaging quality).
-- Added orientation-budget instruction to `plan` and
-  `execute` skills to stop executor over-investigation of
-  bundled, minified, or `node_modules/*/dist/` files. Closes field
-  finding F5.
-- Field finding F4 (executor recovery mechanism works but at high cost
-  when the advisor returns a preamble-only response) is not addressed
-  in 0.5.0. The F1 Context Trust Contract fix is expected to reduce
-  the frequency of F4 triggers by curing the upstream cause; residual
-  cost optimization of the recovery path itself is deferred to a
-  future release.
-- No agent frontmatter, allowed-tools, or workflow shape changes. All
-  edits are prompt-level.
+Initial stable release. The advisor-strategy plugin pairs an Opus advisor with
+your session model across four skills -- `/plan`, `/execute`, `/review`, and
+`/security-review` -- each backed by a dedicated Opus agent (`advisor`,
+`reviewer`, `security-reviewer`) using the same orient -> consult -> produce
+pattern. Highlights: verification-chain integrity (pre-verified-claim discipline,
+hedge-marker handling, ToolSearch-backed web verification), per-section output
+budgets for the review agents, change-surface-matched verification targets, and
+pack-then-trust final advisor consultations.
 
 ## License
 
