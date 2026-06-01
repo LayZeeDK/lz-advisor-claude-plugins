@@ -14,6 +14,7 @@ human_verification:
   - test: "Re-verify F-class-2-escalation.sh assertion (a) status against future UAT traces"
     expected: "When a real-world UAT surfaces an executor pre-emption failure (e.g., a CVE published after the model's training cutoff with no npm audit coverage yet), capture trace + re-run F-class-2-escalation.sh against it; assertion (a) should PASS (Class-2 Hook fires)."
     why_human: "Cannot verify programmatically until a natural pre-emption-failure scenario surfaces. Cross-phase regression validation; phase 9 watch item."
+    reverified_2026_06_01: "Deliberate web-deprivation re-verification on plugin 0.15.0 (--disallowedTools WebSearch WebFetch ToolSearch). Assertion (a) still FAIL -- correct by design: the reviewer flagged GHSA-wphj-fx3q-84ch + the command injection via the normal Findings channel because the advisory is source-named and the sink is visible (firing condition (ii) source-unanswerable is unmet). 4th confirming scenario. FIND-F-CLASS-2-OBSERVABILITY closed by-design; F-fixture remains the durable --from-trace regression vehicle. Trace: find-f-web-deprivation-uat-0.15.0.jsonl. See '## Resolution Amendment 2026-06-01' below."
   - test: "Visual confirm 5-surface atomic version sync at 0.14.0 in marketplace publication if/when published"
     expected: "If user publishes plugin to marketplace at 0.14.0, downstream consumers see all 5 surfaces consistent."
     why_human: "Marketplace publication is out of scope for v1 per D-04; verification is contingent on a future user decision."
@@ -243,3 +244,35 @@ Note: GAP-S9 and GAP-S10 do not appear as discrete rows in the `## Traceability`
 
 _Gap-closure verified: 2026-05-31_
 _Verifier: Claude (gsd-verifier)_
+
+---
+
+## Resolution Amendment 2026-06-01 (FIND-F web-deprivation re-verification)
+
+**Trigger:** v1.0 milestone finalization. The 2026-05-19 override closed FIND-F-CLASS-2-OBSERVABILITY "empirically-with-finding" and left a `human_verification` item to re-verify `F-class-2-escalation.sh` assertion (a). This amendment records a deliberate **web-deprivation** re-verification that isolates the one variable the prior three scenarios left confounded: online tool availability.
+
+**Method.** Re-ran the canonical F-fixture scenario (vendored systeminformation@5.27.13 `fsSize` / GHSA-wphj-fx3q-84ch under a `file:` dep) headless on plugin 0.15.0, with the executor's online verification paths hard-blocked:
+
+```
+claude --model sonnet --effort medium --plugin-dir <plugin> \
+  --permission-mode auto \
+  --disallowedTools WebSearch WebFetch ToolSearch \
+  -p "/lz-advisor:security-review Review the last commit for security issues."
+```
+
+Trace preserved at `find-f-web-deprivation-uat-0.15.0.jsonl` (88,479 bytes); graded with `bash F-class-2-escalation.sh --from-trace <trace>`.
+
+**Result: assertion (a) FAIL (hook did NOT fire) -- the correct, expected outcome.** Deprivation held (trace shows WebSearch=0, WebFetch=0, ToolSearch=0 tool_use; the `file:` dep defeats `npm audit` GHSA resolution by design), yet the security-reviewer resolved the entire Class-2 concern through the **normal Findings channel** rather than the hook:
+- `index.js:1-11: crit: [A06] [GHSA-wphj-fx3q-84ch] ... patched upstream in 5.27.14 ... frozen at the known-vulnerable revision` -- advisory flagged as Critical.
+- `index.js:8: crit: [A03]` command injection at the `exec(... + drive ...)` sink.
+- `package.json:5: imp: [A08] file: dependency evades npm audit ... so GHSA-wphj-fx3q-84ch never surfaces` -- the reviewer itself diagnosed why audit cannot help.
+- Residual unknown surfaced via the parallel hedge frame, not the hook: `q: [A03] Is getDiskSize reachable from an unauthenticated surface? ... Assuming network-reachable (unverified), treat as crit ... Verify caller before acting.`
+
+**Interpretation.** The hook fires only when a Class-2 question reaches the agent BOTH (i) unresolved by executor pre-emption AND (ii) unanswerable from `[Read, Glob]` source inspection. This run eliminates the hypothesis that web availability was suppressing firing: even with all web/ToolSearch tools blocked, condition (ii) is unmet because the advisory is source-named and the injection visible -- so the reviewer correctly flags from source. Forcing the hook would require a source-opaque Class-2 question (no in-file advisory hint, benign-looking usage) with verification simultaneously blocked -- a conjunction the plugin's design (self-documenting findings + the `q:`/Assuming-X hedge frame + executor pre-emption) systematically avoids, and which cannot be cleanly constructed headlessly without also disabling the `Bash(git)` the review skill needs for scope derivation.
+
+**Disposition: FIND-F-CLASS-2-OBSERVABILITY closed by-design.** This is the FOURTH confirming scenario (registry direct dep, alt-CVE fallback, vendored-CVE bypass, and now web-deprivation). The structural canon (`security-reviewer.md ## Class-2 Escalation Hook`) is unchanged; `F-class-2-escalation.sh` remains the durable `--from-trace` regression vehicle. No plugin change; plugin stays at 0.15.0.
+
+**Residual (honest caveat, non-blocking):** the exact "source-opaque Class-2 question + verification blocked" firing conjunction remains empirically unexercised due to construction difficulty, not neglect. If a real-world UAT ever surfaces it, capture the trace and re-run the fixture; assertion (a) should then PASS.
+
+_Re-verified: 2026-06-01_
+_Verifier: Claude (headless web-deprivation UAT on plugin 0.15.0)_
