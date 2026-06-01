@@ -34,7 +34,7 @@ claude --model sonnet --effort medium --plugin-dir "$PLUGIN_DIR" \
   --verbose > "$OUT" 2>&1 || true
 
 # Assert session.ts appears in the review output (scan did not skip it)
-if grep -q "session.ts" "$OUT"; then
+if rg -q "session.ts" "$OUT"; then
   echo "[OK] Finding J smoke test passed: session.ts was scanned despite plan narrative."
 else
   echo "[ERROR] Finding J smoke test FAILED: session.ts absent from review output."
