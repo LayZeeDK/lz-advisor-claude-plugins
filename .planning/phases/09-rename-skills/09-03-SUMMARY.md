@@ -65,10 +65,12 @@ All probes run from CWD = repo root with `--plugin-dir plugins/lz-advisor --perm
 
 | Skill | session_id | Asserted string | Result | Built-in collision? |
 |-------|------------|-----------------|--------|---------------------|
-| plan | 30d765af-9908-44ba-9beb-a9d3a798d710 | `<command-name>/lz-advisor:plan</command-name>` | PASS | n/a (no built-in twin) |
+| plan | 30d765af-9908-44ba-9beb-a9d3a798d710 | `<command-name>/lz-advisor:plan</command-name>` | PASS | built-in `/plan` EXISTS; qualified form resolved to PLUGIN (probe); bare-`/plan` disambiguation confirmed in 09-UAT.md Test 3 |
 | execute | b6aa5307-d291-4783-b53c-7ba894d4e779 | `<command-name>/lz-advisor:execute</command-name>` | PASS | n/a (no built-in twin) |
 | review | d5dcf582-bbb6-45a5-8116-c78049de9587 | `<command-name>/lz-advisor:review</command-name>` | PASS | resolved to PLUGIN, NOT built-in `/review` |
 | security-review | bec8d15f-8c08-4d70-822a-44ab1b6420a8 | `<command-name>/lz-advisor:security-review</command-name>` | PASS | resolved to PLUGIN, NOT built-in `/security-review` |
+
+**Correction (plan row built-in collision):** An earlier draft of the plan row characterized `/plan` as having no built-in counterpart, which is INCORRECT. The mischaracterization arose because the headless D-08 probe only exercised the qualified form `/lz-advisor:plan`, which can never collide with a bare built-in -- so the bare-`/plan` collision was never observed during execution. The correct fact: Claude Code ships a built-in `/plan` (enter Plan mode / view the current session plan), so `/plan` IS a collision case, handled identically to `/review` and `/security-review`; the interactive picker disambiguates it via the `(lz-advisor)` qualifier. Evidence source: 09-UAT.md Test 3 (typing bare `/plan` lists both the built-in and the `(lz-advisor)` plan skill; selecting the lz-advisor entry expands to the clean `/lz-advisor:plan`). The execute row's cell is correct and unchanged -- execute genuinely ships no built-in counterpart.
 
 Full matched command-expansion events (from the internal transcripts):
 
