@@ -9,68 +9,68 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Plugin Infrastructure
 
-- [ ] **INFRA-01**: Plugin has minimal `plugin.json` manifest with no unrecognized fields
-- [ ] **INFRA-02**: Plugin directory structure follows marketplace conventions (`agents/`, `skills/*/SKILL.md`, `.claude-plugin/`)
-- [ ] **INFRA-03**: Reference file (`references/advisor-timing.md`) offloads Anthropic's timing guidance from SKILL.md to stay under 5,000-token compaction limit
-- [ ] **INFRA-04**: All skill descriptions include 5+ trigger phrases optimized for discoverability
+- [x] **INFRA-01**: Plugin has minimal `plugin.json` manifest with no unrecognized fields
+- [x] **INFRA-02**: Plugin directory structure follows marketplace conventions (`agents/`, `skills/*/SKILL.md`, `.claude-plugin/`)
+- [x] **INFRA-03**: Reference file (`references/advisor-timing.md`) offloads Anthropic's timing guidance from SKILL.md to stay under 5,000-token compaction limit
+- [x] **INFRA-04**: All skill descriptions include 5+ trigger phrases optimized for discoverability
 
 ### Advisor Agent
 
-- [ ] **ADVR-01**: Agent definition uses `model: opus` to always run on Opus 4.6 regardless of session model
+- [x] **ADVR-01**: Agent definition uses `model: opus` to always run on Opus 4.6 regardless of session model
 - [x] **ADVR-02**: Agent enforces conciseness: under 100 words, enumerated steps, not explanations
-- [ ] **ADVR-03**: Agent has read-only tools (Read, Glob) -- never takes write actions
-- [ ] **ADVR-04**: Agent uses `maxTurns: 1` -- single strategic response, no iterative tool-call loops
-- [ ] **ADVR-05**: Agent uses `effort: high` for deep strategic reasoning
-- [ ] **ADVR-06**: Agent system prompt uses calm natural language (no "MUST", "CRITICAL", "ALWAYS")
+- [x] **ADVR-03**: Agent has read-only tools (Read, Glob) -- never takes write actions
+- [x] **ADVR-04**: Agent uses `maxTurns: 1` -- single strategic response, no iterative tool-call loops
+- [x] **ADVR-05**: Agent uses `effort: high` for deep strategic reasoning
+- [x] **ADVR-06**: Agent system prompt uses calm natural language (no "MUST", "CRITICAL", "ALWAYS")
 
 ### Plan Skill
 
-- [ ] **PLAN-01**: Skill instructs executor to orient first (read files, explore codebase) before consulting advisor
-- [ ] **PLAN-02**: Skill instructs executor to package orientation findings into advisor agent invocation
-- [ ] **PLAN-03**: Advisor returns concise strategic direction (under 100 words)
-- [ ] **PLAN-04**: Executor expands advisor's terse guidance into a detailed, actionable plan
-- [ ] **PLAN-05**: Skill outputs a durable plan artifact (written to file or displayed for user)
-- [ ] **PLAN-06**: Skill inherits session model for executor (no model override)
+- [x] **PLAN-01**: Skill instructs executor to orient first (read files, explore codebase) before consulting advisor
+- [x] **PLAN-02**: Skill instructs executor to package orientation findings into advisor agent invocation
+- [x] **PLAN-03**: Advisor returns concise strategic direction (under 100 words)
+- [x] **PLAN-04**: Executor expands advisor's terse guidance into a detailed, actionable plan
+- [x] **PLAN-05**: Skill outputs a durable plan artifact (written to file or displayed for user)
+- [x] **PLAN-06**: Skill inherits session model for executor (no model override)
 
 ### Execute Skill
 
-- [ ] **IMPL-01**: Skill instructs executor to consult advisor before substantive work (after orientation)
-- [ ] **IMPL-02**: Skill instructs executor to consult advisor when stuck (errors recurring, approach not converging)
-- [ ] **IMPL-03**: Skill instructs executor to consult advisor when considering a change of approach
-- [ ] **IMPL-04**: Skill instructs executor to consult advisor before declaring done (after making deliverable durable)
-- [ ] **IMPL-05**: Skill accepts optional plan file input (from `/lz-advisor.plan` or other sources)
-- [ ] **IMPL-06**: Skill instructs executor to make deliverable durable (write files, commit) before final advisor call
-- [ ] **IMPL-07**: Skill instructs executor to give advice serious weight but adapt if empirical evidence contradicts
-- [ ] **IMPL-08**: Skill implements reconciliation pattern: when executor findings conflict with advisor, surface conflict in one more advisor call
-- [ ] **IMPL-09**: Skill instructs executor to package relevant context at each advisor consultation point
-- [ ] **IMPL-10**: Skill inherits session model for executor (no model override)
+- [x] **IMPL-01**: Skill instructs executor to consult advisor before substantive work (after orientation)
+- [x] **IMPL-02**: Skill instructs executor to consult advisor when stuck (errors recurring, approach not converging)
+- [x] **IMPL-03**: Skill instructs executor to consult advisor when considering a change of approach
+- [x] **IMPL-04**: Skill instructs executor to consult advisor before declaring done (after making deliverable durable)
+- [x] **IMPL-05**: Skill accepts optional plan file input (from `/lz-advisor.plan` or other sources)
+- [x] **IMPL-06**: Skill instructs executor to make deliverable durable (write files, commit) before final advisor call
+- [x] **IMPL-07**: Skill instructs executor to give advice serious weight but adapt if empirical evidence contradicts
+- [x] **IMPL-08**: Skill implements reconciliation pattern: when executor findings conflict with advisor, surface conflict in one more advisor call
+- [x] **IMPL-09**: Skill instructs executor to package relevant context at each advisor consultation point
+- [x] **IMPL-10**: Skill inherits session model for executor (no model override)
 
 ### Review Skill
 
-- [ ] **REVW-01**: Skill instructs executor to scan code first (read files, identify areas of concern)
-- [ ] **REVW-02**: Skill instructs executor to package scan findings and relevant code sections into advisor invocation
-- [ ] **REVW-03**: Advisor provides deep analysis of quality, correctness, edge cases, and maintainability
-- [ ] **REVW-04**: Skill provides structured output with actionable, severity-classified findings
-- [ ] **REVW-05**: Skill can review specific files, directories, or recent changes
-- [ ] **REVW-06**: Skill inherits session model for executor (no model override)
+- [x] **REVW-01**: Skill instructs executor to scan code first (read files, identify areas of concern)
+- [x] **REVW-02**: Skill instructs executor to package scan findings and relevant code sections into advisor invocation
+- [x] **REVW-03**: Advisor provides deep analysis of quality, correctness, edge cases, and maintainability
+- [x] **REVW-04**: Skill provides structured output with actionable, severity-classified findings
+- [x] **REVW-05**: Skill can review specific files, directories, or recent changes
+- [x] **REVW-06**: Skill inherits session model for executor (no model override)
 
 ### Security Review Skill
 
-- [ ] **SECR-01**: Skill instructs executor to scan code first with security focus (read files, identify attack surfaces)
-- [ ] **SECR-02**: Skill instructs executor to package security-relevant findings and code sections into advisor invocation
-- [ ] **SECR-03**: Advisor applies OWASP Top 10 lens to packaged findings
-- [ ] **SECR-04**: Advisor performs threat modeling for reviewed code paths
-- [ ] **SECR-05**: Skill provides severity-classified security findings with remediation guidance
-- [ ] **SECR-06**: Skill can review specific files, directories, or recent changes
-- [ ] **SECR-07**: Skill inherits session model for executor (no model override)
+- [x] **SECR-01**: Skill instructs executor to scan code first with security focus (read files, identify attack surfaces)
+- [x] **SECR-02**: Skill instructs executor to package security-relevant findings and code sections into advisor invocation
+- [x] **SECR-03**: Advisor applies OWASP Top 10 lens to packaged findings
+- [x] **SECR-04**: Advisor performs threat modeling for reviewed code paths
+- [x] **SECR-05**: Skill provides severity-classified security findings with remediation guidance
+- [x] **SECR-06**: Skill can review specific files, directories, or recent changes
+- [x] **SECR-07**: Skill inherits session model for executor (no model override)
 
 ### Gap-Closure Requirements (Phase 7)
 
-- [ ] **GAP-G1-firing**: ToolSearch availability rule fires on agent-generated source signal as default-on Phase 1 first action (firing rate >= 8 of 8 UAT sessions where signal is present). Phase 7 gap-closure follow-up to FIND-H rule-bypass-via-self-anchor. Detected by `B-pv-validation.sh` Assertion 5 (default-on ToolSearch firing on agent-generated input). Documented in 4 SKILL.md `<context_trust_contract>` blocks (default-on rule + 2 worked examples) and `plugins/lz-advisor/references/context-packaging.md` Rule 5b ToolSearch precondition sub-rule.
+- [x] **GAP-G1-firing**: ToolSearch availability rule fires on agent-generated source signal as default-on Phase 1 first action (firing rate >= 8 of 8 UAT sessions where signal is present). Phase 7 gap-closure follow-up to FIND-H rule-bypass-via-self-anchor. Detected by `B-pv-validation.sh` Assertion 5 (default-on ToolSearch firing on agent-generated input). Documented in 4 SKILL.md `<context_trust_contract>` blocks (default-on rule + 2 worked examples) and `plugins/lz-advisor/references/context-packaging.md` Rule 5b ToolSearch precondition sub-rule.
 
-- [ ] **GAP-D-budget-empirical**: Reviewer + security-reviewer agents emit aggregate output <=300 words across Findings + Cross-Cutting Patterns / Threat Patterns + Missed surfaces sections on canonical D-reviewer-budget.sh / D-security-reviewer-budget.sh scenarios. Phase 7 gap-closure follow-up to FIND-D word-budget regression (Plan 07-04 descriptive sub-cap prose was empirically insufficient on plugin 0.11.0: reviewer 396w / 32% over, security-reviewer 414w / 38% over). Detected by `D-reviewer-budget.sh` and `D-security-reviewer-budget.sh` per-line + aggregate assertions. Documented in `agents/reviewer.md` and `agents/security-reviewer.md` `## Output Constraint` sections (fragment-grammar emit template + DROP/KEEP lists + 3 worked example pairs + auto-clarity carve-out) AND `agents/{reviewer,security-reviewer}.md` frontmatter `effort: medium` (CONTEXT.md D-04 amendment 2026-05-02).
+- [x] **GAP-D-budget-empirical**: Reviewer + security-reviewer agents constrain output via per-section `<output_constraints>` budgets, NOT an aggregate cap: per-finding entry <=22 words (<=28 outlier soft cap), <=15 findings; optional per-finding-validation <=60 words/entry; Cross-Cutting Patterns / Threat Patterns <=160 words; optional Missed surfaces <=30 words; `<aggregate_cap>none</aggregate_cap>`. This supersedes the original aggregate-300-word contract, which Plan 07-14 replaced per the user directive 2026-05-06 (07-RESEARCH-GAP-3 Q1/Q3 + Anthropic Apr 2026 postmortem evidence that aggregate caps degrade reasoning quality). Phase 7 gap-closure follow-up to FIND-D word-budget regression (Plan 07-04 descriptive sub-cap prose was empirically insufficient on plugin 0.11.0: reviewer 396w / 32% over, security-reviewer 414w / 38% over). Detected by `D-reviewer-budget.sh` and `D-security-reviewer-budget.sh` per-section assertions (the prior aggregate-<=300w assertion was removed in Plan 07-15; the per-finding-validation outlier tolerance was raised 66w -> 75w at the fixture-parser layer in Phase 8 Plan 08-02). Documented in `agents/reviewer.md` and `agents/security-reviewer.md` `## Output Constraint` + `<output_constraints>` sections (fragment-grammar emit template + DROP/KEEP lists + worked example pairs + auto-clarity carve-out) AND `agents/{reviewer,security-reviewer}.md` frontmatter `effort: medium` (CONTEXT.md D-04 amendment 2026-05-02).
 
-- [ ] **FIND-B.2-format-scope**: Rule 5b "Format mandate" sub-rule (in `references/context-packaging.md`) explicitly differentiates two surfaces: **internal-prompt surface** (executor->agent CONTEXT block via Agent tool prompt) requires canonical `<pre_verified>...</pre_verified>` XML form; **user-facing artifact surface** (plan files, review/security-review output bodies, commit bodies, Strategic Direction blocks) permits token-form references when paired with concrete-source backing (3 acceptable shapes: token reference + Verified: trailer; token reference + prose citation; inline parenthetical token reference). Plan 07-11 D2 amendment closure (per `.planning/phases/07-address-all-phase-5-x-and-6-uat-findings/07-RESEARCH-GAPS.md` Gap 2 ranked recommendation). Trust contract preservation enforced via `B-pv-validation.sh` Assertion 6 (resolution check): every user-facing token MUST resolve to a `claim_id` value in a canonical `<pre_verified>` XML block in the same session's executor flow. Refines the original FIND-B.2 closure (Plan 07-01) without contradicting its intent (rejecting plain-bullets-without-evidence).
+- [x] **FIND-B.2-format-scope**: Rule 5b "Format mandate" sub-rule (in `references/context-packaging.md`) explicitly differentiates two surfaces: **internal-prompt surface** (executor->agent CONTEXT block via Agent tool prompt) requires canonical `<pre_verified>...</pre_verified>` XML form; **user-facing artifact surface** (plan files, review/security-review output bodies, commit bodies, Strategic Direction blocks) permits token-form references when paired with concrete-source backing (3 acceptable shapes: token reference + Verified: trailer; token reference + prose citation; inline parenthetical token reference). Plan 07-11 D2 amendment closure (per `.planning/phases/07-address-all-phase-5-x-and-6-uat-findings/07-RESEARCH-GAPS.md` Gap 2 ranked recommendation). Trust contract preservation enforced via `B-pv-validation.sh` Assertion 6 (resolution check): every user-facing token MUST resolve to a `claim_id` value in a canonical `<pre_verified>` XML block in the same session's executor flow. Refines the original FIND-B.2 closure (Plan 07-01) without contradicting its intent (rejecting plain-bullets-without-evidence).
 
 ## v2 Requirements
 
@@ -166,4 +166,4 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 ---
 *Requirements defined: 2026-04-10*
-*Last updated: 2026-06-01 -- v1.0 milestone audit marked all traceability rows Complete (52/52 satisfied; see .planning/v1.0-MILESTONE-AUDIT.md)*
+*Last updated: 2026-06-01 -- Phase 10 doc-hygiene cleanup: refreshed the stale GAP-D-budget-empirical definition to the shipped per-section <output_constraints> contract and checked off all satisfied requirement-definition checkboxes (52/52 satisfied). Prior: v1.0 milestone audit marked all traceability rows Complete (see .planning/v1.0-MILESTONE-AUDIT.md)*
