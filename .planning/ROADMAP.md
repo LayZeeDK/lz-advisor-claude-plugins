@@ -294,4 +294,4 @@ Plans:
 **Plans:** 1 plan
 
 Plans:
-- [ ] 10-01-PLAN.md -- Doc-hygiene cluster: REQUIREMENTS.md (GAP-D definition + checkboxes), plugin README (changelog backfill + three-agent prose), J-narrative-isolation.sh (grep -> rg)
+- [x] 10-01-PLAN.md -- Doc-hygiene cluster: REQUIREMENTS.md (GAP-D definition + checkboxes), plugin README (changelog backfill + three-agent prose), J-narrative-isolation.sh (grep -> rg)

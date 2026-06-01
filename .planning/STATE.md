@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: Milestone complete
-stopped_at: Phase 9 context gathered
-last_updated: "2026-06-01T08:50:45.028Z"
+stopped_at: Phase 10 doc-hygiene cleanup complete
+last_updated: "2026-06-01T09:29:58Z"
 last_activity: 2026-06-01
 progress:
-  total_phases: 15
-  completed_phases: 14
-  total_plans: 79
-  completed_plans: 78
+  total_phases: 16
+  completed_phases: 15
+  total_plans: 80
+  completed_plans: 79
   percent: 99
 ---
 
@@ -21,12 +21,25 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-10)
 
 **Core value:** Near-Opus intelligence at Sonnet cost for coding tasks, through strategic advisor consultation at high-leverage moments
-**Current focus:** Phase 09 — rename-skills
+**Current focus:** Phase 10 -- milestone v1.0 documentation-hygiene cleanup (complete)
 
 ## Current Position
 
-Phase: 9
-Plan: Not started
+Phase: 10
+Plan: 10-01 complete (Cluster A tech-debt cleanup; see 10-VERIFICATION.md)
+
+Phase 10 closed the v1.0 milestone audit's Cluster A documentation-hygiene tech debt
+(`.planning/v1.0-MILESTONE-AUDIT.md`, status `tech_debt`, no critical gaps) in 4 atomic
+doc commits, plugin untouched at 0.15.0: refreshed the stale GAP-D-budget-empirical
+definition to the per-section `<output_constraints>` contract + checked off 42 satisfied
+requirement definitions (6e5181b); backfilled the README "What's New" changelog 0.6.0 ->
+0.15.0 + corrected the singular-agent prose to the 3-agent design (5fe84cb); replaced the
+forbidden `grep -q` with `rg -q` in J-narrative-isolation.sh / DEF-09-01 (1f1028f). Cluster B
+(Nyquist backfill, phases 1/2/5/5.5) and Cluster C (FIND-F watch item + 2 human_verification
+items) are accept-and-track per user decision 2026-06-01. Next: re-run `/gsd-audit-milestone`
+then `/gsd-complete-milestone v1.0`.
+
+### Historical position (pre-Phase-10)
 
 Original Phase 8 (plans 08-01..08-07) shipped at 0.14.0 and was sealed. The 2026-05-31 Compodoc
 natural UAT (/gsd-verify-work 8 against ngx-smart-components) reopened it with two PLUGIN gaps,
@@ -161,6 +174,6 @@ Recent decisions affecting current work:
 
 ## Session Continuity
 
-Last session: 2026-05-31T23:55:39.232Z
-Stopped at: Phase 9 context gathered
-Resume next: plan the follow-up phase. Recommend `/gsd-discuss-phase 7` to gather context, then `/gsd-plan-phase 7` to produce the executable plan that bundles the 4 amendment surfaces with the 4 Phase 7 findings.
+Last session: 2026-06-01T09:29:58Z
+Stopped at: Phase 10 doc-hygiene cleanup complete
+Resume next: the v1.0 milestone is feature-complete and the audit's Cluster A tech debt is closed. Re-run `/gsd-audit-milestone` to confirm the tech_debt items cleared, then `/gsd-complete-milestone v1.0` to archive. Cluster B (Nyquist backfill for phases 1/2/5/5.5 via `/gsd-validate-phase`) and Cluster C (FIND-F-CLASS-2-OBSERVABILITY watch item + 2 human_verification items) remain accept-and-track.
