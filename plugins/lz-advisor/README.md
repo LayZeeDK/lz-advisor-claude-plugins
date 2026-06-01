@@ -76,6 +76,18 @@ Opus 4.7 (released 2026-04-16) is auto-selected via the `opus` alias; no user ac
 
 ## What's New
 
+### 1.0.0
+
+First stable release -- marks completion of the v1.0 milestone. The plugin is
+feature-complete: 4 skills (`/plan`, `/execute`, `/review`, `/security-review`)
+backed by 3 Opus agents (`advisor`, `reviewer`, `security-reviewer`), all using
+the same orient -> consult -> produce pattern. Hardened across 15 phases of
+UAT-driven field testing: verification-chain integrity (pre-verified-claim
+discipline, hedge-marker handling, ToolSearch-backed web verification),
+per-section output budgets for the review agents, change-surface-matched
+verification targets, and pack-then-trust final consultations. No behavior change
+from 0.15.0 -- this is the release tag for the completed milestone.
+
 ### 0.15.0
 
 - Renamed the four skills from the dotted `lz-advisor.<skill>` form back to
