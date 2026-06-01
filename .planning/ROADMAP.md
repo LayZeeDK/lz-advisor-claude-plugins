@@ -280,3 +280,18 @@ Plans:
 - [x] 09-01-PLAN.md -- Plugin core: git mv 4 skill dirs + sweep 4 SKILL.md (name + body) + 3 references + 2 agents + README + .gitignore comment + atomic 5-surface version bump 0.14.2 -> 0.15.0 (D-01/D-02/D-03/D-04/D-05/D-06/D-07/D-10)
 - [x] 09-02-PLAN.md -- Docs + evals + smoke fixtures: CLAUDE.md per-line transform + 4 eval JSON query strings + conciseness-assessment.md + git mv 4 eval workspace dirs + 11 maintained smoke-fixture qualified -p strings (D-05/D-06/D-07/D-09)
 - [x] 09-03-PLAN.md -- D-08 headless resolution probe (4 skills) + full canonical verification suite + maintained smoke-fixture re-run (D-05/D-08)
+
+### Phase 10: Milestone v1.0 documentation-hygiene cleanup
+
+**Goal:** Close the non-critical documentation-hygiene tech debt surfaced by the v1.0 milestone audit (`.planning/v1.0-MILESTONE-AUDIT.md`, status `tech_debt`, `gaps` empty -- no critical blockers) so the milestone archives with accurate planning + user-facing docs. Scope is Cluster A only (mechanical doc edits, zero plugin-behavior change): refresh the stale `GAP-D-budget-empirical` requirement definition to the shipped per-section `<output_constraints>` contract; check off all satisfied requirement-definition checkboxes in REQUIREMENTS.md; backfill the plugin README "What's New" changelog from 0.5.0 to 0.15.0; correct the singular "the lz-advisor agent" prose to the shipped three-agent design; and replace the forbidden `grep -q` with `rg -q` in the J-narrative-isolation smoke fixture (DEF-09-01).
+
+**Requirements:** None (no REQ-ID; documentation-hygiene cleanup. GAP-D-budget-empirical stays satisfied -- only its definition text was stale.)
+
+**Gap Closure:** Closes v1.0 audit tech_debt items 1, 2, 3, and 5 (Cluster A). Cluster B (Nyquist backfill for phases 1, 2, 5, 5.5) and Cluster C (FIND-F-CLASS-2-OBSERVABILITY watch item + the two human_verification items) are accept-and-track per user decision 2026-06-01.
+
+**Depends on:** Phase 9
+
+**Plans:** 1 plan
+
+Plans:
+- [ ] 10-01-PLAN.md -- Doc-hygiene cluster: REQUIREMENTS.md (GAP-D definition + checkboxes), plugin README (changelog backfill + three-agent prose), J-narrative-isolation.sh (grep -> rg)
