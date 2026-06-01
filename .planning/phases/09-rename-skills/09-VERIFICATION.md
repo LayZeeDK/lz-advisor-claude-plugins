@@ -78,6 +78,8 @@ D-08 is the one genuine behavioral contract. Rather than trust the SUMMARY, the 
 | No doubled-segment artifact | `rg -F 'lz-advisor:lz-advisor-' <all 4 transcripts>` | 0 matches | PASS |
 | Version sync | `git grep -o 0.15.0` over 5 surfaces / `0.14.2` over 5 surfaces | 5 / 0 | PASS |
 
+> Note (D-08 accuracy clarification, not a re-verdict): `/plan` ALSO collides with a Claude Code built-in /plan ("Enable plan mode or view the current session plan"), just like `/review` and `/security-review`. The headless D-08 probe alone only exercised the NON-colliding qualified form `/lz-advisor:plan`, so it did not surface the bare-`/plan` collision. That collision was confirmed DISAMBIGUATED via the interactive picker in 09-UAT.md Test 3 -- the `(lz-advisor)` qualifier distinguishes the plugin skill, and selecting it expands to the clean `/lz-advisor:plan`. This is an accuracy clarification only: D-08 (qualified-form headless resolution) remains fully verified and the phase verdict is unchanged.
+
 ### Anti-Patterns Found
 
 None. This phase is a mechanical Markdown/YAML rename + cross-reference sweep with no data-rendering code, no stubs, no placeholder content, no TODO/FIXME introduced. The only deferred item (DEF-09-01: `J-narrative-isolation.sh` uses `grep -q` instead of `rg -q`) is a PRE-EXISTING defect explicitly out of scope per D-05/D-06, logged to `deferred-items.md` -- not a Phase 9 regression.
