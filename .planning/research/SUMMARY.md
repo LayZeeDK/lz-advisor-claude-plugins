@@ -1,179 +1,152 @@
 # Project Research Summary
 
-**Project:** lz-advisor -- Claude Code marketplace plugin implementing the advisor strategy
-**Domain:** Claude Code plugin (multi-model Opus/Sonnet orchestration)
-**Researched:** 2026-04-10
+**Project:** lz-advisor
+**Domain:** Structured-output grammar change in a Claude Code marketplace plugin (Markdown/YAML prompt-engineering artifacts; zero runtime dependencies) -- user-facing severity-label presentation for two Opus review agents
+**Researched:** 2026-06-07
 **Confidence:** HIGH
 
 ## Executive Summary
 
-The lz-advisor plugin implements Anthropic's advisor strategy as a zero-dependency Claude Code marketplace plugin. The core mechanism is straightforward: one Opus 4.6 advisor agent paired with multiple skill definitions that orchestrate executor-advisor consultation loops. The advisor agent uses the `model: opus` frontmatter field to ensure it always runs on Opus regardless of the user's session model, while all mechanical execution (file reads, writes, tool calls) stays in the cheaper session model (typically Sonnet 4.6). Anthropic's benchmarks validate this approach: Sonnet 4.6 medium-effort with an Opus advisor achieves 63.4% on Terminal-Bench 2.0 at $0.88 cost, while Sonnet alone scores 59.6% at $0.94 -- better intelligence at lower cost.
+This milestone (v1.0.1 "No review report shorthands") is a pure prompt/contract-text change, not a feature build. The `reviewer` and `security-reviewer` Opus agents currently emit findings in a compact fragment grammar with severity shorthands (`crit:`/`imp:`/`sug:`/`q:`), and both review skills render that response verbatim, so the jargon reaches the user unchanged. Every verified peer tool (Conventional Comments, SonarQube, CodeRabbit, reviewdog, Semgrep, Danger) ships fully spelled-out severity in user-facing output; the shorthand is an outlier driven by a Phase 7 token-economy motivation that no longer binds, because the binding budget gates are `wc -w` per-section caps and the severity prefix sits OUTSIDE the counted span -- `crit:` and `Critical:` each count as one word. All four research dimensions independently reach the same verdict: spell out the labels by editing the agent emit grammar (Option A / Mechanism A), keep the render-verbatim contract absolute, and do NOT add any hook, output style, MCP server, or script -- each native "automation" path either fails to reach the durable report, requires a script (breaking the zero-dependency and "no hooks for v1" constraints), or is a strictly weaker form of the prompt edit.
 
-The recommended approach is four skills covering the development lifecycle: plan (orient then consult Opus before making a plan), implement (full executor-advisor loop with Anthropic's timing pattern), review (Opus runs directly via `context: fork`), and security review (same fork pattern with security-specific prompt). The advisor agent enforces conciseness -- under 100 words, enumerated steps -- which Anthropic proved cuts output tokens 35-45% without quality loss. The key architectural insight is that subagents in Claude Code do NOT automatically inherit conversation context, unlike the API `advisor_20260301` tool. Every advisor invocation requires the executor to explicitly package relevant context (task, orientation findings, current state) into the agent prompt. This is the primary prompt engineering challenge for the plugin.
+The recommended approach is Option A: replace the shorthand prefixes with `Critical:`/`Important:`/`Suggestion:`/`Question:` (review) and the security-review's own `Critical:`/`High:`/`Medium:` vocabulary directly in the agent `### Findings` grammar, leaving the skill pass-through untouched. The chief risk is not the label swap itself but its coupling: the same vocabulary is replicated as literal strings across at least six surfaces (two agent files, two SKILL.md verbatim contracts, the context-packaging reference, and the verify_request XML schema), and Sonnet/Opus follow demonstrated few-shot examples over stated rules -- so changing the Format line while leaving 8+ worked examples on shorthand produces mixed output. This is the project's own documented scar (Phase 7 WR-04/WR-05 leaked a two-plan cleanup tail). Mitigation: treat the worked examples as the PRIMARY edit target in one atomic unit, and produce a per-surface disposition table in requirements that distinguishes rename surfaces (display labels, Title-Case) from leave-canonical surfaces (machine XML attributes, lowercase) from leave-as-history surfaces (~362 frozen `.planning/` artifacts that must NOT be swept).
 
-The two largest risks are cost runaway and silent failures. Cost runaway happens when advisor consultations trigger too frequently (overtriggering from aggressive prompt language) or produce verbose output (missing conciseness instruction). Silent failures happen when `plugin.json` contains unrecognized fields, causing the entire plugin to fail loading with no error message. Both risks are fully preventable with known mitigations: use calm natural language ("use this when" not "CRITICAL: MUST"), enforce the conciseness instruction from day one, and keep `plugin.json` minimal. Every pitfall documented has a concrete prevention strategy from Anthropic's official documentation or confirmed GitHub issues.
+Two decisions must be made in requirements before implementation, both architectural rather than incidental. First, Route A (agent emits spelled-out labels) vs Route B (skill-layer mechanical expansion): Route B is a carve-out from the absolute verbatim contract that was hardened precisely because the executor paraphrased and dropped findings when given any editing license -- strongly prefer A. Second, inline-in-place labels vs section-per-severity grouping (Option C): grouping is the milestone's flagged-for-evaluation option, but it directly contradicts an EXISTING explicit prohibition ("Do NOT reformat the response into severity groups"), breaks ordinal cross-references ("Findings 1, 2, 4") unless a stable finding-number scheme is added, and forces mostly-empty severity headers. Recommendation: ship inline spelled-out labels in place for v1.0.1 (low risk, directly satisfies the goal), defer grouping to a fast-follow once the stable-finding-number dependency is designed. A critical, build-order-zero pre-finding cuts across all options: the `D-reviewer-budget.sh` / `D-security-reviewer-budget.sh` smoke fixtures are NOT committed anywhere on disk -- they must be re-authored from the agent-prompt contract and committed under `tests/` before "update fixtures in lockstep" can mean anything.
 
 ## Key Findings
 
 ### Recommended Stack
 
-This plugin has zero external dependencies -- no npm packages, no build steps, no API calls. The entire stack is Claude Code's native plugin component system: one agent definition (Markdown + YAML frontmatter with `model: opus`), four skills (Markdown with frontmatter), and a `plugin.json` manifest. All components are discovered automatically by Claude Code from standard directories (`agents/`, `skills/*/SKILL.md`, `.claude-plugin/plugin.json`). Distribution is via GitHub as a marketplace plugin; installation requires no configuration beyond enabling the plugin.
+No stack additions are justified -- this is a pure Markdown/text edit confined to existing component files plus a regex literal in re-authored bash fixtures. There is no Claude Code-native mechanism (output style, hook, references file) that can mechanically expand labels in the durable user-facing report without either introducing a script dependency or failing to durably reach the report. `MessageDisplay` is the only hook that rewrites user-visible text and it is explicitly display-only (shorthands persist in the transcript and for downstream consumers); output styles steer generation rather than deterministically rewrite. Editing the agent emit grammar is the direct, reliable, zero-dependency answer. See `.planning/research/STACK.md`.
 
-**Core technologies:**
-- Agent definition (`agents/lz-advisor.md`): Opus advisor persona -- the `model: opus` frontmatter field is the sole mechanism for spawning Opus from a Sonnet session; `effort: high` ensures deep strategic reasoning
-- Inline skills (`skills/lz-advisor-plan/`, `skills/lz-advisor-execute/`): Orchestrate executor-advisor workflows; run in the session model's context with full conversation history
-- Forked skills (`skills/lz-advisor-review/`, `skills/lz-advisor-security-review/`): Run Opus directly via `context: fork` + `model: opus`; no executor-advisor loop needed for reviews
-- Plugin manifest (`.claude-plugin/plugin.json`): Must be kept minimal; any unrecognized field causes silent loading failure
-- Reference files (`references/advisor-timing.md`): Detailed Anthropic timing guidance offloaded from SKILL.md to stay under the 5,000-token compaction limit
+**Core technologies (UNCHANGED -- no additions):**
+- Agent files (`agents/reviewer.md`, `agents/security-reviewer.md`, Markdown + YAML) -- the single highest-leverage surface; the severity vocabulary is authored here as the emit-format line, the `Severity prefix` legend, and every worked example. The label change is a text edit.
+- Skill files (`skills/review/SKILL.md`, `skills/security-review/SKILL.md`) -- own the render-verbatim contract; under Option A they need only a note refresh, and the verbatim contract stays absolute.
+- References file (`references/context-packaging.md`) -- carries the shared severity vocabulary in consultation templates and the `<verify_request>` schema; templates already use word forms, so this is a consistency cross-check, not new tooling.
+- `wc -w` + regex bash smoke fixtures (transient, NOT committed) -- the `FRAGMENT_RE` severity alternation (`crit|imp|sug|q`) is the only fixture surface that must change, in lockstep; word budgets are unaffected because the prefix is excluded from the counted span.
 
 ### Expected Features
 
-**Must have (table stakes):**
-- Opus advisor agent with concise output (under 100 words, enumerated steps) -- the plugin's core mechanism; without it, there is no product
-- Plan skill: orient -> Opus consult -> produce actionable plan; faster and simpler than compound-engineering's 3-agent research pipeline
-- Execute skill: full Anthropic timing pattern (consult before work, when stuck, when changing approach, before declaring done); the plugin's highest-value feature
-- Review skill: Opus direct review of completed work via `context: fork`; table stakes for coding plugins in 2026
-- Advisor consultation at Anthropic-recommended timing points -- wrong timing means the advisor adds no value regardless of model quality
-- Conciseness enforcement in advisor system prompt -- without it, the cost advantage disappears
-- Accept external plan files in execute skill -- rejecting external plans blocks adoption from users of compound-engineering, deep-plan, or manual specs
+Spelled-out severity is universal in user-facing peer-tool output; the dominant modern pattern is a hybrid (severity-grouped summary + inline labels + stable finding numbers). For v1.0.1 the scope is presentation only. See `.planning/research/FEATURES.md`.
 
-**Should have (competitive):**
-- Security review skill: dedicated threat-modeling lens from Opus, rare in the ecosystem; prompt variation of review skill, not a new orchestration pattern
-- Reconciliation pattern: when executor empirical findings contradict advisor guidance, one targeted advisor call resolves the conflict rather than silent switching
-- Durable deliverable enforcement: write all files before the final advisor call, protecting work from session timeouts during Opus inference
-- Zero external dependencies: major UX advantage over compound-engineering (optional Gemini/OpenAI) and deep-plan (optional external LLM)
+**Must have (table stakes):**
+- Severity spelled out in full (`Critical`/`Important`/`Suggestion`/`Question` for review; `Critical`/`High`/`Medium` for security-review per its existing vocab) -- the milestone's entire reason for existing; word-budget-neutral.
+- One unambiguous severity per finding -- already present; only the label rendering changes.
+- Updated agent Output Constraint + worked examples + `FRAGMENT_RE` fixtures in lockstep -- the enabler surfaces.
+- `references/context-packaging.md` severity-vocab consistency sync -- drift prevention.
+
+**Should have (competitive / next milestone):**
+- Section-per-severity grouping (`### Critical` / `### Important` / ...) -- maximum scannability, but requires the stable-finding-number dependency first.
+- Per-severity roll-up count and highest-severity-first ordering -- cheap scannability wins once labels are spelled out.
 
 **Defer (v2+):**
-- Hooks-based automatic advisor triggering: hooks are global, lack conversation context, add cost with no user intent signal
-- Task-type-specific skills (refactor, test, infra): advisor timing pattern is identical regardless of task type; user's prompt provides context; would duplicate skill logic with minor prompt variations
-- Multi-agent parallel review: compound-engineering's approach; contradicts this plugin's single-focused-Opus value proposition
-- Plan storage and lifecycle management: unnecessary complexity; plans are conversation artifacts; execute skill accepts a plan file path but does not manage plan lifecycle
+- Severity/kind axis separation (reclassify `Question` as a kind, not a tier) -- re-architects the vocabulary, out of scope.
+- Stable severity-prefixed finding IDs (`CRIT-009`) -- only valuable if reports are persisted/diffed.
+- Anti-features to AVOID entirely: numeric severity scores (anchoring anti-pattern), emoji/icon markers (violates ASCII-only constraint), vocabulary expansion (scope creep), severity-column tables, and any paraphrasing during expansion.
 
 ### Architecture Approach
 
-The architecture splits into two execution patterns determined by whether the skill needs iterative tool use. Plan and execute skills run inline (no `context: fork`) so the Sonnet executor retains full conversation history and drives all tool calls; the skill instructs the executor when to spawn the `lz-advisor` agent via the Agent tool. Review and security-review skills run as forked Opus contexts (`context: fork` + `model: opus`): Opus runs the review directly with no executor-advisor loop, because reviews need deep analysis of completed work with no file editing. The critical constraint throughout: subagents cannot spawn other subagents, the advisor agent must be text-only (read-only tools at most), and the executor must package all needed context into the agent invocation prompt since subagents do not inherit parent conversation history.
+The review and security-review skills share one three-phase pipeline (SCAN -> CONSULT -> render-verbatim OUTPUT). Severity labels are emitted by the Opus agent and reach the user unchanged because Phase 3 renders verbatim. The change should live in the agent (the source of output shape), keeping the skill as a faithful pass-through. Three candidate placements were evaluated; Option A is recommended. See `.planning/research/ARCHITECTURE.md`.
 
 **Major components:**
-1. `lz-advisor` agent (`agents/lz-advisor.md`) -- Opus 4.6, effort: high, tools: Read/Glob, maxTurns: 1; strategic consultant only, never takes action
-2. `lz-advisor-plan` skill -- inline, session model, no effort override; orient -> consult -> produce plan; testbed for advisor prompt calibration
-3. `lz-advisor-execute` skill -- inline, session model, no effort override; full Anthropic timing loop with stuck detection, reconciliation, and durable deliverable enforcement
-4. `lz-advisor-review` skill -- forked, model: opus, effort: high, read-only git tools; Opus runs review directly; no advisor loop
-5. `lz-advisor-security-review` skill -- same fork pattern as review, OWASP-focused prompt with threat modeling lens
-6. `references/advisor-timing.md` -- Anthropic's timing guidance loaded on demand; keeps SKILL.md lean for compaction resilience
+1. Reviewer / security-reviewer agent prompts -- own the fragment grammar, severity legend, `<output_constraints>` budgets, and 8+ worked examples; EMIT the shorthand today (the change lives here under Option A).
+2. Review / security-review skills -- own the SCAN/CONSULT/OUTPUT phases and the render-verbatim contract; pass labels through unchanged (untouched under Option A).
+3. context-packaging reference -- carries the Common Contract, Verification template, and verify_request schema; verify-only under Option A.
+4. Smoke fixtures (`tests/D-*-budget.sh`) -- NOT committed; must be re-authored as build-order step 0.
+
+**Option comparison:** Option A (agent emits full labels) has the smallest architectural blast radius (zero new contract, verbatim contract preserved) at the cost of the largest prompt-editing surface (every worked example). Option B (skill-layer mechanical expansion) has the smallest edit surface but the HIGHEST behavioral risk -- it breaches the absolute verbatim contract. Option C (agent emits severity sections) has the largest overall blast radius, inverts an existing prohibition, and subsumes A's label goal (do NOT do both A and C).
 
 ### Critical Pitfalls
 
-1. **Aggressive prompt language causes overtriggering** -- Opus/Sonnet 4.6 are far more responsive to system prompts than older models. "CRITICAL: MUST" language triggers advisor calls on every turn, exploding Opus cost. Use calm natural language: "call the advisor when..." not "ALWAYS call when in doubt." Monitor call frequency; more than 3 advisor calls per typical task signals over-aggressive prompting. Anthropic's official docs explicitly address this migration from pre-4.6 prompting patterns.
+The change is small in surface area but high in coupling. Top pitfalls, all anchored to this repo's own history. See `.planning/research/PITFALLS.md`.
 
-2. **Advisor called too late (after approach crystallizes)** -- Without explicit timing guidance, executors treat the advisor as a "check my work" tool and call it after writing code. At that point the advice is largely useless (sunk cost). Embed Anthropic's timing block verbatim: "Call advisor BEFORE substantive work -- before writing, before committing to an interpretation. Orientation is not substantive work. Writing, editing, and declaring an answer are." Anthropic's benchmarks show the first advisor call (before approach crystallizes) contributes most of the intelligence gain.
-
-3. **Verbose advisor output eliminates cost advantage** -- Opus without conciseness instructions produces 400-700 word explanations at $75/MTok output rate. A single instruction in the advisor system prompt -- "respond in under 100 words and use enumerated steps, not explanations" -- cuts output tokens 35-45% without quality loss (Anthropic internal testing). This must be in the agent definition from day one.
-
-4. **Silent plugin manifest failures** -- `plugin.json` with any unrecognized field causes the entire plugin to silently fail to load. Skills appear installed but never trigger. No error message is shown. Keep the manifest minimal. Test with `claude --debug` immediately after installation and verify all skill names appear in the registration output. Multiple confirmed GitHub issues (#20409, #30366, #31384) document this behavior.
-
-5. **Subagent context isolation** -- Unlike the API `advisor_20260301` tool (which sees the full transcript automatically), Claude Code subagents start with a fresh context. The executor MUST package relevant context into the agent invocation prompt: original task, orientation findings, current state, specific question. Skill prompts must explicitly instruct this context packaging or the advisor gives generic responses unrelated to the user's actual task. This is the primary architectural difference between the plugin approach and the API tool approach.
+1. **Worked-example/grammar disagreement** -- LLMs follow examples over rules; changing the Format line while leaving the 8+ worked examples on shorthand yields mixed output (this is exactly the Phase 7 WR-05 failure). Avoid by treating worked examples as the PRIMARY edit target, rewriting legend + format + every example (including the holistic example, Hedge Marker examples, and verify_request example lines) in ONE atomic unit.
+2. **Regression-fixture lockstep + vacuous pass** -- the fixtures are not committed and must be authored fresh; a regex that no longer matches any finding exits green while testing nothing. Avoid by re-authoring fixtures in the same plan/commit as the grammar change WITH an anti-vacuous `matched_count >= min` assertion before the word-budget loop.
+3. **Cross-surface lexicon drift** -- the vocabulary lives on 6+ surfaces; a partial rename leaves the WR-04/WR-05 two-plan cleanup tail. Avoid with a requirements-phase per-surface disposition table and an atomic edit, distinguishing display labels (Title-Case rename) from machine XML attributes (lowercase, leave canonical).
+4. **Verbatim-contract erosion (Route B)** -- any skill-layer conversion is the skill mutating agent output, the exact failure the contract was hardened to stop. Strongly prefer Route A; if B is forced, constrain it to a provably injective 4-token-only expansion with a byte-diff invariant test and an amended contract.
+5. **Downstream-consumer drift + history corruption** -- a blanket `find/replace crit: -> Critical:` over-matches: it must hit live contracts (change), must NOT touch the lowercase verify_request attributes, and must NOT corrupt the ~362 frozen `.planning/` history artifacts. Scope every sweep to `plugins/lz-advisor/` and exclude `.planning/`. Eval JSON is trigger-only (NOT a rename surface).
 
 ## Implications for Roadmap
 
-Based on research, the build order is determined by hard dependencies and learning opportunities. The advisor agent must exist before any inline skill can reference `Agent(lz-advisor)`. The plan skill is simpler than implement and serves as a testbed for advisor prompt calibration. Review skills have no dependency on the advisor agent (they use `context: fork` to run Opus directly) and can be built independently.
+Based on research, a tight 2-3 phase structure (the milestone is small and the dependencies are explicit). Build-order step 0 is mandatory and cross-cutting.
 
-### Phase 1: Plugin Scaffold and Advisor Agent
+### Phase 1: Requirements decisions + fixture baseline
 
-**Rationale:** Everything depends on the plugin manifest and the advisor agent. Getting the scaffold right first avoids the manifest validation pitfall entirely. The advisor agent is the most critical component -- its model setting, effort level, tool restrictions, and conciseness instruction affect every subsequent skill that invokes it.
-**Delivers:** Working plugin with the advisor agent discoverable and invocable; manifest validated with `claude --debug`; advisor callable via Agent tool with Opus model, effort: high, read-only tools, and conciseness enforcement in system prompt
-**Addresses:** Opus advisor agent (table stakes #1)
-**Avoids:** Silent manifest failures (Pitfall 5), verbose advisor output (Pitfall 4), advisor given write tools (Pitfall 13)
+**Rationale:** Two architectural decisions (Route A vs B; inline vs section-per-severity grouping) MUST be settled before any edit -- both research-confirmed as decisions, not implementation details. Concurrently, the smoke fixtures do not exist on disk and must be re-authored from the agent-prompt contract and committed so they pass green on the CURRENT shorthand grammar, establishing a baseline before any change. This is build-order step 0 for every option.
+**Delivers:** A recorded Route A decision (recommended) + grouping decision (recommended: inline in place, defer grouping); a per-surface disposition table covering all 6+ surfaces (rename / leave-canonical / leave-as-history / N/A); committed `tests/D-reviewer-budget.sh` (3-slot FRAGMENT_RE) and `tests/D-security-reviewer-budget.sh` (4-slot, OWASP bracket preserved) green on shorthand.
+**Addresses:** The MVP enabler surfaces from FEATURES.md.
+**Avoids:** Pitfall 5 (Route A/B + verbatim-contract contradiction), Pitfall 6 (downstream disposition), Pitfall 2 (vacuous fixtures via re-authoring), and Anti-Pattern 2 (assuming fixtures exist).
 
-### Phase 2: Plan Skill
+### Phase 2: Atomic agent-grammar rename + lockstep fixture retarget
 
-**Rationale:** Simplest orchestration pattern (orient -> consult -> produce). Serves as the testbed for tuning context packaging instructions and validating that advisor timing works correctly before tackling the more complex execute skill. Learnings from this phase -- description optimization, context packaging prompt wording, advisor call frequency calibration -- directly improve the execute skill design.
-**Delivers:** Working `/lz-advisor.plan` skill; user can get Opus-guided strategic plans before writing code; validated context packaging pattern
-**Addresses:** Plan skill (table stakes #2), advisor timing (table stakes #5)
-**Avoids:** Late advisor call (Pitfall 2), subagent context isolation requiring explicit context packaging (Pitfall 5 architectural), skill description truncation (Pitfall 7)
+**Rationale:** The agent prompt is the source of truth; the legend, Format lines, and ALL worked examples must change in one logical unit (or few-shot drift), and the fixture regex must retarget in lockstep so the gate is never lying.
+**Delivers:** `agents/reviewer.md` and `agents/security-reviewer.md` rewritten to full-word labels (legend + format + every worked example + holistic example + Hedge Marker examples + verify_request example tokens); `FRAGMENT_RE` severity capture retargeted to full words (RED on old shorthand, GREEN on new sample); `references/context-packaging.md` consistency-verified; the verify_request `severity=` XML attributes left lowercase-canonical (documented asymmetry); atomic 5-surface version bump (PATCH).
+**Uses:** Agent files + fixtures from STACK.md; the Option A integration map from ARCHITECTURE.md.
+**Implements:** The agent-prompt emit-grammar component, with the skill verbatim contract untouched.
+**Avoids:** Pitfall 1 (worked-example drift -- examples are the primary target), Pitfall 3 (cross-surface drift -- atomic edit), and Anti-Patterns 1/5 (legend-without-examples; global string-replace).
 
-### Phase 3: Execute Skill
+### Phase 3: Empirical verification + residue sweep
 
-**Rationale:** The core workflow and highest-value feature. More complex than plan because it requires multi-phase conditional advisor calls (before work, when stuck, when changing approach, before done), stuck detection heuristics, reconciliation pattern, and durable deliverable enforcement. Builds on plan skill learnings about context packaging and advisor prompt tone.
-**Delivers:** Working `/lz-advisor.execute` skill; full executor-advisor loop covering the complete development cycle; accepts optional external plan file
-**Addresses:** Execute skill (table stakes #3), advisor timing (table stakes #5), external plan acceptance (table stakes #7), reconciliation (differentiator), durable deliverable enforcement (differentiator)
-**Avoids:** Late advisor call (Pitfall 2), blind advice following without empirical check (Pitfall 3), missing durable deliverable before final advisor call (Pitfall 6), overtriggering from aggressive prompting (Pitfall 1)
-
-### Phase 4: Review Skills
-
-**Rationale:** Review and security review share the same forked-Opus architectural pattern and can be built in parallel with each other. They have no dependency on the advisor agent (they run Opus directly via `context: fork`). Placed after implement because implement is the higher priority feature and because review skill descriptions benefit from description optimization lessons learned in phases 2-3. Security review is a prompt variation of the review skill, not a new orchestration pattern -- build them together.
-**Delivers:** Working `/lz-advisor.review` and `/lz-advisor.security-review` skills; completes the development lifecycle (plan -> implement -> review); Opus holistic review vs. compound-engineering's 12-parallel-Sonnet approach
-**Addresses:** Review skill (table stakes #4), security review (differentiator #1)
-**Avoids:** Using `context: fork` for plan/execute (Anti-Pattern 3); `context: fork` correctly scoped to review only; review skill similarity confusion requiring differentiated descriptions (Pitfall 20)
-
-### Phase 5: Polish, Docs, and Marketplace Publication
-
-**Rationale:** After all components exist and are individually validated, address cross-cutting concerns: skill-creator description optimization eval loops, README with installation verification steps, plugin version hygiene, and full marketplace install flow testing (not just `--plugin-dir` development flow). Several pitfalls are documentation/distribution concerns rather than code concerns and belong in this phase.
-**Delivers:** Marketplace-ready plugin with optimized skill descriptions, cost expectation documentation, installation verification guide, and validated full install flow
-**Addresses:** All competitive differentiators documented; zero-dependency advantage communicated clearly
-**Avoids:** Install-not-enabled bug (Pitfall 11), version caching preventing updates (Pitfall 15), cost tracking blind spots undermining user trust (Pitfall 19), skill descriptions truncated before key trigger words (Pitfall 7)
+**Rationale:** Budget neutrality is an assumption until measured; the project has been burned three times assuming a prompt change is budget-neutral. Behavioral verification is the only check that catches the model ignoring the rewritten grammar.
+**Delivers:** A headless `claude -p /lz-advisor:review` (and security-review) run asserting the rendered report contains the full labels and zero shorthand; an empirical n>=3 budget-gate run on the new grammar (do not reason from `wc -w` neutrality); a scoped `git grep` confirming no unintended `crit:|imp:|sug:|q:` residue in `plugins/lz-advisor/` and that `git diff` touches NO files under `.planning/`.
+**Addresses:** The "Looks Done But Isn't" checklist from PITFALLS.md.
+**Avoids:** Pitfall 4 (word/token budget interaction -- empirical gate) and Pitfall 6 (history preservation).
 
 ### Phase Ordering Rationale
 
-- Agent before skills: hard dependency -- `Agent(lz-advisor)` in skill `allowed-tools` requires the agent to exist first
-- Plan before implement: plan validates the advisor consultation mechanism with simpler orchestration; implement borrows the proven context packaging pattern
-- Review skills after implement: no hard dependency, but description optimization lessons from phases 2-3 improve review skill descriptions; both review skills share one architectural pattern and can be built in parallel
-- Polish after code: description optimization requires working skills to run against; marketplace testing requires all components to be complete
-- Subagent context isolation (the primary architectural difference from the API tool) is addressed in Phase 1 (agent design) and Phase 2 (skill context packaging instructions) rather than being discovered late
+- Requirements/baseline first because the Route A/B and grouping decisions are architectural and the fixtures literally do not exist (step 0 cannot be skipped); committing a green-on-shorthand baseline makes the subsequent lockstep retarget meaningful.
+- The grammar rename and fixture retarget are one phase because lockstep is the whole point -- splitting them across phases creates either a lying gate or few-shot-drift output.
+- Verification is last because empirical budget measurement and behavioral output checks are the only signals that catch model regression and budget drift, and they require the changed grammar to exist first.
+- If section-per-severity grouping (Option C) is chosen in Phase 1 instead, it SUBSUMES the inline label goal (do not also do Option A); Phase 2 then inverts the skills' "do not reformat into severity groups" prohibitions FIRST, re-scopes per-section budgets, and the version bump becomes MINOR -- a materially larger and higher-risk phase.
 
 ### Research Flags
 
 Phases likely needing deeper research during planning:
-- **Phase 2 (Plan skill):** Skill description optimization is empirical -- requires running skill-creator eval loops with realistic trigger queries after the skill is drafted. The right keyword placement and description length can only be confirmed by testing with multiple plugins installed simultaneously.
-- **Phase 3 (Execute skill):** Stuck detection thresholds (when exactly to trigger a mid-work advisor call) require testing to calibrate. "Errors recurring after 2-3 attempts" is Anthropic's guidance, not a hard rule. The prompt wording for stuck detection will need iteration based on real task behavior.
-- **Phase 4 (Review skills):** The `disable-model-invocation: true` + slash command interaction bug (Pitfall 18, GitHub #26251) may affect review skill invocation. Verify current status at implementation time; have a documented workaround ready (remove the flag, rely on descriptive naming).
+- **None.** This milestone is fully scoped by the four research files; all surfaces, decisions, and dependencies are enumerated with file:line anchors. No external integration, niche domain, or sparse-documentation risk remains.
 
 Phases with standard patterns (skip research-phase):
-- **Phase 1 (Scaffold and agent):** Plugin manifest format and agent frontmatter are fully documented in the installed plugin-dev plugin. The `model: opus` field behavior is confirmed. No unknowns.
-- **Phase 5 (Polish and publication):** Standard plugin documentation and marketplace publication patterns. Known process.
+- **Phase 1 (Requirements + fixtures):** the decisions and disposition table are fully laid out in PITFALLS.md and ARCHITECTURE.md; fixture shape is documented in STATE.md Phase 08 decisions.
+- **Phase 2 (Grammar rename):** mechanical text edits at enumerated file:line surfaces; the dominant failure mode (few-shot drift) and its prevention are documented.
+- **Phase 3 (Verification):** uses the established `claude -p` headless verification convention and n>=3 budget-gate discipline already proven in prior phases.
 
 ## Confidence Assessment
 
 | Area | Confidence | Notes |
 |------|------------|-------|
-| Stack | HIGH | All findings from plugin-dev and skill-creator installed plugins; no external sources required; manifest format verified against confirmed GitHub issues |
-| Features | HIGH | Advisor timing pattern, output format, and reconciliation from Anthropic's official docs directly; competitive landscape MEDIUM (ecosystem moves fast) |
-| Architecture | HIGH | Subagent context isolation, model resolution order, `context: fork` behavior, tool restrictions all from official Claude Code docs with no ambiguity |
-| Pitfalls | HIGH | All critical pitfalls sourced from Anthropic official docs or confirmed GitHub issues with issue numbers; moderate pitfalls from multiple independent sources |
+| Stack | HIGH | Verified against current hook/output-style vendor docs plus committed local sources; the no-additions verdict is corroborated by every native mechanism failing the zero-dependency or durable-report test. |
+| Features | HIGH | Tool behaviors verified against current vendor docs/specs; spelled-out-severity universality and the inline-vs-grouping trade-off corroborated across multiple independent sources. |
+| Architecture | HIGH | Pure codebase analysis of committed plugin sources; the missing-fixtures pre-finding empirically confirmed three ways (`git ls-files`, `git grep -l`, `rg -uu -l`). |
+| Pitfalls | HIGH | Every claim anchored to a file path in this repo plus the project's own documented WR-01..WR-05 severity-rename scar and budget-regression history. |
 
 **Overall confidence:** HIGH
 
 ### Gaps to Address
 
-- **`disable-model-invocation: true` bug (GitHub #26251):** Known issue with current fix status unclear. Test slash command invocation explicitly on every skill using this flag during Phase 4. Documented workaround: if affected, remove the flag and rely on descriptive skill naming to prevent unwanted auto-invocation.
-- **Marketplace publication exact flow:** Official docs at code.claude.com were blocked during research. Publication requirements were inferred from examining existing installed plugins. Validate the exact submission process at the start of Phase 5.
-- **Advisor effort level calibration:** Research recommends `effort: high` for the advisor agent for deep strategic reasoning. Pitfall 10 warns that Opus 4.6 at higher effort does excessive upfront exploration, causing 30+ second latency. Starting recommendation is `effort: high`; adjust down to `effort: medium` if advisor latency consistently exceeds 15 seconds in Phase 2 testing.
-- **Sonnet 4.6 instruction-following reliability for agent invocations:** How reliably Sonnet follows skill instructions to invoke the advisor at the right timing moments is an empirical question. Phase 2 testing will reveal whether prompt wording needs iteration.
-- **Exact `opusplan` cost comparison:** The directional comparison (2-3 Opus advisor calls vs. all plan-mode tokens at Opus rate) is sound, but exact cost ratios depend on task length. Document in README as a qualitative advantage rather than a specific cost ratio.
+- **Smoke fixtures absent from the repo:** "Update the fixtures in lockstep" is vacuous until they are re-authored and committed. Handle in Phase 1 (build-order step 0): recreate the 3-slot/4-slot FRAGMENT_RE shape from the agent contract and commit them green on the current shorthand grammar.
+- **Two unresolved requirements decisions:** Route A vs B and inline vs section-per-severity grouping are not yet decided. Handle in Phase 1: record the recommended Route A + inline-in-place with explicit rationale; grouping is a deferred fast-follow gated on a stable-finding-number scheme.
+- **Budget neutrality is assumed, not measured:** `wc -w` neutrality is an assumption the project has been burned by three times. Handle in Phase 3 as an empirical n>=3 acceptance gate, not manual UAT.
+- **Case-normalization asymmetry:** display labels are Title-Case while verify_request/pre_verified `severity=` XML attributes are lowercase-canonical machine tokens. Handle in the disposition table -- do NOT over-normalize the XML attributes (breaks the escalation-hook parser).
 
 ## Sources
 
 ### Primary (HIGH confidence)
-- Anthropic advisor tool docs (platform.claude.com/docs/en/agents-and-tools/tool-use/advisor-tool) -- timing guidance, cost control, suggested system prompts, output trimming data, advice-handling instructions, durable deliverable pattern
-- Anthropic advisor strategy blog (claude.com/blog/the-advisor-strategy) -- benchmark results (Terminal-Bench 2.0, cost comparisons), architecture rationale
-- Claude 4.6 best practices (platform.claude.com/docs/en/build-with-claude/prompt-engineering/claude-4-best-practices) -- overtriggering, aggressive language migration, overthinking behavior, prefill deprecation
-- Claude Code skills docs (code.claude.com/docs/en/skills) -- skill lifecycle, frontmatter reference, 250-char description limit, 5,000-token compaction behavior
-- Claude Code subagents docs (code.claude.com/docs/en/sub-agents) -- model override resolution order, nesting limits, context isolation, tool restrictions
-- plugin-dev plugin (installed at ~/.claude/plugins/) -- plugin structure, agent frontmatter fields including model/effort/tools/maxTurns, skill writing style, manifest format
-- skill-creator plugin (installed at ~/.claude/plugins/) -- skill development methodology, description optimization loop, eval framework, progressive disclosure
+- `plugins/lz-advisor/agents/reviewer.md`, `agents/security-reviewer.md` (committed HEAD) -- fragment grammar, severity legend, `<output_constraints>` budgets, 8+ worked examples, Class-2 hook, Hedge Marker, OWASP tags.
+- `plugins/lz-advisor/skills/review/SKILL.md`, `skills/security-review/SKILL.md` (committed HEAD) -- render-verbatim contract, "named sections with literal headers" rule, "Do NOT reformat into severity groups" prohibition.
+- `plugins/lz-advisor/references/context-packaging.md` (committed HEAD) -- Common Contract, Verification template, verify_request schema, severity vocab, WR-01 Hedge Marker carve-out.
+- `.planning/PROJECT.md` + `.planning/STATE.md` + `.planning/milestones/v1.0-ROADMAP.md` -- zero-dependency / no-hooks constraints, Phase 7 WR-01..WR-05 severity-rename case study, per-section budget + +10% fixture tolerance precedent, 3-slot/4-slot FRAGMENT_RE shape.
+- `https://code.claude.com/docs/en/hooks` (fetched via markdown.new) -- hook lifecycle/schemas; `MessageDisplay` display-only; SubagentStop/PostToolUse/Stop input-only.
+- `git ls-files` / `git grep -l FRAGMENT_RE` / `rg -uu -l FRAGMENT_RE` -- empirical confirmation the budget fixtures are absent from the repo.
+- Conventional Comments spec, SonarQube Issues docs, CodeRabbit reports docs, reviewdog Diagnostic Format, Semgrep CLI/severities, Danger reference -- peer-tool severity presentation (spelled-out universality, inline vs grouped, cross-referencing).
 
 ### Secondary (MEDIUM confidence)
-- GitHub issues on anthropics/claude-code (#17832, #20409, #26251, #17283, #19751, #30366, #31384, #34144) -- confirmed platform bugs affecting plugin development and distribution
-- GitHub issues on anthropics/claude-plugins-official (#1244) -- marketplace schema validation errors
-- Compound Engineering Plugin (github.com/EveryInc/compound-engineering-plugin) -- competitive landscape reference
-- Deep Trilogy Plugins (github.com/piercelamb/deep-plan) -- competitive landscape reference
-- Claude Sonnet 4.6 complete guide (nxcode.io) -- benchmark data compilation, effort parameter behavior
-- Anthropic Claude Opus 4.6 release coverage (marktechpost.com) -- model capabilities and release details
+- `https://code.claude.com/docs/en/output-styles` (WebSearch summary; code.claude.com blocks direct AI fetch) -- output styles steer the system prompt, not deterministic rewriting.
+- GitHub PR severity-prefix conventions (emmer.dev, Augment, Propel, codetinkerer) -- community convention, multi-source agreement.
+- WebSearch synthesis on grouped-vs-inline trade-offs, numeric-score anchoring, over-highlighting cautions -- multi-source.
+- Project memory: `reference_sonnet_46_prompt_steering` (examples-over-prose steering), `feedback_no_cross_skill_body_references`, `version_numbers_not_load_bearing_prerelease`.
 
 ### Tertiary (LOW confidence)
-- oh-my-claude multi-model plugin (github.com/lgcyaxi/oh-my-claude) -- competitive landscape, WebSearch summary only
-- Best Claude Code Plugins 2026 (buildtolaunch.substack.com) -- ecosystem overview, WebSearch summary
-- Claude Code Plugins Review 2026 (aitoolanalysis.com) -- ecosystem overview, WebSearch summary
+- None. All findings anchor to committed sources, current vendor docs, or empirically-confirmed repo state.
 
 ---
-*Research completed: 2026-04-10*
+*Research completed: 2026-06-07*
 *Ready for roadmap: yes*
