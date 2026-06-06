@@ -71,24 +71,29 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| RPT-01 | TBD | Pending |
-| RPT-02 | TBD | Pending |
-| RPT-03 | TBD | Pending |
-| RPT-04 | TBD | Pending |
-| AGNT-01 | TBD | Pending |
-| AGNT-02 | TBD | Pending |
-| AGNT-03 | TBD | Pending |
-| SKILL-01 | TBD | Pending |
-| SYNC-01 | TBD | Pending |
-| SYNC-02 | TBD | Pending |
-| GATE-01 | TBD | Pending |
-| GATE-02 | TBD | Pending |
+| RPT-01 | Phase 12 | Pending |
+| RPT-02 | Phase 12 | Pending |
+| RPT-03 | Phase 12 | Pending |
+| RPT-04 | Phase 12 | Pending |
+| AGNT-01 | Phase 12 | Pending |
+| AGNT-02 | Phase 12 | Pending |
+| AGNT-03 | Phase 12 | Pending |
+| SKILL-01 | Phase 12 | Pending |
+| SYNC-01 | Phase 12 | Pending |
+| SYNC-02 | Phase 12 | Pending |
+| GATE-01 | Phase 11 | Pending |
+| GATE-02 | Phase 13 | Pending |
 
 **Coverage:**
 - v1.0.1 requirements: 12 total
-- Mapped to phases: 0 (roadmap pending)
-- Unmapped: 12 (pre-roadmap)
+- Mapped to phases: 12 (100%)
+- Unmapped: 0
+
+**Phase distribution:**
+- Phase 11 (Fixture baseline): GATE-01 (1 requirement)
+- Phase 12 (Atomic grouped-grammar rewrite): RPT-01, RPT-02, RPT-03, RPT-04, AGNT-01, AGNT-02, AGNT-03, SKILL-01, SYNC-01, SYNC-02 (10 requirements)
+- Phase 13 (Empirical verification): GATE-02 (1 requirement)
 
 ---
 *Requirements defined: 2026-06-07*
-*Last updated: 2026-06-07 after initial definition (milestone v1.0.1)*
+*Last updated: 2026-06-07 after roadmap creation (milestone v1.0.1) -- all 12 requirements mapped to Phases 11-13.*
