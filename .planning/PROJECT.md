@@ -8,6 +8,19 @@ A Claude Code marketplace plugin that implements the advisor strategy -- pairing
 
 Near-Opus intelligence at Sonnet cost for coding tasks, achieved through strategic advisor consultation at high-leverage moments rather than running Opus end-to-end.
 
+## Current Milestone: v1.0.1 No review report shorthands
+
+**Goal:** Review and security-review reports present findings with fully spelled-out severity labels instead of the `imp`/`sug`/`q` fragment-grammar shorthands, so reports are clear to the user.
+
+**Target features:**
+- User-facing review/security-review reports show full severity labels (`Critical`, `Important`, `Suggestion`, `Question`) -- either spelled out in the agent fragment grammar, or via a mechanical conversion step before output
+- Render-verbatim contract tension resolved: any skill-layer conversion must be a mechanical label expansion that cannot paraphrase or drop findings
+- Section-per-severity report shape (`### Critical` / `### Important` / ... headlines) evaluated and decided during requirements
+- Regression smoke fixtures (`FRAGMENT_RE` in `D-reviewer-budget.sh` / `D-security-reviewer-budget.sh`) updated in lockstep so budget gates still parse findings
+- Atomic 5-surface version bump per existing convention
+
+**Key context:** The fragment grammar (Phase 7 Plan 07-09) lives in `agents/reviewer.md` + `agents/security-reviewer.md` Output Constraint sections; both review skills enforce render-verbatim, which is why shorthands reach the user. Word budgets are `wc -w`-based, so spelled-out labels are word-neutral -- the original token-economy motivation may not bind. Severity vocab also appears in `references/context-packaging.md` (WR-01 Hedge Marker carve-out) and both agents' worked examples.
+
 ## Requirements
 
 ### Validated
@@ -31,7 +44,11 @@ Near-Opus intelligence at Sonnet cost for coding tasks, achieved through strateg
 
 ### Active
 
-None -- v1.0 is shipped (plugin 1.0.0). Every requirement above is Validated; the full set is archived in `milestones/v1.0-REQUIREMENTS.md`. The next milestone's requirements are defined via `/gsd-new-milestone`.
+Milestone v1.0.1 (No review report shorthands) -- requirements being defined via `/gsd-new-milestone`:
+
+- [ ] Review/security-review reports present severities in fully spelled-out, user-readable form (no `imp`/`sug`/`q` shorthands in user-facing output)
+
+The v1.0 requirement set is archived in `milestones/v1.0-REQUIREMENTS.md`.
 
 The items previously tracked here all shipped in v1.0 and are Validated:
 - [x] Advisor agent provides concise guidance (under 100 words, enumerated) -- Phase 5.2 (maxTurns: 3 structural fix)
@@ -103,6 +120,8 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
+*Last updated: 2026-06-07 -- Milestone v1.0.1 (No review report shorthands) started via `/gsd-new-milestone`. Goal: replace the `crit:`/`imp:`/`sug:`/`q:` fragment-grammar shorthands in user-facing review/security-review reports with fully spelled-out severity labels, without breaking the render-verbatim contract or the word-budget regression gates. Requirements and roadmap to follow.*
+
 *Last updated: 2026-06-01 -- **v1.0 MILESTONE COMPLETE** (plugin 1.0.0). Re-audit clean on all hard gates (52/52 requirements, 6/6 integration, 5/5 flows, 16/16 Nyquist-complete); the first-audit tech_debt is resolved (Phase 10 doc-hygiene + the finding-resolution session: Phase 01 human_verification empirically closed, FIND-F closed by-design via web-deprivation re-verification, and the ADVR-04 / ADVR-06 / CLAUDE.md-effort definition drifts reconciled). Atomic 5-surface SemVer bump 0.15.0 -> 1.0.0; README "What's New" collapsed to a standalone 1.0.0 entry. Milestone archived to `milestones/v1.0-*`; ROADMAP collapsed to a milestone index; REQUIREMENTS archived + removed (fresh set comes via `/gsd-new-milestone`). Tagged `v1.0` (NOT pushed -- marketplace publication deferred per user directive until after a successful audit + completion). Advisor runtime-proven on Opus 4.8.*
 
 *Last updated: 2026-06-01 -- Phase 9 complete (plugin 0.15.0; final phase of v1.0). Reversed the Phase 5.2 D-01/D-02 skill naming: the four skill directories + `name:` frontmatter fields renamed from the dotted `lz-advisor.<skill>` pattern back to plain `<skill>` (`plan`, `execute`, `review`, `security-review`) via `git mv` (history preserved), so the qualified invocation is now the clean `lz-advisor:<skill>` instead of the redundant `lz-advisor:lz-advisor-<skill>`. Cross-reference sweep across operational surfaces only (4 SKILL.md, 3 references, 2 agents, README, .gitignore, CLAUDE.md, 4 eval JSON + conciseness-assessment.md + 4 eval workspace dirs, 11 maintained smoke fixtures); atomic 5-surface 0.14.2 -> 0.15.0 bump; the `Agent(lz-advisor:<agent>)` colon refs (D-03) and the ~362 frozen historical `.planning/` artifacts + these root planning-doc dotted refs (D-06) left UNCHANGED as accurate history. Empirically closed the open Phase 5.2 D-07 "bet on resolution" via the D-08 headless probe: all 4 skills resolve headlessly to `<command-name>/lz-advisor:<skill></command-name>` and review/security-review resolve to the PLUGIN skill, not Claude Code's built-in `/review` / `/security-review` (verified against the 4 `claude -p` session transcripts on disk). Code review clean (0 critical / 0 warning / 1 info); goal verification 10/10 decisions D-01..D-10. Canonical invocation is context-dependent (D-07): bare `/plan` interactive (picker disambiguates), qualified `/lz-advisor:plan` headless.*

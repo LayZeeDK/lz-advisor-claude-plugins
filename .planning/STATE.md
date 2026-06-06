@@ -1,17 +1,16 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.0
-milestone_name: documentation-hygiene cleanup
-status: v1.0 milestone complete
-stopped_at: Phase 10 doc-hygiene cleanup complete
-last_updated: "2026-06-01T10:45:09.150Z"
-last_activity: 2026-06-01
+milestone: v1.0.1
+milestone_name: No review report shorthands
+status: planning
+last_updated: "2026-06-06T22:17:10.849Z"
+last_activity: 2026-06-06
 progress:
-  total_phases: 16
-  completed_phases: 15
-  total_plans: 80
-  completed_plans: 79
-  percent: 99
+  total_phases: 0
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
+  percent: 0
 ---
 
 # Project State
@@ -25,18 +24,10 @@ See: .planning/PROJECT.md (updated 2026-04-10)
 
 ## Current Position
 
-Phase: -- (v1.0 milestone COMPLETE 2026-06-01)
-Plan: --
-
-v1.0 MVP shipped at plugin 1.0.0. The re-audit was clean on all hard gates (52/52
-requirements, 6/6 integration, 5/5 flows, 16/16 Nyquist-complete); the first-audit
-tech_debt was fully resolved (Phase 10 doc-hygiene + the finding-resolution session:
-Phase 01 human_verification empirically closed, FIND-F closed by-design via web-deprivation
-re-verification, and the ADVR-04 / ADVR-06 / CLAUDE.md-effort definition drifts reconciled).
-Milestone archived to `milestones/v1.0-*`; ROADMAP collapsed to a milestone index;
-REQUIREMENTS archived + removed; PROJECT.md evolved; RETROSPECTIVE.md written; tagged `v1.0`
-locally. **Marketplace publication (push `main` + the `v1.0` tag to GitHub) is DEFERRED pending
-explicit user go-ahead.** Next: `/gsd-new-milestone` for the next cycle, or publish v1.0 when ready.
+Phase: Not started (defining requirements)
+Plan: —
+Status: Defining requirements
+Last activity: 2026-06-06 — Milestone v1.0.1 started
 
 ### Historical position (pre-Phase-10)
 
