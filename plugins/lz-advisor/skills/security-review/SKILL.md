@@ -148,7 +148,7 @@ conversation -- all relevant context goes in the prompt.
 <output>
 ## Phase 3: Structure Output
 
-Render the security-reviewer agent's response verbatim to the user. The security-reviewer emits two named sections with literal headers (`### Findings` and `### Threat Patterns`) per its Output Constraint contract; those headers are the skill's output shape and MUST reach the user intact.
+Render the security-reviewer agent's response verbatim to the user. The security-reviewer emits findings grouped under four fixed-order severity headers -- the literal headers `### Critical`, `### Important`, `### Suggestions`, and `### Questions` (always emitted in that order, every time, even when a severity has zero findings) -- followed later by the literal header `### Threat Patterns`, per its Output Constraint contract. These five headers are the skill's output shape and MUST reach the user intact.
 
 Prepend a one-line scope summary BEFORE the security-reviewer's verbatim response (so the user sees what was reviewed), then emit the security-reviewer's response unchanged.
 
@@ -158,16 +158,18 @@ Required output shape:
 >
 > Reviewed: [scope description -- files, directories, or commit range]
 >
-> [Security-reviewer agent's response, rendered verbatim. Begins with `### Findings`, continues with finding entries (each tagged with an OWASP category like `[A03 Injection]`) per the security-reviewer's Output Constraint, then the `### Threat Patterns` section.]
+> [Security-reviewer agent's response, rendered verbatim. Begins with `### Critical`, continues with the four severity sections (`### Critical`, `### Important`, `### Suggestions`, `### Questions` -- each header always present; an empty section shows a single `(none)` line; each finding line carries an OWASP `[Axx]` tag like `[A03]` after its location), then the `### Threat Patterns` section.]
 
-Do NOT:
-- Reformat the security-reviewer's response into severity groups (Critical / Important / Suggestion) -- the security-reviewer already includes severity per finding entry within the `### Findings` section.
-- Strip, rename, or bold the `### Findings` or `### Threat Patterns` headers.
+The security-reviewer ALREADY groups findings by severity under these four headers. This grouped shape IS the contracted output; the skill passes it through unchanged. Do NOT:
+- Collapse, merge, reorder, or flatten the four severity sections (`### Critical` / `### Important` / `### Suggestions` / `### Questions`) -- the security-reviewer carries severity in the section header (the single source of severity), so reformatting would destroy the contracted shape, not impose it.
+- Drop or rewrite an empty section's `(none)` marker -- each of the four headers is emitted unconditionally; preserve the header and its `(none)` line.
+- Strip, rename, or bold any of the four severity headers or the `### Threat Patterns` header.
+- Strip or rewrite the OWASP `[Axx]` tags on finding lines -- they are preserved verbatim by the security-reviewer's contract.
 - Drop the `### Threat Patterns` section even if its body is short -- the security-reviewer emits the header unconditionally per its Output Constraint; pass it through.
 - Add a "Recommended Action" or next-steps section.
 - Add Opus attribution tags, a "Threat Analysis" wrapper, or any other section not present in the security-reviewer's response.
 
-If the security-reviewer rejected a finding the executor packaged, that rejection appears within the security-reviewer's `### Findings` body (validation step). The executor does not second-guess: pass the full `### Findings` and `### Threat Patterns` content through.
+If the security-reviewer rejected a finding the executor packaged, that rejection appears within the security-reviewer's severity sections (validation step). The executor does not second-guess: pass the full four-severity-section body and the `### Threat Patterns` content through.
 
 If no security issues were found during scanning (Phase 1 produced zero findings), skip Phase 2 consultation and report directly: "No security vulnerabilities identified in the reviewed scope. Reviewed: [scope]." Note briefly what was examined. Do not invoke the security-reviewer agent with an empty Findings packet.
 

@@ -162,7 +162,7 @@ goes in the prompt.
 <output>
 ## Phase 3: Structure Output
 
-Render the reviewer agent's response verbatim to the user. The reviewer emits two named sections with literal headers (`### Findings` and `### Cross-Cutting Patterns`) per its Output Constraint contract; those headers are the skill's output shape and MUST reach the user intact.
+Render the reviewer agent's response verbatim to the user. The reviewer emits findings grouped under four fixed-order severity headers -- the literal headers `### Critical`, `### Important`, `### Suggestions`, and `### Questions` (always emitted in that order, every time, even when a severity has zero findings) -- followed later by the literal header `### Cross-Cutting Patterns`, per its Output Constraint contract. These five headers are the skill's output shape and MUST reach the user intact.
 
 Prepend a one-line scope summary BEFORE the reviewer's verbatim response (so the user sees what was reviewed), then emit the reviewer's response unchanged.
 
@@ -172,16 +172,17 @@ Required output shape:
 >
 > Reviewed: [scope description -- files, directories, or commit range]
 >
-> [Reviewer agent's response, rendered verbatim. Begins with `### Findings`, continues with finding entries per the reviewer's Output Constraint, then the `### Cross-Cutting Patterns` section.]
+> [Reviewer agent's response, rendered verbatim. Begins with `### Critical`, continues with the four severity sections (`### Critical`, `### Important`, `### Suggestions`, `### Questions` -- each header always present; an empty section shows a single `(none)` line), then the `### Cross-Cutting Patterns` section.]
 
-Do NOT:
-- Reformat the reviewer's response into severity groups (Critical / Important / Suggestion) -- the reviewer already includes severity per finding entry within the `### Findings` section.
-- Strip, rename, or bold the `### Findings` or `### Cross-Cutting Patterns` headers.
+The reviewer ALREADY groups findings by severity under these four headers. This grouped shape IS the contracted output; the skill passes it through unchanged. Do NOT:
+- Collapse, merge, reorder, or flatten the four severity sections (`### Critical` / `### Important` / `### Suggestions` / `### Questions`) -- the reviewer carries severity in the section header (the single source of severity), so reformatting would destroy the contracted shape, not impose it.
+- Drop or rewrite an empty section's `(none)` marker -- each of the four headers is emitted unconditionally; preserve the header and its `(none)` line.
+- Strip, rename, or bold any of the four severity headers or the `### Cross-Cutting Patterns` header.
 - Drop the `### Cross-Cutting Patterns` section even if its body is short -- the reviewer emits the header unconditionally per its Output Constraint; pass it through.
 - Add a "Recommended Action" or next-steps section.
 - Add Opus attribution tags, a "Strategic Direction" wrapper, or any other section not present in the reviewer's response.
 
-If the reviewer rejected a finding the executor packaged, that rejection appears within the reviewer's `### Findings` body (validation step). The executor does not second-guess: pass the full `### Findings` and `### Cross-Cutting Patterns` content through.
+If the reviewer rejected a finding the executor packaged, that rejection appears within the reviewer's severity sections (validation step). The executor does not second-guess: pass the full four-severity-section body and the `### Cross-Cutting Patterns` content through.
 
 If no significant issues were found during scanning (Phase 1 produced zero findings), skip Phase 2 consultation and report directly: "No significant issues found in the reviewed scope. Reviewed: [scope]." Note briefly what was examined. Do not invoke the reviewer agent with an empty Findings packet.
 
