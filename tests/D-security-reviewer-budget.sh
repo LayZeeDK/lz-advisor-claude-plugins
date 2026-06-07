@@ -179,28 +179,43 @@ done
 # --- Section-body extraction over the normalized (de-quoted) report ---------
 # After get_report the "> " framing is gone, so section headings appear as plain
 # "### Threat Patterns" / "### Missed surfaces (optional)" lines. extract_section
-# prints the body lines strictly BETWEEN the given heading and the next "### "
+# prints the body lines strictly BETWEEN the matched heading and the next "### "
 # heading (or end of report).
+#
+# WR-03: match the heading by a TOLERANT anchored regex ($0 ~ pat) instead of
+# byte-exact equality ($0 == h). Exact-match silently failed -- yielding an
+# EMPTY body and a vacuous pass -- on any Phase 12 heading drift (trailing space,
+# a changed parenthetical, casing, or a surviving CR). The anchored prefix
+# absorbs trailing variation (e.g. "(optional)") while still requiring the "### "
+# prefix, so a renamed/missing heading is caught by the explicit presence
+# pre-check below rather than zeroing the body.
 extract_section() {
-  local heading="$1"
-  printf '%s\n' "$REPORT" | awk -v h="$heading" '
-    $0 == h        { in_sec = 1; next }
+  local pat="$1"
+  printf '%s\n' "$REPORT" | awk -v pat="$pat" '
+    $0 ~ pat          { in_sec = 1; next }
     in_sec && /^### / { in_sec = 0 }
-    in_sec         { print }
+    in_sec            { print }
   '
 }
 
-# Threat Patterns (required): assert <= 160w.
-PATTERNS_BODY="$(extract_section '### Threat Patterns')"
-patterns_wc=$(printf '%s' "$PATTERNS_BODY" | wc -w)
-if [ "$patterns_wc" -le "$PATTERNS_CAP" ]; then
-  pass "threat_patterns budget: $patterns_wc <= $PATTERNS_CAP"
+# Threat Patterns (REQUIRED): the heading MUST be present. Assert presence first
+# (mirrors the reviewer fixture END{exit !found} pattern) so a missing/renamed
+# required heading FAILS loudly instead of computing a budget over an empty body.
+if printf '%s\n' "$REPORT" | awk '/^### Threat Patterns/{found=1} END{exit !found}'; then
+  PATTERNS_BODY="$(extract_section '^### Threat Patterns')"
+  patterns_wc=$(printf '%s' "$PATTERNS_BODY" | wc -w)
+  if [ "$patterns_wc" -le "$PATTERNS_CAP" ]; then
+    pass "threat_patterns budget: $patterns_wc <= $PATTERNS_CAP"
+  else
+    fail "threat_patterns budget exceeded: $patterns_wc > $PATTERNS_CAP" "$PATTERNS_BODY"
+  fi
 else
-  fail "threat_patterns budget exceeded: $patterns_wc > $PATTERNS_CAP" "$PATTERNS_BODY"
+  fail "threat_patterns: REQUIRED '### Threat Patterns' heading not found" \
+       "heading drift would zero the body into a vacuous pass -- failing loudly instead"
 fi
 
 # Missed surfaces (OPTIONAL): assert <= 30w only when the section is present.
-MISSED_BODY="$(extract_section '### Missed surfaces (optional)')"
+MISSED_BODY="$(extract_section '^### Missed surfaces')"
 if [ -n "$(printf '%s' "$MISSED_BODY" | tr -d '[:space:]')" ]; then
   missed_wc=$(printf '%s' "$MISSED_BODY" | wc -w)
   if [ "$missed_wc" -le "$MISSED_CAP" ]; then
