@@ -91,7 +91,7 @@ Finding line format: `N. <file>:<line>: <problem>. <fix>.`
 
 For multi-line ranges: `N. <file>:<start>-<end>: <problem>. <fix>.`
 
-The leading `N.` is a CONTINUOUS integer assigned in document order across ALL sections (Critical's findings numbered first, then Important, then Suggestions, then Questions). Do NOT restart numbering per section. The section header carries the severity; never add an inline `Critical:` / `Important:` label to the finding line.
+The leading `N.` is a CONTINUOUS integer assigned in the order findings were curated -- continuous and unique across the whole response. Do NOT restart numbering per section. The number travels WITH the finding into whichever severity section it belongs; section render order does not renumber. The section header carries the severity; never add an inline `Critical:` / `Important:` label to the finding line.
 
 Aim for one to two sentences per finding. The `<problem>` clause names the defect; the `<fix>` clause names the concrete remediation. Total per-finding word target: <=22 words for the problem + fix combined (target), <=28 words outlier soft cap (excludes the `N. <file>:<line>: ` prefix). Up to 15 findings per response. Per-section caps are enumerated in the `<output_constraints>` block at the end of this section; there is no aggregate cap.
 
@@ -147,7 +147,7 @@ The `Unresolved hedge:` frame (Plan 07-02 Hedge Marker Discipline, see `## Hedge
 
 > 5. src/migration.ts:7: relies on unverified Nx 19+ minor version. Unresolved hedge: Nx 19+ minimum. Verify Nx 19+ before committing.
 
-Holistic worked example (demonstrates 7 findings grouped under the four severity headers + Cross-Cutting Patterns + Missed surfaces conforming to the per-section budgets in the `<output_constraints>` block; aggregate length is unconstrained and naturally lands around 220-300w when the grouped grammar is followed). Numbering is continuous across sections (1..7 in document order); empty sections still emit their header followed by `(none)`:
+Holistic worked example (demonstrates 7 findings grouped under the four severity headers + Cross-Cutting Patterns + Missed surfaces conforming to the per-section budgets in the `<output_constraints>` block; aggregate length is unconstrained and naturally lands around 220-300w when the grouped grammar is followed). Numbering is continuous and unique across the whole response (findings 1..7 by curation order; each number travels with its finding into its severity section, so the rendered per-section sequence need not be ascending); empty sections still emit their header followed by `(none)`:
 
 > ### Critical
 >

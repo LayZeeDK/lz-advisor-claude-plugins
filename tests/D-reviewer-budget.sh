@@ -234,21 +234,35 @@ for body in "${FINDING_BODIES[@]}"; do
   fi
 done
 
-# Cross-Cutting Patterns: range between "### Cross-Cutting Patterns" and
-# "### Missed surfaces", strip any residual blockquote marker, wc -w, assert
-# <= 160w. WR-02: 's/^> ?//' strips the bare ">" separator form too (not just
+# Cross-Cutting Patterns (REQUIRED): range between "### Cross-Cutting Patterns"
+# and "### Missed surfaces", strip any residual blockquote marker, wc -w, assert
+# <= 160w. The 's/^> ?//' sed strips the bare ">" separator form too (not just
 # "> "), so surviving blockquote-blank lines are not counted as words.
-PATTERNS_BODY="$(
-  printf '%s\n' "$REPORT" \
-    | awk '/^### Cross-Cutting Patterns$/{c=1;next} /^### Missed surfaces/{c=0} c' \
-    | sed -E 's/^> ?//'
-)"
-PATTERNS_WORDS=$(printf '%s' "$PATTERNS_BODY" | wc -w)
-if [ "$PATTERNS_WORDS" -le "$PATTERNS_CAP" ]; then
-  pass "Cross-Cutting Patterns budget: $PATTERNS_WORDS <= $PATTERNS_CAP"
+#
+# CR-WR-01: presence pre-check FIRST. This section is REQUIRED. Without a
+# presence check a missing header yields an empty body -> wc -w = 0 -> a
+# vacuous GREEN pass. Mirror the security fixture's Threat Patterns gate: fail
+# loudly when the required heading is absent.
+# CR-WR-02: start pattern is the TOLERANT prefix form (no trailing "$" anchor),
+# honoring this fixture's "TOLERANT anchored matches, not byte-exact" rule, so a
+# trailing-space / drifted header is caught by the presence check rather than
+# silently zeroing the body.
+if printf '%s\n' "$REPORT" | awk '/^### Cross-Cutting Patterns/{f=1} END{exit !f}'; then
+  PATTERNS_BODY="$(
+    printf '%s\n' "$REPORT" \
+      | awk '/^### Cross-Cutting Patterns/{c=1;next} /^### Missed surfaces/{c=0} c' \
+      | sed -E 's/^> ?//'
+  )"
+  PATTERNS_WORDS=$(printf '%s' "$PATTERNS_BODY" | wc -w)
+  if [ "$PATTERNS_WORDS" -le "$PATTERNS_CAP" ]; then
+    pass "Cross-Cutting Patterns budget: $PATTERNS_WORDS <= $PATTERNS_CAP"
+  else
+    fail "Cross-Cutting Patterns budget exceeded: $PATTERNS_WORDS > $PATTERNS_CAP" \
+      "$PATTERNS_BODY"
+  fi
 else
-  fail "Cross-Cutting Patterns budget exceeded: $PATTERNS_WORDS > $PATTERNS_CAP" \
-    "$PATTERNS_BODY"
+  fail "Cross-Cutting Patterns: REQUIRED heading not found" \
+    "the grouped grammar mandates a ### Cross-Cutting Patterns section; absent here"
 fi
 
 # Missed surfaces (OPTIONAL): range from "### Missed surfaces" to the NEXT
