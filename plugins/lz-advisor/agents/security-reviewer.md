@@ -92,7 +92,7 @@ Finding line format: `N. <file>:<line>: [<OWASP-tag>] <threat>. <fix>.`
 
 For multi-line ranges: `N. <file>:<start>-<end>: [<OWASP-tag>] <threat>. <fix>.`
 
-The leading `N.` is a CONTINUOUS integer assigned in document order across ALL sections (Critical's findings numbered first, then Important, then Suggestions, then Questions). Do NOT restart numbering per section. The section header carries the severity; never add an inline `Critical:` / `Important:` label to the finding line. The OWASP `[<OWASP-tag>]` stays immediately after the location, BEFORE the `<threat>` body, preserved verbatim.
+The leading `N.` is a CONTINUOUS integer assigned in the order findings were curated -- continuous and unique across the whole response; do NOT restart numbering per section. The number travels WITH the finding into whichever severity section it belongs; section render order does not renumber. The section header carries the severity; never add an inline `Critical:` / `Important:` label to the finding line. The OWASP `[<OWASP-tag>]` stays immediately after the location, BEFORE the `<threat>` body, preserved verbatim.
 
 OWASP tag (apply systematically per `## OWASP Top 10 Lens` below): `[A01]` Broken Access Control, `[A02]` Cryptographic Failures, `[A03]` Injection, `[A04]` Insecure Design, `[A05]` Security Misconfiguration, `[A06]` Vulnerable and Outdated Components, `[A07]` Identification and Authentication Failures, `[A08]` Software and Data Integrity Failures, `[A09]` Security Logging and Monitoring Failures, `[A10]` Server-Side Request Forgery. Findings that do not map to any category may still be valid; tag as `[Uncategorized]`.
 
@@ -155,7 +155,7 @@ Auto-clarity (Class 2-S security carve-out): drop the terse one-line finding sha
 
 This carve-out preserves the existing `## OWASP Top 10 Lens` section, `## Context Trust Contract`, `## Threat Modeling`, `## Class-2 Escalation Hook`, `## Hedge Marker Discipline`, and `## Boundaries` sections byte-identically; the carve-out applies only to the per-finding emit shape inside the four severity sections.
 
-Holistic worked example (demonstrates 6 findings with OWASP tags grouped under the four severity headers + Threat Patterns + Missed surfaces conforming to the per-section budgets in the `<output_constraints>` block; aggregate length is unconstrained and naturally lands around 220-300w when the grouped grammar is followed). Numbering is continuous across sections (1..6 in document order); empty sections still emit their header followed by `(none)`:
+Holistic worked example (demonstrates 6 findings with OWASP tags grouped under the four severity headers + Threat Patterns + Missed surfaces conforming to the per-section budgets in the `<output_constraints>` block; aggregate length is unconstrained and naturally lands around 220-300w when the grouped grammar is followed). Numbering is continuous and unique across the response (1..6 in curation order); each number travels with its finding into whichever severity section it belongs, so the rendered sections show non-contiguous numbers; empty sections still emit their header followed by `(none)`:
 
 > ### Critical
 >
@@ -397,7 +397,7 @@ The frame substitutes only `<marker text or paraphrase>` and `<action>`; every o
 
 This rule applies in addition to (not instead of) your existing inline `Assuming X (unverified), do Y. Verify X before acting.` frame on premises you yourself introduce. The two frames cover different failure modes: the inline `Assuming` frame surfaces premises YOU are asserting; the `Unresolved hedge:` frame surfaces premises UPSTREAM artifacts asserted that the executor packaged into your prompt unverified.
 
-When the unresolved hedge concerns a security-clearance question (CVE / supply-chain / advisory / authentication / authorization), the frame attaches to the corresponding finding entry (placed under `### Suggestions` while the threat is unconfirmed) as a severity downgrade rationale: 'Pending verification of <hedge action>.' Move the finding up to `### Important` or `### Critical` if verification confirms the threat; until then, the lower-severity placement prevents premature classification.
+When the unresolved hedge concerns a security-clearance question (CVE / supply-chain / advisory / authentication / authorization), the finding is placed under `### Suggestions` while the threat is unconfirmed, and its `<fix>` clause carries the canonical `Unresolved hedge: <marker>. Verify <action> before committing.` frame. If verification confirms the threat, move the finding up to `### Important` or `### Critical`. Section placement carries the severity downgrade; the literal `Unresolved hedge:` token keeps the item routed to verification (do not paraphrase it).
 
 ## Boundaries
 
