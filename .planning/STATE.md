@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0.1
 milestone_name: No review report shorthands
 status: executing
-stopped_at: Completed 12-01-PLAN.md
-last_updated: "2026-06-07T19:53:00.704Z"
+stopped_at: Completed 12-02-PLAN.md
+last_updated: "2026-06-07T20:09:26.364Z"
 last_activity: 2026-06-07
 progress:
   total_phases: 3
   completed_phases: 1
   total_plans: 6
-  completed_plans: 3
-  percent: 50
+  completed_plans: 4
+  percent: 67
 ---
 
 # Project State
@@ -26,9 +26,9 @@ See: .planning/PROJECT.md (updated 2026-06-07)
 ## Current Position
 
 Phase: 12 (atomic-grouped-grammar-rewrite) — EXECUTING
-Plan: 2 of 4
-Status: Executing Phase 12 (Plan 12-01 complete: reviewer agent + fixture grouped-grammar lockstep)
-Last activity: 2026-06-07 -- Plan 12-01 complete (reviewer.md grouped grammar + D-reviewer-budget.sh retarget)
+Plan: 3 of 4
+Status: Executing Phase 12 (Plans 12-01 + 12-02 complete: both review agents + both fixtures grouped-grammar lockstep)
+Last activity: 2026-06-07 -- Plan 12-02 complete (security-reviewer.md grouped grammar + OWASP [Axx] + 75w CVE carve-out; D-security-reviewer-budget.sh retarget)
 
 ### Milestone v1.0.1 roadmap
 
@@ -88,6 +88,7 @@ Advisor runtime-proven on Opus 4.8. Final phase: Phase 10 (documentation-hygiene
 
 *Updated after each plan completion*
 | Phase 12 P12-01 | 35min | 2 tasks | 2 files |
+| Phase 12 P12-02 | 10min | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -103,6 +104,7 @@ Recent decisions affecting current work (v1.0.1):
 - [v1.0.1]: Build-order step 0 (Phase 11) -- re-author the budget fixtures green on CURRENT shorthand FIRST; they live nowhere on disk (lived in cleared `.planning/phases/` workspaces), so "update fixtures in lockstep" is vacuous until they exist.
 - [v1.0.1]: Word budgets are `wc -w`-based and the severity prefix sits OUTSIDE the counted span (`crit:` and `Critical:` each count as one word), so the spell-out is budget-neutral in principle -- but the project has been burned 3x assuming budget-neutrality, so Phase 13 measures it empirically (n>=3), not by reasoning.
 - [v1.0.1 / 12-01]: Reviewer agent emits grouped ### Critical/Important/Suggestions/Questions grammar (header is sole severity source, continuous numbering, (none) empty markers); D-reviewer-budget.sh retargeted to a header-tracking parser, GREEN-on-new / RED-on-old in lockstep. AGNT-03 protected behaviors (Class-2 hook, Hedge Marker Discipline, lowercase severity= attrs) survive byte-intact.
+- [v1.0.1 / 12-02]: Security-reviewer emits grouped grammar with OWASP [Axx] preserved + 75w CVE carve-out; fixture FINDING_RE asserts the [Axx] bracket, GREEN-on-new/RED-on-old/RED-on-[Axx]-missing; AGNT-03 protected behaviors byte-intact.
 
 ### Pending Todos
 
@@ -129,7 +131,7 @@ Recent decisions affecting current work (v1.0.1):
 
 ## Session Continuity
 
-Last session: 2026-06-07T19:53:00.681Z
+Last session: 2026-06-07T20:08:14.734Z
 Stopped at: Completed 12-01-PLAN.md
 Resume file: None
 Resume next: `/gsd-discuss-phase 12` to gather context for Phase 12 (Atomic grouped-grammar rewrite), or `/gsd-plan-phase 12` to plan directly.

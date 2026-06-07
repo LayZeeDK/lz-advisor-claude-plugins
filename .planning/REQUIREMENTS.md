@@ -19,15 +19,15 @@
 ### Report Format (RPT)
 
 - [ ] **RPT-01**: User sees review findings grouped under fully spelled-out severity headlines (`### Critical`, `### Important`, `### Suggestions`, `### Questions`) -- no `crit:`/`imp:`/`sug:`/`q:` shorthands anywhere in user-facing output
-- [ ] **RPT-02**: User sees security-review findings grouped under the same unified spelled-out headlines, with per-finding OWASP `[Axx]` tags preserved
-- [ ] **RPT-03**: Findings carry stable continuous numbers across severity sections, so `Per-finding validation` and `Cross-Cutting Patterns`/`Threat Patterns` ordinal references ("Findings 1, 2, 4") stay unambiguous
-- [ ] **RPT-04**: Empty severity sections render an explicit `(none)` marker
+- [x] **RPT-02**: User sees security-review findings grouped under the same unified spelled-out headlines, with per-finding OWASP `[Axx]` tags preserved
+- [x] **RPT-03**: Findings carry stable continuous numbers across severity sections, so `Per-finding validation` and `Cross-Cutting Patterns`/`Threat Patterns` ordinal references ("Findings 1, 2, 4") stay unambiguous
+- [x] **RPT-04**: Empty severity sections render an explicit `(none)` marker
 
 ### Agent Contract (AGNT)
 
-- [ ] **AGNT-01**: Reviewer + security-reviewer Output Constraint grammar AND all worked examples rewritten to the grouped shape in one unit -- no legend/example disagreement; `(formerly High)`/`(formerly Medium)` residue annotations stripped (no third generation of "formerly X" residue)
-- [ ] **AGNT-02**: Word-budget sub-caps re-scoped coherently to the grouped section shape (aggregate budget intent unchanged)
-- [ ] **AGNT-03**: Existing validated behaviors survive the regrouping: Hedge Marker Discipline frames, Class-2 Escalation Hook, `<verify_request>` blocks (`severity=` attributes stay lowercase machine-lexicon)
+- [x] **AGNT-01**: Reviewer + security-reviewer Output Constraint grammar AND all worked examples rewritten to the grouped shape in one unit -- no legend/example disagreement; `(formerly High)`/`(formerly Medium)` residue annotations stripped (no third generation of "formerly X" residue)
+- [x] **AGNT-02**: Word-budget sub-caps re-scoped coherently to the grouped section shape (aggregate budget intent unchanged)
+- [x] **AGNT-03**: Existing validated behaviors survive the regrouping: Hedge Marker Discipline frames, Class-2 Escalation Hook, `<verify_request>` blocks (`severity=` attributes stay lowercase machine-lexicon)
 
 ### Skill Contract (SKILL)
 
@@ -72,12 +72,12 @@ Which phases cover which requirements. Updated during roadmap creation.
 | Requirement | Phase | Status |
 |-------------|-------|--------|
 | RPT-01 | Phase 12 | Pending |
-| RPT-02 | Phase 12 | Pending |
-| RPT-03 | Phase 12 | Pending |
-| RPT-04 | Phase 12 | Pending |
-| AGNT-01 | Phase 12 | Pending |
-| AGNT-02 | Phase 12 | Pending |
-| AGNT-03 | Phase 12 | Pending |
+| RPT-02 | Phase 12 | Complete |
+| RPT-03 | Phase 12 | Complete |
+| RPT-04 | Phase 12 | Complete |
+| AGNT-01 | Phase 12 | Complete |
+| AGNT-02 | Phase 12 | Complete |
+| AGNT-03 | Phase 12 | Complete |
 | SKILL-01 | Phase 12 | Pending |
 | SYNC-01 | Phase 12 | Pending |
 | SYNC-02 | Phase 12 | Pending |
