@@ -1,11 +1,12 @@
 ---
 phase: 12
 slug: atomic-grouped-grammar-rewrite
-status: bound
+status: validated
 nyquist_compliant: true
 wave_0_complete: true
 created: 2026-06-07
 bound: 2026-06-07
+validated: 2026-06-08
 ---
 
 # Phase 12 — Validation Strategy
@@ -49,16 +50,16 @@ bound: 2026-06-07
 
 | Requirement | Behavior | Test Type | Automated Command | Bound to | Status |
 |-------------|----------|-----------|-------------------|----------|--------|
-| RPT-01 | Reviewer emits grouped `### Critical/Important/Suggestions/Questions`, no shorthand | unit (self-extract) | `bash tests/D-reviewer-budget.sh` GREEN + `git grep -nE 'crit:\|imp:\|sug:\|q:' plugins/lz-advisor/agents/reviewer.md` empty | 12-01 T1+T2 | pending |
-| RPT-02 | Security emits same headers, `[Axx]` preserved | unit | `bash tests/D-security-reviewer-budget.sh` ([Axx] assertion in FINDING_RE) + `git grep -n '\[A0' security-reviewer.md` | 12-02 T1+T2 | pending |
-| RPT-03 | Continuous finding numbers across sections | unit | fixture counts `^N.`-prefixed lines across all sections; holistic example numbered 1..N contiguous | 12-01 T1 / 12-02 T1 | pending |
-| RPT-04 | Empty section renders `(none)` | unit | fixture treats `(none)` as non-finding; all 4 headers present even when empty | 12-01 T1 / 12-02 T1 | pending |
-| AGNT-01 | Legend + all examples rewritten; `(formerly X)` stripped | static | `git grep -nE 'formerly High\|formerly Medium\|crit:\|imp:\|sug:' plugins/lz-advisor/agents/` empty | 12-01 T1 / 12-02 T1 | pending |
-| AGNT-02 | Per-section sub-caps re-scoped, aggregate intent unchanged | unit | fixture per-section budget assertions GREEN (per-section `<max_words>` mapped 1:1; aggregate `none`) | 12-01 T1+T2 / 12-02 T1+T2 | pending |
-| AGNT-03 | Hedge frame, Class-2 hook, `severity=` lowercase survive | static | `git grep -c '^## Class-2 Escalation Hook$'` =1 + `'^## Hedge Marker Discipline$'` =1 per agent; `git grep -n 'severity="' plugins/lz-advisor/agents/` only lowercase | 12-01 T1 / 12-02 T1 + 12-04 T2 re-confirm | pending |
-| SKILL-01 | Render-verbatim absolute; prohibition inverted; new headers contracted | static | both skills name the four severity headers + trailing section; `git grep -nE 'Reformat the .* response into severity groups' plugins/lz-advisor/skills/` empty | 12-03 T1 | pending |
-| SYNC-01 | Disposition table covers every git grep hit; `.planning/` untouched | static | per-hit KEEP/CHANGE disposition documented in 12-03 SUMMARY; lowercase `severity=` + INPUT Findings template kept; residue sweep scoped to `plugins/lz-advisor/` | 12-03 T2 + 12-04 T2 | pending |
-| SYNC-02 | 5-surface atomic version bump | static | `git grep -n '1\.0\.1' plugins/lz-advisor/.claude-plugin/plugin.json plugins/lz-advisor/skills/*/SKILL.md` = 5 hits; zero at `1\.0\.0` | 12-04 T1 | pending |
+| RPT-01 | Reviewer emits grouped `### Critical/Important/Suggestions/Questions`, no shorthand | unit (self-extract) | `bash tests/D-reviewer-budget.sh` GREEN + `git grep -nE 'crit:\|imp:\|sug:\|q:' plugins/lz-advisor/agents/reviewer.md` empty | 12-01 T1+T2 | green |
+| RPT-02 | Security emits same headers, `[Axx]` preserved | unit | `bash tests/D-security-reviewer-budget.sh` ([Axx] assertion in FINDING_RE) + `git grep -n '\[A0' security-reviewer.md` | 12-02 T1+T2 | green |
+| RPT-03 | Continuous finding numbers across sections | unit | fixture counts `^N.`-prefixed lines across all sections; holistic example numbered 1..N contiguous | 12-01 T1 / 12-02 T1 | green |
+| RPT-04 | Empty section renders `(none)` | unit | fixture treats `(none)` as non-finding; all 4 headers present even when empty | 12-01 T1 / 12-02 T1 | green |
+| AGNT-01 | Legend + all examples rewritten; `(formerly X)` stripped | static | `git grep -nE 'formerly High\|formerly Medium\|crit:\|imp:\|sug:' plugins/lz-advisor/agents/` empty | 12-01 T1 / 12-02 T1 | green |
+| AGNT-02 | Per-section sub-caps re-scoped, aggregate intent unchanged | unit | fixture per-section budget assertions GREEN (per-section `<max_words>` mapped 1:1; aggregate `none`) | 12-01 T1+T2 / 12-02 T1+T2 | green |
+| AGNT-03 | Hedge frame, Class-2 hook, `severity=` lowercase survive | static | `git grep -c '^## Class-2 Escalation Hook$'` =1 + `'^## Hedge Marker Discipline$'` =1 per agent; `git grep -n 'severity="' plugins/lz-advisor/agents/` only lowercase | 12-01 T1 / 12-02 T1 + 12-04 T2 re-confirm | green |
+| SKILL-01 | Render-verbatim absolute; prohibition inverted; new headers contracted | static | both skills name the four severity headers + trailing section; `git grep -nE 'Reformat the .* response into severity groups' plugins/lz-advisor/skills/` empty | 12-03 T1 | green |
+| SYNC-01 | Disposition table covers every git grep hit; `.planning/` untouched | static | per-hit KEEP/CHANGE disposition documented in 12-03 SUMMARY; lowercase `severity=` + INPUT Findings template kept; residue sweep scoped to `plugins/lz-advisor/` | 12-03 T2 + 12-04 T2 | green |
+| SYNC-02 | 5-surface atomic version bump | static | `git grep -n '1\.0\.1' plugins/lz-advisor/.claude-plugin/plugin.json plugins/lz-advisor/skills/*/SKILL.md` = 5 hits; zero at `1\.0\.0` | 12-04 T1 | green |
 
 *Status: pending · green · red · flaky*
 
@@ -91,3 +92,40 @@ bound: 2026-06-07
 - [x] `nyquist_compliant: true` set in frontmatter (planner bound tasks to this map)
 
 **Approval:** bound 2026-06-07 (planner)
+
+---
+
+## Validation Audit 2026-06-08
+
+Retroactive Nyquist audit (State A). Every bound automated command was re-executed
+directly by the auditor from the repo root -- not trusted from SUMMARY/VERIFICATION
+claims. All 11 per-task rows flipped `pending -> green`. No MISSING or PARTIAL
+coverage; the planner's bound map held intact through execution.
+
+| Metric | Count |
+|--------|-------|
+| Gaps found | 0 |
+| Resolved | 0 |
+| Escalated | 0 |
+
+**Re-execution evidence (auditor process, repo root):**
+
+| Requirement | Command | Result |
+|-------------|---------|--------|
+| RPT-01 | `bash tests/D-reviewer-budget.sh` + `git grep -nE 'crit:\|imp:\|sug:\|q:' .../reviewer.md` | exit 0 (7 findings, 10/10); residue empty (exit 1) |
+| RPT-02 | `bash tests/D-security-reviewer-budget.sh` + `git grep -c '\[A0' .../security-reviewer.md` | exit 0 (6 findings, 9/9); 13 `[Axx]` hits |
+| RPT-03 | fixture continuous-numbering parse (both) | GREEN (7 & 6 findings parsed contiguously) |
+| RPT-04 | fixture `(none)`-as-non-finding + 4 headers (both) | GREEN |
+| AGNT-01 | `git grep -nE 'formerly High\|formerly Medium\|crit:\|imp:\|sug:' .../agents/` | empty (exit 1) |
+| AGNT-02 | per-section budgets (both fixtures) | GREEN (all <=28; CVE carve-out 36<=75); aggregate `none` |
+| AGNT-03 | Class-2 + Hedge `git grep -c` (each agent) + `severity="` scan | 1/1 per agent; all `severity=` lowercase |
+| SKILL-01 | old-prohibition grep + `### Critical` count (both skills) | prohibition empty (exit 1); 3 hits each |
+| SYNC-01 | `severity="` + `Severity (initial)` in context-packaging.md | lowercase-only; INPUT template kept (:290) |
+| SYNC-02 | `1.0.1` 5-surface count + `1.0.0` scan | 5 hits at 1.0.1; 0 at 1.0.0 (exit 1) |
+
+**Result:** Phase 12 is NYQUIST-COMPLIANT. All requirements carry an automated
+fixture/grep assertion that runs green; the two manual-only entries (render-verbatim
+intent, GATE-02 rendered-output proof) remain correctly classified -- GATE-02 is
+Phase 13's job. No tests generated (no gaps to fill).
+
+**Auditor:** 2026-06-08 (gsd-validate-phase, State A audit)
