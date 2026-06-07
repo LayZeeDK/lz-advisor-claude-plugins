@@ -94,7 +94,7 @@ Phases execute in numeric order: 11 -> 12 -> 13
 |-------|-----------|----------------|--------|-----------|
 | 1-10 (v1.0) | v1.0 MVP | 80/80 | Complete | 2026-06-01 |
 | 11. Fixture baseline | v1.0.1 | 2/2 | Complete    | 2026-06-07 |
-| 12. Atomic grouped-grammar rewrite | v1.0.1 | 4/4 | Complete   | 2026-06-07 |
+| 12. Atomic grouped-grammar rewrite | v1.0.1 | 4/4 | Complete    | 2026-06-07 |
 | 13. Empirical verification | v1.0.1 | 0/TBD | Not started | - |
 
 v1.0 shipped: 16 phases, 80 plans, plugin 1.0.0. See `.planning/MILESTONES.md` for the summary and `milestones/v1.0-ROADMAP.md` for full detail.
