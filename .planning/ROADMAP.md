@@ -38,7 +38,7 @@ Full phase details, requirements, success criteria, and plan breakdowns are arch
 **Locked decisions (from milestone questioning + research):** Route A (agents emit the grouped spelled-out shape directly; render-verbatim contract stays absolute); Section-per-severity layout with explicit `(none)` markers and continuous finding numbers; Unified Critical/Important/Suggestion/Question vocabulary across both skills (the decided Phase 7 lexicon); plugin version 1.0.0 -> 1.0.1.
 
 - [x] **Phase 11: Fixture baseline** - Re-author the missing budget smoke fixtures as tracked tests, green on the CURRENT shorthand grammar (regression gate before any change) (completed 2026-06-07)
-- [ ] **Phase 12: Atomic grouped-grammar rewrite** - Both agents + both skill contracts + context-packaging sync rewritten to the grouped spelled-out shape in one unit, with lockstep fixture retarget and the 5-surface version bump
+- [x] **Phase 12: Atomic grouped-grammar rewrite** - Both agents + both skill contracts + context-packaging sync rewritten to the grouped spelled-out shape in one unit, with lockstep fixture retarget and the 5-surface version bump (completed 2026-06-07)
 - [ ] **Phase 13: Empirical verification** - Headless `claude -p` UAT proves grouped spelled-out reports reach rendered output on both review skills; residue + history-preservation sweep
 
 ## Phase Details
@@ -70,7 +70,7 @@ Full phase details, requirements, success criteria, and plan breakdowns are arch
 - [x] 12-01-PLAN.md -- Rewrite reviewer.md to grouped grammar + retarget D-reviewer-budget.sh in lockstep (RPT-01/03/04, AGNT-01/02/03)
 - [x] 12-02-PLAN.md -- Rewrite security-reviewer.md (OWASP [Axx] + CVE carve-out + strip formerly-X) + retarget D-security-reviewer-budget.sh (RPT-02/03/04, AGNT-01/02/03)
 - [x] 12-03-PLAN.md -- Invert both skills' verbatim prohibition + align context-packaging.md disposition + execute/SKILL.md precision edit (SKILL-01, SYNC-01)
-- [ ] 12-04-PLAN.md -- Atomic 5-surface 1.0.0 -> 1.0.1 bump + README changelog + phase-atomicity completeness gate (SYNC-02 + RPT-01/02, AGNT-01, SYNC-01 residue sweep)
+- [x] 12-04-PLAN.md -- Atomic 5-surface 1.0.0 -> 1.0.1 bump + README changelog + phase-atomicity completeness gate (SYNC-02 + RPT-01/02, AGNT-01, SYNC-01 residue sweep)
 **UI hint**: yes
 
 ### Phase 13: Empirical verification
@@ -94,7 +94,7 @@ Phases execute in numeric order: 11 -> 12 -> 13
 |-------|-----------|----------------|--------|-----------|
 | 1-10 (v1.0) | v1.0 MVP | 80/80 | Complete | 2026-06-01 |
 | 11. Fixture baseline | v1.0.1 | 2/2 | Complete    | 2026-06-07 |
-| 12. Atomic grouped-grammar rewrite | v1.0.1 | 3/4 | In Progress|  |
+| 12. Atomic grouped-grammar rewrite | v1.0.1 | 4/4 | Complete   | 2026-06-07 |
 | 13. Empirical verification | v1.0.1 | 0/TBD | Not started | - |
 
 v1.0 shipped: 16 phases, 80 plans, plugin 1.0.0. See `.planning/MILESTONES.md` for the summary and `milestones/v1.0-ROADMAP.md` for full detail.

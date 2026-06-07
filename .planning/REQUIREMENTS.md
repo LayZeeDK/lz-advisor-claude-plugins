@@ -18,7 +18,7 @@
 
 ### Report Format (RPT)
 
-- [ ] **RPT-01**: User sees review findings grouped under fully spelled-out severity headlines (`### Critical`, `### Important`, `### Suggestions`, `### Questions`) -- no `crit:`/`imp:`/`sug:`/`q:` shorthands anywhere in user-facing output
+- [x] **RPT-01**: User sees review findings grouped under fully spelled-out severity headlines (`### Critical`, `### Important`, `### Suggestions`, `### Questions`) -- no `crit:`/`imp:`/`sug:`/`q:` shorthands anywhere in user-facing output
 - [x] **RPT-02**: User sees security-review findings grouped under the same unified spelled-out headlines, with per-finding OWASP `[Axx]` tags preserved
 - [x] **RPT-03**: Findings carry stable continuous numbers across severity sections, so `Per-finding validation` and `Cross-Cutting Patterns`/`Threat Patterns` ordinal references ("Findings 1, 2, 4") stay unambiguous
 - [x] **RPT-04**: Empty severity sections render an explicit `(none)` marker
@@ -36,7 +36,7 @@
 ### Consistency (SYNC)
 
 - [x] **SYNC-01**: `references/context-packaging.md` severity-vocab surfaces (Hedge Marker carve-out, severity schema) aligned with the grouped grammar; a per-surface disposition table covers every `git grep` hit (change vs keep-as-history; `.planning/` history artifacts stay untouched per Phase 9 precedent)
-- [ ] **SYNC-02**: Atomic 5-surface version bump 1.0.0 -> 1.0.1
+- [x] **SYNC-02**: Atomic 5-surface version bump 1.0.0 -> 1.0.1
 
 ### Gates (GATE)
 
@@ -71,7 +71,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| RPT-01 | Phase 12 | Pending |
+| RPT-01 | Phase 12 | Complete |
 | RPT-02 | Phase 12 | Complete |
 | RPT-03 | Phase 12 | Complete |
 | RPT-04 | Phase 12 | Complete |
@@ -80,7 +80,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | AGNT-03 | Phase 12 | Complete |
 | SKILL-01 | Phase 12 | Complete |
 | SYNC-01 | Phase 12 | Complete |
-| SYNC-02 | Phase 12 | Pending |
+| SYNC-02 | Phase 12 | Complete |
 | GATE-01 | Phase 11 | Complete |
 | GATE-02 | Phase 13 | Pending |
 

@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.0.1
 milestone_name: No review report shorthands
-status: executing
-stopped_at: Completed 12-03-PLAN.md
-last_updated: "2026-06-07T20:19:31.833Z"
+status: verifying
+stopped_at: Completed 12-04-PLAN.md
+last_updated: "2026-06-07T20:37:46.995Z"
 last_activity: 2026-06-07
 progress:
   total_phases: 3
-  completed_phases: 1
+  completed_phases: 2
   total_plans: 6
-  completed_plans: 5
-  percent: 83
+  completed_plans: 6
+  percent: 67
 ---
 
 # Project State
@@ -27,8 +27,8 @@ See: .planning/PROJECT.md (updated 2026-06-07)
 
 Phase: 12 (atomic-grouped-grammar-rewrite) — EXECUTING
 Plan: 4 of 4
-Status: Executing Phase 12 (Plans 12-01 + 12-02 + 12-03 complete: both review agents + both fixtures + both skill render-verbatim contracts + context-packaging sync all on the grouped grammar)
-Last activity: 2026-06-07 -- Plan 12-03 complete (both review skills name the four grouped severity headers + trailing analytical section as the verbatim contract, prohibition inverted; context-packaging display surfaces aligned, machine attr + INPUT template kept; execute negative ref precision-edited)
+Status: Phase complete — ready for verification
+Last activity: 2026-06-07
 
 ### Milestone v1.0.1 roadmap
 
@@ -90,6 +90,7 @@ Advisor runtime-proven on Opus 4.8. Final phase: Phase 10 (documentation-hygiene
 | Phase 12 P12-01 | 35min | 2 tasks | 2 files |
 | Phase 12 P12-02 | 10min | 2 tasks | 2 files |
 | Phase 12 P12-03 | 20min | 2 tasks | 4 files |
+| Phase 12 P12-04 | 9min | 2 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -107,6 +108,7 @@ Recent decisions affecting current work (v1.0.1):
 - [v1.0.1 / 12-01]: Reviewer agent emits grouped ### Critical/Important/Suggestions/Questions grammar (header is sole severity source, continuous numbering, (none) empty markers); D-reviewer-budget.sh retargeted to a header-tracking parser, GREEN-on-new / RED-on-old in lockstep. AGNT-03 protected behaviors (Class-2 hook, Hedge Marker Discipline, lowercase severity= attrs) survive byte-intact.
 - [v1.0.1 / 12-02]: Security-reviewer emits grouped grammar with OWASP [Axx] preserved + 75w CVE carve-out; fixture FINDING_RE asserts the [Axx] bracket, GREEN-on-new/RED-on-old/RED-on-[Axx]-missing; AGNT-03 protected behaviors byte-intact.
 - [v1.0.1 / 12-03]: Both review skills' Phase 3 render-verbatim contracts name the four grouped severity headers (### Critical/### Important/### Suggestions/### Questions) + the trailing analytical section (### Cross-Cutting Patterns for review, ### Threat Patterns for security) as the protected literal headers; the "do not reformat into severity groups" prohibition is INVERTED (grouped IS the contract) with render-verbatim absolute and (none) preservation mandated. context-packaging.md display surfaces aligned (:60 inline pv anchor, :396 Verify Request OUTPUT illustration -> ### Critical, :411 prose); lowercase severity= machine attr (BNF/example) + INPUT-side Verification template ## Findings list KEPT (SYNC-01 per-surface disposition, Pitfall 5 / D-08); execute/SKILL.md :261 precision-edited to "reviewer-style grouped findings report" (Pitfall 6).
+- [Phase ?]: [v1.0.1 / 12-04]: Atomic 5-surface version bump 1.0.0 -> 1.0.1 (plugin.json + 4 SKILL.md version: fields) landed; README ### 1.0.1 changelog entry added (separate from the 5-surface tally). Phase-atomicity completeness gate PASSED: both budget fixtures GREEN-on-new + RED-on-old/self-test (+ security RED-on-[Axx]-missing); zero crit:/imp:/sug:/q: + zero formerly-X residue in plugins/lz-advisor/; AGNT-03 protected behaviors intact; .planning/ frozen history untouched. The atomic grouped-grammar unit is complete.
 
 ### Pending Todos
 
@@ -133,7 +135,7 @@ Recent decisions affecting current work (v1.0.1):
 
 ## Session Continuity
 
-Last session: 2026-06-07T20:19:31.833Z
-Stopped at: Completed 12-03-PLAN.md
+Last session: 2026-06-07T20:36:54.214Z
+Stopped at: Completed 12-04-PLAN.md (Phase 12 complete -- atomic grouped-grammar unit closed)
 Resume file: None
-Resume next: Execute Plan 12-04 (5-surface version bump 1.0.0 -> 1.0.1 + README "What's New" 1.0.1 entry + phase-gate residue sweep across plugins/lz-advisor/) to close the atomic unit.
+Resume next: Verify Phase 12 (spawn gsd-verifier to produce 12-VERIFICATION.md), then execute Phase 13 (GATE-02 empirical verification: headless claude -p UAT on both review skills in a dedicated worktree off uat/pre-storybook-compodoc; n>=3 budget-gate run; residue + .planning/-history-preservation sweep).
