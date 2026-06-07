@@ -16,7 +16,7 @@ description: >
   reviews, bug finding, or style issues -- use review
   instead. It should also NOT be used for planning or implementing
   tasks -- use plan or execute instead.
-version: 1.0.0
+version: 1.0.1
 allowed-tools: Agent(lz-advisor:security-reviewer), Read, Glob, Bash(git:*), WebSearch, WebFetch
 ---
 

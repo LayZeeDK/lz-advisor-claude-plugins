@@ -16,7 +16,7 @@ description: >
   security-review instead. It should also NOT be used
   for planning or implementing tasks -- use plan or
   execute instead.
-version: 1.0.0
+version: 1.0.1
 allowed-tools: Agent(lz-advisor:reviewer), Read, Glob, Bash(git:*), WebSearch, WebFetch
 ---
 

@@ -76,6 +76,19 @@ Opus 4.7 (released 2026-04-16) is auto-selected via the `opus` alias; no user ac
 
 ## What's New
 
+### 1.0.1
+
+Review report grammar overhaul. The `/review` and `/security-review` agents now
+present findings GROUPED under fully spelled-out severity headlines --
+`### Critical`, `### Important`, `### Suggestions`, and `### Questions` -- in a
+fixed order, replacing the prior `crit:`/`imp:`/`sug:`/`q:` inline fragment
+shorthand. Findings carry continuous integer numbers across all sections so
+cross-references stay unambiguous, every severity section is always emitted with
+an explicit `(none)` marker when empty, and the OWASP `[Axx]` category tags are
+preserved verbatim on security findings. The render-verbatim contract and the
+per-section word-budget gates are intact -- the skills carry the grouped shape to
+the user without reformatting.
+
 ### 1.0.0
 
 Initial stable release. The advisor-strategy plugin pairs an Opus advisor with
