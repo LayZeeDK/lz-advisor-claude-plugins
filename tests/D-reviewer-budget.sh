@@ -170,12 +170,18 @@ if [ "$MODE" = "self-test" ]; then
   fi
 fi
 
-if [ "$matched_count" -ge "$MIN_FINDINGS" ]; then
-  pass "anti-vacuous: matched_count $matched_count >= $MIN_FINDINGS"
-else
+# WR-01: a too-few-findings parse makes every downstream budget check
+# meaningless (a 0-finding parse emits green [PASS] section lines that read as
+# mostly-green even though the parser matched nothing). Short-circuit with a
+# loud FAIL and a non-zero exit BEFORE the budget loop so no spurious green
+# PASS lines muddy the diagnostic.
+if [ "$matched_count" -lt "$MIN_FINDINGS" ]; then
   fail "anti-vacuous: only $matched_count findings parsed (need >= $MIN_FINDINGS)" \
     "FRAGMENT_RE matched too few findings -- gate would be vacuous"
+  echo "Status: [FAIL] -- anti-vacuous guard fired; skipping budget checks"
+  exit 1
 fi
+pass "anti-vacuous: matched_count $matched_count >= $MIN_FINDINGS"
 
 # ---------------------------------------------------------------------------
 # Per-section budget assertions (D-09) over the parsed report.
