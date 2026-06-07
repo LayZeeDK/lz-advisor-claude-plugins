@@ -44,9 +44,10 @@ Near-Opus intelligence at Sonnet cost for coding tasks, achieved through strateg
 
 ### Active
 
-Milestone v1.0.1 (No review report shorthands) -- requirements being defined via `/gsd-new-milestone`:
+Milestone v1.0.1 (No review report shorthands):
 
 - [ ] Review/security-review reports present severities in fully spelled-out, user-readable form (no `imp`/`sug`/`q` shorthands in user-facing output)
+- [x] GATE-01: Budget smoke fixtures re-authored as committed, tracked tests green on the CURRENT shorthand grammar -- Validated in Phase 11 (fixture baseline; `tests/D-reviewer-budget.sh` + `tests/D-security-reviewer-budget.sh`, VERIFICATION passed 4/4)
 
 The v1.0 requirement set is archived in `milestones/v1.0-REQUIREMENTS.md`.
 
@@ -120,6 +121,8 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
+*Last updated: 2026-06-07 -- Phase 11 (Fixture baseline) complete. GATE-01 closed: `tests/D-reviewer-budget.sh` (3-slot) and `tests/D-security-reviewer-budget.sh` (4-slot OWASP, 75w auto-clarity carve-out) authored fresh, committed, and green on the CURRENT shorthand grammar -- self-extracting from the live agent worked examples, with anti-vacuous `matched_count >= 5` guards before the budget loops, `--self-test` fail-loudly modes (exit non-zero on zero-finding input), and `--from-trace` replay for Phase 13 reuse. Post-execution code review found 2 Critical + 5 Warning robustness defects (optional-section awk gate asymmetry; missing CRLF normalization for live traces); all 7 fixed via `/gsd-code-review 11 --fix` and re-proven adversarially. Verification passed 4/4 must-haves. Next: Phase 12 (Atomic grouped-grammar rewrite).*
+
 *Last updated: 2026-06-07 -- Milestone v1.0.1 (No review report shorthands) started via `/gsd-new-milestone`. Goal: replace the `crit:`/`imp:`/`sug:`/`q:` fragment-grammar shorthands in user-facing review/security-review reports with fully spelled-out severity labels, without breaking the render-verbatim contract or the word-budget regression gates. Requirements and roadmap to follow.*
 
 *Last updated: 2026-06-01 -- **v1.0 MILESTONE COMPLETE** (plugin 1.0.0). Re-audit clean on all hard gates (52/52 requirements, 6/6 integration, 5/5 flows, 16/16 Nyquist-complete); the first-audit tech_debt is resolved (Phase 10 doc-hygiene + the finding-resolution session: Phase 01 human_verification empirically closed, FIND-F closed by-design via web-deprivation re-verification, and the ADVR-04 / ADVR-06 / CLAUDE.md-effort definition drifts reconciled). Atomic 5-surface SemVer bump 0.15.0 -> 1.0.0; README "What's New" collapsed to a standalone 1.0.0 entry. Milestone archived to `milestones/v1.0-*`; ROADMAP collapsed to a milestone index; REQUIREMENTS archived + removed (fresh set comes via `/gsd-new-milestone`). Tagged `v1.0` (NOT pushed -- marketplace publication deferred per user directive until after a successful audit + completion). Advisor runtime-proven on Opus 4.8.*
