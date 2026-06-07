@@ -1,20 +1,38 @@
 #!/usr/bin/env bash
-# Budget smoke fixture for the security-reviewer agent (4-slot OWASP fragment grammar).
+# Budget smoke fixture for the security-reviewer agent (grouped severity grammar).
 #
-# Parses the holistic worked example in plugins/lz-advisor/agents/security-reviewer.md
-# (default self-extract mode), a captured response (--from-trace <file>), or a
-# synthetic zero-finding input (--self-test). Asserts the per-section word budgets
-# with an anti-vacuous matched_count >= 5 guard that runs BEFORE the budget loop,
-# and a 75w auto-clarity outlier cap (RES-PFV-OUTLIER-CAP) for CVE/GHSA/CWE findings.
+# Parses the grouped severity grammar emitted by
+# plugins/lz-advisor/agents/security-reviewer.md -- findings grouped under
+# ### Critical / ### Important / ### Suggestions / ### Questions headers, each
+# finding a "N. <file>:<line>: [<OWASP-tag>] <threat>. <fix>." line with a
+# leading continuous integer and NO inline severity token (the section header is
+# the sole severity source). The OWASP / CVE / GHSA / CWE bracket is asserted
+# present immediately after the location (a finding losing its tag fails to parse
+# and the anti-vacuous guard catches the shortfall). Asserts the per-section word
+# budgets with a 75w auto-clarity outlier cap (RES-PFV-OUTLIER-CAP) for
+# CVE/GHSA/CWE findings, and exits 0 (green) on the current grammar. This is the
+# security-reviewer half of the regression gate, retargeted in lockstep with the
+# Phase 12 agent rewrite (D-10).
 #
-# Modes:
-#   (default)              self-extract the agent holistic example and assert green
-#   --from-trace <file>    parse a captured response file through the same parser
-#   --self-test            feed a zero-finding input; the run MUST exit non-zero
+# Header-tracking parser: track the current ### severity header; count numbered
+# finding lines beneath it. There is no inline-severity alternation in this
+# grammar -- the single source of truth is the header regex plus the numbered-line
+# regex (which embeds the [<tag>] bracket assertion), and the body-strip prefix is
+# derived from the SAME numbered-line regex so the count and the strip cannot
+# diverge (WR-05 fixture mitigation).
 #
-# Phase 11 baseline: green on the CURRENT shorthand grammar (crit:/imp:/sug:/q:
-# plus an OWASP [Axx] bracket slot). NO live claude -p invocation (Phase 13 supplies
-# live traces). NO edit to the agent file (read-only input).
+# Three run modes:
+#   (default, no args)        self-extract the holistic worked example from the
+#                             agent file, strip the "> " blockquote + wrapping
+#                             backticks, parse + budget-check it.
+#   --from-trace <file>       parse a captured response file through the same
+#                             parser + assertions (Phase 13 supplies live traces;
+#                             capability check here).
+#   --self-test               synthesize a zero-finding input and assert the
+#                             anti-vacuous guard fires (NON-zero exit).
+#
+# No live `claude -p` invocation (Phase 13 supplies live traces). Standalone,
+# zero-dependency: bash + coreutils only (no shared helper lib).
 #
 # Run from the repository root: bash tests/D-security-reviewer-budget.sh
 
@@ -25,7 +43,7 @@ set -euo pipefail
 SECURITY_AGENT="plugins/lz-advisor/agents/security-reviewer.md"
 MIN_FINDINGS=5        # D-04 anti-vacuous floor (security holistic example: 6 findings, min 5)
 PER_ENTRY_CAP=28      # D-09 per-entry outlier soft cap (prefix + OWASP tag EXCLUDED)
-AUTO_CLARITY_CAP=75   # D-08 RES-PFV-OUTLIER-CAP for CVE/GHSA/CWE auto-clarity findings
+AUTO_CLARITY_CAP=75   # RES-PFV-OUTLIER-CAP for CVE/GHSA/CWE auto-clarity findings
 PATTERNS_CAP=160      # D-09 threat_patterns
 MISSED_CAP=30         # D-09 missed_surfaces
 
@@ -43,7 +61,7 @@ fail() {
   FAIL_COUNT=$((FAIL_COUNT + 1))
 }
 
-# --- Mode dispatch (D-01 / D-02 / D-05) -------------------------------------
+# --- Mode dispatch ----------------------------------------------------------
 # T-11-01: quote every expansion; never eval/source the trace file; ${2:?...}
 # catches a missing --from-trace argument under set -u.
 MODE="self-extract"
@@ -64,50 +82,67 @@ if [ "$MODE" = "self-extract" ]; then
 fi
 
 # --- get_report: produce the raw report text for the active mode ------------
-# self-extract: awk-range the holistic block from the blockquoted "### Findings"
-#   through the END of the blockquote -- the first line that is NOT blockquote-
-#   prefixed terminates the example. This terminator is SECTION-AGNOSTIC: it does
-#   NOT gate the exit on the OPTIONAL "### Missed surfaces" heading (CR-01).
-#   Because the holistic example is one contiguous blockquote, the first
-#   non-blockquote line reliably ends it whether or not Missed-surfaces is
-#   present, so the prose "Word count breakdown:" paragraph that follows is never
-#   swallowed. Mirrors the reviewer fixture's terminator (D-reviewer-budget.sh).
+# self-extract: awk-range the holistic block from the blockquoted "### Critical"
+#   (the grouped grammar's start sentinel; the holistic example begins with the
+#   Critical section) through the END of the blockquote -- the first line that is
+#   NOT blockquote-prefixed terminates the example. This terminator is
+#   SECTION-AGNOSTIC: it does NOT gate the exit on the OPTIONAL
+#   "### Missed surfaces" heading (CR-01). Because the holistic example is one
+#   contiguous blockquote, the first non-blockquote line reliably ends it whether
+#   or not Missed-surfaces is present, so the prose "Word count breakdown:"
+#   paragraph that follows is never swallowed. Mirrors the reviewer fixture's
+#   terminator (D-reviewer-budget.sh).
 get_report() {
   case "$MODE" in
     self-extract)
-      awk '/^> ### Findings$/ { f = 1 } f && !/^>/ { exit } f { print }' "$SECURITY_AGENT" \
+      awk '/^> ### Critical$/ { f = 1 } f && !/^>/ { exit } f { print }' "$SECURITY_AGENT" \
         | sed -E 's/^> ?//; s/^`//; s/`$//'
       ;;
     from-trace)
       # T-11-01: quote "$TRACE_FILE"; never eval/source it. Normalize CRLF -> LF
       # (CR-02) so every downstream consumer -- the bash read loop AND the awk
       # section extractor -- sees LF-only text. Windows / Git Bash traces are
-      # CRLF-terminated by default; without this the awk exact-match heading
-      # lookups and the per-finding wc -w spans both go wrong (engine-dependent
-      # gate). tr fixes it once, at the source.
+      # CRLF-terminated by default; without this the awk anchored heading lookups
+      # and the per-finding wc -w spans both go wrong (engine-dependent gate).
+      # tr fixes it once, at the source.
       tr -d '\r' < "$TRACE_FILE"
       ;;
     self-test)
-      printf '### Findings\n\n### Threat Patterns\nNo findings.\n'
+      # Zero-finding synthetic input in the NEW grouped grammar: all four severity
+      # headers present, each with a literal (none) marker, plus the trailing
+      # Threat Patterns header. No numbered finding lines, so the anti-vacuous
+      # guard must fire.
+      printf '### Critical\n\n(none)\n\n### Important\n\n(none)\n\n### Suggestions\n\n(none)\n\n### Questions\n\n(none)\n\n### Threat Patterns\n\nNo chaining across this set -- the findings are independent.\n'
       ;;
   esac
 }
 
 REPORT="$(get_report)"
 
-# --- Parse findings with the 4-slot FRAGMENT_RE (D-12) ----------------------
-# 4-slot: <file>:<line>: <severity>: [<OWASP-tag>] <threat>. <fix>.
-# Backtick-tolerant (D-08): optional leading/trailing backtick (already stripped
-# in self-extract, but kept tolerant for --from-trace inputs that preserve them).
-# The OWASP slot \[[^]]+\] matches [A01]..[A10] AND [Uncategorized] (D-12).
-# WR-05: the severity alternation is defined ONCE in SEV and interpolated into
-# BOTH the match regex and the body-strip sed below, so a Phase 12 severity-set
-# change cannot make the count regex and the strip diverge (which would leave
-# the severity token in the body and silently inflate wc -w).
-SEV='(crit|imp|sug|q)'
-FRAGMENT_RE="^\`?[^[:space:]]+:[0-9]+(-[0-9]+)?: ${SEV}: \[[^]]+\] "
-
+# --- Parse findings (header-tracking + numbered-line parser, D-10) ----------
+# Severity headers carry the severity (no inline token). Track the current
+# ### severity header; count "N. <file>:<line[-range]>: [<tag>] " numbered lines
+# beneath it. Use TOLERANT anchored matches ([[ =~ ]] anchored ^...$ / ^...),
+# not byte-exact equality, so a trailing space / surviving CR / heading drift
+# does not silently zero the parse (WR-03 / Pitfall 3 lesson).
+#
+# FINDING_RE asserts the OWASP / CVE bracket (\[[^]]+\] ) is present AFTER the
+# location (RPT-02). A finding line missing its [Axx]/[CVE-...] bracket will NOT
+# match FINDING_RE -- it is not counted, and the anti-vacuous guard catches the
+# resulting shortfall. The \[[^]]+\] form matches [A01]..[A10], [Uncategorized],
+# [CVE-...], [GHSA-...], and [CWE-...].
+#
+# SINGLE SOURCE OF TRUTH (WR-05): FINDING_RE is used BOTH to count a finding AND
+# (as the body-strip prefix below) to remove the "N. <file>:<line>: [<tag>] "
+# prefix, so the count regex and the strip regex cannot diverge and leave the
+# location prefix or the first bracket inside the counted wc -w span.
+#
+# (none) markers and blank lines are NOT findings -- they simply fail FINDING_RE
+# and are skipped; no special-casing needed.
+SEV_HEADERS='^### (Critical|Important|Suggestions|Questions)$'
+FINDING_RE='^[0-9]+\. `?[^[:space:]]+:[0-9]+(-[0-9]+)?: \[[^]]+\] '
 matched_count=0
+current_sev=""
 declare -a FINDING_BODIES=()
 
 while IFS= read -r line; do
@@ -117,15 +152,21 @@ while IFS= read -r line; do
     *"<verify_request"*) continue ;;
   esac
 
-  if [[ "$line" =~ $FRAGMENT_RE ]]; then
+  if [[ "$line" =~ $SEV_HEADERS ]]; then
+    current_sev="$line"
+    continue
+  fi
+
+  if [[ -n "$current_sev" && "$line" =~ $FINDING_RE ]]; then
     matched_count=$((matched_count + 1))
-    # Strip the prefix up to AND INCLUDING the "[<OWASP-tag>] " segment so the
-    # counted span is the <threat>. <fix>. body only (D-09 / Pitfall 5). Also
-    # drop any trailing backtick that survived a trace input.
-    body="$(
-      printf '%s' "$line" \
-        | sed -E "s/^\`?[^[:space:]]+:[0-9]+(-[0-9]+)?: ${SEV}: \[[^]]+\] //; s/\`$//"
-    )"
+    # Strip the "N. <file>:<line[-range]>: [<tag>] " prefix (location + leading
+    # OWASP bracket) and any leading/trailing backtick framing so the counted
+    # span is the <threat>. <fix>. body only (D-09 / Pitfall 5: the per-finding
+    # budget EXCLUDES the prefix AND the leading OWASP tag). The strip pattern is
+    # the FINDING_RE prefix -- single source of truth with the count. A SECOND
+    # bracket (e.g. a [CVE-...] after the [A06] tag) survives into the body, so
+    # the auto-clarity detection below still fires on CVE/GHSA/CWE findings.
+    body="$(printf '%s' "$line" | sed -E 's/^[0-9]+\. `?[^[:space:]]+:[0-9]+(-[0-9]+)?: \[[^]]+\] //; s/`$//')"
     FINDING_BODIES+=("$body")
   fi
 done < <(printf '%s\n' "$REPORT")
@@ -154,19 +195,25 @@ fi
 # meaningless (a 0-finding parse emits green [PASS] section lines that read as
 # mostly-green even though the parser matched nothing). Short-circuit with a
 # loud FAIL and a non-zero exit BEFORE the budget loop so no spurious green
-# PASS lines muddy the diagnostic.
+# PASS lines muddy the diagnostic. This is also the RED-on-old proof: the OLD
+# shorthand sample (`<path>:<line>: crit: [A02] ...` with NO leading "N." and a
+# single ### Findings header) matches neither SEV_HEADERS nor FINDING_RE, so a
+# --from-trace replay of the old grammar parses 0 findings and trips here.
 if [ "$matched_count" -lt "$MIN_FINDINGS" ]; then
   fail "anti-vacuous: only $matched_count findings parsed (need >= $MIN_FINDINGS)" \
-       "FRAGMENT_RE matched too few findings -- gate would be vacuous"
+       "header-tracking parser matched too few findings -- gate would be vacuous"
   echo "Status: [FAIL] -- anti-vacuous guard fired; skipping budget checks"
   exit 1
 fi
 pass "anti-vacuous: matched_count $matched_count >= $MIN_FINDINGS"
 
-# --- Per-finding budget loop with auto-clarity carve-out (D-08 / Pitfall 3) -
-# Default cap is 28w (prefix + OWASP tag excluded). A finding whose body carries
-# a [CVE-.../[GHSA-.../[CWE-... token is an auto-clarity carve-out and gets 75w.
-# CVE/GHSA/CWE detection uses bash [[ =~ ]] (never the bare grep command).
+# --- Per-finding budget loop with auto-clarity carve-out (Pitfall 3) --------
+# Default cap is 28w (prefix + leading OWASP tag excluded). A finding whose body
+# carries a [CVE-.../[GHSA-.../[CWE-... token is an auto-clarity carve-out and
+# gets 75w. The detection runs on the body AFTER the leading [Axx] tag is
+# stripped, so a [CVE-...] token appearing as a SECOND bracket in the body still
+# triggers the carve-out. CVE/GHSA/CWE detection uses bash [[ =~ ]] (never the
+# bare grep command).
 for body in "${FINDING_BODIES[@]}"; do
   wc_words=$(printf '%s' "$body" | wc -w)
   cap="$PER_ENTRY_CAP"
