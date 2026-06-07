@@ -76,7 +76,7 @@ get_report() {
   case "$MODE" in
     self-extract)
       awk '/^> ### Findings$/ { f = 1 } f && !/^>/ { exit } f { print }' "$SECURITY_AGENT" \
-        | sed -e 's/^> //' -e 's/^`//' -e 's/`$//'
+        | sed -E 's/^> ?//; s/^`//; s/`$//'
       ;;
     from-trace)
       # T-11-01: quote "$TRACE_FILE"; never eval/source it. Normalize CRLF -> LF

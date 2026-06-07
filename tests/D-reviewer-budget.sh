@@ -96,7 +96,7 @@ get_report() {
   case "$MODE" in
     self-extract)
       awk '/^> ### Findings$/{f=1} f && /^>/{print} f && !/^>/{exit}' "$REVIEWER_AGENT" \
-        | sed -e 's/^> //' -e 's/^`//' -e 's/`$//'
+        | sed -E 's/^> ?//; s/^`//; s/`$//'
       ;;
     from-trace)
       # T-11-01: quote "$TRACE_FILE"; never eval/source it. Normalize CRLF -> LF
@@ -199,11 +199,13 @@ for body in "${FINDING_BODIES[@]}"; do
 done
 
 # Cross-Cutting Patterns: range between "### Cross-Cutting Patterns" and
-# "### Missed surfaces", strip any residual "> ", wc -w, assert <= 160w.
+# "### Missed surfaces", strip any residual blockquote marker, wc -w, assert
+# <= 160w. WR-02: 's/^> ?//' strips the bare ">" separator form too (not just
+# "> "), so surviving blockquote-blank lines are not counted as words.
 PATTERNS_BODY="$(
   printf '%s\n' "$REPORT" \
     | awk '/^### Cross-Cutting Patterns$/{c=1;next} /^### Missed surfaces/{c=0} c' \
-    | sed -e 's/^> //'
+    | sed -E 's/^> ?//'
 )"
 PATTERNS_WORDS=$(printf '%s' "$PATTERNS_BODY" | wc -w)
 if [ "$PATTERNS_WORDS" -le "$PATTERNS_CAP" ]; then
@@ -218,7 +220,7 @@ fi
 MISSED_BODY="$(
   printf '%s\n' "$REPORT" \
     | awk '/^### Missed surfaces/{m=1;next} m' \
-    | sed -e 's/^> //'
+    | sed -E 's/^> ?//'
 )"
 MISSED_WORDS=$(printf '%s' "$MISSED_BODY" | wc -w)
 if printf '%s\n' "$REPORT" | awk '/^### Missed surfaces/{found=1} END{exit !found}'; then
