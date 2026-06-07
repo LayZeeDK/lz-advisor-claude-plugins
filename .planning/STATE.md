@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.0.1
 milestone_name: No review report shorthands
-status: executing
-stopped_at: Phase 11 context gathered
-last_updated: "2026-06-07T00:20:07.744Z"
+status: ready_to_plan
+stopped_at: Phase 11 complete (2/2) — ready to discuss Phase 12
+last_updated: 2026-06-07T01:11:43.701Z
 last_activity: 2026-06-07 -- Phase 11 execution started
 progress:
   total_phases: 3
   completed_phases: 0
   total_plans: 2
-  completed_plans: 0
+  completed_plans: 2
   percent: 0
 ---
 
@@ -21,14 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-06-07)
 
 **Core value:** Near-Opus intelligence at Sonnet cost for coding tasks, through strategic advisor consultation at high-leverage moments
-**Current focus:** Phase 11 — Fixture baseline
+**Current focus:** Phase 12 — atomic grouped grammar rewrite
 
 ## Current Position
 
-Phase: 11 (Fixture baseline) — EXECUTING
-Plan: 1 of 2
-Status: Executing Phase 11
-Last activity: 2026-06-07 -- Phase 11 execution started
+Phase: 12
+Plan: Not started
+Status: Ready to plan
+Last activity: 2026-06-07
 
 ### Milestone v1.0.1 roadmap
 
@@ -51,7 +51,7 @@ Advisor runtime-proven on Opus 4.8. Final phase: Phase 10 (documentation-hygiene
 
 **Velocity:**
 
-- Total plans completed: 103 (v1.0 milestone, all phases)
+- Total plans completed: 105 (v1.0 milestone, all phases)
 - Average duration: -
 - Total execution time: 0 hours
 
@@ -71,6 +71,7 @@ Advisor runtime-proven on Opus 4.8. Final phase: Phase 10 (documentation-hygiene
 | 07 | 13 | - | - |
 | 08 | 10 | - | - |
 | 9 | 3 | - | - |
+| 11 | 2 | - | - |
 
 **By Phase (v1.0.1 milestone):**
 

@@ -89,7 +89,7 @@ Phases execute in numeric order: 11 -> 12 -> 13
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
 | 1-10 (v1.0) | v1.0 MVP | 80/80 | Complete | 2026-06-01 |
-| 11. Fixture baseline | v1.0.1 | 2/2 | Complete   | 2026-06-07 |
+| 11. Fixture baseline | v1.0.1 | 2/2 | Complete    | 2026-06-07 |
 | 12. Atomic grouped-grammar rewrite | v1.0.1 | 0/TBD | Not started | - |
 | 13. Empirical verification | v1.0.1 | 0/TBD | Not started | - |
 

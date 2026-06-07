@@ -40,7 +40,7 @@
 
 ### Gates (GATE)
 
-- [ ] **GATE-01**: Budget smoke fixtures (`D-reviewer-budget.sh`, `D-security-reviewer-budget.sh`) re-authored against the grouped grammar and committed as tracked tests with anti-vacuous-pass assertions (`matched_count >= min`) -- they currently exist nowhere in the repo (lived in cleared `.planning/phases/` workspaces)
+- [x] **GATE-01**: Budget smoke fixtures (`D-reviewer-budget.sh`, `D-security-reviewer-budget.sh`) re-authored against the grouped grammar and committed as tracked tests with anti-vacuous-pass assertions (`matched_count >= min`) -- they currently exist nowhere in the repo (lived in cleared `.planning/phases/` workspaces)
 - [ ] **GATE-02**: Headless `claude -p` UAT proves grouped spelled-out reports reach the rendered output on both review skills; the ngx-smart-components run uses a dedicated worktree branched from the `uat/pre-storybook-compodoc` checkpoint branch (exact name verified at plan time; that repo has active work in progress)
 
 ## Future Requirements
@@ -81,7 +81,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | SKILL-01 | Phase 12 | Pending |
 | SYNC-01 | Phase 12 | Pending |
 | SYNC-02 | Phase 12 | Pending |
-| GATE-01 | Phase 11 | Pending |
+| GATE-01 | Phase 11 | Complete |
 | GATE-02 | Phase 13 | Pending |
 
 **Coverage:**
