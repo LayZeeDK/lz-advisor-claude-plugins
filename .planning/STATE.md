@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0.1
 milestone_name: No review report shorthands
 status: executing
-stopped_at: Phase 12 context gathered
-last_updated: "2026-06-07T19:34:09.057Z"
-last_activity: 2026-06-07 -- Phase 12 planning complete
+stopped_at: Completed 12-01-PLAN.md
+last_updated: "2026-06-07T19:53:00.704Z"
+last_activity: 2026-06-07
 progress:
   total_phases: 3
   completed_phases: 1
   total_plans: 6
-  completed_plans: 2
-  percent: 33
+  completed_plans: 3
+  percent: 50
 ---
 
 # Project State
@@ -21,14 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-06-07)
 
 **Core value:** Near-Opus intelligence at Sonnet cost for coding tasks, through strategic advisor consultation at high-leverage moments
-**Current focus:** Phase 12 — atomic grouped grammar rewrite
+**Current focus:** Phase 12 — atomic-grouped-grammar-rewrite
 
 ## Current Position
 
-Phase: 12
-Plan: Not started
-Status: Ready to execute
-Last activity: 2026-06-07 -- Phase 12 planning complete
+Phase: 12 (atomic-grouped-grammar-rewrite) — EXECUTING
+Plan: 2 of 4
+Status: Executing Phase 12 (Plan 12-01 complete: reviewer agent + fixture grouped-grammar lockstep)
+Last activity: 2026-06-07 -- Plan 12-01 complete (reviewer.md grouped grammar + D-reviewer-budget.sh retarget)
 
 ### Milestone v1.0.1 roadmap
 
@@ -87,6 +87,7 @@ Advisor runtime-proven on Opus 4.8. Final phase: Phase 10 (documentation-hygiene
 - Trend: -
 
 *Updated after each plan completion*
+| Phase 12 P12-01 | 35min | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -101,6 +102,7 @@ Recent decisions affecting current work (v1.0.1):
 - [v1.0.1]: Plugin version 1.0.0 -> 1.0.1 (PATCH despite contract-shape change; user directive matches plugin version to milestone name).
 - [v1.0.1]: Build-order step 0 (Phase 11) -- re-author the budget fixtures green on CURRENT shorthand FIRST; they live nowhere on disk (lived in cleared `.planning/phases/` workspaces), so "update fixtures in lockstep" is vacuous until they exist.
 - [v1.0.1]: Word budgets are `wc -w`-based and the severity prefix sits OUTSIDE the counted span (`crit:` and `Critical:` each count as one word), so the spell-out is budget-neutral in principle -- but the project has been burned 3x assuming budget-neutrality, so Phase 13 measures it empirically (n>=3), not by reasoning.
+- [v1.0.1 / 12-01]: Reviewer agent emits grouped ### Critical/Important/Suggestions/Questions grammar (header is sole severity source, continuous numbering, (none) empty markers); D-reviewer-budget.sh retargeted to a header-tracking parser, GREEN-on-new / RED-on-old in lockstep. AGNT-03 protected behaviors (Class-2 hook, Hedge Marker Discipline, lowercase severity= attrs) survive byte-intact.
 
 ### Pending Todos
 
@@ -127,7 +129,7 @@ Recent decisions affecting current work (v1.0.1):
 
 ## Session Continuity
 
-Last session: 2026-06-07T18:41:02.973Z
-Stopped at: Phase 12 context gathered
-Resume file: .planning/phases/12-atomic-grouped-grammar-rewrite/12-CONTEXT.md
+Last session: 2026-06-07T19:53:00.681Z
+Stopped at: Completed 12-01-PLAN.md
+Resume file: None
 Resume next: `/gsd-discuss-phase 12` to gather context for Phase 12 (Atomic grouped-grammar rewrite), or `/gsd-plan-phase 12` to plan directly.
