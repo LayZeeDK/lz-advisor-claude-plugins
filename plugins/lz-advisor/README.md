@@ -81,8 +81,8 @@ Opus 4.7 (released 2026-04-16) is auto-selected via the `opus` alias; no user ac
 Review report grammar overhaul. The `/review` and `/security-review` agents now
 present findings GROUPED under fully spelled-out severity headlines --
 `### Critical`, `### Important`, `### Suggestions`, and `### Questions` -- in a
-fixed order, replacing the prior `crit:`/`imp:`/`sug:`/`q:` inline fragment
-shorthand. Findings carry continuous integer numbers across all sections so
+fixed order, replacing the prior inline two-letter severity fragment shorthand
+that prefixed each finding line. Findings carry continuous integer numbers across all sections so
 cross-references stay unambiguous, every severity section is always emitted with
 an explicit `(none)` marker when empty, and the OWASP `[Axx]` category tags are
 preserved verbatim on security findings. The render-verbatim contract and the
