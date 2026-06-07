@@ -72,11 +72,19 @@ and PROJECT.md -- do not re-open them.
   the section header is the single source of severity. No redundant inline
   `Critical:` label (would double the signal, hurt scannability, and waste
   budget). This is the change the fixture FRAGMENT_RE must be rebuilt around.
-- **D-06:** Findings carry **continuous integer numbers** (`1.`, `2.`, `3.` ...)
-  assigned in document order across ALL sections (Critical's findings first,
-  then Important, etc.). Per-section restart is rejected -- it makes
-  "Findings 1, 2, 4" ambiguous (RPT-03). Severity-prefixed IDs (`CRIT-1`) are
-  the deferred RPT-F03 and out of scope.
+- **D-06:** Findings carry **continuous integer numbers** (`1.`, `2.`, `3.` ...),
+  continuous and unique across the whole response. Per-section restart is
+  rejected -- it makes "Findings 1, 2, 4" ambiguous (RPT-03). Severity-prefixed
+  IDs (`CRIT-1`) are the deferred RPT-F03 and out of scope.
+  **(Reconciled 2026-06-07 during Phase 12 code review, WR-03):** numbering is
+  assigned in **curation order** (the order findings were discovered), and the
+  number travels WITH the finding into whichever severity section it belongs --
+  so a section's rendered numbers need not be contiguous or ascending (e.g.
+  Critical may hold findings 1, 2, 5). The original "document order, Critical
+  first" wording was dropped because it fought the model's natural curation-order
+  numbering (a few-shot-drift risk) and the worked examples already demonstrated
+  curation order; RPT-03's unambiguous-cross-reference requirement holds either
+  way since every number is unique.
 - **D-07:** Review finding line: `N. <path>:<line[-range]>: <problem>. <fix>.`
   Security finding line: `N. <path>:<line>: [Axx] <problem>. <fix>.` -- the
   OWASP `[Axx]` tag stays immediately after the location, before the body,
