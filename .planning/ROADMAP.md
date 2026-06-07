@@ -52,7 +52,9 @@ Full phase details, requirements, success criteria, and plan breakdowns are arch
   2. Both fixtures exit 0 (green) when run against the current shorthand-grammar agent prompts
   3. Each fixture carries an anti-vacuous-pass assertion (`matched_count >= min`) that runs BEFORE the word-budget loop, so a regex matching zero findings fails instead of passing silently
   4. The fixtures match the documented 3-slot / 4-slot FRAGMENT_RE shape from the Phase 08 fixture decisions (parser extracts findings from the two-inline-code-span emission shape)
-**Plans**: TBD
+**Plans**: 2 plans
+- [ ] 11-01-PLAN.md -- Author tests/D-reviewer-budget.sh (3-slot reviewer budget smoke fixture, green on HEAD)
+- [ ] 11-02-PLAN.md -- Author tests/D-security-reviewer-budget.sh (4-slot OWASP security budget smoke fixture, 75w auto-clarity carve-out)
 
 ### Phase 12: Atomic grouped-grammar rewrite
 **Goal**: Both review agents emit findings grouped under fully spelled-out severity headlines, every worked example agrees with the new grammar, the skill render-verbatim contract carries the new headers through intact, the fixtures retarget in lockstep, and the cross-surface vocabulary stays consistent -- all in one atomic unit with the version bump.
@@ -87,7 +89,7 @@ Phases execute in numeric order: 11 -> 12 -> 13
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
 | 1-10 (v1.0) | v1.0 MVP | 80/80 | Complete | 2026-06-01 |
-| 11. Fixture baseline | v1.0.1 | 0/TBD | Not started | - |
+| 11. Fixture baseline | v1.0.1 | 0/2 | Not started | - |
 | 12. Atomic grouped-grammar rewrite | v1.0.1 | 0/TBD | Not started | - |
 | 13. Empirical verification | v1.0.1 | 0/TBD | Not started | - |
 
