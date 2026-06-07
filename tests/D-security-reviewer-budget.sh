@@ -79,7 +79,13 @@ get_report() {
         | sed -e 's/^> //' -e 's/^`//' -e 's/`$//'
       ;;
     from-trace)
-      cat "$TRACE_FILE"
+      # T-11-01: quote "$TRACE_FILE"; never eval/source it. Normalize CRLF -> LF
+      # (CR-02) so every downstream consumer -- the bash read loop AND the awk
+      # section extractor -- sees LF-only text. Windows / Git Bash traces are
+      # CRLF-terminated by default; without this the awk exact-match heading
+      # lookups and the per-finding wc -w spans both go wrong (engine-dependent
+      # gate). tr fixes it once, at the source.
+      tr -d '\r' < "$TRACE_FILE"
       ;;
     self-test)
       printf '### Findings\n\n### Threat Patterns\nNo findings.\n'
