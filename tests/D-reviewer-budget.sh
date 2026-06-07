@@ -215,11 +215,15 @@ else
     "$PATTERNS_BODY"
 fi
 
-# Missed surfaces (OPTIONAL): range from "### Missed surfaces" to end of the
-# extracted report, wc -w, assert <= 30w only when the section is present.
+# Missed surfaces (OPTIONAL): range from "### Missed surfaces" to the NEXT
+# "### " heading (or end of report), wc -w, assert <= 30w only when the section
+# is present. WR-04: the range is bounded at the next heading rather than run to
+# EOF, so any later section in a --from-trace input (a future per-finding block,
+# an appended section, trailing trace metadata) is NOT swallowed into the
+# Missed-surfaces word count -- mirrors the security fixture's extract_section.
 MISSED_BODY="$(
   printf '%s\n' "$REPORT" \
-    | awk '/^### Missed surfaces/{m=1;next} m' \
+    | awk '/^### Missed surfaces/{m=1;next} m && /^### /{m=0} m' \
     | sed -E 's/^> ?//'
 )"
 MISSED_WORDS=$(printf '%s' "$MISSED_BODY" | wc -w)
