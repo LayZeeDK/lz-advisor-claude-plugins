@@ -57,7 +57,7 @@ Every advisor consultation follows these rules:
 
        - **Token reference + prose citation** (typical in plan/review/security-review bodies): the user-facing text contains the literal pv-* token AND a prose-form citation referencing the verification method and source. Example: "Verified via Read against `package.json` (see `pv-storybook-angular-10x-installed` block above)" or "Per pv-storybook-global-deprecation-10x: the `docs.autodocs` API was removed in Storybook 10.x." Same backing requirement: the token resolves to canonical XML in the internal prompt.
 
-       - **Inline parenthetical token reference** (typical in finding lines): the user-facing finding line contains the literal pv-* token without separate Verified: trailer or prose citation, embedded inline as a verification anchor. Example: `pv-storybook-global-deprecation-10x` literal token in the body of a `### Findings` entry. Same backing requirement.
+       - **Inline parenthetical token reference** (typical in finding lines): the user-facing finding line contains the literal pv-* token without separate Verified: trailer or prose citation, embedded inline as a verification anchor. Example: `pv-storybook-global-deprecation-10x` literal token in the body of a finding entry under its severity section. Same backing requirement.
 
      The forbidden plain-bullet "Pre-verified Claims" pattern (`## Pre-verified Claims\n- <claim>\n- <claim>` without source path or evidence) remains non-conforming on the user-facing artifact surface AS WELL (and on the internal-prompt surface) -- the failure mode is plain-bullets-WITHOUT-evidence (Finding B.2), not plain-token-WITH-backing. The amendment narrows the format-mandate scope; it does NOT relax the trust contract.
 
@@ -393,7 +393,7 @@ The reviewer and security-reviewer agents emit `<verify_request>` blocks when th
 ### Worked example
 
 ```
-### Findings
+### Critical
 
 1. ...
 
@@ -408,7 +408,7 @@ The reviewer and security-reviewer agents emit `<verify_request>` blocks when th
 3. ...
 ```
 
-The reviewer's `### Findings` entry references the verify_request via the same anchor_target value: "Pending verification of pv-compodoc-signal-output-support: signal output() may or may not render in Docs tab depending on Compodoc 1.2.1 support."
+The reviewer's finding entry (under its severity section) references the verify_request via the same anchor_target value: "Pending verification of pv-compodoc-signal-output-support: signal output() may or may not render in Docs tab depending on Compodoc 1.2.1 support."
 
 ### Executor-side handling (cross-reference)
 
