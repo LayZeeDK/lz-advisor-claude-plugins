@@ -3,9 +3,9 @@ gsd_state_version: 1.0
 milestone: v1.0.1
 milestone_name: No review report shorthands
 status: ready_to_plan
-stopped_at: Phase 11 complete (2/2) — ready to discuss Phase 12
-last_updated: 2026-06-07T01:11:43.701Z
-last_activity: 2026-06-07 -- Phase 11 execution started
+stopped_at: Phase 11 verified (UAT 9/9 passed) — ready to discuss Phase 12
+last_updated: 2026-06-07T14:50:00.000Z
+last_activity: 2026-06-07 -- Phase 11 UAT complete (automated, 9/9 passed)
 progress:
   total_phases: 3
   completed_phases: 0
@@ -127,6 +127,7 @@ Recent decisions affecting current work (v1.0.1):
 
 ## Session Continuity
 
-Last session: 2026-06-06T23:39:50.140Z
-Stopped at: Phase 11 context gathered
-Resume next: `/gsd-plan-phase 11` to decompose Phase 11 (Fixture baseline) into executable plans. Phase 11 is build-order step 0 -- re-author the two budget smoke fixtures green on the CURRENT shorthand grammar before any grammar change in Phase 12.
+Last session: 2026-06-07T14:50:00Z
+Stopped at: Phase 11 complete and verified -- automated UAT 9/9 passed (11-UAT.md, status complete), security gate clear (threats_open: 0), ready to discuss/plan Phase 12
+Resume file: None
+Resume next: `/gsd-discuss-phase 12` to gather context for Phase 12 (Atomic grouped-grammar rewrite), or `/gsd-plan-phase 12` to plan directly.
