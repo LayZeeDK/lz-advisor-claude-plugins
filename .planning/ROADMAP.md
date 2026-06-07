@@ -69,7 +69,7 @@ Full phase details, requirements, success criteria, and plan breakdowns are arch
 **Plans**: 4 plans
 - [x] 12-01-PLAN.md -- Rewrite reviewer.md to grouped grammar + retarget D-reviewer-budget.sh in lockstep (RPT-01/03/04, AGNT-01/02/03)
 - [x] 12-02-PLAN.md -- Rewrite security-reviewer.md (OWASP [Axx] + CVE carve-out + strip formerly-X) + retarget D-security-reviewer-budget.sh (RPT-02/03/04, AGNT-01/02/03)
-- [ ] 12-03-PLAN.md -- Invert both skills' verbatim prohibition + align context-packaging.md disposition + execute/SKILL.md precision edit (SKILL-01, SYNC-01)
+- [x] 12-03-PLAN.md -- Invert both skills' verbatim prohibition + align context-packaging.md disposition + execute/SKILL.md precision edit (SKILL-01, SYNC-01)
 - [ ] 12-04-PLAN.md -- Atomic 5-surface 1.0.0 -> 1.0.1 bump + README changelog + phase-atomicity completeness gate (SYNC-02 + RPT-01/02, AGNT-01, SYNC-01 residue sweep)
 **UI hint**: yes
 
@@ -94,7 +94,7 @@ Phases execute in numeric order: 11 -> 12 -> 13
 |-------|-----------|----------------|--------|-----------|
 | 1-10 (v1.0) | v1.0 MVP | 80/80 | Complete | 2026-06-01 |
 | 11. Fixture baseline | v1.0.1 | 2/2 | Complete    | 2026-06-07 |
-| 12. Atomic grouped-grammar rewrite | v1.0.1 | 2/4 | In Progress|  |
+| 12. Atomic grouped-grammar rewrite | v1.0.1 | 3/4 | In Progress|  |
 | 13. Empirical verification | v1.0.1 | 0/TBD | Not started | - |
 
 v1.0 shipped: 16 phases, 80 plans, plugin 1.0.0. See `.planning/MILESTONES.md` for the summary and `milestones/v1.0-ROADMAP.md` for full detail.

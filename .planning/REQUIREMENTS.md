@@ -31,11 +31,11 @@
 
 ### Skill Contract (SKILL)
 
-- [ ] **SKILL-01**: Both review skills' output-shape rules updated: render-verbatim preserved as absolute; the standing "Do NOT reformat into severity groups" clause (review/SKILL.md:178, security-review/SKILL.md:164) replaced by the new grouped headers as the literal headers that must reach the user intact
+- [x] **SKILL-01**: Both review skills' output-shape rules updated: render-verbatim preserved as absolute; the standing "Do NOT reformat into severity groups" clause (review/SKILL.md:178, security-review/SKILL.md:164) replaced by the new grouped headers as the literal headers that must reach the user intact
 
 ### Consistency (SYNC)
 
-- [ ] **SYNC-01**: `references/context-packaging.md` severity-vocab surfaces (Hedge Marker carve-out, severity schema) aligned with the grouped grammar; a per-surface disposition table covers every `git grep` hit (change vs keep-as-history; `.planning/` history artifacts stay untouched per Phase 9 precedent)
+- [x] **SYNC-01**: `references/context-packaging.md` severity-vocab surfaces (Hedge Marker carve-out, severity schema) aligned with the grouped grammar; a per-surface disposition table covers every `git grep` hit (change vs keep-as-history; `.planning/` history artifacts stay untouched per Phase 9 precedent)
 - [ ] **SYNC-02**: Atomic 5-surface version bump 1.0.0 -> 1.0.1
 
 ### Gates (GATE)
@@ -78,8 +78,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 | AGNT-01 | Phase 12 | Complete |
 | AGNT-02 | Phase 12 | Complete |
 | AGNT-03 | Phase 12 | Complete |
-| SKILL-01 | Phase 12 | Pending |
-| SYNC-01 | Phase 12 | Pending |
+| SKILL-01 | Phase 12 | Complete |
+| SYNC-01 | Phase 12 | Complete |
 | SYNC-02 | Phase 12 | Pending |
 | GATE-01 | Phase 11 | Complete |
 | GATE-02 | Phase 13 | Pending |
