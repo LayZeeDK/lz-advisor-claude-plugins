@@ -118,66 +118,56 @@ INCORRECT (verbose, 60+ words for one finding):
 
 > "I noticed that on line 42 you're not checking if the user object is null before accessing the email property. This could potentially cause a crash if the user is not found in the database. You might want to add a null check here."
 
-CORRECT (grouped grammar, 13-word body under the Critical header):
+CORRECT (grouped grammar, 13-word body -- this finding line sits under the `### Critical` header):
 
-> ### Critical
->
-> 1. `src/auth.ts:42`: user can be null after .find(). Add guard before .email.
+> 1. src/auth.ts:42: user can be null after .find(). Add guard before .email.
 
 INCORRECT (verbose, 30+ words):
 
 > "It looks like this function is doing a lot of things and might benefit from being broken up into smaller functions for readability."
 
-CORRECT (grouped grammar, 12-word body under the Suggestions header):
+CORRECT (grouped grammar, 12-word body -- this finding line sits under the `### Suggestions` header):
 
-> ### Suggestions
->
-> 4. `src/api.ts:88-140`: 50-line fn does 4 things. Extract validate / normalize / persist.
+> 4. src/api.ts:88-140: 50-line fn does 4 things. Extract validate / normalize / persist.
 
 INCORRECT (verbose, 20+ words):
 
 > "Have you considered what happens if the API returns a 429? I think we should probably handle that case."
 
-CORRECT (grouped grammar, 11-word body under the Important header):
+CORRECT (grouped grammar, 11-word body -- this finding line sits under the `### Important` header):
 
-> ### Important
->
-> 3. `src/client.ts:23`: no retry on 429. Wrap in withBackoff(3).
+> 3. src/client.ts:23: no retry on 429. Wrap in withBackoff(3).
 
-The `<verify_request>` block (Plan 07-05 Class-2 escalation hook, see `## Class-2 Escalation Hook` below) trails the affected finding line as a separate line, inside the finding's severity section:
+The `<verify_request>` block (Plan 07-05 Class-2 escalation hook, see `## Class-2 Escalation Hook` below) trails the affected finding line as a separate line, inside the finding's severity section (here `### Important`):
 
-> ### Important
->
-> 6. `src/storybook.config.ts:14`: docs.autodocs flag may not exist on Storybook 10. Verify before relying on it.
+> 6. src/storybook.config.ts:14: docs.autodocs flag may not exist on Storybook 10. Verify before relying on it.
 > <verify_request question="Does the docs.autodocs option exist on @storybook/angular@10.3.5?" class="2" anchor_target="pv-storybook-10-autodocs" severity="important"/>
 
-The `Unresolved hedge:` frame (Plan 07-02 Hedge Marker Discipline, see `## Hedge Marker Discipline` below) fits as the `<fix>` clause when correctness-affecting:
+The `Unresolved hedge:` frame (Plan 07-02 Hedge Marker Discipline, see `## Hedge Marker Discipline` below) fits as the `<fix>` clause when correctness-affecting (here under `### Critical`):
 
-> ### Critical
->
-> 5. `src/migration.ts:7`: relies on unverified Nx 19+ minor version. Unresolved hedge: Nx 19+ minimum. Verify Nx 19+ before committing.
+> 5. src/migration.ts:7: relies on unverified Nx 19+ minor version. Unresolved hedge: Nx 19+ minimum. Verify Nx 19+ before committing.
 
 Holistic worked example (demonstrates 7 findings grouped under the four severity headers + Cross-Cutting Patterns + Missed surfaces conforming to the per-section budgets in the `<output_constraints>` block; aggregate length is unconstrained and naturally lands around 220-300w when the grouped grammar is followed). Numbering is continuous across sections (1..7 in document order); empty sections still emit their header followed by `(none)`:
 
 > ### Critical
 >
-> 1. `src/auth.ts:42`: user can be null after .find(). Add guard before .email.
-> 2. `src/auth.ts:88`: password compared with == (timing attack). Replace with bcrypt.compare.
-> 5. `src/migration.ts:7`: relies on unverified Nx 19+ minor version. Unresolved hedge: Nx 19+ minimum. Verify Nx 19+ before committing.
+> 1. src/auth.ts:42: user can be null after .find(). Add guard before .email.
+> 2. src/auth.ts:88: password compared with == (timing attack). Replace with bcrypt.compare.
+> 5. src/migration.ts:7: relies on unverified Nx 19+ minor version. Unresolved hedge: Nx 19+ minimum. Verify Nx 19+ before committing.
 >
 > ### Important
 >
-> 3. `src/client.ts:23`: no retry on 429. Wrap in withBackoff(3).
-> 6. `src/storybook.config.ts:14`: docs.autodocs flag may not exist on Storybook 10. Verify before relying on it.
+> 3. src/client.ts:23: no retry on 429. Wrap in withBackoff(3).
+> 6. src/storybook.config.ts:14: docs.autodocs flag may not exist on Storybook 10. Verify before relying on it.
 > <verify_request question="Does the docs.autodocs option exist on @storybook/angular@10.3.5?" class="2" anchor_target="pv-storybook-10-autodocs" severity="important"/>
 >
 > ### Suggestions
 >
-> 4. `src/api.ts:88-140`: 50-line fn does 4 things. Extract validate / normalize / persist.
+> 4. src/api.ts:88-140: 50-line fn does 4 things. Extract validate / normalize / persist.
 >
 > ### Questions
 >
-> 7. `src/utils.ts:55`: regex /[a-z]+@[a-z]+/i -- intended as email validator or token splitter? Author intent unclear; tighten or comment.
+> 7. src/utils.ts:55: regex /[a-z]+@[a-z]+/i -- intended as email validator or token splitter? Author intent unclear; tighten or comment.
 >
 > ### Cross-Cutting Patterns
 >
