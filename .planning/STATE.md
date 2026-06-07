@@ -4,8 +4,8 @@ milestone: v1.0.1
 milestone_name: No review report shorthands
 status: executing
 stopped_at: Phase 11 context gathered
-last_updated: "2026-06-07T00:17:11.283Z"
-last_activity: 2026-06-07 -- Phase 11 planning complete
+last_updated: "2026-06-07T00:20:07.744Z"
+last_activity: 2026-06-07 -- Phase 11 execution started
 progress:
   total_phases: 3
   completed_phases: 0
@@ -21,14 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-06-07)
 
 **Core value:** Near-Opus intelligence at Sonnet cost for coding tasks, through strategic advisor consultation at high-leverage moments
-**Current focus:** v1.0.1 "No review report shorthands" -- roadmap created (Phases 11-13). Replace the `crit:`/`imp:`/`sug:`/`q:` fragment-grammar shorthands in user-facing review/security-review reports with fully spelled-out, section-per-severity headlines, without breaking the render-verbatim contract or the word-budget regression gates.
+**Current focus:** Phase 11 — Fixture baseline
 
 ## Current Position
 
-Phase: 11 (Fixture baseline) -- not started
-Plan: -
-Status: Ready to execute
-Last activity: 2026-06-07 -- Phase 11 planning complete
+Phase: 11 (Fixture baseline) — EXECUTING
+Plan: 1 of 2
+Status: Executing Phase 11
+Last activity: 2026-06-07 -- Phase 11 execution started
 
 ### Milestone v1.0.1 roadmap
 

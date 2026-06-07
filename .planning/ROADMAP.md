@@ -37,7 +37,7 @@ Full phase details, requirements, success criteria, and plan breakdowns are arch
 
 **Locked decisions (from milestone questioning + research):** Route A (agents emit the grouped spelled-out shape directly; render-verbatim contract stays absolute); Section-per-severity layout with explicit `(none)` markers and continuous finding numbers; Unified Critical/Important/Suggestion/Question vocabulary across both skills (the decided Phase 7 lexicon); plugin version 1.0.0 -> 1.0.1.
 
-- [ ] **Phase 11: Fixture baseline** - Re-author the missing budget smoke fixtures as tracked tests, green on the CURRENT shorthand grammar (regression gate before any change)
+- [x] **Phase 11: Fixture baseline** - Re-author the missing budget smoke fixtures as tracked tests, green on the CURRENT shorthand grammar (regression gate before any change) (completed 2026-06-07)
 - [ ] **Phase 12: Atomic grouped-grammar rewrite** - Both agents + both skill contracts + context-packaging sync rewritten to the grouped spelled-out shape in one unit, with lockstep fixture retarget and the 5-surface version bump
 - [ ] **Phase 13: Empirical verification** - Headless `claude -p` UAT proves grouped spelled-out reports reach rendered output on both review skills; residue + history-preservation sweep
 
@@ -53,8 +53,8 @@ Full phase details, requirements, success criteria, and plan breakdowns are arch
   3. Each fixture carries an anti-vacuous-pass assertion (`matched_count >= min`) that runs BEFORE the word-budget loop, so a regex matching zero findings fails instead of passing silently
   4. The fixtures match the documented 3-slot / 4-slot FRAGMENT_RE shape from the Phase 08 fixture decisions (parser extracts findings from the two-inline-code-span emission shape)
 **Plans**: 2 plans
-- [ ] 11-01-PLAN.md -- Author tests/D-reviewer-budget.sh (3-slot reviewer budget smoke fixture, green on HEAD)
-- [ ] 11-02-PLAN.md -- Author tests/D-security-reviewer-budget.sh (4-slot OWASP security budget smoke fixture, 75w auto-clarity carve-out)
+- [x] 11-01-PLAN.md -- Author tests/D-reviewer-budget.sh (3-slot reviewer budget smoke fixture, green on HEAD)
+- [x] 11-02-PLAN.md -- Author tests/D-security-reviewer-budget.sh (4-slot OWASP security budget smoke fixture, 75w auto-clarity carve-out)
 
 ### Phase 12: Atomic grouped-grammar rewrite
 **Goal**: Both review agents emit findings grouped under fully spelled-out severity headlines, every worked example agrees with the new grammar, the skill render-verbatim contract carries the new headers through intact, the fixtures retarget in lockstep, and the cross-surface vocabulary stays consistent -- all in one atomic unit with the version bump.
@@ -89,7 +89,7 @@ Phases execute in numeric order: 11 -> 12 -> 13
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
 | 1-10 (v1.0) | v1.0 MVP | 80/80 | Complete | 2026-06-01 |
-| 11. Fixture baseline | v1.0.1 | 0/2 | Not started | - |
+| 11. Fixture baseline | v1.0.1 | 2/2 | Complete   | 2026-06-07 |
 | 12. Atomic grouped-grammar rewrite | v1.0.1 | 0/TBD | Not started | - |
 | 13. Empirical verification | v1.0.1 | 0/TBD | Not started | - |
 
