@@ -65,19 +65,17 @@ fi
 
 # --- get_report: produce the raw report text for the active mode ------------
 # self-extract: awk-range the holistic block from the blockquoted "### Findings"
-#   through the end of the "### Missed surfaces" section content, then strip the
-#   "> " blockquote framing and the wrapping backticks. The range stops at the
-#   first non-blockquote line AFTER the Missed-surfaces heading so it does NOT
-#   swallow the prose "Word count breakdown:" paragraph that follows the example.
+#   through the END of the blockquote -- the first line that is NOT blockquote-
+#   prefixed terminates the example. This terminator is SECTION-AGNOSTIC: it does
+#   NOT gate the exit on the OPTIONAL "### Missed surfaces" heading (CR-01).
+#   Because the holistic example is one contiguous blockquote, the first
+#   non-blockquote line reliably ends it whether or not Missed-surfaces is
+#   present, so the prose "Word count breakdown:" paragraph that follows is never
+#   swallowed. Mirrors the reviewer fixture's terminator (D-reviewer-budget.sh).
 get_report() {
   case "$MODE" in
     self-extract)
-      awk '
-        /^> ### Findings$/        { f = 1 }
-        f && /^> ### Missed surfaces/ { m = 1 }
-        f && m && !/^>/           { exit }
-        f                         { print }
-      ' "$SECURITY_AGENT" \
+      awk '/^> ### Findings$/ { f = 1 } f && !/^>/ { exit } f { print }' "$SECURITY_AGENT" \
         | sed -e 's/^> //' -e 's/^`//' -e 's/`$//'
       ;;
     from-trace)
