@@ -1,10 +1,11 @@
 ---
 phase: 11
 slug: fixture-baseline
-status: draft
-nyquist_compliant: false
-wave_0_complete: false
+status: complete
+nyquist_compliant: true
+wave_0_complete: true
 created: 2026-06-07
+audited: 2026-06-07
 ---
 
 # Phase 11 — Validation Strategy
@@ -38,10 +39,10 @@ created: 2026-06-07
 
 | Task ID | Plan | Wave | Requirement | Threat Ref | Secure Behavior | Test Type | Automated Command | File Exists | Status |
 |---------|------|------|-------------|------------|-----------------|-----------|-------------------|-------------|--------|
-| TBD (planner assigns) | TBD | TBD | GATE-01 | T-11-01 | `--from-trace` arg validated + quoted before read | smoke | `bash tests/D-reviewer-budget.sh` | NEW (this phase) | pending |
-| TBD (planner assigns) | TBD | TBD | GATE-01 | T-11-01 | `--from-trace` arg validated + quoted before read | smoke | `bash tests/D-security-reviewer-budget.sh` | NEW (this phase) | pending |
-| TBD (planner assigns) | TBD | TBD | GATE-01 | N/A | `--self-test` synthesizes input via printf, no file read | smoke | `bash tests/D-reviewer-budget.sh --self-test` exits non-zero; same for security fixture | NEW (this phase) | pending |
-| TBD (planner assigns) | TBD | TBD | GATE-01 | T-11-01 | quoted expansions, no eval, no source | smoke | `bash tests/D-reviewer-budget.sh --from-trace <file>` | NEW (capability this phase; live traces Phase 13) | pending |
+| 11-01 Task 1 | 01 | 1 | GATE-01 | T-11-01 | `--from-trace` arg validated + quoted before read | smoke | `bash tests/D-reviewer-budget.sh` | yes (`tests/D-reviewer-budget.sh`, commit 0fef58f) | green |
+| 11-02 Task 1 | 02 | 1 | GATE-01 | T-11-01 | `--from-trace` arg validated + quoted before read | smoke | `bash tests/D-security-reviewer-budget.sh` | yes (`tests/D-security-reviewer-budget.sh`, commit c75ec93) | green |
+| 11-01/11-02 Task 1 | 01, 02 | 1 | GATE-01 | N/A | `--self-test` synthesizes input via printf, no file read | smoke | `bash tests/D-reviewer-budget.sh --self-test` exits non-zero; same for security fixture | yes (both fixtures) | green |
+| 11-01/11-02 Task 1 | 01, 02 | 1 | GATE-01 | T-11-01 | quoted expansions, no eval, no source | smoke | `bash tests/D-reviewer-budget.sh --from-trace <file>` (and security sibling) | yes (capability this phase; live traces Phase 13) | green |
 
 *Status: pending / green / red / flaky*
 
@@ -49,10 +50,10 @@ created: 2026-06-07
 
 ## Wave 0 Requirements
 
-- [ ] `tests/D-reviewer-budget.sh` -- covers GATE-01 (reviewer baseline)
-- [ ] `tests/D-security-reviewer-budget.sh` -- covers GATE-01 (security baseline)
-- [ ] No framework install needed -- bash + coreutils present; the existing `tests/` convention is the template
-- [ ] (Optional) a tiny committed sample trace for `--from-trace` smoke verification, OR synthesize inline -- planner's discretion (D-02 capability; Phase 13 supplies live traces)
+- [x] `tests/D-reviewer-budget.sh` -- covers GATE-01 (reviewer baseline)
+- [x] `tests/D-security-reviewer-budget.sh` -- covers GATE-01 (security baseline)
+- [x] No framework install needed -- bash + coreutils present; the existing `tests/` convention is the template
+- [x] (Optional) a tiny committed sample trace for `--from-trace` smoke verification, OR synthesize inline -- planner chose synthesize-inline: `--self-test` synthesizes via printf; `--from-trace` capability smoke-verified against the self-extracted report (D-02 capability; Phase 13 supplies live traces)
 
 ---
 
@@ -67,11 +68,30 @@ created: 2026-06-07
 
 ## Validation Sign-Off
 
-- [ ] All tasks have `<automated>` verify or Wave 0 dependencies
-- [ ] Sampling continuity: no 3 consecutive tasks without automated verify
-- [ ] Wave 0 covers all MISSING references
-- [ ] No watch-mode flags
-- [ ] Feedback latency < 10s
-- [ ] `nyquist_compliant: true` set in frontmatter
+- [x] All tasks have `<automated>` verify or Wave 0 dependencies
+- [x] Sampling continuity: no 3 consecutive tasks without automated verify
+- [x] Wave 0 covers all MISSING references
+- [x] No watch-mode flags
+- [x] Feedback latency < 10s (~5s for both fixtures)
+- [x] `nyquist_compliant: true` set in frontmatter
 
-**Approval:** pending
+**Approval:** approved (validation audit 2026-06-07)
+
+---
+
+## Validation Audit 2026-06-07
+
+| Metric | Count |
+|--------|-------|
+| Gaps found | 0 |
+| Resolved | 0 |
+| Escalated | 0 |
+
+All 4 verification-map rows re-run green against HEAD:
+
+- `bash tests/D-reviewer-budget.sh` -- exit 0, `7 findings parsed`, 10/10 assertions
+- `bash tests/D-security-reviewer-budget.sh` -- exit 0, `6 findings parsed`, 9/9 assertions
+- `--self-test` -- exit 1 (non-zero) for both fixtures (fail-loudly guard fires)
+- `--from-trace <extracted-report>` -- exit 0 for both fixtures (Phase 13 replay capability)
+
+No auditor spawn required; no new tests generated.
