@@ -124,7 +124,12 @@ REPORT="$(get_report)"
 # self-extract, but kept for traces that preserve the inline-code framing).
 # verify_request lines are SKIPPED (not a finding; reviewer.md:114 treats it
 # as a separate trailing line) -- Recovered Phase 08 Contract recommendation.
-FRAGMENT_RE='^`?[^[:space:]]+:[0-9]+(-[0-9]+)?: (crit|imp|sug|q): '
+# WR-05: the severity alternation is defined ONCE in SEV and interpolated into
+# BOTH the match regex and the body-strip sed below, so a Phase 12 severity-set
+# change cannot make the count regex and the strip diverge (which would leave
+# the severity token in the body and silently inflate wc -w).
+SEV='(crit|imp|sug|q)'
+FRAGMENT_RE="^\`?[^[:space:]]+:[0-9]+(-[0-9]+)?: ${SEV}: "
 matched_count=0
 declare -a FINDING_BODIES=()
 
@@ -140,7 +145,7 @@ while IFS= read -r line; do
     # Strip the prefix up to and including "<severity>: " (and any trailing
     # backtick) so the counted span is the <problem>. <fix>. body only
     # (D-09 / Pitfall 5: the per-finding budget EXCLUDES the prefix).
-    body="$(printf '%s' "$line" | sed -E 's/^`?[^[:space:]]+:[0-9]+(-[0-9]+)?: (crit|imp|sug|q): //; s/`$//')"
+    body="$(printf '%s' "$line" | sed -E "s/^\`?[^[:space:]]+:[0-9]+(-[0-9]+)?: ${SEV}: //; s/\`$//")"
     FINDING_BODIES+=("$body")
   fi
 done < <(printf '%s\n' "$REPORT")

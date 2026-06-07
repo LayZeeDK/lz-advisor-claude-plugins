@@ -100,7 +100,12 @@ REPORT="$(get_report)"
 # Backtick-tolerant (D-08): optional leading/trailing backtick (already stripped
 # in self-extract, but kept tolerant for --from-trace inputs that preserve them).
 # The OWASP slot \[[^]]+\] matches [A01]..[A10] AND [Uncategorized] (D-12).
-FRAGMENT_RE='^`?[^[:space:]]+:[0-9]+(-[0-9]+)?: (crit|imp|sug|q): \[[^]]+\] '
+# WR-05: the severity alternation is defined ONCE in SEV and interpolated into
+# BOTH the match regex and the body-strip sed below, so a Phase 12 severity-set
+# change cannot make the count regex and the strip diverge (which would leave
+# the severity token in the body and silently inflate wc -w).
+SEV='(crit|imp|sug|q)'
+FRAGMENT_RE="^\`?[^[:space:]]+:[0-9]+(-[0-9]+)?: ${SEV}: \[[^]]+\] "
 
 matched_count=0
 declare -a FINDING_BODIES=()
@@ -119,7 +124,7 @@ while IFS= read -r line; do
     # drop any trailing backtick that survived a trace input.
     body="$(
       printf '%s' "$line" \
-        | sed -E 's/^`?[^[:space:]]+:[0-9]+(-[0-9]+)?: (crit|imp|sug|q): \[[^]]+\] //; s/`$//'
+        | sed -E "s/^\`?[^[:space:]]+:[0-9]+(-[0-9]+)?: ${SEV}: \[[^]]+\] //; s/\`$//"
     )"
     FINDING_BODIES+=("$body")
   fi
