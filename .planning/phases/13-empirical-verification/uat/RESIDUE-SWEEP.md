@@ -72,7 +72,41 @@ precedent: historical shorthand references stay as accurate history.
 untouched (pathspec scoping verified structurally). No mechanical residue to fix
 in-phase (D-10); no `q:` false positive to disposition.
 
-## Worktree teardown (D-08) -- see TEARDOWN section below
+## Teardown (D-08) -- throwaway ngx worktree + branch removed
 
-The throwaway ngx worktree teardown is recorded in the `## Teardown (D-08)`
-section appended after the evidence-custody precondition gate was confirmed.
+**Precondition gate (T-13-06 mitigation):** before removing anything, asserted
+that ALL Plan 13-02 evidence is in this repo's
+`.planning/phases/13-empirical-verification/uat/` -- all 6 runs' `*.report.md`
+(SHAPE) + `*.agent.md` (BUDGET), plus `GRADE-LOG.md`, `PASS-K.md`, and
+`WORKTREE-PROVENANCE.md`. All 15 files present (`test -f` per file, zero missing),
+AND already committed by Plan 13-02 (`13cd9d1` / `75fa853` / `3f6309d`), so
+worktree removal cannot discard any uncommitted artifact. Custody confirmed;
+teardown safe.
+
+Teardown by EXACT name (not a blanket worktree loop), per D-08 / the
+`feedback_worktree_artifact_loss` memory:
+
+```
+git --git-dir=/d/projects/github/LayZeeDK/ngx-smart-components/.git worktree remove /d/projects/github/LayZeeDK/ngx-smart-components-uat-13 --force   # exit 0
+git --git-dir=/d/projects/github/LayZeeDK/ngx-smart-components/.git branch -D uat/phase-13-render                                                      # Deleted branch uat/phase-13-render (was 4fa7fd7), exit 0
+```
+
+### Verification (post-teardown)
+
+```
+$ git --git-dir=.../ngx/.git worktree list
+D:/projects/github/LayZeeDK/ngx-smart-components bad1aed [main]
+```
+
+| Check | Result | Verdict |
+|-------|--------|---------|
+| `worktree list` no longer shows `ngx-smart-components-uat-13` | only `[main]` remains | [OK] |
+| `rev-parse --verify uat/phase-13-render` | fails (unknown revision) | [OK] branch deleted |
+| ngx `[main]` worktree intact at `bad1aed` | present, untouched | [OK] live tree never touched |
+
+**Teardown verdict:** the throwaway worktree and `uat/phase-13-render` branch are
+removed; ngx is back to `[main]`-only; the live tree was never touched. All
+canonical evidence lives in this repo's `.planning/` tree (survives teardown).
+Re-provisioning for any future budget re-measurement is deterministic from
+`WORKTREE-PROVENANCE.md`'s recorded seed shape (base `019a26a`,
+`review-src/handler.ts` + `review-src/disk-info.ts`).
