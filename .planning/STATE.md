@@ -4,13 +4,13 @@ milestone: v1.0.1
 milestone_name: No review report shorthands
 status: executing
 stopped_at: Completed 13-03-PLAN.md (GATE-02 closeout; all 3 Phase 13 plans executed)
-last_updated: "2026-06-08T08:42:33.650Z"
-last_activity: 2026-06-08 -- Phase 13 planning complete
+last_updated: "2026-06-08T08:57:10.430Z"
+last_activity: 2026-06-08
 progress:
   total_phases: 1
   completed_phases: 0
   total_plans: 5
-  completed_plans: 3
+  completed_plans: 4
   percent: 0
 ---
 
@@ -25,10 +25,10 @@ See: .planning/PROJECT.md (updated 2026-06-07)
 
 ## Current Position
 
-Phase: 13 (Empirical verification) — NEEDS REVIEW (all 3 plans executed; SC-4 gap found)
-Plan: 3 of 3 executed
+Phase: 13 (Empirical verification) — EXECUTING
+Plan: 2 of 5
 Status: Ready to execute
-Last activity: 2026-06-08 -- Phase 13 planning complete
+Last activity: 2026-06-08
 
 ### Milestone v1.0.1 roadmap
 
@@ -95,6 +95,7 @@ Advisor runtime-proven on Opus 4.8. Final phase: Phase 10 (documentation-hygiene
 | Phase 13 P01 | 6min | 3 tasks | 3 files |
 | Phase 13 P02 | 35min | 3 tasks | 26 files |
 | Phase 13 P03 | 12min | 3 tasks | 2 files |
+| Phase 13 P04 | 18min | 3 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -116,6 +117,7 @@ Recent decisions affecting current work (v1.0.1):
 - [Phase ?]: [v1.0.1 / 13-01]: UAT substrate provisioned -- dedicated ngx worktree on uat/phase-13-render off lz-advisor-compodoc-storybook-uat-base @ 019a26a (EXPECTED_BASE==ACTUAL_BASE, never main); seeded review-src/handler.ts (reviewer >=5 findings) + review-src/disk-info.ts (security >=5 OWASP-tagged) on the throwaway branch ONLY (A2 stated as decision: a slice within ngx, not a mutation of the active tree); evidence-custody dir .planning/.../uat/ created in this repo (D-08).
 - [Phase ?]: [v1.0.1 / 13-02]: Live headless UAT executed -- n=3 :review + n=3 :security-review claude -p captures, dual-extracted (parent .result for SHAPE, subagent JSONL for BUDGET), graded + Pass@k/Pass^k. SC-1/SC-2 EMPIRICALLY PROVEN: grouped spelled-out grammar reaches the rendered report 6/6 (SHAPE saturated, Pass^k=1.0 both skills, OWASP [Axx] preserved, zero shorthand). SC-4 FAILS on live emission: per-finding 28w cap exceeded in 4/6 runs (review-2 46w; security-1 35w; security-2 31w; security-3 34w+36w) -- the "measured not reasoned" budget-neutrality regression -> routed to a Phase 12.x gap-closure REPLAN (D-10, NOT patched in verify phase). q:-in-req: prose false positive dispositioned via word-boundary anchor (D-09).
 - [Phase ?]: [v1.0.1 / 13-03]: GATE-02 closeout. SC-5 residue sweep CLEAN: `git grep crit:|imp:|sug:|q:` and `formerly High|formerly Medium` over `plugins/lz-advisor/` both exit 1 (the same pattern matches 41 files repo-wide, ALL under frozen `.planning/` history, ZERO under the plugin tree -- pathspec scoping is the structural guard, Phase 9 precedent). No `q:` disposition needed (the `req:` false positive lives in the ngx worktree, not the plugin tree). Throwaway ngx worktree `ngx-smart-components-uat-13` + branch `uat/phase-13-render` torn down by exact name AFTER asserting all 15 evidence files were present + committed (D-08); ngx back to `[main]`-only, live tree untouched. `13-UAT.md` consolidated: SC-1/2/3/5 PASS, SC-4 FAIL (GAP-13-BUDGET), Pass@k/Pass^k tables, `## Gaps` with the D-10 routing. PHASE VERDICT MIXED: milestone goal (no shorthands) empirically achieved; GATE-02 NOT green pending GAP-13-BUDGET resolution + a user decision.
+- [Phase ?]: [v1.0.1 / 13-04]: GAP-13-BUDGET atomic concision fix landed (commit 5085bca). FIX-1..4 applied to BOTH review agents in one plan (WR-05 atomicity): FIX-1 routes severity-divergence rationale to `### Per-finding validation` (60w, both agents), body stays terse; FIX-2 splits merged two-sink findings into separate numbered findings (security); FIX-3 references code by `path:line`, no multi-token inline reproduction (both); FIX-4 locks the 75w auto-clarity escape to `[CVE]`/`[GHSA]`/`[CWE]` brackets and corrects the prose to AGREE with the UNCHANGED `<auto_clarity_carve_out>` element (security) -- bracket-less Questions/architectural-disagreements stay terse. CAP VERDICT honored: PER_ENTRY_CAP/28/22/75 unchanged in agents AND fixtures. WRONG->RIGHT worked example added per fix; do_not_include lists reinforced. ATOMICITY GATE GREEN: both budget fixtures self-extract exit 0 on the edited worked examples; self-test exit 1; residue sweeps exit 1; SHAPE + AGNT-03 byte-intact; `git status --porcelain tests/` empty (fixtures unmodified). Input for Plan 13-05 to re-measure SC-4 GREEN on live emission and close GATE-02.
 
 ### Pending Todos
 
@@ -143,7 +145,7 @@ Recent decisions affecting current work (v1.0.1):
 
 ## Session Continuity
 
-Last session: 2026-06-08T09:30:00.000Z
+Last session: 2026-06-08T08:55:28.627Z
 Stopped at: Completed 13-03-PLAN.md (GATE-02 closeout; all 3 Phase 13 plans executed)
 Resume file: None
 Resume next: Phase 13 VERIFICATION (gsd-verifier produces 13-VERIFICATION.md from 13-UAT.md). Phase 13 verdict is MIXED and the phase is NEEDS-REVIEW: SC-1/SC-2/SC-3/SC-5 PASS empirically (grammar reaches render 6/6, SHAPE Pass^k=1.0, residue sweep clean, isolated worktree torn down); SC-4 FAILS (GAP-13-BUDGET, per-finding 28w cap exceeded 4/6 on live emission). Do NOT mark GATE-02 green and do NOT mark Phase 13 complete -- GAP-13-BUDGET must surface to the user, who decides whether to spin a Phase 12.x gap-closure REPLAN (agent-contract concision tightening in reviewer.md + security-reviewer.md) and re-measure SC-4 on live output. Re-provisioning is deterministic from uat/WORKTREE-PROVENANCE.md.
