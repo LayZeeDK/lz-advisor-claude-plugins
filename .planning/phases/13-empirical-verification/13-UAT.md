@@ -1,12 +1,12 @@
 ---
 status: needs-review
 phase: 13-empirical-verification
-source: [13-01-SUMMARY.md, 13-02-SUMMARY.md, 13-03-SUMMARY.md]
+source: [13-01-SUMMARY.md, 13-02-SUMMARY.md, 13-03-SUMMARY.md, 13-04-SUMMARY.md, 13-05-SUMMARY.md]
 started: 2026-06-08T00:00:00Z
 updated: 2026-06-08T00:00:00Z
 mode: autonomous
 gate: GATE-02
-verdict: mixed (SC-1/2/3/5 PASS; SC-4 FAIL -> GAP-13-BUDGET routed to Phase 12.x replan)
+verdict: mixed (SC-1/2/3/5 PASS; SC-4 IMPROVED but NOT fully GREEN after 13-04 fix -> GAP-13-BUDGET-R2 residual, second concision iteration needed)
 ---
 
 ## Current Test
@@ -52,18 +52,32 @@ evidence: "WORKTREE-PROVENANCE.md (Plan 13-01): worktree `/d/.../ngx-smart-compo
 ### SC-4. n>=3 budget gate is GREEN on LIVE agent emission for BOTH skills (per-finding 28-word cap)
 expected: An empirical n>=3 budget-gate run on the NEW grammar -- `bash tests/D-reviewer-budget.sh --from-trace <skill>-N.agent.md` and the security equivalent, measured on the LIVE subagent emission (NOT the self-extracted worked example, D-04) -- confirms BOTH agents stay within the per-finding word-budget cap on every run (exit 0).
 result: issue
-evidence: "GRADE-LOG.md BUDGET column, measured on the live subagent emission (`<skill>-N.agent.md`): the per-finding 28-word cap is EXCEEDED in 4 of 6 runs. review-1 exit 0 (6 findings, all <=28w); review-2 exit 1 (Finding 1 = 46w > 28, severity-divergence rationale bundled into the finding body); review-3 exit 0 (7 findings); security-1 exit 1 (Finding 4 = 35w > 28, two sinks merged into one `[A02]` finding); security-2 exit 1 (Finding 3 = 31w > 28, verbose inline `curl` code); security-3 exit 1 (Finding 2 = 34w + Finding 8 = 36w > 28, second-order-injection code reproduction + multi-clause Question body). Every run cleared the anti-vacuous `>=5 findings` guard (6-8 parsed), so none are thin-target artifacts -- the over-cap is real. Combined fully-passing c=2/6 (reviewer 2/3, security 0/3). This is the measured budget-neutrality regression SC-4 exists to catch (D-04/D-10). Routed to GAP-13-BUDGET below."
+evidence: "RE-MEASURED in Plan 13-05 (n=5 per skill, escalated from the n=3 floor) on LIVE emission against the 13-04 FIXED agents (commit 5085bca), captured to uat/r2-*.agent.md from the R2 worktree off 019a26a. Authoritative per-run `--from-trace` BUDGET exits: reviewer [0,0,1,1,0] = c=3/5; security [1,0,0,0,0] = c=4/5; combined c=7/10. Residual over-caps (D-10, recorded HONESTLY, NOT masked): r2-review-3 Finding 5 = 29w (marginal 1w deref-chain overflow); r2-review-4 = 45w multi-clause Question (the reviewer grammar has NO 75w auto-clarity carve-out -- FIX-4 was security-only); r2-security-1 = four findings at 30-33w (verbose FIX-clause prose with remediation code snippets). The 13-04 fix produced a LARGE measured improvement vs the pre-fix baseline (combined c=2/6 -> 7/10; Pass@1 0.333 -> 0.700; security half 0/3 -> 4/5; worst finding-body overshoot 46w -> 33w) but did NOT fully land: SC-4 PASS requires EVERY run exit 0, and 3/10 runs retain a residual. SC-4 is therefore IMPROVED but NOT yet fully GREEN -> GAP-13-BUDGET-R2 (a SECOND concision iteration; see ## Gaps). The pre-fix baseline (4/6 over-cap: review-2 46w; security-1 35w; security-2 31w; security-3 34w+36w) is preserved in GRADE-LOG.md. Evidence: uat/GRADE-LOG-R2.md + uat/PASS-K-R2.md + the 10 r2-*.agent.md captures + uat/WORKTREE-PROVENANCE-R2.md."
 
 ### SC-5. Zero `crit:|imp:|sug:|q:` and zero `formerly-X` residue in `plugins/lz-advisor/`; frozen history untouched
 expected: A scoped `git grep -nE 'crit:|imp:|sug:|q:' -- plugins/lz-advisor/` returns nothing (exit 1) and the companion `git grep -nE 'formerly High|formerly Medium' -- plugins/lz-advisor/` returns nothing (exit 1); the `-- plugins/lz-advisor/` pathspec ALONE excludes every frozen `.planning/` history artifact (no `:(exclude)` list), so no historical shorthand reference is touched.
 result: pass
 evidence: "RESIDUE-SWEEP.md (Plan 13-03, run 2026-06-08 from this repo root): `git grep -nE 'crit:|imp:|sug:|q:' -- plugins/lz-advisor/` -> exit 1, no output; word-boundary-anchored `\\b(crit|imp|sug|q):` -> exit 1; `formerly High|formerly Medium` -> exit 1. Structural-scoping proof: the same pattern matches 50 tracked files repo-wide (48 under `.planning/` frozen v1.0/v1.0.1 history + 2 under `tests/` where the tokens are the budget fixtures' own detector-regex literals, NOT residue), ZERO under `plugins/lz-advisor/` -- the pathspec excludes all 50 (Phase 9 leave-history-as-history precedent). [count corrected post-verification 2026-06-08; SC-5 verdict unchanged] No `q:` prose false positive in the plugin tree (the `req:` identifier lives in the ngx worktree, not here), so no disposition needed; no mechanical residue to fix in-phase (D-10)."
 
-## Pass@k / Pass^k (from uat/PASS-K.md)
+## Pass@k / Pass^k
 
-"Fully passes" = SHAPE grade clean (grouped headers + `(none)` + analytical section + zero anchored shorthand + (security) `[Axx]` preserved) AND BUDGET fixture exits 0. n=3 per skill (the floor; not escalated to n=5 -- the over-cap pattern is consistent across both skills and the disposition is unambiguous). Pass@k = `1 - C(n-c,k)/C(n,k)`; Pass^k = `C(c,k)/C(n,k)`.
+"Fully passes" = SHAPE grade clean (grouped headers + `(none)` + analytical section + zero anchored shorthand + (security) `[Axx]` preserved) AND BUDGET fixture exits 0. Pass@k = `1 - C(n-c,k)/C(n,k)`; Pass^k = `C(c,k)/C(n,k)`.
 
-### Combined metric (SHAPE clean AND BUDGET exit 0)
+### R2 RE-MEASURE (Plan 13-05, n=5 per skill, post-13-04-fix) -- authoritative current metric
+
+(full table in uat/PASS-K-R2.md)
+
+Combined (SHAPE clean AND BUDGET exit 0):
+
+| Scope | n | c | Pass@1 | Pass@3 | Pass@5 | Pass^1 | Pass^3 | Pass^5 |
+|-------|---|---|--------|--------|--------|--------|--------|--------|
+| Reviewer (`/lz-advisor:review`) | 5 | 3 | 0.6000 | 1.0000 | 1.0000 | 0.6000 | 0.1000 | 0.0000 |
+| Security-reviewer (`/lz-advisor:security-review`) | 5 | 4 | 0.8000 | 1.0000 | 1.0000 | 0.8000 | 0.4000 | 0.0000 |
+| Overall | 10 | 7 | 0.7000 | 0.9917 | 1.0000 | 0.7000 | 0.2917 | 0.0833 |
+
+SHAPE-only sub-metric (R2): Reviewer / Security / Overall all c=n, Pass@k = Pass^k = 1.0000 at every k (saturated, 10/10 clean).
+
+### Pre-fix baseline (Plan 13-02, n=3 per skill) -- preserved for comparison
 
 | Scope | n | c | Pass@1 | Pass@3 | Pass^1 | Pass^3 |
 |-------|---|---|--------|--------|--------|--------|
@@ -71,19 +85,14 @@ evidence: "RESIDUE-SWEEP.md (Plan 13-03, run 2026-06-08 from this repo root): `g
 | Security-reviewer (`/lz-advisor:security-review`) | 3 | 0 | 0.0000 | 0.0000 | 0.0000 | 0.0000 |
 | Overall | 6 | 2 | 0.3333 | 0.8000 | 0.3333 | 0.0000 |
 
-### SHAPE-only sub-metric (SC-1 / SC-2 -- the grammar reaches the rendered report)
-
-| Scope | n | c (SHAPE clean) | Pass@1 | Pass@3 | Pass^1 | Pass^3 |
-|-------|---|-----------------|--------|--------|--------|--------|
-| Reviewer SHAPE | 3 | 3 | 1.0000 | 1.0000 | 1.0000 | 1.0000 |
-| Security SHAPE | 3 | 3 | 1.0000 | 1.0000 | 1.0000 | 1.0000 |
-| Overall SHAPE | 6 | 6 | 1.0000 | 1.0000 | 1.0000 | 1.0000 |
-
-SHAPE-only is SATURATED (Pass^k = 1.0 everywhere): the grouped spelled-out grammar
-reaches the rendered user-facing report on 6/6 runs with zero shorthand. SC-1 and
-SC-2 are EMPIRICALLY PROVEN at the render layer. The combined metric's failure is
-driven SOLELY by the per-finding BUDGET gate (SC-4) -- a separate axis from the
-shorthand removal that defines this milestone.
+The 13-04 concision fix moved combined Pass@1 from 0.3333 to 0.7000 and the security
+half from 0/3 to 4/5 -- a LARGE measured improvement -- but did NOT reach SC-4's
+all-runs-green bar (3/10 R2 runs retain a residual over-cap). SHAPE-only was and
+remains SATURATED (Pass^k = 1.0): the grouped spelled-out grammar reaches the
+rendered user-facing report on every run with zero shorthand. SC-1/SC-2 stay
+EMPIRICALLY PROVEN at the render layer; the combined shortfall is driven SOLELY by
+the per-finding BUDGET gate (SC-4) -- a separate axis from the shorthand removal
+that defines this milestone.
 
 ## Summary
 
@@ -94,22 +103,26 @@ pending: 0
 skipped: 0
 blocked: 0
 
-**MIXED OUTCOME (honest).** The milestone GOAL -- no `crit:`/`imp:`/`sug:`/`q:`
-shorthands in user-facing review reports -- is **EMPIRICALLY ACHIEVED**: the
-grouped spelled-out grammar (`### Critical`/`### Important`/`### Suggestions`/
-`### Questions` + `(none)` + the analytical section, OWASP `[Axx]` preserved on
-security) reaches the LIVE rendered report on 6/6 runs with zero shorthand (SHAPE
-Pass^k = 1.0), the residue sweep is clean (exit 1 both), and the UAT ran in an
-isolated worktree off the confirmed checkpoint (SC-1, SC-2, SC-3, SC-5 PASS).
+**MIXED OUTCOME (honest), IMPROVED after the 13-04 fix + 13-05 re-measure.** The
+milestone GOAL -- no `crit:`/`imp:`/`sug:`/`q:` shorthands in user-facing review
+reports -- remains **EMPIRICALLY ACHIEVED**: the grouped spelled-out grammar
+(`### Critical`/`### Important`/`### Suggestions`/`### Questions` + `(none)` + the
+analytical section, OWASP `[Axx]` preserved on security) reaches the LIVE rendered
+report on 10/10 R2 runs (and the original 6/6) with zero shorthand (SHAPE Pass^k =
+1.0), the residue sweep is clean (exit 1 both), and both UAT rounds ran in isolated
+worktrees off the confirmed checkpoint (SC-1, SC-2, SC-3, SC-5 PASS).
 
-GATE-02 is **NOT fully green**, however: SC-4 FAILS. The per-finding 28-word
-budget is exceeded on LIVE agent emission in 4/6 runs (GAP-13-BUDGET). This is the
-"measured, not reasoned" budget-neutrality regression SC-4 was designed to catch
-(the project's documented 3x burn assuming `wc -w` neutrality). Per D-10 this is a
-SUBSTANTIVE behavioral result routed to a Phase 12.x gap-closure REPLAN -- it is an
-agent-contract concision tightening, NOT a verify-phase inline patch (the
-documented WR-05 partial-rewrite scar). GATE-02 closure is gated on resolving
-GAP-13-BUDGET + phase verification + a user decision.
+GATE-02 is **NOT yet fully green**, however: SC-4 is IMPROVED but not GREEN on every
+run. After the 13-04 concision fix, the 13-05 re-measure (n=5 per skill) shows the
+per-finding 28-word budget held on 7/10 LIVE runs (vs the pre-fix 2/6) -- a LARGE
+improvement (combined Pass@1 0.333 -> 0.700; security half 0/3 -> 4/5; worst
+finding-body overshoot 46w -> 33w) -- but 3/10 runs retain a residual over-cap
+(GAP-13-BUDGET-R2): a marginal 1w reviewer deref-chain finding (29w), a reviewer
+multi-clause Question with no carve-out (45w), and four verbose security FIX-clause
+findings (30-33w). SC-4 PASS requires EVERY run exit 0, so it is recorded HONESTLY
+as a residual (D-10), NOT marked PASS. The fix landed in the right direction; a
+SECOND concision iteration is required before SC-4 measures GREEN. GATE-02 closure
+is gated on resolving GAP-13-BUDGET-R2 + phase verification + a user decision.
 
 ## Gaps
 
@@ -143,6 +156,45 @@ GAP-13-BUDGET + phase verification + a user decision.
   marking Phase 13 / GATE-02 complete. Evidence:
   `uat/GRADE-LOG.md` ("SC-4 cross-skill summary") + `uat/PASS-K.md` + the per-run
   `*.agent.md` captures.
+- **UPDATE (13-04 + 13-05):** GAP-13-BUDGET was ADDRESSED by the 13-04 atomic
+  concision fix (FIX-1..4, commit `5085bca`) and RE-MEASURED in 13-05. The fix
+  produced a LARGE improvement (combined c=2/6 -> 7/10) but a residual remains ->
+  superseded by GAP-13-BUDGET-R2 below.
+
+### GAP-13-BUDGET-R2: residual per-finding over-cap after the 13-04 fix (SC-4, second iteration)
+
+- **What:** After the 13-04 FIX-1..4 concision fix, the 13-05 LIVE re-measure
+  (n=5 per skill, against the FIXED agents, R2 worktree off `019a26a`) shows the
+  per-finding 28w cap held on **7/10 runs** (reviewer 3/5, security 4/5) -- a large
+  jump from the pre-fix 2/6. But **3/10 runs retain a residual over-cap**:
+  - r2-review-3: Finding 5 = **29w** (marginal 1w overflow; multi-clause deref-chain body).
+  - r2-review-4: a **45w multi-clause Question** -- the REVIEWER grammar has NO 75w
+    auto-clarity carve-out (13-04's FIX-4 corrected only the SECURITY agent's
+    Question concision), so a long reviewer Question is hard-capped at 28w with no escape.
+  - r2-security-1: **four findings at 30-33w** -- verbose FIX-clause prose carrying
+    remediation code snippets (`execFile(...)`, `Authorization` header, etc.) plus a
+    second clause. FIX-3 addressed FINDING-code reproduction; the FIX clause needs the
+    same reference-by-shape discipline.
+- **Why it is still a gap, not an inline fix:** the remedy is a SECOND agent-contract
+  concision iteration (reviewer Question concision/carve-out + security FIX-clause
+  terseness + a marginal reviewer body nudge). Per D-10 / WR-05 this is an
+  agent-contract rewrite, routed to a follow-on gap-closure plan, NOT patched inside
+  a verify/re-measure plan.
+- **What is NOT broken:** the grouped grammar SHAPE (SC-1/SC-2) is flawless on
+  10/10 R2 runs (SHAPE Pass^k = 1.0, OWASP `[Axx]` byte-intact). The milestone goal
+  (no shorthands) remains empirically achieved. The residual is per-finding
+  CONCISION on the FIX/Question side -- a separate axis.
+- **Disposition (D-10):** a second concision iteration in
+  `plugins/lz-advisor/agents/reviewer.md` (Question concision / optional carve-out;
+  marginal body terseness) + `security-reviewer.md` (FIX-clause reference-by-shape).
+  **SC-4 MUST be RE-MEASURED again on live output after the second fix** (re-run this
+  UAT's capture + `--from-trace` gate; re-provisioning is deterministic from
+  WORKTREE-PROVENANCE-R2.md). GATE-02 stays PARTIAL until that re-measure is GREEN
+  on every run.
+- **Routing status:** logged as a STATE.md blocker (supersedes GAP-13-BUDGET);
+  surfaced to the user before marking Phase 13 / GATE-02 complete. Evidence:
+  `uat/GRADE-LOG-R2.md` + `uat/PASS-K-R2.md` + the 10 `r2-*.agent.md` captures +
+  `uat/WORKTREE-PROVENANCE-R2.md`.
 
 ## Notes
 
