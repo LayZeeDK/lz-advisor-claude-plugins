@@ -105,12 +105,21 @@ REQUIREMENTS.md GATE-02 and is not re-opened.
 
 ### ngx-smart-components worktree provisioning (SC-3)
 - **D-06:** The UAT runs in a DEDICATED `git worktree` branched from the verified
-  `uat/pre-storybook-compodoc` checkpoint branch inside the external repo at
+  checkpoint branch inside the external repo at
   `/d/projects/github/LayZeeDK/ngx-smart-components` -- NEVER on its live working
-  tree (that repo has active work in progress; this is the STATE.md-flagged
-  blocker). This is a MANUAL `git worktree add` in the external repo, NOT a
-  Claude Code subagent `isolation: worktree` (that branches from origin/HEAD and
-  is for parallel mutation of THIS repo).
+  tree (that repo is under active development; worktree discipline applies even
+  though the tree is currently clean on `main`). This is a MANUAL `git worktree
+  add` in the external repo, NOT a Claude Code subagent `isolation: worktree`
+  (that branches from origin/HEAD and is for parallel mutation of THIS repo).
+  **PLAN-TIME RESOLUTION (2026-06-08, user-confirmed):** the branch named in
+  ROADMAP/REQUIREMENTS SC-3, `uat/pre-storybook-compodoc`, DOES NOT EXIST in the
+  ngx repo (verified via `git rev-parse` -> `fatal: ambiguous argument`). The
+  user confirmed the intended checkpoint is **`lz-advisor-compodoc-storybook-uat-base`**
+  (SHA `019a26a`, 2026-04-14 -- literally the lz-advisor compodoc/storybook UAT
+  base; 4 branches share this SHA, confirming it as the canonical baseline). The
+  throwaway worktree is created on a NEW branch `uat/phase-13-render` off this
+  base. All plans + execution MUST use `lz-advisor-compodoc-storybook-uat-base`,
+  never the absent spec name.
 - **D-07:** Defend the documented worktree base-drift failure mode: confirm the
   exact checkpoint branch name exists (`git branch --list 'uat/pre-storybook-compodoc'`)
   BEFORE `worktree add`; capture `EXPECTED_BASE` = the checkpoint branch SHA;
