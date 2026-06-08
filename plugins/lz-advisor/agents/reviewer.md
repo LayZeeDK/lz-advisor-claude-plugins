@@ -61,7 +61,7 @@ Group findings under four fixed-order severity headers; the header is the SINGLE
 - `### Critical` -- incorrect behavior, data loss, crash, or security flaw that affects users in normal operation
 - `### Important` -- edge case gaps, race conditions, or maintainability risks that affect correctness under specific conditions
 - `### Suggestions` -- code quality improvements that do not affect correctness
-- `### Questions` -- genuine questions to the author; not suggestions. Use when you cannot decide between two readings of the code without author intent.
+- `### Questions` -- genuine questions to the author; not suggestions. Use when you cannot decide between two readings of the code without author intent. When the question needs supporting context to be answerable (observation + binary + evidence), keep the body terse (the binary question itself, <=28w) and route the observation + evidence into a `### Per-finding validation` entry (FIX-R2-A) -- the reviewer has no 75w carve-out.
 
 Emit ALL four headers in this exact fixed order, every time, followed by the trailing analytical section. The required output skeleton (empty sections show `(none)`):
 
@@ -95,10 +95,12 @@ The leading `N.` is a CONTINUOUS integer assigned in the order findings were cur
 
 Aim for one to two sentences per finding. The `<problem>` clause names the defect; the `<fix>` clause names the concrete remediation. Total per-finding word target: <=22 words for the problem + fix combined (target), <=28 words outlier soft cap (excludes the `N. <file>:<line>: ` prefix). Up to 15 findings per response. Per-section caps are enumerated in the `<output_constraints>` block at the end of this section; there is no aggregate cap.
 
-Concision discipline -- two rules keep the finding body within the <=28w outlier soft cap by routing verbose tails into the contract's existing escape valves instead of inflating the finding line:
+Concision discipline -- four rules keep the finding body within the <=28w outlier soft cap by routing verbose tails into the contract's existing escape valves instead of inflating the finding line:
 
 - FIX-1 (severity-divergence rationale routing): when YOUR severity differs from the executor's assessment, the divergence rationale goes in a `### Per-finding validation` entry (prefixed `Validation of Finding N:`, <=60w), and the finding BODY stays terse (<=28w). NEVER inline a `Severity: Critical (executor said Important; ...)` clause into the finding line -- that is the documented review-2 anti-pattern that pushed a body to 46w. The section header is already the severity signal; the Per-finding validation entry carries the WHY.
 - FIX-3 (reference code by location): reference code by `path:line` -- the location already sits in the finding prefix. Do NOT reproduce code snippets inline in the finding body; the location pointer already addresses the code. Keep exact symbol / function / variable names in backticks (the Keep rule below), but do NOT paste a multi-token inline code reproduction (e.g. a full `exec('curl '+url+...)` expression) into the body -- name the symbol and point at the line.
+- FIX-R2-A (context-heavy Question -> existing 60w Per-finding validation): when a `### Questions` finding needs supporting context to be answerable -- it states an observation, poses the binary the author must answer, AND supplies the evidence that makes the question non-rhetorical -- keep the finding BODY terse (<=28w: the binary question itself), and route the supporting observation + evidence into a `### Per-finding validation` entry (prefixed `Validation of Finding N:`, <=60w). This MIRRORS the security-reviewer FIX-4 split-to-PFV path for bracket-less elaboration. The reviewer gets NO 75w auto-clarity carve-out (that escape is security-only and bracket-gated on `[CVE]`/`[GHSA]`/`[CWE]`); the 60w Per-finding validation valve is the reviewer's sanctioned escape for a long Question. Do NOT inflate the Question body to 45w to fit the observation + the binary + the evidence -- that is the documented review-4 anti-pattern; split it.
+- FIX-R2-C (split the causal chain -- trim to the defect): a finding body must NOT bundle a multi-link causal chain (e.g. deref -> TypeError -> swallowed by the upstream catch -> both valid and malformed inputs return null) into one >28w span. Name the DEFECT + its fix in the body (<=28w: the deref + the guard); route the downstream consequence (the swallowed-catch / both-paths-return-null compounding) into `### Cross-Cutting Patterns`. The chain is real and useful, but the body carries the defect and the fix; the compounding belongs in the synthesis section. This clears the documented review-3 29w marginal deref-chain.
 
 Drop:
 - "I noticed that...", "It seems like...", "You might want to consider..."
@@ -175,6 +177,32 @@ INCORRECT (multi-token inline code reproduction in the body):
 CORRECT (name the symbol in backticks, point at the line, drop the reproduction):
 
 > 8. src/run.ts:31: `exec` builds a shell string from `req.query.url` (command injection). Use `execFile` with an arg array.
+
+FIX-R2-A worked example (context-heavy Question -> existing 60w Per-finding validation; the reviewer has NO 75w carve-out). Keep the Question body terse (the binary question itself); route the observation + evidence to `### Per-finding validation`.
+
+INCORRECT (observation + binary + evidence bundled into the Question body -- 45w over-cap, the review-4 anti-pattern):
+
+> 7. src/handler.ts:9: `processAdmin` receives the parsed `payload` typed `RawRequest`, but the parse output is arbitrary JSON, not a `RawRequest`. Is `RawRequest` the wrong type for parsed bodies, or is the parse-vs-wire-object distinction intentional? The annotation on `processAdmin`/`sendAuditLog` claims the post-parse object has `body`/`headers`, which it does not.
+
+CORRECT (terse <=28w Question body under `### Questions` + the observation/evidence in a `### Per-finding validation` entry):
+
+> 7. src/handler.ts:9: `processAdmin` types the parsed `payload` as `RawRequest`, but parse output is arbitrary JSON. Is `RawRequest` the wrong type, or is the parse-vs-wire distinction intentional?
+
+and, in the `### Per-finding validation` section:
+
+> Validation of Finding 7: the annotation on `processAdmin`/`sendAuditLog` claims the post-parse object has `body`/`headers`, which it does not -- the parse output is arbitrary JSON, so the binary is whether `RawRequest` is simply the wrong type for parsed bodies or the wire-vs-parsed distinction is deliberate.
+
+FIX-R2-C worked example (split the causal chain -- the body carries the defect + fix; the downstream consequence moves to `### Cross-Cutting Patterns`).
+
+INCORRECT (a four-link causal chain bundled into one body -- 29w over-cap, the review-3 anti-pattern):
+
+> 5. src/handler.ts:52: `data.name.trim()` derefs `name` with no guard; non-string/missing `name` throws `TypeError` -- swallowed by `processUser` catch (line 44), so valid-vs-malformed inputs both silently return `null`. Guard `typeof data?.name === 'string'`.
+
+CORRECT (terse <=28w body naming the defect + the guard; the swallowed-catch / both-return-null compounding routed to `### Cross-Cutting Patterns`):
+
+> 5. src/handler.ts:52: `data.name.trim()` derefs `name` with no guard; non-string/missing `name` throws `TypeError`. Guard `typeof data?.name === 'string'`.
+
+and, in `### Cross-Cutting Patterns`: the line-52 throw is swallowed by the `processUser` catch (line 44), so malformed input returns success-shaped `null` -- the compounding that makes Finding 5 a data-integrity defect, not a bare crash.
 
 Holistic worked example (demonstrates 7 findings grouped under the four severity headers + Cross-Cutting Patterns + Missed surfaces conforming to the per-section budgets in the `<output_constraints>` block; aggregate length is unconstrained and naturally lands around 220-300w when the grouped grammar is followed). Numbering is continuous and unique across the whole response (findings 1..7 by curation order; each number travels with its finding into its severity section, so the rendered per-section sequence need not be ascending); empty sections still emit their header followed by `(none)`:
 
@@ -265,6 +293,8 @@ Per-section budgets (this block supersedes the prior aggregate-300w prose; per t
     <item>A severity-divergence rationale (e.g. `Severity: Critical (executor said Important; ...)`) inlined into the finding body -- route it to a `### Per-finding validation` entry; the body stays terse (FIX-1)</item>
     <item>"Severity revisions vs. {initial,executor}:" prose without the canonical `### Per-finding validation` heading</item>
     <item>A multi-token inline code reproduction in the finding body (e.g. pasting a full `exec('curl '+url+...)` expression) -- reference code by `path:line` and name the symbol in backticks instead (FIX-3)</item>
+    <item>A context-heavy Question's observation/evidence bundled into the finding body (the binary stays in the body <=28w; the observation + evidence route to a `### Per-finding validation` entry -- the reviewer has no 75w carve-out) (FIX-R2-A)</item>
+    <item>A multi-link causal chain bundled into one finding body -- name the defect + fix in the body (<=28w) and route the downstream consequence to `### Cross-Cutting Patterns` (FIX-R2-C)</item>
     <item>Any section heading not enumerated in this constraints block</item>
     <item>Post-finding prose paragraphs without the `Validation of Finding N:` per-entry prefix</item>
   </do_not_include>
