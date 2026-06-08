@@ -98,11 +98,12 @@ OWASP tag (apply systematically per `## OWASP Top 10 Lens` below): `[A01]` Broke
 
 Aim for one to two sentences per finding. The `<threat>` clause names the vulnerability + attack vector; the `<fix>` clause names the concrete remediation. Total per-finding word target: <=22 words for the threat + fix combined (target), <=28 words outlier soft cap (slightly higher than reviewer due to OWASP tag length; excludes the `N. <file>:<line>: [<tag>] ` prefix). Up to 15 findings per response. Per-section caps are enumerated in the `<output_constraints>` block at the end of this section; there is no aggregate cap.
 
-Concision discipline -- four rules keep the finding body within the <=28w outlier soft cap (CVE/GHSA/CWE findings escalate to the 75w auto-clarity cap, see below) by routing verbose tails into the contract's existing escape valves instead of inflating the finding line:
+Concision discipline -- five rules keep the finding body within the <=28w outlier soft cap (CVE/GHSA/CWE findings escalate to the 75w auto-clarity cap, see below) by routing verbose tails into the contract's existing escape valves instead of inflating the finding line:
 
 - FIX-1 (severity-divergence rationale routing): when YOUR severity differs from the executor's assessment, the divergence rationale goes in a `### Per-finding validation` entry (prefixed `Validation of Finding N:`, <=60w), and the finding BODY stays terse (<=28w). NEVER inline a `Severity: Critical (executor said Important; ...)` clause into the finding line. The section header is already the severity signal; the Per-finding validation entry carries the WHY.
 - FIX-2 (one issue per finding -- split, never merge): one issue per finding. Split distinct vulnerabilities into separate numbered findings rather than merging two sinks into one finding. The security-1 anti-pattern merged an `http://` plaintext-token leak AND a shell `curl` injection into one `[A02]` finding and overshot to 35w; the correct shape is two numbered findings, each <=28w (one per sink, each with its own OWASP tag).
 - FIX-3 (reference code by location): reference code by `path:line` -- the location already sits in the finding prefix. Do NOT reproduce code snippets inline in the finding body; the location pointer already addresses the code. Keep exact symbol / function / variable names in backticks (the Keep rule below), but do NOT paste a multi-token inline code reproduction (e.g. a full `exec('curl '+url+...)` expression) into the body -- name the symbol and point at the line. The security-2 (31w) and security-3 F2 (34w) over-caps were both inline `curl` code reproductions.
+- FIX-R2-B (reference the FIX/remediation by shape too -- not just the threat): FIX-3 governs the `<threat>` clause; this rule extends the SAME reference-by-shape discipline to the `<fix>`/remediation clause. NAME the safe API in backticks + POINT at the pattern (e.g. "use `execFile` with an arg array", "move to a secrets manager / env var", "switch to `https` + an `Authorization` header"); do NOT paste a full remediation CALL EXPRESSION (the `('du', ['-sh', path])` argument shape) into the fix, and do NOT bundle a SECOND remediation clause -- the fix names ONE concrete remediation, terse, by shape. The r2-security-1 anti-pattern packed both a remediation call expression AND a second clause ("plus an allow-list of permitted mount paths", "and rotate the leaked key now") into the fix span, pushing four findings to 30-33w. A terse allow-list/rotate pointer is fine; a full second sentence is not.
 - FIX-4 (auto-clarity escape is bracket-gated): only findings carrying a `[CVE-...]` / `[GHSA-...]` / `[CWE-...]` bracket get the 75w auto-clarity escape (see the `<auto_clarity_carve_out>` element). A genuine multi-clause Question or an architectural-threat disagreement that does NOT carry such a bracket MUST be terse (<=28w) -- split the question into its core finding (<=28w) plus a `### Per-finding validation` entry for the elaboration if it cannot fit. The security-3 F8 anti-pattern was a bracket-less multi-clause Question body that over-capped at 36w with no sanctioned escape.
 
 Drop:
@@ -190,6 +191,16 @@ INCORRECT (multi-token inline code reproduction in the body):
 CORRECT (name the symbol in backticks, point at the line, drop the reproduction):
 
 > 2. src/run.ts:31: [A03] `db.query` concatenates the stored `row.userId` (second-order injection). Use a parameterized query.
+
+FIX-R2-B worked example (reference the FIX by shape too -- name the safe API in backticks, drop the full remediation call expression AND the second clause).
+
+INCORRECT (the fix pastes a full `execFile('du', ['-sh', path])` call expression AND bundles a second remediation clause -- 33w over-cap, the r2-security-1 anti-pattern):
+
+> 1. src/disk-info.ts:35: [A03] `exec('du -sh ' + path)` concatenates attacker-controlled `query.mountPath` into a shell string; `"/; rm -rf /"` yields arbitrary OS command execution. Replace with `execFile('du', ['-sh', path])` plus an allow-list of permitted mount paths.
+
+CORRECT (name the API by shape in the fix, drop the call expression, keep the allow-list as a terse pointer not a second sentence):
+
+> 1. src/disk-info.ts:35: [A03] `exec` concatenates attacker-controlled `query.mountPath` into a shell string; `"/; rm -rf /"` yields arbitrary OS command execution. Use `execFile` with an arg array; allow-list the mount path.
 
 FIX-4 worked example (bracket-less Question stays terse -- only [CVE]/[GHSA]/[CWE] findings get the 75w escape).
 
@@ -300,6 +311,7 @@ Per-section budgets (this block supersedes the prior aggregate-300w prose; per t
     <item>"Severity revisions vs. {initial,executor}:" prose without the canonical `### Per-finding validation` heading</item>
     <item>Two distinct vulnerabilities (two sinks) merged into one numbered finding -- split into separate numbered findings, one issue per finding (FIX-2)</item>
     <item>A multi-token inline code reproduction in the finding body (e.g. pasting a full `exec('curl '+url+...)` expression) -- reference code by `path:line` and name the symbol in backticks instead (FIX-3)</item>
+    <item>A full remediation call expression (the `('du', ['-sh', path])` argument shape) or a bundled second remediation clause pasted into the fix span -- name the safe API in backticks and point at the pattern; the fix names ONE concrete remediation, terse, by shape (FIX-R2-B)</item>
     <item>A bracket-less multi-clause Question or architectural-threat disagreement claiming the 75w auto-clarity escape -- only `[CVE]`/`[GHSA]`/`[CWE]` findings qualify; bracket-less findings stay terse (<=28w), split to `### Per-finding validation` if needed (FIX-4)</item>
     <item>Any section heading not enumerated in this constraints block</item>
     <item>Post-finding prose paragraphs without the `Validation of Finding N:` per-entry prefix</item>
