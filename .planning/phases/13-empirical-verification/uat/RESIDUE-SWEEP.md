@@ -52,18 +52,28 @@ $ git grep -lE 'crit:|imp:|sug:|q:'                    # repo-wide, NO pathspec
 .planning/ROADMAP.md
 .planning/STATE.md
 .planning/phases/11-fixture-baseline/11-01-PLAN.md
-... (41 files total, EVERY ONE under .planning/) ...
+... (50 files total: 48 under .planning/, 2 under tests/) ...
 
-$ git grep -lE '\b(crit|imp|sug|q):' | wc -l           # repo-wide
-41
+$ git grep -lE 'crit:|imp:|sug:|q:' | wc -l            # repo-wide, unanchored
+50
+$ git grep -lE 'crit:|imp:|sug:|q:' | rg -v '^\.planning/'   # the 2 non-.planning matches
+tests/D-reviewer-budget.sh
+tests/D-security-reviewer-budget.sh
 ```
 
-The same pattern matches 41 tracked files repo-wide -- ALL under `.planning/`
-(frozen v1.0 + v1.0.1 planning history that documents the old shorthand as
-accurate history). ZERO of them are under `plugins/lz-advisor/`. The
-`-- plugins/lz-advisor/` pathspec excludes all 41 structurally; no `.planning/`
-history file is referenced or modified by the SC-5 sweep. This is the Phase 9
-precedent: historical shorthand references stay as accurate history.
+CORRECTION (post-verification, 2026-06-08): the unanchored pattern matches
+**50** tracked files repo-wide, not 41 (the earlier 41 was the word-boundary
+`\b(crit|imp|sug|q):` count = 44; both undercounted). Of the 50: **48 are under
+`.planning/`** (frozen v1.0 + v1.0.1 planning history documenting the old
+shorthand as accurate history) and **2 are under `tests/`**
+(`D-reviewer-budget.sh`, `D-security-reviewer-budget.sh`) -- where the tokens
+are the fixtures' own parser/detector REGEX literals (they exist to RED-detect
+the old shorthand), NOT residue. **ZERO of the 50 are under `plugins/lz-advisor/`.**
+The `-- plugins/lz-advisor/` pathspec excludes every `.planning/` and `tests/`
+match structurally; no history or fixture file is referenced or modified by the
+SC-5 sweep. This is the Phase 9 precedent: historical shorthand references stay
+as accurate history. The SC-5 verdict (plugin tree clean) is unchanged by this
+count correction.
 
 ## SC-5 verdict
 
