@@ -395,17 +395,15 @@ A run "fully passes" when SHAPE grade is clean AND the BUDGET fixture exits 0. C
 
 **Both assumptions are flagged for the planner to confirm (A1 is a `checkpoint:human-verify` candidate; A2 is a scope-interpretation the planner should state explicitly in the plan).**
 
-## Open Questions
+## Open Questions (RESOLVED 2026-06-08)
 
-1. **Exact checkpoint branch (the user-specified `uat/pre-storybook-compodoc` does not exist).**
+1. **Exact checkpoint branch (the user-specified `uat/pre-storybook-compodoc` does not exist).** **[RESOLVED]**
    - What we know: 18 branches inventoried; `lz-advisor-compodoc-storybook-uat-base` (`019a26a`) is the explicit lz-advisor compodoc/storybook UAT base; `uat-compodoc-0.14.2` is the most recent compodoc checkpoint.
-   - What's unclear: which the user intended by the (now-absent) name.
-   - Recommendation: planner surfaces the discrepancy to the user (AskUserQuestion / `checkpoint:human-verify`), defaulting to `lz-advisor-compodoc-storybook-uat-base`.
+   - **Resolution:** the user CONFIRMED `lz-advisor-compodoc-storybook-uat-base` (`019a26a`) at plan time via AskUserQuestion. Recorded in `13-CONTEXT.md` D-06 "PLAN-TIME RESOLUTION" and `13-VALIDATION.md` Manual-Only table; all plans use it.
 
-2. **n=3 vs n=5 under the shared session-credit pool.**
+2. **n=3 vs n=5 under the shared session-credit pool.** **[RESOLVED]**
    - What we know: nested `-p` draws on the parent's 5-hour pool; 2 skills x n runs = 6-10 nested sessions.
-   - What's unclear: live pool headroom at execution time.
-   - Recommendation: run n=3 floor first; escalate to n=5 only if the pool allows; budget across reset windows.
+   - **Resolution:** Claude's-discretion item (CONTEXT: "Exact n: 3 is the floor... Planner picks"). Plans default to **n=3 floor** with documented escalation to n=5 only if pool headroom allows; each capture verified to contain a `result` event before grading.
 
 ## State of the Art
 
