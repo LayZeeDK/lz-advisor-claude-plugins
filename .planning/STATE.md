@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0.1
 milestone_name: No review report shorthands
 status: executing
-stopped_at: Completed 13-06-PLAN.md (iteration-2 concision fix FIX-R2-A/B/C; gap-closure Wave 1 for GAP-13-BUDGET-R2)
-last_updated: "2026-06-08T21:30:00.000Z"
-last_activity: 2026-06-08 -- 13-06 iteration-2 concision fix landed
+stopped_at: Completed 13-07-PLAN.md (SC-4 third live re-measure GREEN 6/6; GATE-02 fully satisfied)
+last_updated: "2026-06-08T21:30:38.623Z"
+last_activity: 2026-06-08 -- 13-07 third SC-4 re-measure GREEN; GATE-02 budget half closed
 progress:
   total_phases: 1
-  completed_phases: 0
+  completed_phases: 1
   total_plans: 7
-  completed_plans: 6
-  percent: 0
+  completed_plans: 7
+  percent: 100
 ---
 
 # Project State
@@ -25,10 +25,10 @@ See: .planning/PROJECT.md (updated 2026-06-07)
 
 ## Current Position
 
-Phase: 13 (Empirical verification) — EXECUTING (6/7 plans executed; 13-07 third re-measure queued)
-Plan: 6 of 7 (complete)
-Status: Ready to execute 13-07
-Last activity: 2026-06-08 -- 13-06 iteration-2 concision fix landed
+Phase: 13 (Empirical verification) — EXECUTED (7/7 plans complete; SC-4 GREEN on the third re-measure; GATE-02 fully satisfied -- phase verification next)
+Plan: 7 of 7 (complete)
+Status: Ready for phase verification (verify_phase_goal -> 13-VERIFICATION.md)
+Last activity: 2026-06-08 -- 13-07 third SC-4 re-measure GREEN 6/6; GATE-02 budget half closed
 
 ### Milestone v1.0.1 roadmap
 
@@ -98,6 +98,7 @@ Advisor runtime-proven on Opus 4.8. Final phase: Phase 10 (documentation-hygiene
 | Phase 13 P04 | 18min | 3 tasks | 2 files |
 | Phase 13 P05 | ~40min | 3 tasks | 33 files |
 | Phase 13 P06 | ~25min | 3 tasks | 2 files |
+| Phase 13 P07 | ~30min | 3 tasks | 30 files |
 
 ## Accumulated Context
 
@@ -129,7 +130,7 @@ Recent decisions affecting current work (v1.0.1):
 
 ### Blockers/Concerns
 
-- [ITERATION-2 FIX LANDED 13-06; PENDING 13-07 RE-MEASURE] GAP-13-BUDGET-R2 (13-05, SUPERSEDES GAP-13-BUDGET): after the 13-04 concision fix, the 13-05 LIVE re-measure (n=5 per skill against the fixed agents) showed the per-finding 28w cap held on 7/10 runs (reviewer 3/5, security 4/5) -- a LARGE improvement over the pre-fix 2/6 -- but 3/10 runs retained a residual over-cap: r2-review-3 (29w marginal deref-chain), r2-review-4 (45w multi-clause Question; the REVIEWER grammar has no 75w auto-clarity carve-out -- FIX-4 was security-only), r2-security-1 (four findings 30-33w verbose FIX-clause prose with remediation code snippets). The SECOND agent-contract concision iteration HAS NOW LANDED (Plan 13-06, FIX-R2-A/B/C, commits bfb8003 + 91ee635): reviewer Question elaboration routed to the existing 60w `### Per-finding validation` (NO new carve-out); security FIX/remediation clause reference-by-shape; reviewer causal-chain split (consequence -> Cross-Cutting Patterns). Caps UNCHANGED, fixtures UNMODIFIED (genuine concision, gate not gamed), WR-05 atomicity gate GREEN. SC-4 is NOT yet confirmed GREEN on live emission -- the THIRD live re-measure (Plan 13-07) is still required before GATE-02 can move off PARTIAL. The grammar SHAPE (SC-1/SC-2) was already flawless 10/10 (Pass^k=1.0) -- the milestone goal (no shorthands) IS achieved; the residual was per-finding concision on the FIX/Question side, a separate axis. FIX-R2-D (gate tolerance band) recorded as a flagged DEFERRED product-contract decision in 13-06-SUMMARY (the user settles it deliberately). Evidence: `.planning/phases/13-empirical-verification/uat/GRADE-LOG-R2.md` + `PASS-K-R2.md` + the 10 `r2-*.agent.md` captures + `13-06-SUMMARY.md`.
+- [RESOLVED 13-07] GAP-13-BUDGET-R2 (13-05, SUPERSEDED GAP-13-BUDGET): the iteration-2 concision fix (Plan 13-06, FIX-R2-A/B/C, commits bfb8003 + 91ee635) was RE-MEASURED on live emission in Plan 13-07 -- the THIRD SC-4 re-measure (n=3 per skill against the 13-06 FIXED agents, R3 worktree off 019a26a). RESULT: combined c=6/6, every `--from-trace` budget gate run exit 0 under the UNCHANGED hard gate (reviewer [0,0,0], security [0,0,0]); Pass@k=Pass^k=1.0 at every k. The three R2 residual classes are ELIMINATED: worst reviewer finding 45w/29w -> 22w (FIX-R2-A routed the Question elaboration to the 60w Per-finding validation valve; FIX-R2-C split the causal chain to Cross-Cutting Patterns); worst security finding 33w -> 27w (FIX-R2-B fix-clause reference-by-shape). SHAPE clean 6/6 (OWASP [Axx] byte-intact, anchored shorthand=0). The fixtures were NEVER edited (`git status --porcelain tests/` empty throughout) -- the close is genuine concision, not a gamed gate (T-13-07-02). No residual stray surfaced, so the deferred FIX-R2-D gate-tolerance-band decision is NOT needed to close SC-4 (it remains a flagged product-contract decision the user may settle independently per 13-06-SUMMARY, NOT a blocker). SC-4 is GREEN; GATE-02's budget half is CLOSED; all five UAT criteria PASS. Progression: pre-fix 2/6 -> 13-04 fix 7/10 (R2) -> 13-06 fix 6/6 (R3). Evidence: `.planning/phases/13-empirical-verification/uat/GRADE-LOG-R3.md` + `PASS-K-R3.md` + the 6 `r3-*.agent.md` captures + `WORKTREE-PROVENANCE-R3.md` + `13-07-SUMMARY.md`.
 - [SUPERSEDED by GAP-13-BUDGET-R2] GAP-13-BUDGET (13-02): the per-finding 28w cap was exceeded on LIVE emission in 4/6 UAT runs (review-2 46w; security-1 35w; security-2 31w; security-3 34w+36w). ADDRESSED by the 13-04 fix (commit 5085bca, FIX-1..4) and re-measured in 13-05 (2/6 -> 7/10); a residual remains -> tracked as GAP-13-BUDGET-R2 above. Pre-fix evidence preserved in `uat/GRADE-LOG.md` + `PASS-K.md`.
 - [RESOLVED 13-03] GATE-02 worktree constraint: the Phase 13 UAT ran in a dedicated ngx worktree off the confirmed checkpoint `lz-advisor-compodoc-storybook-uat-base` @ `019a26a` (the spec name `uat/pre-storybook-compodoc` does not exist), never on ngx `main` (SC-3 PASS). The throwaway worktree + `uat/phase-13-render` branch are torn down (D-08); ngx is back to `[main]`-only.
 - Few-shot drift risk (Phase 12): LLMs follow worked examples over stated rules. The Format line and all 8+ worked examples (including holistic example, Hedge Marker examples, verify_request example tokens) must change in ONE atomic unit or output will be mixed (this is the documented Phase 7 WR-05 scar).
@@ -150,7 +151,7 @@ Recent decisions affecting current work (v1.0.1):
 
 ## Session Continuity
 
-Last session: 2026-06-08T21:30:00.000Z
-Stopped at: Completed 13-06-PLAN.md (iteration-2 concision fix FIX-R2-A/B/C; gap-closure Wave 1 for GAP-13-BUDGET-R2)
+Last session: 2026-06-08T21:30:38.617Z
+Stopped at: Completed 13-07-PLAN.md (SC-4 third live re-measure GREEN 6/6; GATE-02 fully satisfied)
 Resume file: None
-Resume next: Plan 13-07 -- the THIRD SC-4 live re-measure (GATE-02 closeout). Re-provision a fresh worktree off 019a26a on `uat/phase-13-render-r3`, recover seeds byte-identical from dangling commit 4fa7fd7, run n>=3 `claude -p` captures per skill against the 13-06 FIXED agents (FIX-R2-A/B/C landed in commits bfb8003 + 91ee635), run `tests/D-*-budget.sh --from-trace` under the UNCHANGED hard gate (EXPECT exit 0 on every run), recompute Pass@k, write evidence before teardown (D-08), update 13-UAT.md. SC-4 closes only when EVERY run exits 0 under the unchanged gate. If a residual stray persists, record it HONESTLY (D-10) -- it is itself the evidence for the deferred FIX-R2-D gate-structure decision; never re-word or game it. Phase 13 verdict stays NEEDS-REVIEW until the third re-measure is GREEN: SC-1/SC-2/SC-3/SC-5 already PASS (SHAPE Pass^k=1.0, OWASP [Axx] byte-intact); SC-4 is the last open criterion. FIX-R2-D (gate tolerance band) is the user's deliberate decision per 13-06-SUMMARY -- do NOT implement it without the user settling the Layer-1-vs-Layer-2 product-contract question.
+Resume next: Phase 13 verification (verify_phase_goal -> spawn gsd-verifier for 13-VERIFICATION.md). All 7 plans executed; SC-4 is now GREEN on the 13-07 third live re-measure (combined c=6/6, Pass@k=Pass^k=1.0, every run exit 0 under the UNCHANGED hard gate; the 13-06 FIX-R2-A/B/C concision fix fully landed, fixtures never edited -- the close is genuine). All five UAT criteria PASS (SC-1/2/3/5 already PASS; SC-4 closed in 13-07). GATE-02 is FULLY SATISFIED (render half + budget half). NEXT: run the independent phase-goal verification (gsd-verifier) to produce 13-VERIFICATION.md, then the milestone audit. FIX-R2-D (gate tolerance band) was NOT needed to close SC-4 -- no residual stray surfaced; it remains a flagged product-contract decision the user may settle independently per 13-06-SUMMARY, NOT a blocker.
