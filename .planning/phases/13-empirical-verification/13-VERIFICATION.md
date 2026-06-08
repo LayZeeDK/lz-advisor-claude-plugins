@@ -14,9 +14,14 @@ gaps:
       - path: "plugins/lz-advisor/agents/security-reviewer.md"
         issue: "Live emission overshoots the per-finding cap by merging multi-sink findings (security-1: Finding 4 = 35w), embedding inline code reproductions (security-2: Finding 3 = 31w; security-3: Finding 2 = 34w), and emitting multi-clause Question-tier bodies (security-3: Finding 8 = 36w). 3/3 security runs over-cap."
     missing:
-      - "Agent-contract concision tightening in plugins/lz-advisor/agents/reviewer.md + security-reviewer.md so the per-finding span stays <=28w on LIVE emission (keep severity-divergence rationale / multi-sink splits / inline code snippets out of the counted finding body, or split bundled findings)."
-      - "Re-measure SC-4 on live output after the fix: re-provision the deterministic UAT substrate from uat/WORKTREE-PROVENANCE.md (base 019a26a, review-src/handler.ts + review-src/disk-info.ts), re-run the n>=3 headless claude -p captures, and re-run the --from-trace budget gate to GREEN."
-      - "Disposition (CONTEXT D-10): route to a Phase 12.x gap-closure REPLAN; do NOT patch the agent contract inside this verify phase (WR-05 partial-rewrite scar). Surface GAP-13-BUDGET to the user for the spin-up decision before GATE-02 is marked green."
+      - "FIX-1 (reviewer.md + security-reviewer.md): route severity-divergence rationale OUT of the finding body INTO the dedicated `### Per-finding validation` section (max_words=60). review-2's 46w over-cap was a `Severity: Critical (executor said Important...)` rationale inlined into the body -- a DOCUMENTED anti-pattern (reviewer.md:236 / security-reviewer.md:245 already list 'severity-revision prose without the ### Per-finding validation heading' as a violation). Add a WRONG->RIGHT worked example showing the rationale in Per-finding validation, body stays terse. Keep section placement as the severity signal."
+      - "FIX-2 (security-reviewer.md): add an explicit 'one issue per finding -- split distinct vulnerabilities into separate numbered findings rather than merging' rule + worked example. security-1's 35w over-cap merged two sinks (http leak + shell curl injection) into one [A02] finding; split = two findings each <28w."
+      - "FIX-3 (security-reviewer.md, also reviewer.md): add 'reference code by `path:line`; do NOT reproduce code snippets inline in the finding body' rule. security-2 (31w) and security-3 F2 (34w) embedded verbose inline `exec('curl '+url+...)` reproductions; the location pointer already addresses the code."
+      - "FIX-4 (security-reviewer.md): resolve the auto-clarity carve-out ambiguity. Prose at security-reviewer.md:200 says the 75w carve-out covers 'question-classes / architectural threat disagreements', but the formal <auto_clarity_carve_out cap=75> only fires on [CVE]/[GHSA]/[CWE] brackets -- so a genuine multi-clause Question (security-3 F8 = 36w) has NO sanctioned escape and is capped at 28w. Either extend the carve-out element to cover bracket-less Question/architectural-disagreement findings, or require those terse. Pick one and make prose + XML element agree."
+      - "CAP VERDICT: do NOT recalibrate the 28w cap. It is a deliberate outlier soft cap (target 22w; worked examples 11-15w; review-1/review-3 cleared it with 6-7 findings each). GAP-13-BUDGET is agent VERBOSITY / wrong-placement / failure-to-split, not an unrealistic cap. The fix is concision discipline using the contract's EXISTING escape valves (Per-finding validation 60w; auto-clarity 75w), not a higher cap."
+      - "ATOMICITY (WR-05 guard): apply FIX-1..4 to BOTH agents' rules AND every affected worked example in ONE atomic plan -- a partial rewrite yields mixed few-shot output (the documented Phase 7 WR-05 scar). The grouped grammar SHAPE (SC-1/SC-2) must stay byte-intact (it is already correct 6/6); only the per-finding concision discipline + Per-finding-validation routing + auto-clarity scope change."
+      - "RE-MEASURE SC-4 on live output after the fix: re-provision the deterministic UAT substrate from uat/WORKTREE-PROVENANCE.md (base 019a26a, seeded review-src/handler.ts + review-src/disk-info.ts), re-run the n>=3 headless claude -p captures per skill, re-run the --from-trace budget gate to GREEN, recompute Pass@k/Pass^k, then GATE-02 closes."
+      - "DISPOSITION (user decision 2026-06-08): close in-phase via `/gsd:plan-phase 13 --gaps` -> gap_closure plans (one atomic agent-edit plan + one re-measure plan) -> `/gsd:execute-phase 13 --gaps-only` -> re-verify. This supersedes the earlier 'separate Phase 12.x' lean; the WR-05 concern is satisfied by the ATOMICITY requirement above, not by phase separation."
 human_verification: []
 ---
 
@@ -146,7 +151,20 @@ Every run cleared the anti-vacuous `MIN_FINDINGS=5` guard (6-8 findings parsed),
 
 **Surface to the user before marking Phase 13 / GATE-02 complete.**
 
+## GAP-13-BUDGET: Refined Root-Cause Diagnosis (post-verification investigation, 2026-06-08)
+
+Investigation verdict: **agent verbosity / wrong-placement / failure-to-split -- NOT an unrealistic cap.** Each over-cap maps to a concision-discipline failure for which the contract ALREADY provides the correct home; the agents simply did not use it. Fix scope is enumerated in the frontmatter `missing:` list (FIX-1..4 + ATOMICITY + RE-MEASURE).
+
+| Run | Over-cap | Root cause | Existing escape valve ignored | Fix |
+| --- | -------- | ---------- | ----------------------------- | --- |
+| review-2 | Finding 1 = 46w | severity-divergence rationale (`Severity: Critical (executor said Important...)`) inlined into the finding body | `### Per-finding validation` (max_words=60) exists for exactly this; reviewer.md:236 lists inlining it as a DOCUMENTED anti-pattern | FIX-1: route rationale to Per-finding validation; body stays terse |
+| security-1 | Finding 4 = 35w | two distinct sinks (http leak + shell `curl` injection) merged into one `[A02]` finding | "one line per finding" grammar -- should be two numbered findings | FIX-2: explicit split-findings rule + example |
+| security-2 | Finding 3 = 31w | verbose inline code reproduction `exec('curl '+url+...)` in the body | `path:line` location already addresses the code; grammar references, not reproduces | FIX-3: reference-by-location rule |
+| security-3 | F2 = 34w, F8 = 36w | inline code repro (F2) + multi-clause Question body (F8) | F2: as FIX-3. F8: auto-clarity carve-out ambiguity -- prose (security-reviewer.md:200) says it covers Questions but the formal `<auto_clarity_carve_out cap=75>` only fires on [CVE]/[GHSA]/[CWE] brackets, so F8 had no sanctioned escape | FIX-3 (F2) + FIX-4 (resolve carve-out scope for F8) |
+
+The 28w cap is sound (deliberate outlier soft cap; target 22w; worked examples 11-15w; review-1 + review-3 cleared it cleanly with 6-7 findings each). Recalibration is rejected; the fix is concision discipline + correct use of the existing 60w / 75w escape valves, applied atomically across both agents' rules + worked examples (WR-05 guard).
+
 ---
 
-_Verified: 2026-06-08_
-_Verifier: Claude (gsd-verifier)_
+_Verified: 2026-06-08 (refined diagnosis appended 2026-06-08 post-investigation)_
+_Verifier: Claude (gsd-verifier) + post-verification root-cause investigation_
