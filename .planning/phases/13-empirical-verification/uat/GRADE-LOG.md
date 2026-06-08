@@ -82,3 +82,64 @@ Target: `review-src/disk-info.ts`
 
 | Run | result event | `### Critical` | `### Threat Patterns` | OWASP `[Axx]` | shorthand (unanchored) | severity-shorthand (anchored) | SHAPE | BUDGET exit | findings parsed | fully passes |
 |-----|--------------|----------------|-----------------------|---------------|------------------------|-------------------------------|-------|-------------|-----------------|--------------|
+| security-1 | Y | [OK] | [OK] | [OK] | 0 | 0 | [OK] | 1 | 7 | NO (BUDGET) |
+
+### security-1 BUDGET failure detail (SC-4 live over-cap)
+
+`bash tests/D-security-reviewer-budget.sh --from-trace security-1.agent.md` -> exit 1, 9/10.
+SHAPE is clean (all four spelled-out headers, `(none)`, `### Threat Patterns`, OWASP
+`[A03]/[A01]/[A07]/[A02]/[A09]/[A06]` preserved, zero shorthand). The single failing
+assertion is the per-finding word budget on Finding 4: 35 > 28. The agent bundled TWO
+distinct sinks (the `http://` token leak AND the single-quoted shell `curl` injection)
+into one `[A02]` finding, inflating the body to 35w.
+
+DISPOSITION (D-10): SUBSTANTIVE BUDGET result on LIVE emission (SC-4 security half).
+The grouped GRAMMAR + `[Axx]` reach the rendered report fine (SC-2 holds for this run);
+the per-finding budget DOES NOT hold. Recorded as a FAILED budget run. Not patched
+inline. Root pattern: per-finding cap exceeded when the agent merges two related-but-
+distinct vulnerabilities into a single finding body instead of splitting them.
+
+| security-2 | Y | [OK] | [OK] | [OK] | 0 | 0 | [OK] | 1 | 7 | NO (BUDGET) |
+
+### security-2 BUDGET failure detail (SC-4 live over-cap)
+
+`--from-trace security-2.agent.md` -> exit 1, 9/10. SHAPE clean (all headers,
+`[Axx]` preserved, zero shorthand). Failing assertion: per-finding budget on
+Finding 3: 31 > 28. The body embeds a long inline code snippet
+(`exec('curl ' + url + " -d '" + JSON.stringify(parsed) + "'")`) that inflates the
+counted span. Same SC-4 over-cap class as security-1 / review-2; D-10 disposition:
+faithfully recorded FAILED budget run, not patched. Root pattern: verbose inline
+code reproductions push a finding over the per-finding cap.
+
+| security-3 | Y | [OK] | [OK] | [OK] | 0 | 0 | [OK] | 1 | 8 | NO (BUDGET) |
+
+### security-3 BUDGET failure detail (SC-4 live over-cap)
+
+`--from-trace security-3.agent.md` -> exit 1, 9/11. SHAPE clean (all headers,
+`[Axx]` preserved, zero shorthand). TWO failing per-finding budget assertions:
+Finding 2 (34 > 28, verbose second-order-injection code reproduction) and the
+Question-tier Finding 8 (36 > 28, a multi-clause deployment-binding reachability
+question). Same SC-4 over-cap class. D-10: recorded FAILED, not patched.
+
+Security summary: c=0 fully-passing of n=3 runs. SHAPE (SC-2) holds 3/3 (grouped
+headers + `[Axx]` + zero shorthand every run); BUDGET (SC-4 security half) holds
+0/3 -- every run had >=1 per-finding over-cap.
+
+## SC-4 cross-skill summary (CRITICAL EMPIRICAL FINDING)
+
+The per-finding 28-word cap is exceeded on LIVE emission in 4 of 6 runs across BOTH
+skills (review-2; security-1/2/3). The Phase 11/12 fixtures were proven GREEN on the
+agents' SELF-EXTRACTED hand-authored worked examples, but the LIVE agent emission
+routinely overshoots the per-finding cap by appending: (a) severity-divergence
+rationales (review-2), (b) merged multi-sink findings (security-1), (c) verbose
+inline code reproductions (security-2/3), and (d) multi-clause Question-tier bodies
+(security-3). This is EXACTLY the "burned 3x assuming budget-neutrality; measure,
+do not reason" scar SC-4 exists to catch. The GRAMMAR (SC-1/SC-2) reaches the
+rendered report flawlessly (6/6); the per-finding BUDGET (SC-4) does NOT hold on
+live output (2/6 reviewer+security combined fully-passing).
+
+DISPOSITION (D-10): SUBSTANTIVE behavioral/budget result -> GAP routed to a Phase
+12.x gap-closure REPLAN (NOT patched inline in this verify phase). The fix is an
+agent-contract concision tightening (per-finding terseness on live emission), which
+is an agent-contract rewrite, not a verify-phase observation. See 13-02-SUMMARY.md
+"Gap" section and the Phase 13 VERIFICATION for routing.
