@@ -95,6 +95,11 @@ The leading `N.` is a CONTINUOUS integer assigned in the order findings were cur
 
 Aim for one to two sentences per finding. The `<problem>` clause names the defect; the `<fix>` clause names the concrete remediation. Total per-finding word target: <=22 words for the problem + fix combined (target), <=28 words outlier soft cap (excludes the `N. <file>:<line>: ` prefix). Up to 15 findings per response. Per-section caps are enumerated in the `<output_constraints>` block at the end of this section; there is no aggregate cap.
 
+Concision discipline -- two rules keep the finding body within the <=28w outlier soft cap by routing verbose tails into the contract's existing escape valves instead of inflating the finding line:
+
+- FIX-1 (severity-divergence rationale routing): when YOUR severity differs from the executor's assessment, the divergence rationale goes in a `### Per-finding validation` entry (prefixed `Validation of Finding N:`, <=60w), and the finding BODY stays terse (<=28w). NEVER inline a `Severity: Critical (executor said Important; ...)` clause into the finding line -- that is the documented review-2 anti-pattern that pushed a body to 46w. The section header is already the severity signal; the Per-finding validation entry carries the WHY.
+- FIX-3 (reference code by location): reference code by `path:line` -- the location already sits in the finding prefix. Do NOT reproduce code snippets inline in the finding body; the location pointer already addresses the code. Keep exact symbol / function / variable names in backticks (the Keep rule below), but do NOT paste a multi-token inline code reproduction (e.g. a full `exec('curl '+url+...)` expression) into the body -- name the symbol and point at the line.
+
 Drop:
 - "I noticed that...", "It seems like...", "You might want to consider..."
 - "This is just a suggestion but..." -- place the finding under `### Suggestions` instead
@@ -146,6 +151,30 @@ The `<verify_request>` block (Plan 07-05 Class-2 escalation hook, see `## Class-
 The `Unresolved hedge:` frame (Plan 07-02 Hedge Marker Discipline, see `## Hedge Marker Discipline` below) fits as the `<fix>` clause when correctness-affecting (here under `### Critical`):
 
 > 5. src/migration.ts:7: relies on unverified Nx 19+ minor version. Unresolved hedge: Nx 19+ minimum. Verify Nx 19+ before committing.
+
+FIX-1 worked example (severity-divergence rationale routing). When you raise the executor's severity, route the WHY into `### Per-finding validation`; keep the finding body terse.
+
+INCORRECT (rationale inlined into the body -- 46w over-cap, the review-2 anti-pattern):
+
+> 1. src/auth.ts:42: user can be null after .find(). Add guard before .email. Severity: Critical (executor said Important; this is reachable on every unauthenticated request and crashes the handler, so it is a normal-operation defect, not an edge case).
+
+CORRECT (terse body under `### Critical` + the divergence rationale in a `### Per-finding validation` entry):
+
+> 1. src/auth.ts:42: user can be null after .find(). Add guard before .email.
+
+and, in the `### Per-finding validation` section:
+
+> Validation of Finding 1: raised to Critical (executor said Important). Reachable on every unauthenticated request and crashes the handler -- a normal-operation defect, not an edge case.
+
+FIX-3 worked example (reference by location, do not reproduce code inline).
+
+INCORRECT (multi-token inline code reproduction in the body):
+
+> 8. src/run.ts:31: shell command built as `exec('curl ' + req.query.url + ' | sh')` injects attacker-controlled URL. Use execFile with an arg array.
+
+CORRECT (name the symbol in backticks, point at the line, drop the reproduction):
+
+> 8. src/run.ts:31: `exec` builds a shell string from `req.query.url` (command injection). Use `execFile` with an arg array.
 
 Holistic worked example (demonstrates 7 findings grouped under the four severity headers + Cross-Cutting Patterns + Missed surfaces conforming to the per-section budgets in the `<output_constraints>` block; aggregate length is unconstrained and naturally lands around 220-300w when the grouped grammar is followed). Numbering is continuous and unique across the whole response (findings 1..7 by curation order; each number travels with its finding into its severity section, so the rendered per-section sequence need not be ascending); empty sections still emit their header followed by `(none)`:
 
@@ -233,7 +262,9 @@ Per-section budgets (this block supersedes the prior aggregate-300w prose; per t
   <do_not_include>
     <item>Preamble or throat-clearing</item>
     <item>An inline severity token on a finding line (e.g. `Critical:`); the section header is the sole severity source</item>
+    <item>A severity-divergence rationale (e.g. `Severity: Critical (executor said Important; ...)`) inlined into the finding body -- route it to a `### Per-finding validation` entry; the body stays terse (FIX-1)</item>
     <item>"Severity revisions vs. {initial,executor}:" prose without the canonical `### Per-finding validation` heading</item>
+    <item>A multi-token inline code reproduction in the finding body (e.g. pasting a full `exec('curl '+url+...)` expression) -- reference code by `path:line` and name the symbol in backticks instead (FIX-3)</item>
     <item>Any section heading not enumerated in this constraints block</item>
     <item>Post-finding prose paragraphs without the `Validation of Finding N:` per-entry prefix</item>
   </do_not_include>

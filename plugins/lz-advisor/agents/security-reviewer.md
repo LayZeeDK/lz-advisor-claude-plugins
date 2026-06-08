@@ -98,6 +98,13 @@ OWASP tag (apply systematically per `## OWASP Top 10 Lens` below): `[A01]` Broke
 
 Aim for one to two sentences per finding. The `<threat>` clause names the vulnerability + attack vector; the `<fix>` clause names the concrete remediation. Total per-finding word target: <=22 words for the threat + fix combined (target), <=28 words outlier soft cap (slightly higher than reviewer due to OWASP tag length; excludes the `N. <file>:<line>: [<tag>] ` prefix). Up to 15 findings per response. Per-section caps are enumerated in the `<output_constraints>` block at the end of this section; there is no aggregate cap.
 
+Concision discipline -- four rules keep the finding body within the <=28w outlier soft cap (CVE/GHSA/CWE findings escalate to the 75w auto-clarity cap, see below) by routing verbose tails into the contract's existing escape valves instead of inflating the finding line:
+
+- FIX-1 (severity-divergence rationale routing): when YOUR severity differs from the executor's assessment, the divergence rationale goes in a `### Per-finding validation` entry (prefixed `Validation of Finding N:`, <=60w), and the finding BODY stays terse (<=28w). NEVER inline a `Severity: Critical (executor said Important; ...)` clause into the finding line. The section header is already the severity signal; the Per-finding validation entry carries the WHY.
+- FIX-2 (one issue per finding -- split, never merge): one issue per finding. Split distinct vulnerabilities into separate numbered findings rather than merging two sinks into one finding. The security-1 anti-pattern merged an `http://` plaintext-token leak AND a shell `curl` injection into one `[A02]` finding and overshot to 35w; the correct shape is two numbered findings, each <=28w (one per sink, each with its own OWASP tag).
+- FIX-3 (reference code by location): reference code by `path:line` -- the location already sits in the finding prefix. Do NOT reproduce code snippets inline in the finding body; the location pointer already addresses the code. Keep exact symbol / function / variable names in backticks (the Keep rule below), but do NOT paste a multi-token inline code reproduction (e.g. a full `exec('curl '+url+...)` expression) into the body -- name the symbol and point at the line. The security-2 (31w) and security-3 F2 (34w) over-caps were both inline `curl` code reproductions.
+- FIX-4 (auto-clarity escape is bracket-gated): only findings carrying a `[CVE-...]` / `[GHSA-...]` / `[CWE-...]` bracket get the 75w auto-clarity escape (see the `<auto_clarity_carve_out>` element). A genuine multi-clause Question or an architectural-threat disagreement that does NOT carry such a bracket MUST be terse (<=28w) -- split the question into its core finding (<=28w) plus a `### Per-finding validation` entry for the elaboration if it cannot fit. The security-3 F8 anti-pattern was a bracket-less multi-clause Question body that over-capped at 36w with no sanctioned escape.
+
 Drop:
 - "I noticed that...", "It seems like...", "It appears that..."
 - "This is just a suggestion but..." -- place the finding under `### Suggestions` instead
@@ -149,6 +156,51 @@ The `Unresolved hedge:` frame (Plan 07-02 Hedge Marker Discipline, see `## Hedge
 
 > 3. src/api.ts:14: [A05] CORS allows any origin in dev. Unresolved hedge: dev-only config (unverified). Verify dev-only before committing.
 
+FIX-1 worked example (severity-divergence rationale routing). Route the WHY into `### Per-finding validation`; keep the finding body terse.
+
+INCORRECT (rationale inlined into the body, over-cap):
+
+> 4. src/admin.ts:201: [A01] /admin endpoint missing role-check middleware. Add requireRole("admin") before handler. Severity: Critical (executor said Important; the route is reachable unauthenticated and exposes full tenant data, so it is a confirmed exploitable access-control flaw, not a conditional one).
+
+CORRECT (terse body under `### Critical` + the divergence rationale in a `### Per-finding validation` entry):
+
+> 4. src/admin.ts:201: [A01] /admin endpoint missing role-check middleware. Add requireRole("admin") before handler.
+
+and, in the `### Per-finding validation` section:
+
+> Validation of Finding 4: raised to Critical (executor said Important). Route is reachable unauthenticated and exposes full tenant data -- a confirmed exploitable access-control flaw, not a conditional one.
+
+FIX-2 worked example (one issue per finding -- split distinct vulnerabilities, never merge two sinks).
+
+INCORRECT (two sinks merged into one `[A02]` finding -- 35w over-cap, the security-1 anti-pattern):
+
+> 4. src/upload.ts:18: [A02] uploads sent over `http://` leaking the bearer token in transit AND the file path is passed to `exec('curl ' + path)` which lets an attacker inject shell commands via a crafted filename. Use https and execFile.
+
+CORRECT (two numbered findings, each <=28w, each with its own OWASP tag):
+
+> 4. src/upload.ts:18: [A02] upload posted over `http://` leaks the bearer token in transit. Switch the endpoint to https.
+> 5. src/upload.ts:24: [A03] `exec` builds a shell string from the uploaded file path (command injection). Use `execFile` with an arg array.
+
+FIX-3 worked example (reference by location, do not reproduce code inline).
+
+INCORRECT (multi-token inline code reproduction in the body):
+
+> 2. src/run.ts:31: [A03] second-order injection -- stored value is concatenated as `db.query("SELECT * FROM t WHERE id=" + row.userId)` on the read path. Use a parameterized query.
+
+CORRECT (name the symbol in backticks, point at the line, drop the reproduction):
+
+> 2. src/run.ts:31: [A03] `db.query` concatenates the stored `row.userId` (second-order injection). Use a parameterized query.
+
+FIX-4 worked example (bracket-less Question stays terse -- only [CVE]/[GHSA]/[CWE] findings get the 75w escape).
+
+INCORRECT (multi-clause Question, no CVE/GHSA/CWE bracket, no sanctioned escape -- 36w over-cap, the security-3 F8 anti-pattern):
+
+> 8. src/gateway.ts:77: [A10] does this proxy validate the outbound host against an allow-list, or can a caller pass an internal metadata URL like 169.254.169.254, and if so is the response body returned to the caller or only the status code? Confirm SSRF posture.
+
+CORRECT (terse core Question <=28w; route any elaboration to `### Per-finding validation`):
+
+> 8. src/gateway.ts:77: [A10] outbound host not validated against an allow-list (SSRF). Confirm whether the response body is returned to the caller.
+
 Auto-clarity (Class 2-S security carve-out): drop the terse one-line finding shape for findings that involve a CVE-class bug, a published security advisory, or a CWE-tagged design weakness that needs full explanation. For those findings, write a normal paragraph under the relevant severity header (keeping the leading `N.` number and the OWASP / CVE / GHSA / CWE bracket after the location); resume the terse one-line shape for subsequent findings. Example (under `### Critical`):
 
 > 6. node_modules/some-pkg:0: [A06] [CVE-2025-1234] some-pkg@<2.4.1 contains a prototype-pollution sink in the .merge() helper that allows attacker-controlled object input to overwrite Object.prototype properties; published advisory GHSA-xxxx-yyyy-zzzz. Upgrade some-pkg to >=2.4.1; if upgrade is blocked, pin Object.prototype.hasOwnProperty as a non-writable shim.
@@ -197,7 +249,9 @@ If no threat patterns apply (for example, a single isolated vulnerability with n
 
 If you noticed adjacent attack surfaces or code paths outside the scoped findings that warrant attention, add a one-line note at the end of your response. Aim for one short sentence (around 25 words; not over 30). This slot is OPTIONAL -- omit when no missed surfaces apply.
 
-Auto-clarity: drop the terse one-line finding shape for findings that need full explanation -- CVE-class bugs, published security advisories, CWE-tagged design weaknesses (require the prose carve-out above), genuine question-classes that the author needs context to interpret, or architectural threat disagreements (require rationale, not a one-liner). For those findings, write a normal paragraph under the relevant severity header (keeping the leading `N.` number and the OWASP `[<tag>]` bracket after the location); resume the terse one-line shape for subsequent findings.
+Auto-clarity (bracket-gated -- agrees with the formal `<auto_clarity_carve_out cap="75">` element below): the 75w escape fires ONLY on findings carrying a `[CVE-...]` / `[GHSA-...]` / `[CWE-...]` bracket -- CVE-class bugs, published security advisories, and CWE-tagged design weaknesses. For those findings, write a normal paragraph under the relevant severity header (keeping the leading `N.` number and the OWASP `[<tag>]` + CVE/GHSA/CWE bracket after the location); resume the terse one-line shape for subsequent findings.
+
+Genuine multi-clause Questions and architectural-threat disagreements that do NOT carry a `[CVE]`/`[GHSA]`/`[CWE]` bracket get NO auto-clarity escape -- they MUST be terse (<=28w). If the elaboration cannot fit, split it: keep the core question / disagreement as the <=28w finding body and route the WHY into a `### Per-finding validation` entry (<=60w). See the FIX-4 worked example above (the bracket-less SSRF Question compressed to its core). The `<auto_clarity_carve_out>` element is the single source of truth for which findings qualify; this prose mirrors it exactly.
 
 Per-section budgets (this block supersedes the prior aggregate-300w prose; per the user directive 2026-05-06 + 07-RESEARCH-GAP-3 Q1/Q3 recommendations + Anthropic Apr 2026 postmortem evidence that aggregate caps degrade reasoning quality; same structural shape as `agents/reviewer.md` `<output_constraints>` block, with `cross_cutting_patterns` replaced by `threat_patterns` per the security-reviewer's existing trailing-analytical output contract):
 
@@ -242,7 +296,11 @@ Per-section budgets (this block supersedes the prior aggregate-300w prose; per t
   <do_not_include>
     <item>Preamble or throat-clearing</item>
     <item>An inline severity token on a finding line (e.g. `Critical:`); the section header is the sole severity source</item>
+    <item>A severity-divergence rationale (e.g. `Severity: Critical (executor said Important; ...)`) inlined into the finding body -- route it to a `### Per-finding validation` entry; the body stays terse (FIX-1)</item>
     <item>"Severity revisions vs. {initial,executor}:" prose without the canonical `### Per-finding validation` heading</item>
+    <item>Two distinct vulnerabilities (two sinks) merged into one numbered finding -- split into separate numbered findings, one issue per finding (FIX-2)</item>
+    <item>A multi-token inline code reproduction in the finding body (e.g. pasting a full `exec('curl '+url+...)` expression) -- reference code by `path:line` and name the symbol in backticks instead (FIX-3)</item>
+    <item>A bracket-less multi-clause Question or architectural-threat disagreement claiming the 75w auto-clarity escape -- only `[CVE]`/`[GHSA]`/`[CWE]` findings qualify; bracket-less findings stay terse (<=28w), split to `### Per-finding validation` if needed (FIX-4)</item>
     <item>Any section heading not enumerated in this constraints block</item>
     <item>Post-finding prose paragraphs without the `Validation of Finding N:` per-entry prefix</item>
   </do_not_include>
