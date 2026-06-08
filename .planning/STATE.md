@@ -4,14 +4,14 @@ milestone: v1.0.1
 milestone_name: No review report shorthands
 status: executing
 stopped_at: Phase 13 context gathered
-last_updated: "2026-06-08T05:56:46.786Z"
-last_activity: 2026-06-08 -- Phase 13 planning complete
+last_updated: "2026-06-08T06:11:29.331Z"
+last_activity: 2026-06-08
 progress:
   total_phases: 1
   completed_phases: 0
   total_plans: 3
-  completed_plans: 0
-  percent: 0
+  completed_plans: 1
+  percent: 33
 ---
 
 # Project State
@@ -21,14 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-06-07)
 
 **Core value:** Near-Opus intelligence at Sonnet cost for coding tasks, through strategic advisor consultation at high-leverage moments
-**Current focus:** Phase 13 — empirical verification
+**Current focus:** Phase 13 — Empirical verification
 
 ## Current Position
 
-Phase: 13
-Plan: Not started
-Status: Ready to execute
-Last activity: 2026-06-08 -- Phase 13 planning complete
+Phase: 13 (Empirical verification) — EXECUTING
+Plan: 2 of 3
+Status: Plan 13-01 complete (UAT substrate provisioned); ready to execute Plan 13-02 (live claude -p runs)
+Last activity: 2026-06-08 -- Plan 13-01 complete (ngx worktree + seeded targets + evidence dir)
 
 ### Milestone v1.0.1 roadmap
 
@@ -92,6 +92,7 @@ Advisor runtime-proven on Opus 4.8. Final phase: Phase 10 (documentation-hygiene
 | Phase 12 P12-02 | 10min | 2 tasks | 2 files |
 | Phase 12 P12-03 | 20min | 2 tasks | 4 files |
 | Phase 12 P12-04 | 9min | 2 tasks | 6 files |
+| Phase 13 P01 | 6min | 3 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -110,6 +111,7 @@ Recent decisions affecting current work (v1.0.1):
 - [v1.0.1 / 12-02]: Security-reviewer emits grouped grammar with OWASP [Axx] preserved + 75w CVE carve-out; fixture FINDING_RE asserts the [Axx] bracket, GREEN-on-new/RED-on-old/RED-on-[Axx]-missing; AGNT-03 protected behaviors byte-intact.
 - [v1.0.1 / 12-03]: Both review skills' Phase 3 render-verbatim contracts name the four grouped severity headers (### Critical/### Important/### Suggestions/### Questions) + the trailing analytical section (### Cross-Cutting Patterns for review, ### Threat Patterns for security) as the protected literal headers; the "do not reformat into severity groups" prohibition is INVERTED (grouped IS the contract) with render-verbatim absolute and (none) preservation mandated. context-packaging.md display surfaces aligned (:60 inline pv anchor, :396 Verify Request OUTPUT illustration -> ### Critical, :411 prose); lowercase severity= machine attr (BNF/example) + INPUT-side Verification template ## Findings list KEPT (SYNC-01 per-surface disposition, Pitfall 5 / D-08); execute/SKILL.md :261 precision-edited to "reviewer-style grouped findings report" (Pitfall 6).
 - [Phase ?]: [v1.0.1 / 12-04]: Atomic 5-surface version bump 1.0.0 -> 1.0.1 (plugin.json + 4 SKILL.md version: fields) landed; README ### 1.0.1 changelog entry added (separate from the 5-surface tally). Phase-atomicity completeness gate PASSED: both budget fixtures GREEN-on-new + RED-on-old/self-test (+ security RED-on-[Axx]-missing); zero crit:/imp:/sug:/q: + zero formerly-X residue in plugins/lz-advisor/; AGNT-03 protected behaviors intact; .planning/ frozen history untouched. The atomic grouped-grammar unit is complete.
+- [Phase ?]: [v1.0.1 / 13-01]: UAT substrate provisioned -- dedicated ngx worktree on uat/phase-13-render off lz-advisor-compodoc-storybook-uat-base @ 019a26a (EXPECTED_BASE==ACTUAL_BASE, never main); seeded review-src/handler.ts (reviewer >=5 findings) + review-src/disk-info.ts (security >=5 OWASP-tagged) on the throwaway branch ONLY (A2 stated as decision: a slice within ngx, not a mutation of the active tree); evidence-custody dir .planning/.../uat/ created in this repo (D-08).
 
 ### Pending Todos
 
@@ -136,7 +138,7 @@ Recent decisions affecting current work (v1.0.1):
 
 ## Session Continuity
 
-Last session: 2026-06-07T23:10:59.002Z
+Last session: 2026-06-08T06:09:41.547Z
 Stopped at: Phase 13 context gathered
-Resume file: .planning/phases/13-empirical-verification/13-CONTEXT.md
+Resume file: None
 Resume next: Verify Phase 12 (spawn gsd-verifier to produce 12-VERIFICATION.md), then execute Phase 13 (GATE-02 empirical verification: headless claude -p UAT on both review skills in a dedicated worktree off uat/pre-storybook-compodoc; n>=3 budget-gate run; residue + .planning/-history-preservation sweep).
