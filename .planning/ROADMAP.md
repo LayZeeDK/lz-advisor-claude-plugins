@@ -56,7 +56,9 @@ Full phase details, requirements, success criteria, and plan breakdowns are arch
 **Plans**: 3 plans
 - [x] 13-01-PLAN.md -- Provision the dedicated ngx worktree off the confirmed checkpoint + seed reviewable slices + evidence dir (SC-3 substrate, Wave 0)
 - [x] 13-02-PLAN.md -- Live `claude -p` captures + dual extraction (SHAPE/BUDGET) + per-run grading + Pass@k/Pass^k (SC-1, SC-2 PASS 6/6; SC-4 budget FAIL 4/6 over-cap -> Phase 12.x gap)
-- [ ] 13-03-PLAN.md -- Residue + formerly-X sweep + worktree teardown + consolidated 13-UAT.md (SC-5, D-08, GATE-02 closeout)
+- [x] 13-03-PLAN.md -- Residue + formerly-X sweep (SC-5 PASS, exit 1) + worktree teardown (D-08) + consolidated 13-UAT.md (GATE-02 closeout; verdict MIXED -- SC-1/2/3/5 PASS, SC-4 FAIL = GAP-13-BUDGET)
+
+**Phase 13 verdict (all 3 plans executed):** MIXED -- the milestone goal (no shorthands in user-facing reports) is EMPIRICALLY ACHIEVED (SHAPE 6/6, Pass^k=1.0; SC-1/SC-2/SC-3/SC-5 PASS). GATE-02 is **NOT yet green**: SC-4 FAILS (per-finding 28-word budget exceeded on live emission, 4/6 runs = GAP-13-BUDGET), routed to a Phase 12.x gap-closure REPLAN per D-10. Phase 13 remains **needs-review** pending GAP-13-BUDGET disposition + phase VERIFICATION + a user decision.
 
 ## Progress
 
@@ -68,6 +70,6 @@ Phases execute in numeric order: 11 -> 12 -> 13
 | 1-10 (v1.0) | v1.0 MVP | 80/80 | Complete | 2026-06-01 |
 | 11. Fixture baseline | v1.0.1 | 2/2 | Complete    | 2026-06-07 |
 | 12. Atomic grouped-grammar rewrite | v1.0.1 | 4/4 | Complete    | 2026-06-07 |
-| 13. Empirical verification | v1.0.1 | 2/3 | In Progress|  |
+| 13. Empirical verification | v1.0.1 | 3/3 | Needs Review (SC-4 gap) |  |
 
 v1.0 shipped: 16 phases, 80 plans, plugin 1.0.0. See `.planning/MILESTONES.md` for the summary and `milestones/v1.0-ROADMAP.md` for full detail.
