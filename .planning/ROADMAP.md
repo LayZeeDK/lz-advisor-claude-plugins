@@ -55,7 +55,7 @@ Full phase details, requirements, success criteria, and plan breakdowns are arch
   5. A scoped `git grep` confirms no unintended `crit:|imp:|sug:|q:` residue anywhere in `plugins/lz-advisor/`, and the vocabulary sweep touches NO frozen v1.0 history artifacts (`.planning/milestones/`, archived phase summaries, UAT traces) -- historical shorthand references stay as accurate history per the Phase 9 precedent; new v1.0.1 planning artifacts (plans, summaries, STATE/ROADMAP updates) are exempt
 **Plans**: 3 plans
 - [x] 13-01-PLAN.md -- Provision the dedicated ngx worktree off the confirmed checkpoint + seed reviewable slices + evidence dir (SC-3 substrate, Wave 0)
-- [ ] 13-02-PLAN.md -- Live `claude -p` captures + dual extraction (SHAPE/BUDGET) + per-run grading + Pass@k/Pass^k (SC-1, SC-2, SC-4)
+- [x] 13-02-PLAN.md -- Live `claude -p` captures + dual extraction (SHAPE/BUDGET) + per-run grading + Pass@k/Pass^k (SC-1, SC-2 PASS 6/6; SC-4 budget FAIL 4/6 over-cap -> Phase 12.x gap)
 - [ ] 13-03-PLAN.md -- Residue + formerly-X sweep + worktree teardown + consolidated 13-UAT.md (SC-5, D-08, GATE-02 closeout)
 
 ## Progress
@@ -68,6 +68,6 @@ Phases execute in numeric order: 11 -> 12 -> 13
 | 1-10 (v1.0) | v1.0 MVP | 80/80 | Complete | 2026-06-01 |
 | 11. Fixture baseline | v1.0.1 | 2/2 | Complete    | 2026-06-07 |
 | 12. Atomic grouped-grammar rewrite | v1.0.1 | 4/4 | Complete    | 2026-06-07 |
-| 13. Empirical verification | v1.0.1 | 1/3 | In Progress|  |
+| 13. Empirical verification | v1.0.1 | 2/3 | In Progress|  |
 
 v1.0 shipped: 16 phases, 80 plans, plugin 1.0.0. See `.planning/MILESTONES.md` for the summary and `milestones/v1.0-ROADMAP.md` for full detail.

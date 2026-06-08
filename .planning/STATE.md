@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0.1
 milestone_name: No review report shorthands
 status: executing
-stopped_at: Phase 13 context gathered
-last_updated: "2026-06-08T06:11:29.331Z"
+stopped_at: Completed 13-02-PLAN.md (live UAT; SC-1/2 PASS, SC-4 budget gap)
+last_updated: "2026-06-08T08:55:00.000Z"
 last_activity: 2026-06-08
 progress:
   total_phases: 1
   completed_phases: 0
   total_plans: 3
-  completed_plans: 1
-  percent: 33
+  completed_plans: 2
+  percent: 67
 ---
 
 # Project State
@@ -26,9 +26,9 @@ See: .planning/PROJECT.md (updated 2026-06-07)
 ## Current Position
 
 Phase: 13 (Empirical verification) — EXECUTING
-Plan: 2 of 3
-Status: Plan 13-01 complete (UAT substrate provisioned); ready to execute Plan 13-02 (live claude -p runs)
-Last activity: 2026-06-08 -- Plan 13-01 complete (ngx worktree + seeded targets + evidence dir)
+Plan: 3 of 3
+Status: Plan 13-02 complete (live claude -p UAT: SC-1/SC-2 PASS 6/6, SC-4 budget over-cap 4/6 -> Phase 12.x gap); ready for Plan 13-03 (residue sweep + teardown + 13-UAT.md, GATE-02 closeout)
+Last activity: 2026-06-08 -- Plan 13-02 complete (6 live captures graded; grammar reaches render, per-finding budget exceeded on live emission)
 
 ### Milestone v1.0.1 roadmap
 
@@ -93,6 +93,7 @@ Advisor runtime-proven on Opus 4.8. Final phase: Phase 10 (documentation-hygiene
 | Phase 12 P12-03 | 20min | 2 tasks | 4 files |
 | Phase 12 P12-04 | 9min | 2 tasks | 6 files |
 | Phase 13 P01 | 6min | 3 tasks | 3 files |
+| Phase 13 P02 | 35min | 3 tasks | 26 files |
 
 ## Accumulated Context
 
@@ -112,6 +113,7 @@ Recent decisions affecting current work (v1.0.1):
 - [v1.0.1 / 12-03]: Both review skills' Phase 3 render-verbatim contracts name the four grouped severity headers (### Critical/### Important/### Suggestions/### Questions) + the trailing analytical section (### Cross-Cutting Patterns for review, ### Threat Patterns for security) as the protected literal headers; the "do not reformat into severity groups" prohibition is INVERTED (grouped IS the contract) with render-verbatim absolute and (none) preservation mandated. context-packaging.md display surfaces aligned (:60 inline pv anchor, :396 Verify Request OUTPUT illustration -> ### Critical, :411 prose); lowercase severity= machine attr (BNF/example) + INPUT-side Verification template ## Findings list KEPT (SYNC-01 per-surface disposition, Pitfall 5 / D-08); execute/SKILL.md :261 precision-edited to "reviewer-style grouped findings report" (Pitfall 6).
 - [Phase ?]: [v1.0.1 / 12-04]: Atomic 5-surface version bump 1.0.0 -> 1.0.1 (plugin.json + 4 SKILL.md version: fields) landed; README ### 1.0.1 changelog entry added (separate from the 5-surface tally). Phase-atomicity completeness gate PASSED: both budget fixtures GREEN-on-new + RED-on-old/self-test (+ security RED-on-[Axx]-missing); zero crit:/imp:/sug:/q: + zero formerly-X residue in plugins/lz-advisor/; AGNT-03 protected behaviors intact; .planning/ frozen history untouched. The atomic grouped-grammar unit is complete.
 - [Phase ?]: [v1.0.1 / 13-01]: UAT substrate provisioned -- dedicated ngx worktree on uat/phase-13-render off lz-advisor-compodoc-storybook-uat-base @ 019a26a (EXPECTED_BASE==ACTUAL_BASE, never main); seeded review-src/handler.ts (reviewer >=5 findings) + review-src/disk-info.ts (security >=5 OWASP-tagged) on the throwaway branch ONLY (A2 stated as decision: a slice within ngx, not a mutation of the active tree); evidence-custody dir .planning/.../uat/ created in this repo (D-08).
+- [Phase ?]: [v1.0.1 / 13-02]: Live headless UAT executed -- n=3 :review + n=3 :security-review claude -p captures, dual-extracted (parent .result for SHAPE, subagent JSONL for BUDGET), graded + Pass@k/Pass^k. SC-1/SC-2 EMPIRICALLY PROVEN: grouped spelled-out grammar reaches the rendered report 6/6 (SHAPE saturated, Pass^k=1.0 both skills, OWASP [Axx] preserved, zero shorthand). SC-4 FAILS on live emission: per-finding 28w cap exceeded in 4/6 runs (review-2 46w; security-1 35w; security-2 31w; security-3 34w+36w) -- the "measured not reasoned" budget-neutrality regression -> routed to a Phase 12.x gap-closure REPLAN (D-10, NOT patched in verify phase). q:-in-req: prose false positive dispositioned via word-boundary anchor (D-09).
 
 ### Pending Todos
 
@@ -119,6 +121,7 @@ Recent decisions affecting current work (v1.0.1):
 
 ### Blockers/Concerns
 
+- GAP-13-BUDGET (NEW, 13-02): the reviewer/security-reviewer per-finding 28-word budget (`PER_ENTRY_CAP=28`) is exceeded on LIVE emission in 4/6 UAT runs (review-2 46w; security-1 35w; security-2 31w; security-3 34w+36w), even though the Phase 11/12 fixtures were GREEN on the self-extracted worked examples. SC-4 FAILS on live output. The grammar SHAPE (SC-1/SC-2) is flawless 6/6 -- the milestone goal (no shorthands) IS achieved; the gap is per-finding concision, a separate axis. D-10 routes this to a Phase 12.x gap-closure REPLAN (agent-contract tightening), NOT an inline verify-phase patch. Surface to the user before marking Phase 13 complete. Evidence: `.planning/phases/13-empirical-verification/uat/GRADE-LOG.md` + `PASS-K.md`.
 - GATE-02 constraint: the ngx-smart-components UAT repo has active work in progress -- the Phase 13 UAT MUST run in a dedicated worktree branched from the `uat/pre-storybook-compodoc` checkpoint branch (exact name verified at plan time), never on the live working tree.
 - Few-shot drift risk (Phase 12): LLMs follow worked examples over stated rules. The Format line and all 8+ worked examples (including holistic example, Hedge Marker examples, verify_request example tokens) must change in ONE atomic unit or output will be mixed (this is the documented Phase 7 WR-05 scar).
 - Cross-surface lexicon drift (Phase 12): the vocabulary lives on 6+ surfaces; a per-surface disposition table must distinguish display labels (Title-Case rename) from machine XML attributes (`severity=` lowercase, leave canonical) from leave-as-history (~362 frozen `.planning/` artifacts -- exclude from every sweep).
@@ -138,7 +141,7 @@ Recent decisions affecting current work (v1.0.1):
 
 ## Session Continuity
 
-Last session: 2026-06-08T06:09:41.547Z
-Stopped at: Phase 13 context gathered
+Last session: 2026-06-08T08:55:00.000Z
+Stopped at: Completed 13-02-PLAN.md (live UAT)
 Resume file: None
-Resume next: Verify Phase 12 (spawn gsd-verifier to produce 12-VERIFICATION.md), then execute Phase 13 (GATE-02 empirical verification: headless claude -p UAT on both review skills in a dedicated worktree off uat/pre-storybook-compodoc; n>=3 budget-gate run; residue + .planning/-history-preservation sweep).
+Resume next: Execute Plan 13-03 (SC-5 residue + formerly-X sweep on plugins/lz-advisor/, worktree teardown per D-08, consolidated 13-UAT.md, GATE-02 closeout). Then Phase 13 VERIFICATION: SC-1/SC-2/SC-3 PASS empirically; SC-4 budget gap (GAP-13-BUDGET) must be surfaced to the user -- the grammar reaches render but the per-finding budget is exceeded on live emission, routed to a Phase 12.x gap-closure REPLAN. Do NOT mark GATE-02 fully green without dispositioning GAP-13-BUDGET.
