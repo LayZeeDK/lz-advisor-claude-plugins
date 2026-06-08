@@ -53,10 +53,12 @@ Full phase details, requirements, success criteria, and plan breakdowns are arch
   3. The ngx-smart-components UAT runs in a dedicated worktree branched from the checkpoint branch (spec named `uat/pre-storybook-compodoc`, which does NOT exist; **plan-time-confirmed checkpoint: `lz-advisor-compodoc-storybook-uat-base` @ `019a26a`** -- worktree on a NEW throwaway branch `uat/phase-13-render`, never on ngx `main`)
   4. An empirical n>=3 budget-gate run on the new grammar confirms both agents stay within the word-budget cap (measured, not reasoned from `wc -w` neutrality)
   5. A scoped `git grep` confirms no unintended `crit:|imp:|sug:|q:` residue anywhere in `plugins/lz-advisor/`, and the vocabulary sweep touches NO frozen v1.0 history artifacts (`.planning/milestones/`, archived phase summaries, UAT traces) -- historical shorthand references stay as accurate history per the Phase 9 precedent; new v1.0.1 planning artifacts (plans, summaries, STATE/ROADMAP updates) are exempt
-**Plans**: 3 plans
+**Plans**: 5 plans (3 original + 2 gap-closure for GAP-13-BUDGET)
 - [x] 13-01-PLAN.md -- Provision the dedicated ngx worktree off the confirmed checkpoint + seed reviewable slices + evidence dir (SC-3 substrate, Wave 0)
-- [x] 13-02-PLAN.md -- Live `claude -p` captures + dual extraction (SHAPE/BUDGET) + per-run grading + Pass@k/Pass^k (SC-1, SC-2 PASS 6/6; SC-4 budget FAIL 4/6 over-cap -> Phase 12.x gap)
+- [x] 13-02-PLAN.md -- Live `claude -p` captures + dual extraction (SHAPE/BUDGET) + per-run grading + Pass@k/Pass^k (SC-1, SC-2 PASS 6/6; SC-4 budget FAIL 4/6 over-cap -> gap-closure)
 - [x] 13-03-PLAN.md -- Residue + formerly-X sweep (SC-5 PASS, exit 1) + worktree teardown (D-08) + consolidated 13-UAT.md (GATE-02 closeout; verdict MIXED -- SC-1/2/3/5 PASS, SC-4 FAIL = GAP-13-BUDGET)
+- [ ] 13-04-PLAN.md -- [gap-closure, wave 1] Atomic agent-contract concision tightening: FIX-1..4 to reviewer.md + security-reviewer.md (route severity-rationale to Per-finding validation, split-findings, reference-by-location, resolve auto-clarity carve-out scope); cap UNCHANGED; SHAPE + AGNT-03 byte-intact; both budget fixtures stay GREEN
+- [ ] 13-05-PLAN.md -- [gap-closure, wave 2, depends_on 13-04] Re-measure SC-4 on live output: re-provision the deterministic UAT substrate, n>=3 `claude -p` captures per skill against the FIXED agents, `--from-trace` budget gate (expect GREEN), recompute Pass@k, teardown, update 13-UAT.md to SC-4 PASS (GATE-02 closeout)
 
 **Phase 13 verdict (all 3 plans executed):** MIXED -- the milestone goal (no shorthands in user-facing reports) is EMPIRICALLY ACHIEVED (SHAPE 6/6, Pass^k=1.0; SC-1/SC-2/SC-3/SC-5 PASS). GATE-02 is **NOT yet green**: SC-4 FAILS (per-finding 28-word budget exceeded on live emission, 4/6 runs = GAP-13-BUDGET), routed to a Phase 12.x gap-closure REPLAN per D-10. Phase 13 remains **needs-review** pending GAP-13-BUDGET disposition + phase VERIFICATION + a user decision.
 
