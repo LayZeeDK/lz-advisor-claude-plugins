@@ -60,11 +60,99 @@ dramatically reduced the overshoot (46w -> 29w on the worst reviewer finding) bu
 did not eliminate the marginal case on every run. D-10: recorded honestly; NOT
 masked, NOT re-worded to pass, NOT patched inline.
 
-Reviewer summary: c=2 fully-passing of n=3 (r2-review-1, r2-review-2 fully pass;
-r2-review-3 SHAPE-clean but BUDGET exit 1 on a 29w finding). SHAPE (SC-1) holds 3/3;
-BUDGET (SC-4 reviewer half) holds 2/3. Pre-fix reviewer half was also 2/3, BUT the
-overshoot magnitude collapsed from 46w to 29w (a real, large concision improvement).
+### ESCALATION to n=5 (operational guidance: residual + headroom)
+
+After the n=3 floor showed reviewer 2/3 and security 2/3 (combined c=4/6, a
+residual over-cap on both skills), the session pool had clear headroom (all 6 runs
+returned a clean `result` event with no 429/out_of_credits), so the captures were
+ESCALATED to n=5 per skill to get a fuller statistical picture of the residual.
+
+| Run | result event | 4 headers | Cross-Cutting | anchored \b...: | SHAPE | BUDGET exit | findings | worst finding (w) | fully passes |
+|-----|--------------|-----------|---------------|-----------------|-------|-------------|----------|-------------------|--------------|
+| r2-review-4 | Y | [OK] | [OK] | 0 | [OK] | 1 | (parsed) | 45 (Question) | NO (BUDGET) |
+| r2-review-5 | Y | [OK] | [OK] | 0 | [OK] | 0 | 6 | (all <=28) | YES |
+
+### r2-review-4 BUDGET detail (residual -- multi-clause Question, reviewer has no carve-out)
+
+`--from-trace r2-review-4.agent.md` -> exit 1, 9/10. SHAPE clean. The single
+failing finding is a 45w **multi-clause Question** body (a post-parse type-mismatch
+question: "`processAdmin` receives the parsed `payload` typed `RawRequest`, but the
+parse output is arbitrary JSON ... Is `RawRequest` the wrong type ... or is the
+parse-vs-wire-object distinction intentional? The annotation ... claims the
+post-parse object has `body`/`headers`, which it does not.").
+
+This is the FIX-4 class (bracket-less multi-clause Question), but it landed in the
+REVIEWER, whose grammar has NO 75w auto-clarity carve-out (the carve-out is
+security-only, gated on `[CVE]`/`[GHSA]`/`[CWE]`). 13-04's FIX-4 corrected the
+SECURITY agent's Question concision but the REVIEWER agent's Questions can still
+overshoot the 28w cap with no sanctioned escape. RECORDED HONESTLY (D-10).
+
+**Reviewer summary (n=5): c=3 fully-passing.** r2-review-1/2/5 fully pass;
+r2-review-3 (29w deref-chain finding) + r2-review-4 (45w Question) BUDGET exit 1.
+SHAPE (SC-1) holds 5/5; BUDGET (SC-4 reviewer half) holds 3/5. Worst finding-body
+overshoot collapsed from the pre-fix 46w to 29w; the remaining reviewer over-caps
+are (a) a marginal 1w deref-chain finding and (b) a multi-clause Question with no
+carve-out.
 
 ## Security-reviewer (`/lz-advisor:security-review`) runs -- target `review-src/disk-info.ts`
 
-(populated below as captures complete)
+| Run | result event | 4 headers | Threat Patterns | OWASP [Axx] | anchored \b...: | SHAPE | BUDGET exit | findings | over-cap findings (w) | fully passes |
+|-----|--------------|-----------|-----------------|-------------|-----------------|-------|-------------|----------|-----------------------|--------------|
+| r2-security-1 | Y | [OK] | [OK] | [A01][A02][A03][A06][A07][A09] | 0 | [OK] | 7 | 4 findings: 33,33,33,30 | NO (BUDGET) |
+| r2-security-2 | Y | [OK] | [OK] | [A01][A02][A03][A06][A09] | 0 | [OK] | 0 | 9 | none (worst 21) | YES |
+| r2-security-3 | Y | [OK] | [OK] | [A01][A02][A03][A06][A07][A09] | 0 | [OK] | 0 | 7 | none (worst 26) | YES |
+| r2-security-4 | Y | [OK] | [OK] | [A01][A02][A03][A04][A07][A09] | 0 | [OK] | 0 | 9 | none (worst <=28) | YES |
+| r2-security-5 | Y | [OK] | [OK] | [A01][A02][A03][A06][A07][A09] | 0 | [OK] | 0 | 7 | none (worst <=28) | YES |
+
+### r2-security-1 BUDGET detail (residual -- verbose fix-prose tails)
+
+`--from-trace r2-security-1.agent.md` -> exit 1, 6/10. SHAPE clean (four headers,
+Threat Patterns, OWASP `[Axx]` byte-intact, zero anchored shorthand). FOUR findings
+over the 28w cap, all at 30-33w. The overshoot is NOT inline FINDING-code
+reproduction (FIX-3's target) but verbose FIX-clause prose -- e.g.:
+- 33w: `exec('du -sh ' + path)` ... "Replace with `execFile('du', ['-sh', path])` plus an allow-list of permitted mount paths."
+- 33w: hardcoded key ... "Move to a secrets manager / env var and rotate the leaked key now."
+- 33w: `exec('curl ' + url + ...)` ... "Use `execFile`/`fetch` with an arg array, never a shell string."
+- 30w: token over `http://` ... "Switch to `https://` and move the token to an `Authorization` header, not the URL."
+
+The fix-clause carries a remediation code snippet + a second clause, pushing the
+body to ~33w. This is a verbosity residual of the same family the 13-04 fix
+targeted, but on the FIX side rather than the FINDING side. RECORDED HONESTLY (D-10);
+NOT masked, NOT re-worded.
+
+**Security summary (n=5): c=4 fully-passing.** r2-security-2/3/4/5 fully pass
+(every finding <=28w, worst 21/26/28/28); r2-security-1 BUDGET exit 1 (4 findings
+at 30-33w). SHAPE (SC-2) holds 5/5 with OWASP `[Axx]` byte-intact every run; BUDGET
+(SC-4 security half) holds 4/5. Pre-fix security half was 0/3 (every run over-cap,
+35/31/34/36w); the fix moved it to 4/5 with the worst overshoot collapsing from 36w
+to 33w -- a large improvement, but not yet 5/5.
+
+## Combined verdict (n=5 per skill)
+
+- Reviewer: c=3/5 (review-3 29w, review-4 45w Question)
+- Security: c=4/5 (security-1 four findings 30-33w)
+- **Combined c=7/10.** Pre-fix combined was c=2/6. The 13-04 fix is a LARGE
+  improvement (Pass@1 0.3333 -> 0.7000; worst finding-body overshoot 46w -> 33w for
+  findings, 45w for an uncarved Question) but SC-4 PASS requires EVERY run exit 0,
+  so SC-4 is NOT yet fully GREEN. 3/10 runs retain a marginal/verbose over-cap.
+- SHAPE-only: 10/10 clean (Pass^k = 1.0 everywhere) -- the grouped grammar render is
+  flawless on every run; the BUDGET cap is the sole discriminator.
+
+## Residual gap -> GAP-13-BUDGET-R2 (second concision iteration needed)
+
+Three residual over-cap classes survive the 13-04 fix, all on the FIX/Question side
+the first iteration under-addressed:
+1. **Reviewer multi-clause Question** (review-4, 45w): the reviewer grammar has no
+   auto-clarity carve-out, so a long Question is hard-capped at 28w with no escape.
+   Candidate: extend the reviewer's Question concision rule (FIX-4 analog for the
+   reviewer), or add a reviewer Per-finding-validation routing for Question
+   elaboration.
+2. **Verbose security FIX-clause prose** (security-1, 30-33w x4): the remediation
+   clause carries a code snippet + a second sentence. FIX-3 addressed FINDING-code
+   reproduction; the FIX clause needs the same reference-by-shape discipline.
+3. **Marginal reviewer deref-chain finding** (review-3, 29w): a 1w overflow from a
+   multi-clause causal chain; a terseness nudge in the reviewer body rule.
+
+These are a SECOND concision iteration (a follow-on gap plan), NOT patched in this
+re-measure plan. SC-4 stays NOT-fully-PASS until a re-measure shows every run
+exit 0.
