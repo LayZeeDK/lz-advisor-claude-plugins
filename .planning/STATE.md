@@ -4,8 +4,8 @@ milestone: v1.0.1
 milestone_name: No review report shorthands
 status: milestone_complete
 stopped_at: Milestone complete (Phase 13 was final phase)
-last_updated: 2026-06-08T21:52:24.848Z
-last_activity: 2026-06-08 -- 13-07 third SC-4 re-measure GREEN; GATE-02 budget half closed
+last_updated: 2026-06-10T21:10:40Z
+last_activity: 2026-06-10 -- Completed quick task 260610-w0f: correct dangling Reviewer Escalation Hook cross-ref
 progress:
   total_phases: 1
   completed_phases: 1
@@ -28,7 +28,7 @@ See: .planning/PROJECT.md (updated 2026-06-07)
 Phase: 13
 Plan: Not started
 Status: Milestone complete
-Last activity: 2026-06-08
+Last activity: 2026-06-10 -- quick task 260610-w0f (correct dangling Reviewer Escalation Hook cross-ref)
 
 ### Milestone v1.0.1 roadmap
 
@@ -143,6 +143,7 @@ Recent decisions affecting current work (v1.0.1):
 |---|-------------|------|--------|--------|-----------|
 | 260417-lhe | Assess Opus 4.7 release impact on advisor plugin and propose upgrade path | 2026-04-17 | 593920d | Verified | [260417-lhe-assess-opus-4-7-release-impact-on-adviso](./quick/260417-lhe-assess-opus-4-7-release-impact-on-adviso/) |
 | 260601-f2a | Correct /plan "no built-in twin" claim in 09-03-SUMMARY + 09-VERIFICATION (Claude Code ships a built-in /plan; picker disambiguates) | 2026-06-01 | 401b7af | - | [260601-f2a-correct-the-no-built-in-twin-claim-for-p](./quick/260601-f2a-correct-the-no-built-in-twin-claim-for-p/) |
+| 260610-w0f | Correct dangling "Reviewer Escalation Hook" cross-ref (security-reviewer.md -> review/SKILL.md; security side hedged not-yet-wired) | 2026-06-10 | 0e3f6c4 | - | [260610-w0f-correct-dangling-reviewer-escalation-hoo](./quick/260610-w0f-correct-dangling-reviewer-escalation-hoo/) |
 
 ### Roadmap Evolution
 
