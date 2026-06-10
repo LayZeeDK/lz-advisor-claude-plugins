@@ -2,10 +2,10 @@
 gsd_state_version: 1.0
 milestone: v1.0.1
 milestone_name: No review report shorthands
-status: milestone_complete
-stopped_at: Milestone complete (Phase 13 was final phase)
-last_updated: 2026-06-10T21:10:40Z
-last_activity: 2026-06-10 -- Completed quick task 260610-w0f: correct dangling Reviewer Escalation Hook cross-ref
+status: "Milestone v1.0.1 shipped -- PR #1 (awaiting merge)"
+stopped_at: Completed 13-07-PLAN.md (SC-4 third live re-measure GREEN 6/6; GATE-02 fully satisfied)
+last_updated: "2026-06-10T21:21:51.264Z"
+last_activity: "2026-06-10 -- Shipped milestone v1.0.1 (PR #1)"
 progress:
   total_phases: 1
   completed_phases: 1
@@ -27,8 +27,8 @@ See: .planning/PROJECT.md (updated 2026-06-07)
 
 Phase: 13
 Plan: Not started
-Status: Milestone complete
-Last activity: 2026-06-10 -- quick task 260610-w0f (correct dangling Reviewer Escalation Hook cross-ref)
+Status: Milestone v1.0.1 shipped -- PR #1 (awaiting merge)
+Last activity: 2026-06-10 -- Shipped milestone v1.0.1 (PR #1)
 
 ### Milestone v1.0.1 roadmap
 
