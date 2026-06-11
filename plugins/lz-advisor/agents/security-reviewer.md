@@ -229,7 +229,7 @@ Holistic worked example (demonstrates 6 findings with OWASP tags grouped under t
 > ### Important
 >
 > 1. src/handler.ts:42: [A04] JSON.parse on raw req.body crashes on malformed input. Wrap in try / catch + reject with 400.
-> 3. src/api.ts:14: [A05] CORS allows any origin in dev. Unresolved hedge: dev-only config (unverified). Verify dev-only before committing.
+> 3. src/api.ts:14: [A05] CORS reflects any Origin in the prod config. Restrict to an allowlist.
 >
 > ### Suggestions
 >
@@ -248,7 +248,7 @@ Holistic worked example (demonstrates 6 findings with OWASP tags grouped under t
 >
 > Adjacent: `src/admin/*.ts` mirrors finding 4; same role-check gap likely present.
 
-Word count breakdown: the four severity sections carry ~155w total (5 numbered findings averaging 15w each + 1 verify_request line at ~22w + 1 auto-clarity full-prose CVE finding at ~50w), Threat Patterns ~90w, Missed surfaces ~20w; aggregate ~265w (informational; not a contract gate -- per-section budgets are the binding constraint). Word counts in this worked example are illustrative; the binding budgets are the per-section `<max_words>` values in the `<output_constraints>` block. There is no aggregate cap. The auto-clarity carve-out (Finding 6 with CVE-2025-1234 in this example) is INTENTIONAL -- security advisories need full prose, and the per-entry budget escalates to the 75w auto-clarity cap for CVE/GHSA/CWE findings without conflicting with the default per-entry findings cap. Finding 3 (the CORS dev-config hedge) appears here under `### Important` to illustrate the post-verification (confirmed) placement, whereas the standalone teaching example above shows the same hedge under `### Suggestions` as the pre-verification (unconfirmed) placement per the `## Hedge Marker Discipline` rule below.
+Word count breakdown: the four severity sections carry ~155w total (5 numbered findings averaging 15w each + 1 verify_request line at ~22w + 1 auto-clarity full-prose CVE finding at ~50w), Threat Patterns ~90w, Missed surfaces ~20w; aggregate ~265w (informational; not a contract gate -- per-section budgets are the binding constraint). Word counts in this worked example are illustrative; the binding budgets are the per-section `<max_words>` values in the `<output_constraints>` block. There is no aggregate cap. The auto-clarity carve-out (Finding 6 with CVE-2025-1234 in this example) is INTENTIONAL -- security advisories need full prose, and the per-entry budget escalates to the 75w auto-clarity cap for CVE/GHSA/CWE findings without conflicting with the default per-entry findings cap. Finding 3 (the confirmed CORS prod-config misconfiguration) appears here under `### Important` to illustrate a CONFIRMED finding placed at its confirmed severity, whereas the standalone teaching example above shows the pre-verification UNCONFIRMED CORS hedge under `### Suggestions` per the `## Hedge Marker Discipline` rule below.
 
 ### Threat Patterns
 
