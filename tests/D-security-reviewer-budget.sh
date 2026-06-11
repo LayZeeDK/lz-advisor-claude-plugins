@@ -144,13 +144,16 @@ REPORT="$(get_report)"
 # (none) markers and blank lines are NOT findings -- they simply fail FINDING_RE
 # and are skipped; no special-casing needed.
 #
-# #4: SEV_HEADERS is a TOLERANT PREFIX match (no trailing "$" anchor) so a
-# header carrying a trailing space or a surviving CR still matches -- honoring
-# the "TOLERANT anchored matches, not byte-exact equality" rule above. The four
-# severity names are distinct words and the match only sets current_sev; finding
-# lines are matched separately by FINDING_RE, so a longer accidental prefix match
-# is harmless.
-SEV_HEADERS='^### (Critical|Important|Suggestions|Questions)'
+# #5: SEV_HEADERS is a CLOSED-VOCABULARY anchored match -- the 4 EXACT severity
+# headers (### Critical / ### Important / ### Suggestions / ### Questions) with
+# OPTIONAL TRAILING WHITESPACE ([[:space:]]*$). The trailing-whitespace tolerance
+# absorbs a stray trailing space or a surviving CR (CR is already normalized
+# upstream: from-trace does tr -d '\r'; self-extract reads the LF agent file) while
+# the closing anchor PREVENTS an over-broad bare-prefix match (e.g. a foreign
+# "### Critical findings" heading would otherwise set current_sev and let its
+# numbered lines be counted as findings). Finding lines are matched separately by
+# FINDING_RE; the header match only sets current_sev.
+SEV_HEADERS='^### (Critical|Important|Suggestions|Questions)[[:space:]]*$'
 FINDING_RE='^[0-9]+\. `?[^[:space:]]+:[0-9]+(-[0-9]+)?: \[[^]]+\] '
 matched_count=0
 current_sev=""
@@ -315,24 +318,89 @@ fi
 # #2(b): Per-finding validation 60w/entry cap. The "### Per-finding validation"
 # section is OPTIONAL; when ABSENT (the holistic baseline has no PFV section)
 # emit a pass "optional section absent -- skipped" (mirrors the Missed-surfaces
-# optional handling). When present, each entry is a paragraph whose first line
-# begins "Validation of Finding N:"; treat each such line as one entry body and
-# assert <= PFV_CAP (60w). Extraction reuses the existing extract_section helper.
-# Robust to CRLF-normalized reports (from-trace already tr -d's CR).
+# optional handling).
+#
+# FIX #2: a PFV entry is a multi-line PARAGRAPH (the contract is
+# <per_entry max_words=60>, "one paragraph per finding"), so accumulate each
+# entry's words ACROSS its paragraph -- a single-line count under-counts and
+# silently passes a >60w multi-line entry. An ENTRY begins at a
+# "Validation of Finding N:" line; its body runs from that line UP TO (but not
+# including) the next boundary, where a boundary is ANY of: the next
+# "Validation of Finding " line, the next blank line, or the next "### " heading.
+# Accumulate wc -w across the entry's span (the opening line PLUS its continuation
+# lines) and assert the running TOTAL <= PFV_CAP (60). Finalize the last open
+# entry at EOF of PFV_BODY.
+#
+# FIX #2 (present-but-unparsed loud-fail): track a counter of PFV entries actually
+# parsed; if the "### Per-finding validation" header was PRESENT but ZERO entries
+# matched the "Validation of Finding " prefix, fail() loudly (mirror the WR-01
+# anti-vacuous discipline) instead of falling through to a vacuous pass. The
+# absent-branch ("optional section absent -- skipped") is UNCHANGED.
+#
+# Extraction reuses the existing extract_section helper. Robust to CRLF-normalized
+# reports (from-trace already tr -d's CR).
+finalize_pfv_entry() {
+  # $1 = accumulated word count for the entry; $2 = the entry's first line.
+  if [ "$1" -le "$PFV_CAP" ]; then
+    pass "per-finding validation budget: $1 <= $PFV_CAP"
+  else
+    fail "per-finding validation budget exceeded: $1 > $PFV_CAP" "$2"
+  fi
+}
+
 if printf '%s\n' "$REPORT" | awk '/^### Per-finding validation/{found=1} END{exit !found}'; then
   PFV_BODY="$(extract_section '^### Per-finding validation')"
+  pfv_entries=0       # FIX #2: count parsed entries for the present-but-unparsed guard
+  pfv_in_entry=0      # 1 while accumulating an open entry's paragraph
+  pfv_acc=0           # running wc -w total for the open entry
+  pfv_first=""        # the open entry's first ("Validation of Finding N:") line
   while IFS= read -r pfv_line; do
     case "$pfv_line" in
       "Validation of Finding "*)
-        pfv_wc=$(printf '%s' "$pfv_line" | wc -w)
-        if [ "$pfv_wc" -le "$PFV_CAP" ]; then
-          pass "per-finding validation budget: $pfv_wc <= $PFV_CAP"
-        else
-          fail "per-finding validation budget exceeded: $pfv_wc > $PFV_CAP" "$pfv_line"
+        # Boundary: a new entry begins. Finalize the previous open entry first.
+        if [ "$pfv_in_entry" -eq 1 ]; then
+          finalize_pfv_entry "$pfv_acc" "$pfv_first"
+        fi
+        pfv_entries=$((pfv_entries + 1))
+        pfv_in_entry=1
+        pfv_first="$pfv_line"
+        pfv_acc=$(printf '%s' "$pfv_line" | wc -w)
+        ;;
+      "### "*)
+        # Boundary: a heading ends the current entry's paragraph. (extract_section
+        # already stops at the next "### ", so this is belt-and-suspenders.)
+        if [ "$pfv_in_entry" -eq 1 ]; then
+          finalize_pfv_entry "$pfv_acc" "$pfv_first"
+          pfv_in_entry=0
+        fi
+        ;;
+      "")
+        # Boundary: a blank line ends the current entry's paragraph.
+        if [ "$pfv_in_entry" -eq 1 ]; then
+          finalize_pfv_entry "$pfv_acc" "$pfv_first"
+          pfv_in_entry=0
+        fi
+        ;;
+      *)
+        # Continuation line of the open entry: accumulate its words.
+        if [ "$pfv_in_entry" -eq 1 ]; then
+          pfv_line_wc=$(printf '%s' "$pfv_line" | wc -w)
+          pfv_acc=$((pfv_acc + pfv_line_wc))
         fi
         ;;
     esac
   done < <(printf '%s\n' "$PFV_BODY")
+
+  # Finalize the last open entry at EOF of PFV_BODY.
+  if [ "$pfv_in_entry" -eq 1 ]; then
+    finalize_pfv_entry "$pfv_acc" "$pfv_first"
+  fi
+
+  # FIX #2: present-but-unparsed loud-fail -- header present, zero entries parsed.
+  if [ "$pfv_entries" -eq 0 ]; then
+    fail "Per-finding validation: header present but ZERO entries parsed" \
+      "a present ### Per-finding validation section with no 'Validation of Finding N:' entry is a vacuous pass -- failing loudly"
+  fi
 else
   pass "Per-finding validation section absent (optional) -- skipped"
 fi
