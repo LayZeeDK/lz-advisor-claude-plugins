@@ -2,14 +2,14 @@
 gsd_state_version: 1.0
 milestone: v1.0.1
 milestone_name: No review report shorthands
-status: "Milestone v1.0.1 shipped -- PR #1 (awaiting merge)"
+status: Awaiting next milestone
 stopped_at: Completed 13-07-PLAN.md (SC-4 third live re-measure GREEN 6/6; GATE-02 fully satisfied)
-last_updated: "2026-06-10T21:21:51.264Z"
-last_activity: "2026-06-10 -- Shipped milestone v1.0.1 (PR #1)"
+last_updated: "2026-06-11T10:14:57.504Z"
+last_activity: 2026-06-11 — Milestone v1.0.1 completed and archived
 progress:
-  total_phases: 1
-  completed_phases: 1
-  total_plans: 7
+  total_phases: 3
+  completed_phases: 3
+  total_plans: 13
   completed_plans: 13
   percent: 100
 ---
@@ -18,17 +18,30 @@ progress:
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-06-07)
+See: .planning/PROJECT.md (updated 2026-06-11)
 
 **Core value:** Near-Opus intelligence at Sonnet cost for coding tasks, through strategic advisor consultation at high-leverage moments
-**Current focus:** Milestone complete
+**Current focus:** v1.0.1 shipped (plugin 1.0.1, PR #1 merged); planning next milestone
+
+## Deferred Items
+
+Items acknowledged and deferred at the v1.0.1 milestone close (2026-06-11):
+
+| Category | Item | Status | Note |
+|----------|------|--------|------|
+| backlog-todo | research-rtk-command-suitability-for-skills-and-agents | open | Future investigation: RTK command suitability for skills/agents (plugin-tooling); out of v1.0.1 scope -- carries to backlog. |
+| tech-debt (Phase 12) | dangling "Reviewer Escalation Hook" cross-ref | open | Pre-existing, out-of-scope; review-skill side IS wired, security-skill side unwired. Track as backlog. |
+| tech-debt (Phase 13) | FIX-R2-D budget-gate tolerance band | moot | Recorded deferred decision; now moot -- SC-4 closed GREEN 6/6 via genuine concision, no tolerance band needed. |
+| tech-debt (Phase 13) | external-repo safety branch safety/edge-aion-986dae1 (ngx clone) | open | Inert quarantine of a transient UAT stray; ngx main + user work confirmed clean. Cleanup when convenient. |
+
+(The 6 quick-task entries flagged by `audit-open` were false positives -- their SUMMARYs lack a `status:` frontmatter field but all are verified-complete; the Phase 13 UAT "gap" was already `resolved` with 0 open scenarios.)
 
 ## Current Position
 
-Phase: 13
-Plan: Not started
-Status: Milestone v1.0.1 shipped -- PR #1 (awaiting merge)
-Last activity: 2026-06-11 -- Completed quick task 260611-f98: addressed 3rd /code-review pass findings (PFV multi-paragraph under-count + cleanup)
+Phase: Milestone v1.0.1 complete
+Plan: —
+Status: Awaiting next milestone
+Last activity: 2026-06-11 — Milestone v1.0.1 completed and archived
 
 ### Milestone v1.0.1 roadmap
 
@@ -160,3 +173,7 @@ Last session: 2026-06-08T21:30:38.617Z
 Stopped at: Completed 13-07-PLAN.md (SC-4 third live re-measure GREEN 6/6; GATE-02 fully satisfied)
 Resume file: None
 Resume next: Phase 13 verification (verify_phase_goal -> spawn gsd-verifier for 13-VERIFICATION.md). All 7 plans executed; SC-4 is now GREEN on the 13-07 third live re-measure (combined c=6/6, Pass@k=Pass^k=1.0, every run exit 0 under the UNCHANGED hard gate; the 13-06 FIX-R2-A/B/C concision fix fully landed, fixtures never edited -- the close is genuine). All five UAT criteria PASS (SC-1/2/3/5 already PASS; SC-4 closed in 13-07). GATE-02 is FULLY SATISFIED (render half + budget half). NEXT: run the independent phase-goal verification (gsd-verifier) to produce 13-VERIFICATION.md, then the milestone audit. FIX-R2-D (gate tolerance band) was NOT needed to close SC-4 -- no residual stray surfaced; it remains a flagged product-contract decision the user may settle independently per 13-06-SUMMARY, NOT a blocker.
+
+## Operator Next Steps
+
+- Start the next milestone with /gsd-new-milestone

@@ -1,5 +1,24 @@
 # Milestones
 
+## v1.0.1 No review report shorthands (Shipped: 2026-06-11)
+
+**Phases completed:** 3 phases (11-13), 13 plans, plugin 1.0.0 -> 1.0.1. Merged via PR #1.
+
+**Delivered:** Review and security-review reports now present findings grouped under fully spelled-out severity headlines (`### Critical` / `### Important` / `### Suggestions` / `### Questions`) instead of the `crit:`/`imp:`/`sug:`/`q:` fragment-grammar shorthands -- empirically proven to reach the rendered user-facing report on both skills, with the per-finding word-budget gate intact.
+
+**Key accomplishments:**
+
+- Both review agents (reviewer, security-reviewer) rewritten to emit the grouped spelled-out severity grammar -- continuous finding numbering, `(none)` empty markers, OWASP `[Axx]` tags preserved on the security side -- replacing the shorthand fragment grammar.
+- Render-verbatim contract inverted in both skills: the grouped shape IS the contracted output the skill passes through unchanged (the former "do not reformat into severity groups" prohibition is gone).
+- Two self-extracting budget regression fixtures (`tests/D-reviewer-budget.sh`, `tests/D-security-reviewer-budget.sh`) committed as tracked tests -- per-section word-budget assertions, anti-vacuous + present-but-unparsed loud-fails, and RED-on-old / GREEN-on-new lockstep coupling to the agent worked examples.
+- Empirically verified via headless `claude -p` UAT that the grouped grammar reaches the rendered report on both skills (SHAPE 6/6, Pass^k = 1.0) with the per-finding budget gate GREEN 6/6 under the unchanged hard cap.
+- Atomic 5-surface version bump 1.0.0 -> 1.0.1 (plugin.json + 4 SKILL.md); zero shorthand residue under `plugins/lz-advisor/`; `.planning/` frozen history preserved.
+- Post-merge hardening: four `/code-review` passes converged the branch (a prompt-contradiction fix, budget-gate coverage gaps, a multi-paragraph PFV under-count, and comment hygiene), each verified.
+
+**Known deferred items at close:** 1 backlog research todo (RTK command suitability) + the 3 non-critical milestone tech-debt items from the audit (pre-existing dangling cross-ref; moot FIX-R2-D tolerance-band decision; external-repo safety-branch cleanup). See STATE.md "Deferred Items".
+
+---
+
 ## v1.0 MVP (Shipped: 2026-06-01)
 
 **Phases completed:** 16 phases, 80 plans, 187 tasks
