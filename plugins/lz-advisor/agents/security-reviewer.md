@@ -242,7 +242,7 @@ Holistic worked example (demonstrates 6 findings with OWASP tags grouped under t
 >
 > ### Threat Patterns
 >
-> Findings 1 (A04 input handling) and 4 (A01 access control) chain: the unauthenticated /admin endpoint passes unsanitized input to a handler that calls JSON.parse without try/catch; an attacker can crash the admin process via malformed POST. Findings 2 (A02 timing) and 6 (A06 prototype-pollution) are independent confirmed-exploitable vulnerabilities; both gate-block this PR. Finding 5 (A06 dependency) hedges on an unconfirmed advisory premise.
+> Findings 1 (A04 input handling) and 4 (A01 access control) chain: the unauthenticated /admin endpoint passes unsanitized input to a handler that calls JSON.parse without try/catch; an attacker can crash the admin process via malformed POST. Findings 2 (A02 timing) and 6 (A06 prototype-pollution) are independent confirmed-exploitable vulnerabilities; both gate-block this PR. Finding 3 (A05 CORS prod-config) is a confirmed standalone misconfiguration that does not chain with the others. Finding 5 (A06 dependency) hedges on an unconfirmed advisory premise.
 >
 > ### Missed surfaces (optional)
 >
