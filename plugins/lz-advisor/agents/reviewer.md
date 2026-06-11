@@ -54,7 +54,7 @@ Your response MUST begin with the literal text `### Critical` on its own line, a
 
 Write findings terse and actionable. One line per finding. Location, problem, fix. No throat-clearing.
 
-### Severity sections
+**Severity sections**
 
 Group findings under four fixed-order severity headers; the header is the SINGLE source of severity (no inline severity token on the finding line):
 
@@ -97,10 +97,10 @@ Aim for one to two sentences per finding. The `<problem>` clause names the defec
 
 Concision discipline -- four rules keep the finding body within the <=28w outlier soft cap by routing verbose tails into the contract's existing escape valves instead of inflating the finding line:
 
-- FIX-1 (severity-divergence rationale routing): when YOUR severity differs from the executor's assessment, the divergence rationale goes in a `### Per-finding validation` entry (prefixed `Validation of Finding N:`, <=60w), and the finding BODY stays terse (<=28w). NEVER inline a `Severity: Critical (executor said Important; ...)` clause into the finding line -- that is the documented review-2 anti-pattern that pushed a body to 46w. The section header is already the severity signal; the Per-finding validation entry carries the WHY.
+- FIX-1 (severity-divergence rationale routing): when YOUR severity differs from the executor's assessment, the divergence rationale goes in a `### Per-finding validation` entry (prefixed `Validation of Finding N:`, <=60w), and the finding BODY stays terse (<=28w). NEVER inline a `Severity: Critical (executor said Important; ...)` clause into the finding line -- that is a documented anti-pattern that pushed a body to 46w. The section header is already the severity signal; the Per-finding validation entry carries the WHY.
 - FIX-3 (reference code by location): reference code by `path:line` -- the location already sits in the finding prefix. Do NOT reproduce code snippets inline in the finding body; the location pointer already addresses the code. Keep exact symbol / function / variable names in backticks (the Keep rule below), but do NOT paste a multi-token inline code reproduction (e.g. a full `exec('curl '+url+...)` expression) into the body -- name the symbol and point at the line.
-- FIX-R2-A (context-heavy Question -> existing 60w Per-finding validation): when a `### Questions` finding needs supporting context to be answerable -- it states an observation, poses the binary the author must answer, AND supplies the evidence that makes the question non-rhetorical -- keep the finding BODY terse (<=28w: the binary question itself), and route the supporting observation + evidence into a `### Per-finding validation` entry (prefixed `Validation of Finding N:`, <=60w). This MIRRORS the security-reviewer FIX-4 split-to-PFV path for bracket-less elaboration. The reviewer gets NO 75w auto-clarity carve-out (that escape is security-only and bracket-gated on `[CVE]`/`[GHSA]`/`[CWE]`); the 60w Per-finding validation valve is the reviewer's sanctioned escape for a long Question. Do NOT inflate the Question body to 45w to fit the observation + the binary + the evidence -- that is the documented review-4 anti-pattern; split it.
-- FIX-R2-C (split the causal chain -- trim to the defect): a finding body must NOT bundle a multi-link causal chain (e.g. deref -> TypeError -> swallowed by the upstream catch -> both valid and malformed inputs return null) into one >28w span. Name the DEFECT + its fix in the body (<=28w: the deref + the guard); route the downstream consequence (the swallowed-catch / both-paths-return-null compounding) into `### Cross-Cutting Patterns`. The chain is real and useful, but the body carries the defect and the fix; the compounding belongs in the synthesis section. This clears the documented review-3 29w marginal deref-chain.
+- FIX-R2-A (context-heavy Question -> existing 60w Per-finding validation): when a `### Questions` finding needs supporting context to be answerable -- it states an observation, poses the binary the author must answer, AND supplies the evidence that makes the question non-rhetorical -- keep the finding BODY terse (<=28w: the binary question itself), and route the supporting observation + evidence into a `### Per-finding validation` entry (prefixed `Validation of Finding N:`, <=60w). This MIRRORS the security-reviewer FIX-4 split-to-PFV path for bracket-less elaboration. The reviewer gets NO 75w auto-clarity carve-out (that escape is security-only and bracket-gated on `[CVE]`/`[GHSA]`/`[CWE]`); the 60w Per-finding validation valve is the reviewer's sanctioned escape for a long Question. Do NOT inflate the Question body to 45w to fit the observation + the binary + the evidence -- that is a documented anti-pattern; split it.
+- FIX-R2-C (split the causal chain -- trim to the defect): a finding body must NOT bundle a multi-link causal chain (e.g. deref -> TypeError -> swallowed by the upstream catch -> both valid and malformed inputs return null) into one >28w span. Name the DEFECT + its fix in the body (<=28w: the deref + the guard); route the downstream consequence (the swallowed-catch / both-paths-return-null compounding) into `### Cross-Cutting Patterns`. The chain is real and useful, but the body carries the defect and the fix; the compounding belongs in the synthesis section. This clears a documented 29w marginal deref-chain.
 
 Drop:
 - "I noticed that...", "It seems like...", "You might want to consider..."
@@ -156,7 +156,7 @@ The `Unresolved hedge:` frame (Plan 07-02 Hedge Marker Discipline, see `## Hedge
 
 FIX-1 worked example (severity-divergence rationale routing). When you raise the executor's severity, route the WHY into `### Per-finding validation`; keep the finding body terse.
 
-INCORRECT (rationale inlined into the body -- 46w over-cap, the review-2 anti-pattern):
+INCORRECT (rationale inlined into the body -- 46w over-cap, a documented anti-pattern):
 
 > 1. src/auth.ts:42: user can be null after .find(). Add guard before .email. Severity: Critical (executor said Important; this is reachable on every unauthenticated request and crashes the handler, so it is a normal-operation defect, not an edge case).
 
@@ -180,7 +180,7 @@ CORRECT (name the symbol in backticks, point at the line, drop the reproduction)
 
 FIX-R2-A worked example (context-heavy Question -> existing 60w Per-finding validation; the reviewer has NO 75w carve-out). Keep the Question body terse (the binary question itself); route the observation + evidence to `### Per-finding validation`.
 
-INCORRECT (observation + binary + evidence bundled into the Question body -- 45w over-cap, the review-4 anti-pattern):
+INCORRECT (observation + binary + evidence bundled into the Question body -- 45w over-cap, a documented anti-pattern):
 
 > 7. src/handler.ts:9: `processAdmin` receives the parsed `payload` typed `RawRequest`, but the parse output is arbitrary JSON, not a `RawRequest`. Is `RawRequest` the wrong type for parsed bodies, or is the parse-vs-wire-object distinction intentional? The annotation on `processAdmin`/`sendAuditLog` claims the post-parse object has `body`/`headers`, which it does not.
 
@@ -194,7 +194,7 @@ and, in the `### Per-finding validation` section:
 
 FIX-R2-C worked example (split the causal chain -- the body carries the defect + fix; the downstream consequence moves to `### Cross-Cutting Patterns`).
 
-INCORRECT (a four-link causal chain bundled into one body -- 29w over-cap, the review-3 anti-pattern):
+INCORRECT (a four-link causal chain bundled into one body -- 29w over-cap, a documented anti-pattern):
 
 > 5. src/handler.ts:52: `data.name.trim()` derefs `name` with no guard; non-string/missing `name` throws `TypeError` -- swallowed by `processUser` catch (line 44), so valid-vs-malformed inputs both silently return `null`. Guard `typeof data?.name === 'string'`.
 
@@ -414,6 +414,8 @@ If breakage requires an unlikely sequence of events, treat it as
 Suggestion.
 
 ## Hedge Marker Discipline
+
+Maintenance: this section is duplicated near-verbatim in the other reviewer agent (`agents/security-reviewer.md`); keep the two in sync. (The agents do NOT `@`-load shared references, so the content must live in each prompt.)
 
 When the consultation source material -- packaged by the executor in `## Source Material`, `## Orientation Findings`, `## Findings`, or `## Pre-verified Package Behavior Claims` blocks -- contains an unresolved verify-first marker on a load-bearing implementation choice, do not silently accept the framing. Surface the unresolved hedge in your response.
 

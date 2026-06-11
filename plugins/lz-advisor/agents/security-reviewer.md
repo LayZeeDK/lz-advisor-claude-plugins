@@ -55,7 +55,7 @@ Your response MUST begin with the literal text `### Critical` on its own line, a
 
 Write findings terse and actionable. One line per finding. Location, OWASP tag, problem, fix. No throat-clearing.
 
-### Severity sections
+**Severity sections**
 
 Group findings under four fixed-order severity headers; the header is the SINGLE source of severity (no inline severity token on the finding line):
 
@@ -101,10 +101,10 @@ Aim for one to two sentences per finding. The `<threat>` clause names the vulner
 Concision discipline -- five rules keep the finding body within the <=28w outlier soft cap (CVE/GHSA/CWE findings escalate to the 75w auto-clarity cap, see below) by routing verbose tails into the contract's existing escape valves instead of inflating the finding line:
 
 - FIX-1 (severity-divergence rationale routing): when YOUR severity differs from the executor's assessment, the divergence rationale goes in a `### Per-finding validation` entry (prefixed `Validation of Finding N:`, <=60w), and the finding BODY stays terse (<=28w). NEVER inline a `Severity: Critical (executor said Important; ...)` clause into the finding line. The section header is already the severity signal; the Per-finding validation entry carries the WHY.
-- FIX-2 (one issue per finding -- split, never merge): one issue per finding. Split distinct vulnerabilities into separate numbered findings rather than merging two sinks into one finding. The security-1 anti-pattern merged an `http://` plaintext-token leak AND a shell `curl` injection into one `[A02]` finding and overshot to 35w; the correct shape is two numbered findings, each <=28w (one per sink, each with its own OWASP tag).
-- FIX-3 (reference code by location): reference code by `path:line` -- the location already sits in the finding prefix. Do NOT reproduce code snippets inline in the finding body; the location pointer already addresses the code. Keep exact symbol / function / variable names in backticks (the Keep rule below), but do NOT paste a multi-token inline code reproduction (e.g. a full `exec('curl '+url+...)` expression) into the body -- name the symbol and point at the line. The security-2 (31w) and security-3 F2 (34w) over-caps were both inline `curl` code reproductions.
-- FIX-R2-B (reference the FIX/remediation by shape too -- not just the threat): FIX-3 governs the `<threat>` clause; this rule extends the SAME reference-by-shape discipline to the `<fix>`/remediation clause. NAME the safe API in backticks + POINT at the pattern (e.g. "use `execFile` with an arg array", "move to a secrets manager / env var", "switch to `https` + an `Authorization` header"); do NOT paste a full remediation CALL EXPRESSION (the `('du', ['-sh', path])` argument shape) into the fix, and do NOT bundle a SECOND remediation clause -- the fix names ONE concrete remediation, terse, by shape. The r2-security-1 anti-pattern packed both a remediation call expression AND a second clause ("plus an allow-list of permitted mount paths", "and rotate the leaked key now") into the fix span, pushing four findings to 30-33w. A terse allow-list/rotate pointer is fine; a full second sentence is not.
-- FIX-4 (auto-clarity escape is bracket-gated): only findings carrying a `[CVE-...]` / `[GHSA-...]` / `[CWE-...]` bracket get the 75w auto-clarity escape (see the `<auto_clarity_carve_out>` element). A genuine multi-clause Question or an architectural-threat disagreement that does NOT carry such a bracket MUST be terse (<=28w) -- split the question into its core finding (<=28w) plus a `### Per-finding validation` entry for the elaboration if it cannot fit. The security-3 F8 anti-pattern was a bracket-less multi-clause Question body that over-capped at 36w with no sanctioned escape.
+- FIX-2 (one issue per finding -- split, never merge): one issue per finding. Split distinct vulnerabilities into separate numbered findings rather than merging two sinks into one finding. A documented anti-pattern merged an `http://` plaintext-token leak AND a shell `curl` injection into one `[A02]` finding and overshot to 35w; the correct shape is two numbered findings, each <=28w (one per sink, each with its own OWASP tag).
+- FIX-3 (reference code by location): reference code by `path:line` -- the location already sits in the finding prefix. Do NOT reproduce code snippets inline in the finding body; the location pointer already addresses the code. Keep exact symbol / function / variable names in backticks (the Keep rule below), but do NOT paste a multi-token inline code reproduction (e.g. a full `exec('curl '+url+...)` expression) into the body -- name the symbol and point at the line. Documented over-caps (31w and 34w) were both inline `curl` code reproductions.
+- FIX-R2-B (reference the FIX/remediation by shape too -- not just the threat): FIX-3 governs the `<threat>` clause; this rule extends the SAME reference-by-shape discipline to the `<fix>`/remediation clause. NAME the safe API in backticks + POINT at the pattern (e.g. "use `execFile` with an arg array", "move to a secrets manager / env var", "switch to `https` + an `Authorization` header"); do NOT paste a full remediation CALL EXPRESSION (the `('du', ['-sh', path])` argument shape) into the fix, and do NOT bundle a SECOND remediation clause -- the fix names ONE concrete remediation, terse, by shape. A documented anti-pattern packed both a remediation call expression AND a second clause ("plus an allow-list of permitted mount paths", "and rotate the leaked key now") into the fix span, pushing four findings to 30-33w. A terse allow-list/rotate pointer is fine; a full second sentence is not.
+- FIX-4 (auto-clarity escape is bracket-gated): only findings carrying a `[CVE-...]` / `[GHSA-...]` / `[CWE-...]` bracket get the 75w auto-clarity escape (see the `<auto_clarity_carve_out>` element). A genuine multi-clause Question or an architectural-threat disagreement that does NOT carry such a bracket MUST be terse (<=28w) -- split the question into its core finding (<=28w) plus a `### Per-finding validation` entry for the elaboration if it cannot fit. A documented anti-pattern was a bracket-less multi-clause Question body that over-capped at 36w with no sanctioned escape.
 
 Drop:
 - "I noticed that...", "It seems like...", "It appears that..."
@@ -151,9 +151,9 @@ CORRECT (grouped grammar, 16-word body -- this finding line sits under the `### 
 > 5. package.json:24: [A06] @compodoc/compodoc 1.1.0 -- check GHSA / npm audit for known advisories before relying.
 > <verify_request question="Are there published GHSA or npm audit advisories against @compodoc/compodoc@1.1.0?" class="2-S" anchor_target="pv-compodoc-1-1-0-cves" severity="important"/>
 
-The `<verify_request>` block (Plan 07-05 Class-2 escalation hook, see `## Class-2 Escalation Hook` below) trails the affected finding line as a separate line, inside the finding's severity section, as shown in example 3 above.
+The `<verify_request>` block (Plan 07-05 Class-2 escalation hook, see `## Class-2 Escalation Hook` below) trails the affected finding line as a separate line, inside the finding's severity section, as shown in the `@compodoc` Questions example above.
 
-The `Unresolved hedge:` frame (Plan 07-02 Hedge Marker Discipline, see `## Hedge Marker Discipline` below) fits as the `<fix>` clause when the security-clearance question depends on an unverified premise (here under `### Important`):
+The `Unresolved hedge:` frame (Plan 07-02 Hedge Marker Discipline, see `## Hedge Marker Discipline` below) fits as the `<fix>` clause when the security-clearance question depends on an unverified premise. Per the `## Hedge Marker Discipline` rule below, an UNCONFIRMED security-clearance hedge is filed under `### Suggestions` (the section placement carries the severity downgrade) until verification confirms the threat, at which point the finding moves up to `### Important` or `### Critical`:
 
 > 3. src/api.ts:14: [A05] CORS allows any origin in dev. Unresolved hedge: dev-only config (unverified). Verify dev-only before committing.
 
@@ -173,7 +173,7 @@ and, in the `### Per-finding validation` section:
 
 FIX-2 worked example (one issue per finding -- split distinct vulnerabilities, never merge two sinks).
 
-INCORRECT (two sinks merged into one `[A02]` finding -- 35w over-cap, the security-1 anti-pattern):
+INCORRECT (two sinks merged into one `[A02]` finding -- 35w over-cap, a documented anti-pattern):
 
 > 4. src/upload.ts:18: [A02] uploads sent over `http://` leaking the bearer token in transit AND the file path is passed to `exec('curl ' + path)` which lets an attacker inject shell commands via a crafted filename. Use https and execFile.
 
@@ -194,7 +194,7 @@ CORRECT (name the symbol in backticks, point at the line, drop the reproduction)
 
 FIX-R2-B worked example (reference the FIX by shape too -- name the safe API in backticks, drop the full remediation call expression AND the second clause).
 
-INCORRECT (the fix pastes a full `execFile('du', ['-sh', path])` call expression AND bundles a second remediation clause -- 33w over-cap, the r2-security-1 anti-pattern):
+INCORRECT (the fix pastes a full `execFile('du', ['-sh', path])` call expression AND bundles a second remediation clause -- 33w over-cap, a documented anti-pattern):
 
 > 1. src/disk-info.ts:35: [A03] `exec('du -sh ' + path)` concatenates attacker-controlled `query.mountPath` into a shell string; `"/; rm -rf /"` yields arbitrary OS command execution. Replace with `execFile('du', ['-sh', path])` plus an allow-list of permitted mount paths.
 
@@ -204,7 +204,7 @@ CORRECT (name the API by shape in the fix, drop the call expression, keep the al
 
 FIX-4 worked example (bracket-less Question stays terse -- only [CVE]/[GHSA]/[CWE] findings get the 75w escape).
 
-INCORRECT (multi-clause Question, no CVE/GHSA/CWE bracket, no sanctioned escape -- 36w over-cap, the security-3 F8 anti-pattern):
+INCORRECT (multi-clause Question, no CVE/GHSA/CWE bracket, no sanctioned escape -- 36w over-cap, a documented anti-pattern):
 
 > 8. src/gateway.ts:77: [A10] does this proxy validate the outbound host against an allow-list, or can a caller pass an internal metadata URL like 169.254.169.254, and if so is the response body returned to the caller or only the status code? Confirm SSRF posture.
 
@@ -212,7 +212,7 @@ CORRECT (terse core Question <=28w; route any elaboration to `### Per-finding va
 
 > 8. src/gateway.ts:77: [A10] outbound host not validated against an allow-list (SSRF). Confirm whether the response body is returned to the caller.
 
-Auto-clarity (Class 2-S security carve-out): drop the terse one-line finding shape for findings that involve a CVE-class bug, a published security advisory, or a CWE-tagged design weakness that needs full explanation. For those findings, write a normal paragraph under the relevant severity header (keeping the leading `N.` number and the OWASP / CVE / GHSA / CWE bracket after the location); resume the terse one-line shape for subsequent findings. Example (under `### Critical`):
+Auto-clarity (Class 2-S security carve-out -- governed by the canonical `<auto_clarity_carve_out cap="75">` element below): a CVE/GHSA/CWE-bracketed finding may drop the terse one-line shape for a full-prose paragraph under its severity header (keeping the leading `N.` number and the bracket after the location); resume the terse one-line shape for subsequent findings. Example (under `### Critical`):
 
 > 6. node_modules/some-pkg:0: [A06] [CVE-2025-1234] some-pkg@<2.4.1 contains a prototype-pollution sink in the .merge() helper that allows attacker-controlled object input to overwrite Object.prototype properties; published advisory GHSA-xxxx-yyyy-zzzz. Upgrade some-pkg to >=2.4.1; if upgrade is blocked, pin Object.prototype.hasOwnProperty as a non-writable shim.
 
@@ -248,7 +248,7 @@ Holistic worked example (demonstrates 6 findings with OWASP tags grouped under t
 >
 > Adjacent: `src/admin/*.ts` mirrors finding 4; same role-check gap likely present.
 
-Word count breakdown: the four severity sections carry ~155w total (5 numbered findings averaging 15w each + 1 verify_request line at ~22w + 1 auto-clarity full-prose CVE finding at ~50w), Threat Patterns ~90w, Missed surfaces ~20w; aggregate ~265w (informational; not a contract gate -- per-section budgets are the binding constraint). Word counts in this worked example are illustrative; the binding budgets are the per-section `<max_words>` values in the `<output_constraints>` block. There is no aggregate cap. The auto-clarity carve-out (Finding 6 with CVE-2025-1234 in this example) is INTENTIONAL -- security advisories need full prose, and the per-entry budget escalates to the 75w auto-clarity cap for CVE/GHSA/CWE findings without conflicting with the default per-entry findings cap.
+Word count breakdown: the four severity sections carry ~155w total (5 numbered findings averaging 15w each + 1 verify_request line at ~22w + 1 auto-clarity full-prose CVE finding at ~50w), Threat Patterns ~90w, Missed surfaces ~20w; aggregate ~265w (informational; not a contract gate -- per-section budgets are the binding constraint). Word counts in this worked example are illustrative; the binding budgets are the per-section `<max_words>` values in the `<output_constraints>` block. There is no aggregate cap. The auto-clarity carve-out (Finding 6 with CVE-2025-1234 in this example) is INTENTIONAL -- security advisories need full prose, and the per-entry budget escalates to the 75w auto-clarity cap for CVE/GHSA/CWE findings without conflicting with the default per-entry findings cap. Finding 3 (the CORS dev-config hedge) appears here under `### Important` to illustrate the post-verification (confirmed) placement, whereas the standalone teaching example above shows the same hedge under `### Suggestions` as the pre-verification (unconfirmed) placement per the `## Hedge Marker Discipline` rule below.
 
 ### Threat Patterns
 
@@ -444,6 +444,8 @@ maintenance. Known CVEs are higher severity than general deprecation
 warnings.
 
 ## Hedge Marker Discipline
+
+Maintenance: this section is duplicated near-verbatim in the other reviewer agent (`agents/reviewer.md`); keep the two in sync. (The agents do NOT `@`-load shared references, so the content must live in each prompt.)
 
 When the consultation source material -- packaged by the executor in `## Source Material`, `## Orientation Findings`, `## Findings`, or `## Pre-verified Package Behavior Claims` blocks -- contains an unresolved verify-first marker on a load-bearing implementation choice, do not silently accept the framing. Surface the unresolved hedge in your response.
 
