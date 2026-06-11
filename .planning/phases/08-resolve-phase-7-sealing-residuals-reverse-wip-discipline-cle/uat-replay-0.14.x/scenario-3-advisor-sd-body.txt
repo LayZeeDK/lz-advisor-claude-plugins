@@ -1,9 +1,0 @@
-1. Assuming Nx or npm-workspaces monorepo (unverified), do scaffold `libs/shared-validators` with `package.json`, `tsconfig.json`, `src/index.ts`. Verify monorepo tooling before acting.
-2. Copy email, phone, zipcode validators verbatim from `UserForm` into `libs/shared-validators/src/`. Preserves behavior baseline.
-3. Add unit tests covering current valid/invalid cases per validator before any consumer migration.
-4. Run tests; lock green baseline as regression gate.
-5. Assuming identical implementations across all three (unverified), do diff `AddressForm` and `PaymentForm` validators against `UserForm`. Verify identity before acting.
-6. Reconcile any drift into shared utility; add tests for divergent cases.
-7. Replace validators in `UserForm` with imports; run consumer tests; commit.
-8. Repeat replacement for `AddressForm`, then `PaymentForm`, one commit each.
-9. Delete dead local validator code last.

@@ -57,7 +57,7 @@ Every advisor consultation follows these rules:
 
        - **Token reference + prose citation** (typical in plan/review/security-review bodies): the user-facing text contains the literal pv-* token AND a prose-form citation referencing the verification method and source. Example: "Verified via Read against `package.json` (see `pv-storybook-angular-10x-installed` block above)" or "Per pv-storybook-global-deprecation-10x: the `docs.autodocs` API was removed in Storybook 10.x." Same backing requirement: the token resolves to canonical XML in the internal prompt.
 
-       - **Inline parenthetical token reference** (typical in finding lines): the user-facing finding line contains the literal pv-* token without separate Verified: trailer or prose citation, embedded inline as a verification anchor. Example: `pv-storybook-global-deprecation-10x` literal token in the body of a `### Findings` entry. Same backing requirement.
+       - **Inline parenthetical token reference** (typical in finding lines): the user-facing finding line contains the literal pv-* token without separate Verified: trailer or prose citation, embedded inline as a verification anchor. Example: `pv-storybook-global-deprecation-10x` literal token in the body of a finding entry under its severity section. Same backing requirement.
 
      The forbidden plain-bullet "Pre-verified Claims" pattern (`## Pre-verified Claims\n- <claim>\n- <claim>` without source path or evidence) remains non-conforming on the user-facing artifact surface AS WELL (and on the internal-prompt surface) -- the failure mode is plain-bullets-WITHOUT-evidence (Finding B.2), not plain-token-WITH-backing. The amendment narrows the format-mandate scope; it does NOT relax the trust contract.
 
@@ -387,13 +387,13 @@ The reviewer and security-reviewer agents emit `<verify_request>` blocks when th
 - **`question`** (REQUIRED): one-sentence question shaped so a `WebSearch` query or `WebFetch` URL can produce a definitive answer. Bad: "What about Storybook?" Good: "Does `@storybook/angular@10.3.5` still export `setCompodocJson` from `@storybook/addon-docs/angular`?"
 - **`class`** (REQUIRED): one of `"2"` (API currency / configuration / recommended pattern), `"2-S"` (security currency / CVE / advisory; security-reviewer only), `"3"` (migration / deprecation), `"4"` (language semantics). Per `references/orient-exploration.md` Class 1-4 + Class 2-S taxonomy.
 - **`anchor_target`** (OPTIONAL): kebab-case suggestion for the resulting `<pre_verified>` block's `claim_id` attribute. Allows the agent to anticipate the anchor name so its re-invocation prose can reference it. Format: `pv-<short-descriptor>`, e.g., `pv-storybook-10-args-fn-spy`. If omitted, the executor generates a fresh `pv-N` claim_id.
-- **`severity`** (OPTIONAL): matches the affected finding's severity (Critical / Important / Suggestion for reviewer; Critical / Important / Suggestion for security-reviewer). Helps the executor prioritize verification effort when multiple verify_request blocks are emitted.
+- **`severity`** (OPTIONAL): matches the affected finding's severity (Critical / Important / Suggestion -- the same vocabulary for both reviewer and security-reviewer). Helps the executor prioritize verification effort when multiple verify_request blocks are emitted.
 - **`<context>`** (OPTIONAL): one-line snippet from changed code or configuration that triggered the question. Useful when the question would be ambiguous without surrounding code context.
 
 ### Worked example
 
 ```
-### Findings
+### Critical
 
 1. ...
 
@@ -408,7 +408,7 @@ The reviewer and security-reviewer agents emit `<verify_request>` blocks when th
 3. ...
 ```
 
-The reviewer's `### Findings` entry references the verify_request via the same anchor_target value: "Pending verification of pv-compodoc-signal-output-support: signal output() may or may not render in Docs tab depending on Compodoc 1.2.1 support."
+The reviewer's finding entry (under its severity section) references the verify_request via the same anchor_target value: "Pending verification of pv-compodoc-signal-output-support: signal output() may or may not render in Docs tab depending on Compodoc 1.2.1 support."
 
 ### Executor-side handling (cross-reference)
 

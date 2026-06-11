@@ -15,7 +15,7 @@ description: >
   fix bugs, or run security audits -- those are handled by sibling
   skills execute, review, and
   security-review respectively.
-version: 1.0.0
+version: 1.0.1
 allowed-tools: Agent(lz-advisor:advisor), Read, Glob, Bash(git:*), Write, WebSearch, WebFetch
 ---
 

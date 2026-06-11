@@ -1,414 +1,122 @@
-# Technology Stack
+# Stack Research
 
-**Project:** lz-advisor -- Claude Code marketplace plugin implementing the advisor strategy
-**Researched:** 2026-04-10
-**Overall confidence:** HIGH
+**Milestone:** v1.0.1 "No review report shorthands" -- spelled-out severity labels in user-facing review reports
+**Domain:** Claude Code marketplace plugin (pure Markdown/YAML skills + agents; zero runtime dependencies)
+**Researched:** 2026-06-07
+**Confidence:** HIGH
+
+> This file is scoped to the v1.0.1 output-format change. The v1.0 full-stack survey (single-advisor architecture, dotted skill names, plugin 0.1.0) is preserved in git history at commit `84f6e77` and is superseded here -- the shipped architecture is three agents (advisor, reviewer, security-reviewer) + four skills (plan, execute, review, security-review), plain skill directories, plugin 1.0.0.
+
+## Verdict (read this first)
+
+**No stack additions are justified. This milestone is a pure prompt/contract-text change.**
+
+Spelling out severity labels (`crit:`/`imp:`/`sug:`/`q:` -> `Critical`/`Important`/`Suggestion`/`Question`) in user-facing review and security-review reports is achieved entirely by editing Markdown instruction text in the two agent files (`agents/reviewer.md`, `agents/security-reviewer.md`) and, if a section-per-severity report shape is chosen, the two review SKILL.md output blocks. The `FRAGMENT_RE` severity alternation in the budget smoke fixtures updates in lockstep. There is NO Claude Code-native mechanism (output style, hook, references file) that can perform mechanical label expansion without (a) introducing a script/dependency or (b) failing to durably reach the user-facing report -- both disqualifying under the zero-dependency constraint. The existing stack is exactly sufficient.
 
 ## Recommended Stack
 
-This plugin has zero external dependencies. The entire "stack" is Claude Code's native plugin component system: skills, agents, commands, and the Agent tool with model overrides. There are no npm packages, no build steps, no runtime dependencies.
-
-### Core Components
-
-| Component | Format | Purpose | Why |
-|-----------|--------|---------|-----|
-| Skills (SKILL.md) | Markdown + YAML frontmatter | Orchestrate executor-advisor workflows | Skills are the primary entry point; they trigger contextually and contain the full workflow prompt |
-| Agent (agents/*.md) | Markdown + YAML frontmatter | Opus advisor persona | Agents support `model: opus` override; this is the mechanism for spawning Opus from a Sonnet session |
-| plugin.json | JSON manifest | Plugin identity and metadata | Required for marketplace discovery and installation |
-
-### Infrastructure
-
-| Technology | Format | Purpose | Why |
-|------------|--------|---------|-----|
-| Git + GitHub | Repository | Distribution via marketplace | Claude Code marketplace uses GitHub repos as sources |
-| Markdown | .md files | All component definitions | Claude Code's native format for skills, agents, and commands |
-| YAML | Frontmatter blocks | Component metadata and configuration | Built into Claude Code's component discovery system |
-
-### No External Dependencies
-
-| Category | Decision | Rationale |
-|----------|----------|-----------|
-| Runtime | None | Plugin uses only Claude Code's Agent tool -- no API calls, no SDK |
-| Build | None | All components are plain Markdown files; no compilation or bundling |
-| Testing | skill-creator plugin | Eval framework for testing skills; already installed |
-| Validation | plugin-dev plugin | Validation scripts for agents and plugin structure; already installed |
-
-## Plugin Directory Structure
-
-This is the exact layout for the lz-advisor plugin:
-
-```
-lz-advisor/
-|-- .claude-plugin/
-|   '-- plugin.json              # Required: plugin manifest
-|-- agents/
-|   '-- lz-advisor.md            # Opus advisor agent
-|-- skills/
-|   |-- lz-advisor-plan/
-|   |   |-- SKILL.md             # Plan skill: orient -> advise -> plan
-|   |   '-- references/
-|   |       '-- advisor-timing.md  # Anthropic's suggested timing patterns
-|   |-- lz-advisor-execute/
-|   |   '-- SKILL.md             # Execute skill: full executor-advisor loop
-|   |-- lz-advisor-review/
-|   |   '-- SKILL.md             # Review skill: Opus reviews completed work
-|   '-- lz-advisor-security-review/
-|       '-- SKILL.md             # Security review skill: Opus reviews with threat focus
-|-- LICENSE
-'-- README.md
-```
-
-**Rationale for structure decisions:**
-
-- **No `commands/` directory**: Skills (not commands) are the right component type. Skills auto-trigger on context match and support progressive disclosure. Commands are legacy format (per plugin-dev docs: "The `.claude/commands/` directory is a legacy format. For new skills, use the `.claude/skills/<name>/SKILL.md` directory format").
-- **No `hooks/` directory**: Hooks are out of scope for v1 (cost control, no noise, can't scope to skill execution).
-- **No `.mcp.json`**: No external services; the Agent tool is the sole mechanism.
-- **Single agent, multiple skills**: The advisor persona is constant; skills define different workflows that invoke it.
-- **`lz-advisor` prefix**: Namespace all components to avoid collision with other plugins.
-
-## Plugin Manifest (plugin.json)
-
-```json
-{
-  "name": "lz-advisor",
-  "version": "0.1.0",
-  "description": "Advisor strategy: pair Opus advisor with your session model for near-Opus intelligence at Sonnet cost",
-  "author": {
-    "name": "Lars Gyrup Brink Nielsen",
-    "url": "https://github.com/LayZeeDK"
-  },
-  "repository": "https://github.com/LayZeeDK/lz-advisor-claude-plugins",
-  "license": "MIT",
-  "keywords": [
-    "advisor",
-    "opus",
-    "sonnet",
-    "intelligence",
-    "cost-optimization",
-    "code-review",
-    "planning"
-  ]
-}
-```
-
-**Confidence:** HIGH -- derived directly from plugin-dev manifest-reference.md and existing marketplace plugins.
-
-**Name validation:** `lz-advisor` matches regex `/^[a-z][a-z0-9]*(-[a-z0-9]+)*$/` (starts with letter, kebab-case, 3+ chars).
-
-## Agent File Format
-
-### lz-advisor.md -- The Opus Advisor Agent
-
-The agent definition is the core mechanism for invoking Opus from a Sonnet session. The `model: opus` field in frontmatter tells Claude Code's Agent tool to spawn this agent on Opus 4.6 regardless of the session model.
-
-**Required frontmatter fields** (per plugin-dev agent-development SKILL.md):
-
-| Field | Value | Notes |
-|-------|-------|-------|
-| `name` | `lz-advisor` | 3-50 chars, lowercase + hyphens, must start/end alphanumeric |
-| `description` | Triggering conditions + examples | Most critical field; determines when agent triggers |
-| `model` | `opus` | Overrides session model; spawns on Opus 4.6 |
-| `color` | `magenta` | Visual identifier; magenta = creative/strategic |
-| `tools` | `["Read", "Glob"]` | Read-only; advisor reads context but never writes |
+### Core Technologies (UNCHANGED -- no additions)
 
-**Agent frontmatter format:**
+| Technology | Version | Purpose | Why Recommended |
+|------------|---------|---------|-----------------|
+| Agent files (`agents/*.md`, Markdown + YAML frontmatter) | plugin 1.0.0 | Define the reviewer / security-reviewer emit grammar in their `## Output Constraint` sections | The severity vocabulary is authored here as plain instruction text: the emit-format line, the `Severity prefix` legend, and every worked example. Changing `crit:` to `Critical:` is a text edit. This is the single highest-leverage surface and the natural home for the change. |
+| Skill files (`skills/*/SKILL.md`, Markdown + YAML frontmatter) | plugin 1.0.0 | Enforce the render-verbatim contract in `## Phase 3: Structure Output` | If a section-per-severity report shape is chosen, the conversion (mechanical, lossless only) lives in Phase 3, AND the current `Do NOT reformat the response into severity groups` clause must be reversed. If the agent emits spelled-out labels directly (recommended), the skill needs only a worked-example/header-note refresh. |
+| References files (`references/context-packaging.md`) | plugin 1.0.0 | Carry the shared severity vocabulary in the consultation templates + `<verify_request>` schema | The `Severity (initial): [Critical/Important/Suggestion]` template text and the `severity="<critical\|important\|suggestion>"` attribute enum already use word forms, not the `crit:`/`imp:` shorthands. These need only a consistency cross-check, not new tooling. |
+| `wc -w` + regex bash smoke fixtures (existing test pattern) | n/a | Regression gates (`D-reviewer-budget.sh` / `D-security-reviewer-budget.sh`) that parse the emit grammar by `FRAGMENT_RE` and assert per-section word budgets | Spelled-out labels are word-neutral against the budgets (the agent grammar states the per-finding count "excludes the `<file>:<line>: <severity>:` prefix"). The `FRAGMENT_RE` severity alternation (`crit\|imp\|sug\|q`) is the ONLY fixture surface that must change, in lockstep with the agent grammar. These fixtures are transient phase artifacts (not committed to the repo tree); they are recreated/edited during the implementing phase. |
 
-```markdown
----
-name: lz-advisor
-description: Use this agent when a skill needs strategic advisor consultation from a stronger model. The advisor reads conversation context and provides concise, actionable guidance (under 100 words, enumerated steps). Examples:
+### Supporting Libraries
 
-<example>
-Context: A planning skill needs Opus-level strategic direction after Sonnet has gathered context
-user: "Plan the implementation for the authentication refactor"
-assistant: "I've gathered the codebase context. Let me consult the advisor for strategic direction."
-<commentary>
-The plan skill has completed orientation. Before creating the plan, consult lz-advisor for Opus-level strategic guidance on approach.
-</commentary>
-assistant: "I'll use the lz-advisor agent for a strategic assessment."
-</example>
+None. No library, package, MCP server, or runtime is added. The change is confined to Markdown instruction text and a regex literal in existing bash fixtures.
 
-<example>
-Context: An implementation skill is stuck on a complex problem
-user: "Implement the caching layer"
-assistant: "I've tried two approaches and both have issues. Let me consult the advisor."
-<commentary>
-Executor is stuck. This is a key advisor timing moment per Anthropic's suggested system prompt.
-</commentary>
-assistant: "I'll use the lz-advisor agent to get guidance on the caching approach."
-</example>
+### Development Tools (UNCHANGED)
 
-model: opus
-color: magenta
-tools: ["Read", "Glob"]
----
+| Tool | Purpose | Notes |
+|------|---------|-------|
+| `claude -p` headless skill verification | Behaviorally prove the new label shape reaches the user-facing report | Use the canonical `--permission-mode auto --plugin-dir ... -p "/lz-advisor:review ..."` invocation from CLAUDE.md Conventions. Grade the rendered report for spelled-out labels in the `### Findings` body and (if adopted) section-per-severity headings. |
+| `git grep` severity-vocab sweep | Enumerate every surface hardcoding a shorthand before editing | Sweep `crit:`, `imp:`, `sug:`, `q:` across `plugins/lz-advisor/` to fix the edit set: agents x2, the two review SKILL.md Phase-3 "Do NOT reformat into severity groups" clauses, context-packaging.md, and the worked examples. |
 
-[System prompt body goes here -- defines advisor persona and output format]
-```
+## How the NEW capability is delivered (mechanism, with doc references)
 
-**Confidence:** HIGH -- `model: opus` is documented in plugin-dev agent-development SKILL.md with explicit options: `inherit`, `sonnet`, `opus`, `haiku`. This is also how Claude Code's own code-review command spawns Haiku and Sonnet agents (observed in the code-review plugin).
+Exactly two viable mechanisms, both pure-text. Requirements pick one (or a hybrid).
 
-### Key Design Constraint: Advisor Output Trimming
+### Mechanism A (RECOMMENDED): change the agent emit grammar to spelled-out labels
 
-The advisor agent's system prompt must enforce conciseness because advisor output is the largest cost driver. Per Anthropic's advisor tool docs:
+Edit `agents/reviewer.md` and `agents/security-reviewer.md` so the `### Findings` emit format and `Severity prefix` legend use full words. Two sub-variants:
 
-> "The advisor should respond in under 100 words and use enumerated steps, not explanations."
+- **A1 -- spelled-out inline prefix.** Format becomes `<file>:<line>: Critical: <problem>. <fix>.` (replacing `crit:`). The two-slot `### Findings` / `### Cross-Cutting Patterns` (review) and `### Findings` / `### Threat Patterns` (security) header contract is untouched. Render-verbatim holds with near-zero skill changes (just refresh the "the reviewer already includes severity per finding entry" note).
+- **A2 -- section-per-severity shape.** The agent emits `### Critical` / `### Important` / `### Suggestion` / `### Question` subsection headers inside (or replacing) the `### Findings` block, grouping findings under each. This is the milestone's named "restored section-per-severity report shape" option. It requires updating the SKILL.md allowed-header set, REVERSING the current `Do NOT reformat into severity groups` clause, extending the agent `<output_constraints>` section allowlist, and updating the fixtures' section-parsing regexes.
 
-This instruction cut total advisor output tokens by ~35-45% in Anthropic's internal testing without changing call frequency.
+Why A is preferred: render-verbatim stays intact (the skill never paraphrases), so there is no risk the conversion drops or rewords a finding. The agent is the single source of truth for severity presentation -- consistent with the shipped architecture where agents own output shape and skills pass it through.
 
-## Skill File Format
+### Mechanism B (FALLBACK): mechanical label expansion at the skill layer
 
-### SKILL.md Structure
+Keep the agent shorthands; add a deterministic, lossless substitution in each SKILL.md Phase 3 before rendering: `crit:`->`Critical:`, `imp:`->`Important:`, `sug:`->`Suggestion:`, `q:`->`Question:`. The render-verbatim contract is amended from "render unchanged" to "apply ONLY this fixed 4-token substitution, then render unchanged; never paraphrase, reorder, merge, or drop a finding."
 
-Skills are the primary orchestration mechanism. Each skill defines a complete executor-advisor workflow.
+Why B is the fallback: it weakens the verbatim contract from "no changes" to "one whitelisted change," reintroducing the exact risk (skill mutating agent output) the contract was built to eliminate. A Sonnet executor doing string substitution is less reliable than the Opus agent emitting the right tokens. Choose B only if requirements decide the agents must keep terse shorthands internally while users see full words.
 
-**Frontmatter fields** (per skill-creator and plugin-dev skill-development):
+### Why no Claude Code-native automation mechanism applies
 
-| Field | Required | Notes |
-|-------|----------|-------|
-| `name` | Yes | Skill identifier, kebab-case |
-| `description` | Yes | Trigger conditions; MUST use third person ("This skill should be used when...") |
-| `version` | Optional | Semantic versioning |
+| Native mechanism | Can it mechanically expand labels in the durable user-facing report? | Verdict |
+|------------------|---------------------------------------------------------------------|---------|
+| **Output styles** (`output-styles`; Markdown + frontmatter; plugin-distributable) | No. Output styles modify the *system prompt* (role/tone/format steering), read once at session start, apply session-wide, and community reports note model defaults can override them. They steer generation; they do not deterministically rewrite emitted text. | Not applicable -- a heavier, less reliable way to do what an agent-prompt edit does directly. |
+| **`MessageDisplay` hook** | Only cosmetically. It is the sole hook that rewrites user-visible text, but it is explicitly **display-only**: "the transcript and what Claude sees keep the original text ... verbose mode shows the original." Shorthands persist in the transcript and for any downstream consumer. It also requires a command/HTTP hook (a script = dependency), has NO matcher (fires on every assistant message globally), and reintroduces the cost/noise the project rejected. | Disqualified -- violates zero-dependency, only cosmetic, leaves shorthands in the transcript. |
+| **`SubagentStop` / `PostToolUse` / `Stop` hooks** | No. They provide `additionalContext` / continuation control / feedback to Claude; `last_assistant_message` is read-only INPUT. They cannot replace the rendered text. | Disqualified -- cannot rewrite the report; also a script dependency. |
+| **References files** (`references/*.md`) | No. Progressive-disclosure context loaded into the prompt. They can DEFINE the spelled-out vocabulary (and should, for consistency) but perform no runtime conversion. | Documentation surface only, not a conversion mechanism. |
 
-**SKILL.md template:**
+Net: every native "automation" path either fails to reach the durable report, requires a script (breaking zero-dependency + the standing "no hooks for v1" decision), or is a strictly weaker form of the prompt edit. Mechanism A (edit the agent prompt) is the correct, native, zero-dependency answer.
 
-```markdown
----
-name: lz-advisor-plan
-description: This skill should be used when the user asks to "plan an implementation", "create a plan", "plan before implementing", "think through the approach", "lz-advisor plan", or needs strategic planning before substantive coding work. Provides Opus-level strategic planning at Sonnet cost by orchestrating an executor-advisor consultation loop. Always use this skill when the user wants a plan, even if they do not explicitly mention "advisor" or "opus".
-version: 0.1.0
----
+## Word-budget interaction (token-economy motivation no longer binds)
 
-# Advisor-Assisted Planning
-
-[Skill body in imperative form...]
-```
-
-### Description Optimization (Critical)
-
-The description is the primary triggering mechanism. Per skill-creator docs, Claude tends to "undertrigger" skills -- failing to use them when useful. Descriptions must be "pushy":
-
-**Pattern (from skill-creator):**
-
-```
-This skill should be used when the user asks to "[phrase 1]", "[phrase 2]", "[phrase 3]", or needs [broader description]. [Value proposition]. Always use this skill when [common scenario], even if [hedging case].
-```
-
-**DO:**
-- Use third person: "This skill should be used when..."
-- Include specific trigger phrases users would actually type
-- Be concrete and slightly "pushy" about when to trigger
-- Cover both explicit requests and contextual matches
-- Mention the `lz-advisor` prefix as a trigger phrase
-
-**DO NOT:**
-- Use second person: "Use this skill when you..."
-- Be vague: "Provides guidance for planning"
-- Omit trigger phrases
-- Assume users will use exact skill names
-
-### Progressive Disclosure
-
-Skills use three-level loading (per skill-creator and plugin-dev):
-
-1. **Metadata** (~100 words) -- Always in context: name + description from frontmatter
-2. **SKILL.md body** (<5,000 words, ideal 1,500-2,000) -- Loaded when skill triggers
-3. **Bundled resources** (unlimited) -- Loaded on demand via references/, scripts/, assets/
-
-**For the advisor skills:** Keep each SKILL.md body under 2,000 words. Move Anthropic's full advisor timing guidance to `references/advisor-timing.md` and reference it from the plan skill. The execute skill references the timing guidance too but its core loop is self-contained.
-
-### Writing Style (Imperative Form)
-
-Per plugin-dev skill-development SKILL.md, skill bodies MUST use imperative/infinitive form:
-
-**Correct:**
-```
-Gather context about the task by reading relevant files.
-Consult the lz-advisor agent for strategic direction.
-Produce an actionable plan based on the advisor's guidance.
-```
-
-**Incorrect:**
-```
-You should gather context about the task.
-Claude needs to consult the advisor.
-The user will receive an actionable plan.
-```
-
-## Agent Tool Model Override Mechanism
-
-This is the core mechanism that makes the advisor strategy work in a plugin context.
-
-### How It Works
-
-1. User runs a session with their chosen model (typically Sonnet 4.6)
-2. A skill triggers and its instructions tell the session model to spawn an agent
-3. The agent definition has `model: opus` in frontmatter
-4. Claude Code's Agent tool (internally called "Task" tool) spawns a subagent on Opus 4.6
-5. The Opus subagent receives the system prompt from the agent's markdown body
-6. The Opus subagent reads the conversation context and produces advice
-7. The advice returns to the session model, which continues with the skill workflow
-
-### Key Differences from API Advisor Tool
-
-| Aspect | API Advisor Tool | Plugin Advisor Pattern |
-|--------|-----------------|----------------------|
-| Mechanism | `advisor_20260301` server-side tool | Agent tool with `model: opus` |
-| Context | Server-side, full transcript automatically | Agent reads via tools (Read, Glob) |
-| Output | 400-700 tokens typical | Must be constrained via system prompt |
-| Cost control | `max_uses` parameter | Prompt-level discipline (2-3 calls per task) |
-| Integration | Single API request | Multiple agent spawns within skill execution |
-| Thinking | Advisor thinking dropped automatically | Must instruct agent to be concise |
-
-**Confidence:** HIGH -- Agent model override (`model: opus`) is documented in plugin-dev. The code-review marketplace plugin demonstrates multi-model agent spawning (Haiku for triage, Sonnet for review). PROJECT.md confirms Agent tool supports model overrides.
-
-### Cost Implications
-
-Each advisor consultation spawns a full Opus inference. Unlike the API advisor tool (which drops thinking blocks and typically produces 400-700 text tokens), the plugin agent approach gives the full model context. The system prompt must enforce:
-
-1. Under 100 words output
-2. Enumerated steps, not explanations
-3. No tool calls from the advisor (read-only via `tools: ["Read", "Glob"]`)
-
-## Marketplace Publishing Requirements
-
-**Confidence:** MEDIUM -- derived from examining the marketplace README and existing plugins. The official docs at code.claude.com are blocked.
-
-### Repository Structure
-
-Marketplace plugins are hosted as GitHub repositories. The marketplace can be:
-- **Official**: `anthropics/claude-plugins-official` (Anthropic-maintained)
-- **Community**: Any GitHub repo registered as a marketplace
-
-For a community plugin like lz-advisor:
-
-1. **Repository** contains the plugin directory at its root
-2. **`.claude-plugin/plugin.json`** must exist at the plugin root
-3. **`README.md`** documents installation and usage
-4. **`LICENSE`** file required for distribution
-
-### Installation Command
-
-Users install with:
-```
-/plugin install lz-advisor@<marketplace-name>
-```
-
-Or from a GitHub repo directly:
-```
-/plugin install LayZeeDK/lz-advisor-claude-plugins
-```
-
-### Quality Conventions (from examining official plugins)
-
-- All official plugins include LICENSE files (MIT common)
-- README.md describes purpose, installation, usage
-- Skills follow progressive disclosure
-- Agent descriptions include `<example>` blocks
-- Components use kebab-case naming throughout
-- No hardcoded paths (use `${CLAUDE_PLUGIN_ROOT}`)
-
-## Skill-Creator Guidelines (Authoritative for Skills)
-
-The skill-creator plugin is authoritative for skill development best practices. Key guidelines that apply to lz-advisor skills:
-
-### Description Optimization Loop
-
-After creating skills, run the description optimization:
-
-1. Generate 20 trigger eval queries (10 should-trigger, 10 should-not-trigger)
-2. Queries must be realistic (file paths, personal context, abbreviations, casual speech)
-3. Should-not-trigger queries must be near-misses, not obviously irrelevant
-4. Run `scripts/run_loop.py` with eval set for automated optimization
-5. Apply `best_description` to SKILL.md frontmatter
-
-**For lz-advisor:** Schedule description optimization after initial skill drafts. Example should-trigger queries:
-- "help me plan this refactor before I start coding"
-- "ok so I need to implement this new API endpoint, can you help me think through the approach first"
-- "review the authentication changes I just made"
-
-Example should-not-trigger near-misses:
-- "plan my weekly schedule" (not a coding plan)
-- "review this restaurant" (not a code review)
-- "implement this feature" (implement without asking for advisor -- should this trigger? Edge case to test)
-
-### Skill Testing with skill-creator
-
-Use the skill-creator's eval framework:
-1. Draft 2-3 realistic test prompts
-2. Spawn parallel with-skill and without-skill runs
-3. Grade with assertions
-4. Launch eval viewer for human review
-5. Iterate until satisfied
-
-### Key Insight: Explain the "Why"
-
-From skill-creator (emphasis original):
-
-> "Try hard to explain the **why** behind everything you're asking the model to do. Today's LLMs are *smart*. They have good theory of mind and when given a good harness can go beyond rote instructions."
-
-For advisor skills, this means explaining WHY the executor should consult the advisor at specific moments, not just commanding "call the advisor now." The model will follow advisor timing more reliably if it understands the cost-benefit.
-
-## Plugin-Dev Guidelines (Authoritative for Structure)
-
-The plugin-dev plugin is authoritative for plugin structure and component organization. Key guidelines:
-
-### Component Discovery
-
-Claude Code automatically discovers:
-- `commands/*.md` -- All .md files
-- `agents/*.md` -- All .md files
-- `skills/*/SKILL.md` -- All subdirectories containing SKILL.md
-- `hooks/hooks.json` -- Hook configuration
-- `.mcp.json` -- MCP server definitions
-
-Discovery happens at plugin load time. No restart required for changes (next session picks them up).
-
-### Naming Conventions
-
-- Plugin name: kebab-case (`lz-advisor`)
-- Agent files: kebab-case `.md` (`lz-advisor.md`)
-- Skill directories: kebab-case (`lz-advisor-plan/`)
-- SKILL.md files: Exactly `SKILL.md` (not `skill.md` or `README.md`)
-
-### Component Lifecycle
-
-1. **Discovery**: Claude Code reads `.claude-plugin/plugin.json`, scans default paths
-2. **Registration**: Components become available
-3. **Activation**: Skills trigger on context match; agents invoked by Agent tool
-
-### Validation Checklist (from plugin-dev)
-
-- [ ] `.claude-plugin/plugin.json` exists with valid `name`
-- [ ] All component directories at plugin root (not inside `.claude-plugin/`)
-- [ ] SKILL.md frontmatter has `name` and `description`
-- [ ] Agent frontmatter has `name`, `description`, `model`, `color`
-- [ ] Description uses third person for skills, examples for agents
-- [ ] All paths use `${CLAUDE_PLUGIN_ROOT}` (no hardcoded paths)
-- [ ] kebab-case naming throughout
+The shorthand grammar (Phase 7 Plan 07-09) was partly motivated by token economy. The current gates are `wc -w` per-section caps (`per_entry max_words="22"`, `outlier_soft_cap="28"`, `cross_cutting_patterns`/`threat_patterns max_words="160"`, `aggregate_cap none`). The severity prefix sits OUTSIDE the counted span -- the grammar explicitly excludes `<file>:<line>: <severity>:` from the per-finding count. So `crit:` -> `Critical:` is word-neutral against the binding budgets; no `max_words` value moves. Only `FRAGMENT_RE`'s severity-token alternation must change so the fixtures still recognize a finding line.
 
 ## Alternatives Considered
 
-| Category | Recommended | Alternative | Why Not |
-|----------|-------------|-------------|---------|
-| Entry point | Skills | Commands | Skills auto-trigger on context; commands require `/invoke`. Commands are legacy format per plugin-dev. |
-| Advisor mechanism | Agent with `model: opus` | API advisor tool | Project constraint: no API dependency, plugin-only |
-| Multiple agents | Single `lz-advisor` agent | Per-skill agents (plan-advisor, review-advisor) | The advisor persona is constant; skills define different workflows. One agent, many skills. |
-| Agent tools | `["Read", "Glob"]` | Full tool access | Principle of least privilege. Advisor reads context but never writes. Reduces cost and prevents advisor from taking action. |
-| Hooks | None for v1 | PreToolUse for auto-advising | Hooks are global (can't scope to skill), lack conversation context, add cost/noise without clear value |
+| Recommended | Alternative | When to Use Alternative |
+|-------------|-------------|-------------------------|
+| Mechanism A (agent emits spelled-out labels) | Mechanism B (skill-layer mechanical expansion) | Only if requirements mandate the agents retain terse shorthands internally while users see full words. Accept the weakened verbatim contract consciously. |
+| A1 (spelled-out inline prefix) | A2 (section-per-severity headings) | Choose A2 if a grouped `### Critical` / `### Important` report is decided more readable than per-line prefixes; costs extra SKILL.md + fixture edits and reverses the current `Do NOT reformat into severity groups` clause. |
+| Pure prompt/contract edit | `MessageDisplay` hook | Never for this project. Only if a future milestone needed session-wide cosmetic redaction AND accepted a script dependency AND dropped the no-hooks decision -- none hold here. |
+| Pure prompt/contract edit | Output style | Never for this purpose. Output styles steer; they do not deterministically rewrite. Editing the agent prompt is the direct, reliable equivalent. |
+
+## What NOT to Use
+
+| Avoid | Why | Use Instead |
+|-------|-----|-------------|
+| Adding a `hooks/` directory + `MessageDisplay`/`SubagentStop`/`PostToolUse` hook | Requires a shell/HTTP script (breaks zero-dependency); `MessageDisplay` is display-only so shorthands persist in the transcript + downstream consumers; hooks are unscoped/global and reintroduce cost/noise the project rejected in the "No hooks for v1" decision. | Edit the agent emit grammar (Mechanism A). |
+| Adding an output style to the plugin | Modifies the system prompt (steering, not deterministic rewriting), applies session-wide rather than per-skill, can be overridden by model defaults. Strictly weaker than editing the agent prompt. | Edit the agent emit grammar (Mechanism A). |
+| Adding `.mcp.json` / MCP server / Node or Python conversion script | Any external service/runtime is a hard violation of the zero-dependency constraint and grossly disproportionate to a 4-token label rename. | Pure text edit. |
+| Increasing agent `maxTurns` or `effort` "to fit longer labels" | Spelled-out labels are word-neutral against the budget gates; the prefix is excluded from the counted span. No budget pressure exists. | Leave `maxTurns: 3`, `effort: medium` unchanged. |
+| A non-mechanical (paraphrasing) skill-layer conversion | Letting the Sonnet executor rewrite finding text risks dropping/rewording findings -- the precise failure render-verbatim prevents. | If Mechanism B is chosen, constrain it to a fixed 4-token substitution table and forbid all other edits in the contract text. |
+
+## Stack Patterns by Variant
+
+**If requirements choose A1 (inline spelled-out prefix):**
+- Edit set: `agents/reviewer.md` + `agents/security-reviewer.md` (emit-format line, `Severity prefix` legend, every worked example, the holistic worked example, the `<verify_request>` example severity tokens), the `FRAGMENT_RE` severity alternation in both budget fixtures, a consistency sweep of `context-packaging.md`.
+- Skills need only a note refresh; the render-verbatim contract is untouched.
+
+**If requirements choose A2 (section-per-severity headings):**
+- All of A1, PLUS: update each SKILL.md `<output>` block to add `### Critical` / `### Important` / `### Suggestion` / `### Question` to the allowed-header set and REVERSE the `Do NOT reformat ... into severity groups` clause; extend the agent `<output_constraints>` section allowlist (currently `Any section heading not enumerated ... is forbidden`); update both fixtures' section-parsing regexes to recognize per-severity subsections.
+
+**If requirements choose Mechanism B (skill-layer expansion):**
+- Agents unchanged (keep shorthands).
+- Edit set: both SKILL.md Phase 3 blocks add the fixed substitution table + amended verbatim-contract wording; fixtures unchanged (they still parse the shorthand emit).
+- Add a `claude -p` UAT asserting the rendered report shows full words while the agent transcript still shows shorthands.
+
+## Version Compatibility
+
+| Surface | Compatible With | Notes |
+|---------|-----------------|-------|
+| Agent emit grammar (Markdown text) | Any Claude Code version supporting `agents/*.md` with `model`/`effort`/`maxTurns` frontmatter | Plain instruction text; introduces no Claude Code feature-version dependency. |
+| Spelled-out label tokens | Existing `wc -w` budget gates | Word-neutral; prefix excluded from counted span. No `max_words` change. |
+| Atomic 5-surface version bump | Existing SemVer convention (plugin 1.0.0 -> 1.0.1) | A user-facing report-format change is a PATCH per the "v1.0.1" framing; bump `plugin.json`, README What's New, and the three other version surfaces atomically per the existing convention. |
 
 ## Sources
 
-All findings derive from files on the local filesystem:
+- `https://code.claude.com/docs/en/hooks` (fetched via markdown.new) -- HIGH. Authoritative hook lifecycle + schemas. Confirmed: hooks are "user-defined shell commands, HTTP endpoints, or LLM prompts"; `MessageDisplay` is the only hook that rewrites user-visible text and is explicitly "display-only" (transcript + downstream keep the original, verbose mode shows the original); `SubagentStop`/`PostToolUse`/`Stop` provide context/continuation control, with `last_assistant_message` as read-only input.
+- `https://code.claude.com/docs/en/output-styles` (via WebSearch summary; code.claude.com blocks direct AI fetch) -- MEDIUM. Output styles modify the system prompt (role/tone/format steering), read once at session start, apply session-wide, plugin-distributable; community reports note model defaults can override them. Confirms steering, not deterministic rewriting.
+- Local source of truth -- HIGH: `plugins/lz-advisor/agents/reviewer.md` + `agents/security-reviewer.md` (`## Output Constraint`, `Severity prefix` legend, `<output_constraints>` blocks, worked examples), `skills/review/SKILL.md` + `skills/security-review/SKILL.md` (`## Phase 3: Structure Output` render-verbatim contract + `Do NOT reformat into severity groups` clause), `references/context-packaging.md` (severity template + `<verify_request>` severity enum), `plugins/lz-advisor/.claude-plugin/plugin.json` (1.0.0; verified pure Markdown + manifest + LICENSE, no `hooks/`, no `.mcp.json`, no scripts).
+- `.planning/PROJECT.md` -- HIGH. Zero-dependency constraint, "No hooks for v1" key decision, milestone goal + target features, `wc -w`-based budget context.
 
-- **skill-creator plugin** (installed): `~/.claude/plugins/cache/claude-plugins-official/skill-creator/unknown/skills/skill-creator/SKILL.md` -- Authoritative for skill development methodology, description optimization, eval framework
-- **plugin-dev plugin** (installed): `~/.claude/plugins/cache/claude-plugins-official/plugin-dev/unknown/` -- Authoritative for plugin structure, agent format, command format, hooks, MCP integration
-- **plugin-dev agent-development**: `skills/agent-development/SKILL.md` -- Agent frontmatter fields including `model: opus`
-- **plugin-dev skill-development**: `skills/skill-development/SKILL.md` -- Skill writing style, progressive disclosure, third-person descriptions
-- **plugin-dev plugin-structure**: `skills/plugin-structure/SKILL.md` + `references/manifest-reference.md` -- Plugin.json format, directory layout
-- **plugin-dev command-development**: `skills/command-development/SKILL.md` + `references/frontmatter-reference.md` -- Command frontmatter including `model` override field
-- **Anthropic advisor tool docs**: `research/anthropic/docs/advisor-tool.md` -- API advisor tool reference, timing guidance, trimming instructions
-- **Anthropic advisor blog post**: `research/anthropic/blog/the-advisor-strategy-give-agents-an-intelligence-boost.md` -- Strategy rationale, benchmark results
-- **Official marketplace**: `~/.claude/plugins/marketplaces/claude-plugins-official/` -- Real plugin structures, README conventions
-- **code-review plugin**: `plugins/code-review/commands/code-review.md` -- Multi-model agent spawning pattern (Haiku + Sonnet)
-- **example-plugin**: `plugins/example-plugin/` -- Reference implementation for marketplace plugins
+---
+*Stack research for: Claude Code plugin output-format change (spelled-out review severity labels), milestone v1.0.1*
+*Researched: 2026-06-07*

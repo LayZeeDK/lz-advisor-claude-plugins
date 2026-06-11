@@ -1,3 +1,0 @@
-# Raw stream-json captures are bulky local-only audit traces; FINDINGS.md
-# preserves the graded results. Keep the captures out of git.
-*.jsonl

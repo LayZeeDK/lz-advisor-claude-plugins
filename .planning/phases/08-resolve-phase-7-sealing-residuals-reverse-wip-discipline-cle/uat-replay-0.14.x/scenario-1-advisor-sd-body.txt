@@ -1,8 +1,0 @@
-1. Add `compodoc: true` and `compodocArgs: ["-p", "<lib>/tsconfig.lib.json", "-e", "json", "-d", "<lib>"]` to `storybook` and `build-storybook` targets in `project.json`.
-2. Add `{projectRoot}/documentation.json` to `outputs` array of `build-storybook` per `pv-2`.
-3. Set `resolveJsonModule: true` and include `../documentation.json` in `.storybook/tsconfig.json`.
-4. Call `setCompodocJson(docJson)` in `.storybook/preview.ts`; this is load-bearing for Docs-tab JSDoc rendering per `pv-1`.
-5. Set `tags: ['autodocs']` globally in preview plus `component: MyComponent` in story meta.
-6. Place JSDoc `/** ... */` immediately above class, `input()`, and `output()` declarations.
-7. Run `nx storybook <lib>` and verify Docs tab.
-

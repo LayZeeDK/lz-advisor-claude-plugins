@@ -1,0 +1,17 @@
+# Phase 13 UAT evidence-custody directory (D-08).
+#
+# This directory is the canonical custody location for the GATE-02 empirical
+# verification. Plan 13-02 writes all live-run captures here BEFORE Plan 13-03
+# tears the ngx worktree down (worktree removal discards uncommitted artifacts;
+# memory feedback_worktree_artifact_loss):
+#
+#   *.streamjson   -- raw `claude -p --output-format stream-json` captures (parent)
+#   *.report.md    -- extracted parent .result (SHAPE grade source, SC-1/SC-2)
+#   *.agent.md     -- extracted subagent JSONL text (BUDGET source, SC-4)
+#   *.err          -- stderr per run (out_of_credits / 429 detection)
+#   PASS-K.md      -- the Pass@k / Pass^k table per skill + overall
+#   grade logs     -- per-run SHAPE + BUDGET verdicts
+#
+# It lives in the lz-advisor planning tree, NOT the throwaway worktree, so it
+# survives `git worktree remove`. WORKTREE-PROVENANCE.md (this same directory)
+# already records the SC-3 worktree provenance.

@@ -1,500 +1,249 @@
-# Domain Pitfalls
+# Pitfalls Research
 
-**Domain:** Claude Code marketplace plugin implementing the advisor strategy (multi-model Opus/Sonnet orchestration)
-**Researched:** 2026-04-10
+**Domain:** Structured-output grammar change in a prompt-based LLM plugin (lz-advisor review/security-review severity-label expansion)
+**Researched:** 2026-06-07
+**Confidence:** HIGH (codebase + project-history analysis; every claim anchored to a file path in this repo)
+
+## Scope note
+
+This milestone (v1.0.1 "No review report shorthands") changes the **user-facing severity vocabulary** of two Opus agents (`reviewer`, `security-reviewer`) from the fragment-grammar shorthands `crit:`/`imp:`/`sug:`/`q:` to fully spelled-out `Critical`/`Important`/`Suggestion`/`Question`, possibly grouped section-per-severity. The change is small in surface area but high in coupling: the same vocabulary is load-bearing in agent prompts, two skills' verbatim-render contracts, regression fixtures, the context-packaging reference, eval/worked examples, and 16 phases of frozen planning history. This file catalogs the project-specific ways that change breaks, not generic LLM advice.
+
+The single most important framing finding: **the two review skills currently contain an explicit prohibition against the exact report shape this milestone wants to introduce.** `review/SKILL.md:178` and `security-review/SKILL.md:164` both say:
+
+> Do NOT reformat the [security-]reviewer's response into severity groups (Critical / Important / Suggestion).
+
+So this is not a green-field addition. It is a **contract reversal** on a fidelity rule that was hardened precisely to stop the skill layer from touching agent output. Every pitfall below flows from that tension.
+
+---
 
 ## Critical Pitfalls
 
-Mistakes that cause rewrites, cost explosions, or fundamental architectural failures.
+### Pitfall 1: Worked-example/grammar disagreement (LLMs follow examples over rules)
 
-### Pitfall 1: Aggressive Prompt Language Causing Overtriggering
+**What goes wrong:**
+The agents change the *stated* grammar in the `### Findings` "Format:" line (e.g., `crit:` -> `Critical:`) but leave the 8+ worked examples in `reviewer.md` (lines 96, 104, 112, 121, 127-134) and `security-reviewer.md` (lines 98-127, 135-141) emitting the old `crit:`/`imp:`/`sug:` shorthands. Opus is a literal, example-anchored follower (per project memory `reference_sonnet_46_prompt_steering` and the agents' own design: "the executor follows examples over prose rules"). When the holistic worked example shows `src/auth.ts:42: crit: ...` but the format line says `Critical:`, the model will emit a **mixture** -- sometimes `crit:`, sometimes `Critical:`, sometimes inventing `Crit:` -- because the highest-signal training input in the prompt is the demonstrated shape, not the imperative.
 
-**What goes wrong:** Using "MUST", "CRITICAL", "ALWAYS", or "If in doubt, use [tool]" in skill prompts causes Opus 4.6 and Sonnet 4.6 to overtrigger -- invoking tools, skills, and advisor consultations far more often than intended. This was a known issue with Opus 4.5 and is confirmed still relevant for 4.6 models by Anthropic's official documentation.
+**Why it happens:**
+There are two co-located sources of truth in each agent file: the prose Format line plus the Severity Classification section, AND the worked examples. They drift independently because the examples are long, numerous, and easy to miss in a "find/replace the format line" edit. This is the exact mechanism behind Phase 7 WR-05 (a worked example still showed `Severity: High` after the prose was fixed; see PROJECT.md 2026-05-05 Evolution entry).
 
-**Why it happens:** Opus 4.5 and 4.6 are significantly more responsive to system prompt instructions than previous models. Prompts designed to reduce undertriggering on older models now cause overtriggering. Anthropic's official docs state: "Where you might have said 'CRITICAL: You MUST use this tool when...', you can use more normal prompting like 'Use this tool when...'"
+**How to avoid:**
+Treat the worked examples as the **primary** edit target, not an afterthought. In one plan task, rewrite every worked example in both agent files in lockstep with the format line, including: the per-finding examples, the holistic multi-finding example, the `<verify_request>` trailing-line examples (`severity="important"` attribute -- decide whether the XML attribute stays lowercase-canonical or also spells out), and the Hedge Marker examples (`reviewer.md:121`, `security-reviewer.md:123`). Add a grammar-consistency assertion to the smoke fixture (Pitfall 2) that greps the agent file itself for any surviving `crit:|imp:|sug:|q:` literal outside an explicit "deprecated/legacy" annotation.
 
-**Consequences:**
-- Advisor agent called on every turn instead of 2-3 strategic moments, causing cost explosion (Opus tokens are expensive)
-- Skills triggering when not relevant, polluting the conversation context
-- Executor ignoring its own judgment and deferring to advisor for trivial decisions
+**Warning signs:**
+- A diff that touches the "Format:" line but shows < 8 changed example lines per agent file.
+- Headless `claude -p` review output that mixes `Critical:` and `crit:` in the same response.
+- The `(formerly High)`/`(formerly Medium)` annotation pattern at `security-reviewer.md:66-67` -- this is residue from the LAST rename (WR-01) and shows the project's own habit of leaving partial vocabulary behind.
 
-**Prevention:**
-- Use calm, natural language in all skill and agent prompts: "Use this when..." not "CRITICAL: You MUST use this when..."
-- Remove all "if in doubt" fallback language -- 4.6 models trigger appropriately without it
-- Replace blanket defaults with targeted instructions: "Use the advisor when it would improve your architectural decisions" not "Default to calling the advisor"
-- Test with both Sonnet 4.6 and Opus 4.6 as executor to verify triggering behavior
-- Dial back any anti-laziness prompting from older prompt patterns
-
-**Detection:** Monitor advisor call frequency during testing. If advisor is called more than 3 times per typical task, prompt language is too aggressive.
-
-**Phase relevance:** Phase 1 (core agent + skills). Get prompt tone right from the start -- every subsequent skill inherits this calibration.
-
-**Confidence:** HIGH (Anthropic official docs: platform.claude.com/docs/en/build-with-claude/prompt-engineering/claude-4-best-practices)
+**Phase to address:**
+Implementation phase (the agent-prompt edit). This is the core change; it cannot be deferred.
 
 ---
 
-### Pitfall 2: Advisor Called Too Late (Approach Already Crystallized)
+### Pitfall 2: Regression-fixture lockstep -- silent pass or hard fail on the new shape
 
-**What goes wrong:** The executor completes substantive work (writes files, commits to an approach) before consulting the advisor. By this point the advisor's guidance is wasted because the executor has already invested in a direction and is reluctant to change course.
+**What goes wrong:**
+The budget gates `D-reviewer-budget.sh` / `D-security-reviewer-budget.sh` parse agent output with `FRAGMENT_RE`-style regexes keyed on the literal severity prefixes (`crit:`/`imp:`/`sug:`/`q:`) to locate finding entries, then run `wc -w` per-section sub-caps (per-entry <=22w/<=28w outlier, `cross_cutting_patterns`/`threat_patterns` <=160w, `missed_surfaces` <=30w; see `reviewer.md:160-187`). When the grammar changes to `Critical:` etc., the regex stops matching finding lines. **Two failure modes, both dangerous:** (a) **silent pass** -- if the regex no longer matches any finding, the per-finding word-budget loop iterates zero times and the gate exits 0 (green) while actually testing nothing; (b) **hard fail** -- if the parser asserts "at least N findings matched," the new shape trips a false regression that looks like the agent broke.
 
-**Why it happens:** Without explicit timing guidance, the executor treats the advisor as a "check my work" tool rather than a "help me plan" tool. The natural LLM tendency is to start working immediately. Anthropic's internal evaluations show the advisor adds most value on the first call, before the approach crystallizes.
+**Why it happens:**
+The fixtures were authored against the shorthand grammar and the regex literals are the coupling point. Mode (a) is the more insidious: a vacuously-passing gate is worse than a failing one because it removes the safety net silently. This is structurally identical to the "regression-fixture lockstep" failure the milestone goal explicitly calls out (PROJECT.md milestone context: "Regression smoke fixtures... updated in lockstep so budget gates still parse findings").
 
-**Consequences:**
-- Advisor's strategic guidance arrives after the executor has already written code
-- Executor ignores advisor output that contradicts work already done (sunk cost)
-- Near-zero quality improvement despite paying for Opus tokens
-- Defeats the entire purpose of the advisor pattern
+**How to avoid:**
+- Update the fixture regexes in the **same plan/commit** as the agent grammar change -- never in a follow-up. Note: these fixtures are not currently tracked in git (they live transiently under `.planning/phases/<phase>/` and are re-created per execution; confirmed via `git ls-files` returning nothing for `*budget*`). The plan must **author them fresh** against the new grammar, not edit an existing file.
+- Add an **anti-vacuous-pass assertion**: the fixture must assert `matched_finding_count >= expected_min` (e.g., >= 5 for the holistic example) BEFORE running word budgets, so a regex that matches nothing fails loudly instead of passing silently.
+- If section-per-severity grouping is adopted, the parser must handle severity-grouped `### Critical` / `### Important` headers as well as (or instead of) the flat `### Findings` section. Decide the section shape in requirements BEFORE writing the parser.
+- Recall the Phase 7 tolerance precedent (ROADMAP 2026-05-08, commit ef97e21): a +10% smoke-gate tolerance was added **at the fixture-parser layer only**, with agents kept aimed at canonical targets. Spelled-out labels are word-neutral under `wc -w` (`Critical:` counts as one whitespace-delimited word, same as `crit:`), so the existing budgets should still hold -- but verify this assumption empirically rather than assuming it (Pitfall 4).
 
-**Prevention:**
-- Include Anthropic's suggested timing block verbatim in skill prompts: "Call advisor BEFORE substantive work -- before writing, before committing to an interpretation, before building on an assumption."
-- Explicitly distinguish orientation from substantive work: "Orientation is not substantive work. Writing, editing, and declaring an answer are."
-- Structure the execute skill to enforce advisor-first: orientation phase -> advisor call -> execution phase
-- On short reactive tasks where the next action is dictated by tool output, skip the advisor -- it adds most value before the approach crystallizes
+**Warning signs:**
+- A budget fixture that exits 0 but whose verbose output shows "0 findings parsed."
+- Fixture regex literals (`crit:`, `\bimp:`) surviving in the new `.sh` files.
+- A green gate run that completes suspiciously fast (no per-finding iterations).
 
-**Detection:** Review conversation transcripts. If the advisor is first called after file writes or code generation, timing is wrong.
-
-**Phase relevance:** Phase 1 (skill prompt design). The timing block is part of the system prompt, not a feature to add later.
-
-**Confidence:** HIGH (Anthropic advisor tool docs, suggested system prompt section)
+**Phase to address:**
+Same phase as the grammar change (lockstep is the whole point). The fixture authoring should be a sibling task to the agent edit, gated by an empirical run (`bash D-reviewer-budget.sh` against a captured headless response).
 
 ---
 
-### Pitfall 3: Executor Blindly Following Bad Advice Without Empirical Check
+### Pitfall 3: Cross-surface lexicon drift (the WR-01/WR-02 case study)
 
-**What goes wrong:** The executor receives advisor guidance and follows it without verifying against the actual codebase state. The advisor may have misread the context or may not have seen recent file changes.
+**What goes wrong:**
+The severity vocabulary appears on at least **six distinct surfaces** beyond the two agent Format lines. A rename that touches only the obvious surfaces leaves the others misaligned, producing exactly the multi-plan reconciliation tail that the milestone context warns about. The surfaces (verified in this repo):
 
-**Why it happens:** LLMs are trained to be compliant. When a "stronger" model provides advice, the executor defaults to obedience. Anthropic explicitly warns about this: "A passing self-test is not evidence the advice is wrong -- it's evidence your test doesn't check what the advice is checking."
+| Surface | File:line | What it contains |
+|---------|-----------|------------------|
+| reviewer agent Format + Severity Classification | `agents/reviewer.md:64-67`, `196-201` | `crit:`/`imp:`/`sug:`/`q:` prefixes + spelled-out classification |
+| security-reviewer agent Format + Severity prefix | `agents/security-reviewer.md:65-68` | prefixes + `(formerly High)`/`(formerly Medium)` legacy annotations |
+| review SKILL.md verbatim contract | `skills/review/SKILL.md:13,178` | "classified as Critical, Important, or Suggestion" + the "Do NOT reformat into severity groups" prohibition |
+| security-review SKILL.md verbatim contract | `skills/security-review/SKILL.md:164` | the "Do NOT reformat into severity groups" prohibition |
+| context-packaging.md (WR-01 Hedge Marker carve-out + templates) | `references/context-packaging.md:290-291, 390` | `Severity (initial): [Critical/Important/Suggestion...]` + verify_request `severity="<critical\|important\|suggestion>"` |
+| verify_request schema severity attribute | `references/context-packaging.md:378, 388-390`; both agents' `<verify_request>` schema | lowercase `critical\|important\|suggestion` attribute values |
 
-**Consequences:**
-- Executor introduces bugs by following advice that contradicts actual file contents
-- Silent regressions where the advisor's suggestion was correct in general but wrong for this specific codebase
-- Loss of the executor's own context advantages (it has tool access; the advisor in our plugin pattern is text-only)
+**Why it happens:**
+This is the project's own documented scar. Phase 7 Plan 07-13 (ROADMAP:234) did a severity-vocabulary rename and had to touch **5 surfaces** in one plan (WR-02: "mechanical text replacements at 4 surfaces ... with Surface 4 Option A full alignment"), and even then WR-04 (schema BNF still permitted `|high|medium` at `context-packaging.md:376`) and WR-05 (a worked example still showed `Severity: High`) **leaked into Phase 8 candidates** -- two follow-up plans of cleanup (PROJECT.md 2026-05-05 entry). The root cause is that no single surface is the source of truth; the vocabulary is replicated as literal strings across prompt text, contract prose, fixtures, and schema attribute enums.
 
-**Prevention:**
-- Include Anthropic's advice-handling block in skill prompts: "Give the advice serious weight. If you follow a step and it fails empirically, or you have primary-source evidence that contradicts a specific claim, adapt."
-- Add reconciliation guidance: "If you've already retrieved data pointing one way and the advisor points another: don't silently switch. Surface the conflict in one more advisor call."
-- Instruct executor to verify advisor suggestions against actual file state before implementing
-- The executor has the tools; the advisor has the strategic reasoning. Neither should be trusted absolutely.
+**How to avoid:**
+- Enumerate the surface list (above) in the **requirements/roadmap phase** as a mandatory checklist, and make the version-bump plan a single atomic 5-surface commit per the established convention (PROJECT.md repeatedly references "atomic 5-surface version bump").
+- Decide the **case-normalization rule explicitly**: user-facing labels are Title-Case (`Critical`), but the `<verify_request severity=...>` and `<pre_verified ... severity=...>` XML attribute values are lowercase-canonical (`critical`). These are TWO different lexicons on purpose (display vs. machine attribute). The pitfall is "fixing" the XML attributes to Title-Case and breaking the verify_request escalation hook parser. Document which surfaces are display (rename) vs. machine-attribute (leave lowercase).
+- Strip the `(formerly High)`/`(formerly Medium)` annotations at `security-reviewer.md:66-67` as part of this pass IF they are now pure noise -- or knowingly keep them. Do not leave a THIRD generation of "formerly X" residue.
+- Add a cross-surface grep assertion to the smoke fixture or a doc-hygiene check: after the rename, `git grep -n 'crit:|imp:|sug:'` across `plugins/lz-advisor/` should return only intentional/annotated occurrences.
 
-**Detection:** Test cases where the advisor gives plausible but wrong advice (e.g., suggests a pattern that doesn't match the project's actual dependency structure). Does the executor catch it?
+**Warning signs:**
+- A version-bump plan that touches fewer than the 6 surfaces above.
+- Any `high|medium` or `High`/`Medium` token surviving in `context-packaging.md` (the WR-04 leak signature).
+- A worked example anywhere showing the old prefix after the Format line was changed (the WR-05 leak signature).
 
-**Phase relevance:** Phase 1 (execute skill prompt). This is prompt language, not architecture.
-
-**Confidence:** HIGH (Anthropic advisor tool docs, "How the executor should treat the advice" section)
-
----
-
-### Pitfall 4: Advisor Output Too Verbose (Cost Explosion)
-
-**What goes wrong:** Advisor generates 500+ word explanations instead of concise enumerated steps. Since advisor output is billed at Opus rates and is the advisor's largest cost driver, verbose output can make the advisor pattern more expensive than running Opus end-to-end.
-
-**Why it happens:** Without conciseness instructions, Opus defaults to thorough explanations. It naturally wants to explain reasoning, provide alternatives, and caveat its advice. The advisor tool docs note typical output is 400-700 text tokens (1,400-1,800 total with thinking).
-
-**Consequences:**
-- Total advisor output tokens dominate cost, eliminating the cost savings that justify the advisor pattern
-- Verbose advice floods the executor's context, diluting other important information
-- Executor may get confused by nuanced, multi-paragraph advice when it needs clear steps
-
-**Prevention:**
-- Include Anthropic's recommended conciseness instruction as the first advisor-related line in the system prompt: "The advisor should respond in under 100 words and use enumerated steps, not explanations."
-- This single line cuts total advisor output tokens by 35-45% without changing call frequency (Anthropic's internal testing)
-- The advisor agent's own system prompt should reinforce: respond concisely, enumerate steps, skip explanations
-- Do NOT include "explain your reasoning" or "provide alternatives" in the advisor prompt
-
-**Detection:** Monitor advisor response length during testing. If advisor output regularly exceeds 150 words, conciseness instructions are not working.
-
-**Phase relevance:** Phase 1 (advisor agent definition). The conciseness instruction must be in the agent's system prompt from day one.
-
-**Confidence:** HIGH (Anthropic advisor tool docs, "Trimming advisor output length" section)
+**Phase to address:**
+Requirements phase produces the surface checklist; implementation phase executes the atomic multi-surface edit; a verification phase greps for residue. This is the pitfall most likely to need its OWN dedicated reconciliation step given the Phase 7 precedent of a 2-plan cleanup tail.
 
 ---
 
-### Pitfall 5: Plugin Manifest Validation Failures (Silent Skill Loading)
+### Pitfall 4: Word/token budget interaction when labels get longer
 
-**What goes wrong:** Plugin's `plugin.json` contains unrecognized fields, malformed JSON, or misplaced component files, causing skills to silently fail to load. Neither the user nor the agent receives any error indication.
+**What goes wrong:**
+The per-section word budgets (`reviewer.md:160-187`) were empirically tuned on the **shorthand** grammar. The aggregate cap was falsified at 354w mean and replaced with per-section sub-caps after exactly this kind of length pressure (`reviewer.md:189`, `security-reviewer.md:194`). Spelled-out labels are *nominally* word-neutral under `wc -w` (`crit:` and `Critical:` each count as one whitespace-delimited token), BUT two second-order effects can still push over budget: (a) if section-per-severity grouping adds `### Critical` / `### Important` / `### Suggestion` / `### Question` header lines, those headers add words AND change the parser's section boundaries; (b) longer, more "official-looking" labels can subtly steer Opus toward more verbose finding prose ("Critical:" reads as a heavier flag than "crit:", inviting justification text). The history shows budget regressions are this project's most recurrent failure (Phase 7 had 5/5 over-cap runs; a security-reviewer budget regression on 0.12.2 in MEMORY).
 
-**Why it happens:** Claude Code's `plugin.json` parser uses strict schema validation that rejects plugins with unknown root-level fields. The marketplace itself has had schema inconsistencies (GitHub issue #1244). Fields like `category` and `source` that appear in marketplace metadata are not recognized by the client validator (issues #30366, #31384).
+**Why it happens:**
+`wc -w` neutrality is an assumption, not a measurement. The project has been burned three times by assuming a prompt change is budget-neutral (Plan 07-13 severity rename induced a word-budget regression -- the milestone context names this directly). Label length is not the only lever; label *gravity* changes model verbosity.
 
-**Consequences:**
-- Skills appear installed but never trigger -- user types `/lz-advisor.plan` and gets "Unknown skill"
-- Hours of debugging with no error messages
-- Plugin appears to work in development (`--plugin-dir`) but fails after marketplace publication due to additional metadata fields
+**How to avoid:**
+- Run the budget fixtures **empirically against captured headless output on the new grammar** before declaring the phase done -- do not reason about `wc -w` neutrality, measure it. Use the established n=3 (or n=10 for the statistical gate per ROADMAP E.1) re-run discipline to defeat stochastic outliers (the 0.12.1 326w "regression" was an outlier disconfirmed by a 3x re-run mean of 272w; PROJECT.md 2026-05-05).
+- If section-per-severity grouping is adopted, recompute the section-boundary parsing and ensure the new severity-group headers are NOT counted against the per-finding word budgets (they are structural, like `### Findings`).
+- Keep agents aimed at canonical word targets; apply any slack at the fixture-parser tolerance layer only (the Phase 7 ef97e21 precedent), never by loosening the agent's stated budget.
 
-**Prevention:**
-- Keep `plugin.json` minimal: `name` is the only required field. Omit any field you don't explicitly need
-- Only place `plugin.json` in `.claude-plugin/`. Components (skills, agents, hooks) go at the plugin root, not inside `.claude-plugin/`
-- Test with `claude --debug` and look for "loading plugin" messages to verify all components are discovered
-- Do NOT add custom fields to `plugin.json` -- any unrecognized key causes silent rejection
-- Validate JSON syntax before committing
-- If using standard directories, omit path fields entirely from `plugin.json`
+**Warning signs:**
+- A single budget-gate run used as proof (no n>=3 re-run).
+- Per-finding entries growing justification clauses after the rename ("Critical: this is critical because...").
+- New `### <Severity>` headers being caught by the per-finding `<=22w` regex.
 
-**Detection:** Run `claude --debug` and verify skill registration. Test slash command invocation immediately after installation. Check for "Unknown skill" errors.
-
-**Phase relevance:** Phase 1 (plugin scaffold). Get the manifest right before writing any skills.
-
-**Confidence:** HIGH (Multiple GitHub issues: #20409, #30366, #31384 on anthropics/claude-code)
+**Phase to address:**
+Verification phase (empirical budget re-run is a gate). The implementation phase should include the measurement as an acceptance criterion, not defer it to manual UAT.
 
 ---
 
-### Pitfall 6: Missing "Make Deliverable Durable" Before Final Advisor Call
+### Pitfall 5: Verbatim-contract erosion if a skill-layer conversion step is added
 
-**What goes wrong:** The executor calls the advisor for a final review, but hasn't saved its work to disk first. The advisor call takes time (the Opus sub-inference doesn't stream in the API version, and the Agent tool in Claude Code has similar latency). If the session ends, times out, or hits a context limit during the advisor call, all unsaved work is lost.
+**What goes wrong:**
+The milestone offers two implementation routes (PROJECT.md target features): (A) change the agent grammar to emit spelled-out labels directly, or (B) add a "mechanical conversion step before output" at the skill layer. Route B is the dangerous one. The review skills enforce a **hard render-verbatim contract** (`review/SKILL.md:165-184`, `security-review/SKILL.md:160-170`) that was hardened specifically because paraphrasing dropped/distorted findings in the past. The contract literally says "Render the reviewer agent's response verbatim" and "Do NOT reformat... strip, rename, or bold the headers... add any other section." A conversion step at the skill layer is, by definition, the skill mutating agent output -- the exact thing the contract forbids. Once you open the door to "mechanically expand `crit:` -> `Critical:`," you have established that the skill MAY transform output, and the next drift is the skill "helpfully" regrouping, re-summarizing, or dropping a `### Cross-Cutting Patterns` section it deems redundant -- re-introducing the paraphrase failure mode that 16 phases of work eliminated.
 
-**Why it happens:** The natural flow is: finish work -> ask for review. But "finish work" in the executor's mind means "done generating" not "written to files." The API advisor tool explicitly pauses the stream while Opus runs, creating a window where no output is being produced. Our plugin's Agent tool call creates a similar pause.
+**Why it happens:**
+Route B looks cheaper (one regex in the skill vs. rewriting 8 worked examples per agent) and looks safer for budgets (the agent keeps its tuned shorthand grammar). But it inverts the architecture: it makes the SKILL responsible for output shape, when the entire design (`reviewer.md:53`: "These two headers are the skill's output contract") puts the agent in charge of shape and the skill in charge of faithful pass-through.
 
-**Consequences:**
-- Work completed but not persisted to files is lost during advisor agent execution
-- Session timeout or context exhaustion during advisor call means starting over
-- Particularly painful for long-running implement tasks
+**How to avoid:**
+- **Strongly prefer Route A** (agent emits spelled-out labels). It keeps the agent as the single source of output shape and preserves the verbatim contract intact. The token-economy motivation for shorthands is dead anyway: budgets are `wc -w`-based and `Critical:` is word-equivalent to `crit:` (PROJECT.md milestone context explicitly notes "the original token-economy motivation may not bind").
+- If Route B is chosen for budget reasons, constrain it to a **provably non-paraphrasing, total, injective label expansion**: a fixed lookup `{crit:->Critical:, imp:->Important:, sug:->Suggestion:, q:->Question:}` applied ONLY to the severity token, with an explicit invariant test that the conversion changes no other byte (assert a `diff` between pre- and post-conversion output shows only the four label substitutions). The verbatim-contract prose must be amended to carve out *exactly this one mechanical substitution* and re-affirm the prohibition on every other mutation -- otherwise the contract self-contradicts.
+- Whichever route, **resolve the SKILL.md "Do NOT reformat into severity groups" contradiction in requirements** (`review/SKILL.md:178`, `security-review/SKILL.md:164`). If section-per-severity grouping is adopted, that prohibition must be rewritten, and the rewrite must still forbid finding-content paraphrase even while permitting the new grouping.
 
-**Prevention:**
-- Include Anthropic's explicit durability instruction: "BEFORE this call, make your deliverable durable: write the file, save the result, commit the change. The advisor call takes time; if the session ends during it, a durable result persists and an unwritten one doesn't."
-- Structure the execute skill with an explicit "persist work" step before "final advisor review" step
-- This is verbatim from Anthropic's suggested system prompt -- don't paraphrase it
+**Warning signs:**
+- A plan that adds regex/string-replace logic to a SKILL.md `<output>` block.
+- The verbatim-contract prose left unchanged while a conversion step is added (silent self-contradiction).
+- Any conversion that operates on more than the four severity tokens.
+- The "Do NOT reformat into severity groups" line surviving unedited while the report shape changes to severity groups.
 
-**Detection:** In testing, simulate a session interruption during the final advisor call. Was work saved?
-
-**Phase relevance:** Phase 1 (execute skill prompt). This is a prompt instruction, not an architectural concern.
-
-**Confidence:** HIGH (Anthropic advisor tool docs, suggested system prompt: "make your deliverable durable")
-
----
-
-## Moderate Pitfalls
-
-### Pitfall 7: Skill Description Truncation Losing Trigger Keywords
-
-**What goes wrong:** Skill descriptions are truncated at 250 characters in the skill listing. Keywords that Claude needs to match user requests are stripped, causing skills to not trigger when they should.
-
-**Why it happens:** Claude Code loads all skill names into context but budgets descriptions dynamically (1% of context window, fallback 8,000 characters). With multiple plugins installed, each skill's description gets shortened. The budget is shared across ALL installed skills.
-
-**Consequences:**
-- `/lz-advisor.plan` shows up in the list but Claude never auto-invokes it because the description was truncated before the relevant keywords
-- Users must manually invoke skills instead of getting automatic invocation
-
-**Prevention:**
-- Front-load the key use case in descriptions -- put the most important trigger words in the first 100 characters
-- Keep descriptions concise: "Plans tasks with Opus advisor guidance" not "A comprehensive planning skill that leverages the advisor strategy to pair Sonnet as executor with Opus as advisor for strategic guidance during the planning phase of development tasks"
-- Each description is hard-capped at 250 characters regardless of budget
-- Test with multiple plugins installed to verify descriptions survive truncation
-- If needed, users can raise the limit with `SLASH_COMMAND_TOOL_CHAR_BUDGET` environment variable
-
-**Detection:** Ask Claude "What skills are available?" and check if lz-advisor descriptions appear complete and meaningful.
-
-**Phase relevance:** Phase 1 (all skill definitions). Write tight descriptions from the start.
-
-**Confidence:** HIGH (Official Claude Code skills docs, "Skill descriptions are cut short" troubleshooting section)
+**Phase to address:**
+Requirements phase MUST pick Route A vs. B and resolve the verbatim-contract / no-regrouping contradiction -- this is an architecture decision, not an implementation detail. Implementation phase enforces the chosen invariant.
 
 ---
 
-### Pitfall 8: Subagent Cannot Spawn Other Subagents (No Nested Delegation)
+### Pitfall 6: Downstream consumers of the old grammar drift out of sync
 
-**What goes wrong:** Plugin author designs skills expecting the advisor agent (a subagent) to spawn its own sub-subagents for exploration or research. This fails because Claude Code prevents infinite nesting -- subagents cannot spawn other subagents.
+**What goes wrong:**
+Surfaces that *read* or *demonstrate* the grammar but are not the grammar definition get forgotten. Verified downstream surfaces in this repo:
 
-**Why it happens:** The plugin author thinks in terms of the API advisor tool (which composes with other tools inside a single request) and assumes the Claude Code Agent tool works the same way. It doesn't. The API's `advisor_20260301` runs inside a single Messages request. Claude Code's Agent tool spawns a separate context window with strict nesting limits.
+- **Eval JSON queries** (`evals/lz-advisor/lz-advisor-review-eval.json`, `...security-review-eval.json`): these are **trigger-only** (`query` + `should_trigger`); they contain NO severity-vocab assertions. **Good news: they are NOT a rename surface.** Documenting this prevents a wasted edit and a false "we missed the evals" panic. (The `conciseness-assessment.md` and `review-workspace/optimization-results.md` DO mention severity words but are historical analysis artifacts, not live contracts.)
+- **README** (`plugins/lz-advisor/README.md`): currently does NOT show finding-line examples with severity prefixes (grep found only "verification-chain integrity" prose at line 85). If the milestone adds a sample report to the README to showcase the new labels, that sample becomes a NEW surface to keep in sync -- a future drift source.
+- **context-packaging.md worked examples** (`references/context-packaging.md:317-330`): the Verification-template worked example shows `Severity: Important` in the executor's *input packaging* (the executor's initial assessment fed TO the agent), distinct from the agent's *output* grammar. This surface uses spelled-out labels already and is about input packaging, so it may not need changing -- but verify the distinction holds and document it, because it is easy to "fix" a surface that was already correct (the inverse of WR-05).
+- **Frozen planning history** (~362 `.planning/` artifacts): per the Phase 9 precedent (PROJECT.md 2026-06-01: "the ~362 frozen historical `.planning/` artifacts ... left UNCHANGED as accurate history"), historical phase docs that reference the old grammar should NOT be rewritten -- they are an accurate record. The pitfall is a well-meaning find/replace sweeping through `.planning/` and corrupting history.
 
-**Consequences:**
-- Advisor agent fails to delegate mechanical work (file reading, searching) to cheaper Haiku subagents
-- Opus agent must do all exploration in its own context window, consuming expensive tokens on mechanical work
-- Architecture must be redesigned to avoid nested delegation
+**Why it happens:**
+"Find every occurrence of `crit:`" over-matches: it hits live contracts (must change), input-packaging templates (may not change), eval triggers (don't change), and frozen history (must NOT change). Without a surface-by-surface disposition, the rename either misses live surfaces or corrupts inert ones.
 
-**Prevention:**
-- Design skills so the executor (Sonnet, running in the main conversation) handles ALL tool calls
-- The advisor agent should only provide guidance text -- limit its tools to Read and Glob (read-only) at most
-- If the advisor needs codebase context, the executor should gather it BEFORE calling the advisor (aligns with Anthropic's pattern: orientation first, then advisor call)
-- Structure: executor reads files -> executor calls advisor -> advisor responds with guidance text -> executor implements
-- This constraint actually aligns perfectly with the advisor strategy: the advisor is a consultant, not a doer
+**How to avoid:**
+- In requirements, produce a **per-surface disposition table** (rename / leave-canonical / leave-as-history / not-applicable) covering: 2 agent files (rename), 2 SKILL.md contracts (rewrite prose + grouping prohibition), context-packaging templates (decide input vs. output), verify_request XML attributes (leave lowercase-canonical), README (add-sample-or-not), eval JSON (not-applicable), `.planning/` history (leave-as-history).
+- Scope every grep/sweep to `plugins/lz-advisor/` and exclude `.planning/` per the Phase 9 history-preservation precedent.
 
-**Detection:** If any skill design has the advisor agent writing files, running bash commands, or needing to spawn other agents, the architecture is wrong.
+**Warning signs:**
+- A rename diff that modifies files under `.planning/`.
+- A README sample report added without a corresponding fixture to keep it honest.
+- The verify_request `severity="critical"` attribute "corrected" to `severity="Critical"` (breaks the hook parser).
 
-**Phase relevance:** Phase 1 (architecture). This constrains the fundamental interaction pattern.
-
-**Confidence:** HIGH (Official Claude Code subagent docs: "Subagents cannot spawn other subagents")
-
----
-
-### Pitfall 9: `context: fork` Loses Conversation History
-
-**What goes wrong:** A skill with `context: fork` runs in an isolated subagent that has no access to the main conversation history. The forked agent receives only the skill content as its prompt, not what the user discussed previously.
-
-**Why it happens:** `context: fork` is designed for isolation -- that's its feature. But plugin authors may not realize that the forked agent doesn't see the user's request context, file contents already read, or prior tool results. The official docs warn: "It won't have access to your conversation history."
-
-**Consequences:**
-- Advisor agent doesn't know what the user asked for
-- Advisor can't reference files the executor already explored
-- Skills that need both isolation (for cost) and context (for relevance) can't have both
-- The `AskUserQuestion` tool is also broken inside `context: fork` (GitHub issue #19751)
-
-**Prevention:**
-- Do NOT use `context: fork` for the primary advisor consultation mechanism. The advisor needs to see the conversation transcript to provide relevant guidance
-- Use the Agent tool directly (via the skill prompt instructing the executor to "call the lz-advisor agent") rather than forking the skill context
-- Reserve `context: fork` for review skills where the entire task can be described in the skill content plus `$ARGUMENTS`
-- For review skills that DO use fork, pass complete context through arguments or file references
-- Test that the advisor's responses are specific to the user's task, not generic
-
-**Detection:** If the advisor responds with generic advice unrelated to the actual task, it's likely not seeing the conversation.
-
-**Phase relevance:** Phase 1 (skill architecture decision). Must decide fork vs. inline before writing skills.
-
-**Confidence:** HIGH (Official Claude Code skills docs; GitHub issues #17283, #19751)
+**Phase to address:**
+Requirements phase (disposition table); implementation phase (scoped edits); verification phase (grep confirms `.planning/` untouched and live surfaces aligned).
 
 ---
 
-### Pitfall 10: Opus 4.6 Overthinking and Excessive Exploration
-
-**What goes wrong:** The advisor agent (Opus 4.6) does extensive upfront exploration, generates very long thinking traces, and takes much longer than expected. This inflates thinking tokens and delays responses significantly.
-
-**Why it happens:** Opus 4.6 does significantly more upfront exploration than previous models, especially at higher effort settings. Anthropic's official docs note: "Claude Opus 4.6 does significantly more upfront exploration than previous models... the model may gather extensive context or pursue multiple threads of research without being prompted." The effort level defaults compound this -- with adaptive thinking, complex system prompts trigger deeper reasoning.
-
-**Consequences:**
-- Advisor response takes 30+ seconds instead of 5-10 seconds, frustrating users
-- Thinking tokens (invisible to the executor) inflate cost
-- Executor waits idle during the advisor call
-- Users perceive the plugin as slow
-
-**Prevention:**
-- Set explicit effort level on the advisor agent definition: `effort: medium` or `effort: high` (not `max`)
-- Include thinking guidance in the advisor's system prompt: "Choose an approach and commit to it. Avoid revisiting decisions unless you encounter new information that directly contradicts your reasoning."
-- The conciseness instruction ("respond in under 100 words") also naturally constrains thinking depth
-- Do NOT add thorough exploration instructions to the advisor -- it explores enough on its own
-- Keep the advisor's system prompt itself short and focused to avoid triggering disproportionately deep thinking
-
-**Detection:** Time the advisor responses. If consistently over 15 seconds for routine guidance, effort level is too high or the prompt is triggering excessive reasoning.
-
-**Phase relevance:** Phase 1 (advisor agent configuration). The `effort` frontmatter field.
-
-**Confidence:** MEDIUM (Anthropic best practices docs confirm the behavior; exact impact depends on workload)
-
----
-
-### Pitfall 11: Plugin Installed But Not Enabled
-
-**What goes wrong:** Plugin is correctly added to `installed_plugins.json` but NOT automatically added to `enabledPlugins` in `settings.json`. Skills exist on disk but are invisible to Claude.
-
-**Why it happens:** Known bug (GitHub issue #17832). The marketplace installation pipeline registers the plugin but doesn't always update the enabled list. This also manifests with custom `CLAUDE_CONFIG_DIR` (issue #34144) where slash commands fail even when the Skill tool works.
-
-**Consequences:**
-- Users install the plugin, see it in the UI, but skills don't trigger
-- Support burden: users report "skill not working" when the fix is toggling a setting
-- First impression of the plugin is "broken"
-
-**Prevention:**
-- Include clear installation verification steps in the plugin's README
-- Tell users to verify: check `settings.json` for `enabledPlugins` including `lz-advisor`
-- Document the difference between slash command resolution and Skill tool resolution (they use different lookup paths)
-- Test the full marketplace installation flow, not just `--plugin-dir` development flow
-- Test with both default and custom `CLAUDE_CONFIG_DIR`
-
-**Detection:** After installing, run `/lz-advisor.plan` -- if "Unknown skill", check `enabledPlugins` in `settings.json`.
-
-**Phase relevance:** Phase 2 or later (testing/distribution). Not a code issue, but a UX issue to document clearly.
-
-**Confidence:** HIGH (GitHub issues #17832, #34144 on anthropics/claude-code)
-
----
-
-### Pitfall 12: Naming Conflicts Between Plugin Components
-
-**What goes wrong:** Plugin uses a component name that conflicts with built-in agents, other plugins, or reserved names. The conflict causes the wrong component to load or the plugin's component to be shadowed.
-
-**Why it happens:** Claude Code resolves name conflicts by priority: managed settings > CLI flags > project > user > plugin. Plugin components always have the lowest priority. If a user has their own agent named `advisor` in `~/.claude/agents/`, it shadows the plugin's agent.
-
-**Consequences:**
-- Plugin's advisor agent shadowed by a user-level or project-level agent with the same name
-- Skills from different plugins conflict
-- User's existing `advisor` agent definition takes precedence over the plugin's
-
-**Prevention:**
-- Use the `lz-advisor` prefix consistently on all components (already decided per PROJECT.md)
-- Plugin skills automatically namespace as `lz-advisor:plan`, `lz-advisor:execute`, etc.
-- Avoid generic names like `advisor`, `plan`, `review` -- always prefix
-- Test with other popular plugins installed to verify no conflicts
-- Document that if the user has a `lz-advisor` agent in their project, it will override the plugin's
-
-**Detection:** Install the plugin alongside common plugins (plugin-dev, skill-creator, etc.) and verify all components resolve correctly.
-
-**Phase relevance:** Phase 1 (component naming convention). Already decided, but must be enforced.
-
-**Confidence:** HIGH (Official Claude Code subagent docs, scope priority table)
-
----
-
-### Pitfall 13: Advisor Agent Given Write Tools (Breaks the Advisor Pattern)
-
-**What goes wrong:** The advisor agent is given Write, Edit, or Bash tools, and starts taking actions instead of just advising. This fundamentally breaks the advisor pattern where the advisor provides guidance and the executor acts.
-
-**Why it happens:** Seems useful to let the advisor "help" with implementation. Or copying from other agent examples that have full tool access. Opus 4.6 has "a strong predilection for subagents and may spawn them in situations where a simpler, direct approach would suffice" -- with tools available, it will try to do work directly.
-
-**Consequences:**
-- Advisor takes actions that should be the executor's responsibility
-- Cost explosion: Opus performing mechanical file writes at Opus token rates
-- Loss of the dual-check pattern (executor can't verify advisor's work if advisor made the changes directly)
-- Possible permission conflicts between advisor and executor
-
-**Prevention:**
-- Agent `tools` field should be read-only at most: `Read, Glob, Grep`
-- Better yet, give the advisor NO tools and let it work purely from the conversation transcript (matching the API advisor tool's behavior where "The advisor itself runs without tools")
-- If the advisor needs to understand the codebase, the executor should explore first and include findings in the conversation before calling the advisor
-- Never add Write, Edit, or Bash to the advisor agent
-
-**Detection:** If the advisor agent's transcript shows tool calls to Write, Edit, or Bash, the tool configuration is wrong.
-
-**Phase relevance:** Phase 1 (agent definition). Decide tool restrictions upfront.
-
-**Confidence:** HIGH (Anthropic advisor tool docs: "The advisor itself runs without tools and without context management")
-
----
-
-## Minor Pitfalls
-
-### Pitfall 14: Skill Content Lifecycle Misunderstanding
-
-**What goes wrong:** Skill author writes one-time setup instructions expecting them to re-execute on each turn. In reality, skill content loads once and stays in conversation for the rest of the session. After auto-compaction, the first 5,000 tokens of each skill are retained; older skills may be dropped entirely if the 25,000-token combined budget is exhausted.
-
-**Prevention:**
-- Write skill content as standing instructions, not one-time steps
-- Keep SKILL.md under 500 lines (official recommendation)
-- Front-load the most critical instructions in the first 5,000 tokens (they survive compaction)
-- Move detailed reference material to supporting files that Claude reads on demand
-
-**Phase relevance:** Phase 1 (skill writing style).
-
-**Confidence:** HIGH (Official Claude Code skills docs, "Skill content lifecycle" section)
-
----
-
-### Pitfall 15: Plugin Version Caching Preventing Updates
-
-**What goes wrong:** Developer updates plugin code but doesn't bump the version in `plugin.json`. Existing users don't see changes due to caching.
-
-**Prevention:**
-- Bump version in `plugin.json` for every change pushed to the marketplace
-- Include version bumping in the development workflow checklist
-- Test updates by uninstalling and reinstalling, not just reloading
-
-**Phase relevance:** Phase 2 or later (distribution/maintenance).
-
-**Confidence:** MEDIUM (Mentioned in official plugin docs)
-
----
-
-### Pitfall 16: Prefilled Assistant Responses Not Supported on 4.6
-
-**What goes wrong:** Prompt engineering technique of prefilling the assistant's first message (common in older Claude models) returns a 400 error on Opus 4.6.
-
-**Prevention:**
-- Never use prefilled assistant turns in any prompt
-- Use structured outputs, XML tags, or explicit instructions instead
-- This is a hard constraint, not a deprecation -- requests fail immediately on 4.6
-
-**Phase relevance:** Phase 1 (prompt design). Relevant if borrowing prompt patterns from older Claude cookbooks.
-
-**Confidence:** HIGH (Anthropic official 4.6 best practices)
-
----
-
-### Pitfall 17: "ultrathink" Keyword Accidentally Enabling Extended Thinking
-
-**What goes wrong:** Including the word "ultrathink" anywhere in skill content enables extended thinking for that skill invocation. If the skill author uses this word in documentation, comments, or explanations within the SKILL.md, it triggers extended thinking unintentionally, adding latency and cost.
-
-**Prevention:**
-- Never use the word "ultrathink" in skill content unless you specifically want extended thinking
-- Use "consider", "evaluate", or "reason through" instead of "think" where possible (Claude Opus 4.5 was particularly sensitive to "think")
-- Set appropriate effort levels via frontmatter instead of relying on prompt-based thinking triggers
-- If you DO want extended thinking for a specific skill, use "ultrathink" intentionally
-
-**Phase relevance:** Phase 1 (prompt wording). Minor but easy to avoid.
-
-**Confidence:** HIGH (Official Claude Code skills docs: "include the word 'ultrathink' anywhere in your skill content" enables thinking)
-
----
-
-### Pitfall 18: `disable-model-invocation: true` Also Blocking Slash Commands
-
-**What goes wrong:** Setting `disable-model-invocation: true` on a skill intended to prevent auto-triggering also prevents the skill from being invoked via slash command in some cases. The model interprets this as "I cannot use the Skill tool for this skill at all."
-
-**Prevention:**
-- Known bug (GitHub issue #26251). Test slash command invocation explicitly on every skill with this flag
-- If slash commands don't work, users can still invoke by mentioning the skill name naturally
-- Monitor for a fix in Claude Code updates
-- Consider whether `disable-model-invocation: true` is truly needed -- for advisor skills, auto-invocation may actually be desirable
-
-**Phase relevance:** Phase 1 (skill configuration). Affects skills intended for manual-only invocation.
-
-**Confidence:** HIGH (GitHub issue #26251 on anthropics/claude-code)
-
----
-
-### Pitfall 19: Cost Tracking Blind Spots
-
-**What goes wrong:** Users don't realize how much the advisor pattern costs because advisor tokens are tracked separately from executor tokens. In the API version, the advisor's thinking tokens are dropped before reaching the executor. In the Claude Code plugin version, the Agent tool spawns a separate context window whose token usage is not surfaced to the user.
-
-**Prevention:**
-- Document expected cost per skill invocation in the plugin's README
-- The advisor typically generates 400-700 text tokens (1,400-1,800 total with thinking) per call
-- With 2-3 calls per task, expect ~4,000-5,000 Opus tokens per task in advisor costs alone
-- Plugin can't directly show costs, but documentation should set clear expectations
-- Recommend users check Claude Code's cost summary at session end
-
-**Phase relevance:** Phase 2 (documentation/user guidance). Not a code fix, but critical for adoption and trust.
-
-**Confidence:** HIGH (Anthropic advisor tool docs, "Usage and billing" section)
-
----
-
-### Pitfall 20: Review Skills Not Distinguishable from Each Other
-
-**What goes wrong:** The review and security-review skills have nearly identical descriptions, causing Claude to trigger the wrong one or be uncertain which to use. User asks for a "review" and gets a security audit, or asks for security review and gets general code review.
-
-**Prevention:**
-- Security review description should emphasize unique keywords: "security", "vulnerability", "threat model", "attack surface", "authentication", "authorization", "injection"
-- General review description should emphasize: "code quality", "readability", "best practices", "maintainability", "patterns"
-- Include negative routing: "For security-focused review, use lz-advisor:security-review instead"
-- Test with ambiguous prompts ("review this code") to verify correct routing
-
-**Phase relevance:** Phase 1 (skill descriptions for review variants).
-
-**Confidence:** MEDIUM (Domain-specific concern; general plugin design best practice)
-
----
-
-## Phase-Specific Warnings
-
-| Phase Topic | Likely Pitfall | Mitigation |
-|-------------|---------------|------------|
-| Plugin scaffold | Silent manifest failures (#5) | Minimal plugin.json, test with `--debug`, no custom fields |
-| Advisor agent definition | Verbose output (#4), overthinking (#10), write tools (#13) | Conciseness instruction + effort level + read-only tools |
-| Skill prompt writing | Aggressive language (#1), late advisor call (#2) | Use calm natural language; use Anthropic's suggested timing block |
-| Execute skill | Missing durability (#6), blind following (#3) | Include both timing and advice-handling blocks from Anthropic |
-| Context architecture | Fork loses history (#9), no nested agents (#8) | Executor drives tools, advisor provides text only, no fork for advisor |
-| Description tuning | Truncation (#7), skill similarity (#20) | Front-load keywords, stay under 250 chars, differentiate descriptions |
-| Skill lifecycle | Content loaded once (#14), ultrathink trigger (#17) | Standing instructions, careful word choice |
-| Marketplace publishing | Install-not-enabled (#11), version caching (#15) | Test full install flow, bump versions, document verification steps |
-| Naming | Component conflicts (#12) | Enforce lz-advisor prefix consistently |
-| Cost management | Invisible tokens (#19), overtriggering (#1) | Document costs, test call frequency, set effort levels |
+## Technical Debt Patterns
+
+Shortcuts that seem reasonable but create long-term problems.
+
+| Shortcut | Immediate Benefit | Long-term Cost | When Acceptable |
+|----------|-------------------|----------------|-----------------|
+| Skill-layer conversion (Route B) instead of agent grammar change (Route A) | Avoids rewriting 8 worked examples per agent; keeps tuned budgets untouched | Erodes the render-verbatim contract; opens the door to future paraphrase regressions; self-contradicts the SKILL.md prohibition prose | Only with a provably injective 4-token-only expansion + amended contract carve-out + invariant test |
+| Edit the Format line, defer worked examples to "later" | Fast green diff | LLMs follow examples over rules -> mixed output; this is literally WR-05 | Never -- examples are the primary edit target |
+| Reuse the existing budget fixture by string-replacing the regex | Less work | Inherits the vacuous-pass risk if the new regex matches nothing | Only with an added `matched_count >= min` anti-vacuous assertion |
+| Leave `(formerly High)`/`(formerly Medium)` annotations as-is | No extra edit | Accumulates a third generation of vocabulary residue; confuses future readers | Acceptable only if explicitly documented as intentional in the plan |
+| Blanket `find/replace crit: -> Critical:` across the whole repo | One command | Corrupts frozen `.planning/` history; breaks lowercase verify_request attributes | Never -- must be surface-scoped per disposition table |
+
+## Integration Gotchas
+
+Common mistakes when connecting the changed grammar to the surrounding system.
+
+| Integration | Common Mistake | Correct Approach |
+|-------------|----------------|------------------|
+| Budget smoke fixtures (`D-*-budget.sh`) | Editing a tracked fixture (none exists -- `git ls-files` returns nothing); or reusing old regex that silently matches zero findings | Author fresh fixtures against the new grammar with an anti-vacuous `matched_count >= min` assertion before word-budget loops |
+| verify_request escalation hook | "Normalizing" the `severity="critical"` XML attribute to Title-Case to match display labels | Keep attribute values lowercase-canonical; they are machine tokens, NOT display labels -- the executor's hook parser greps them |
+| context-packaging.md Verification template | Rewriting the `Severity (initial): [Critical/...]` input-packaging shape thinking it is agent output | Confirm it is executor INPUT (already spelled out); change only if requirements decide input and output must share one vocabulary |
+| Section-per-severity grouping + the two-slot header contract | Adding `### Critical`/`### Important` groups that collide with the parser's `### Findings` / `### Cross-Cutting Patterns` / `### Threat Patterns` section detection | Decide grouping in requirements; re-architect the parser's section boundaries; ensure severity-group headers are excluded from per-finding word budgets |
+| Hedge Marker carve-out (WR-01) in context-packaging.md | Forgetting it references severity vocab in the verify_request `severity=` attribute | Include it in the surface checklist; treat its severity values as machine-canonical (lowercase) |
+
+## "Looks Done But Isn't" Checklist
+
+Things that appear complete but are missing critical pieces.
+
+- [ ] **Agent grammar changed:** Often missing the 8+ worked examples -- verify `git grep -c 'crit:|imp:|sug:|q:'` in both agent files returns only intentional occurrences, and the holistic multi-finding example uses the new labels.
+- [ ] **Budget fixtures updated:** Often missing the anti-vacuous-pass guard -- verify the fixture FAILS when fed zero-finding input, and PASSES on a captured real response with `matched_count >= 5`.
+- [ ] **Cross-surface rename:** Often missing one of the 6 surfaces -- verify the surface checklist from requirements is fully ticked and `git grep` finds no unintended residue in `plugins/lz-advisor/`.
+- [ ] **Verbatim contract:** Often missing the resolution of the "Do NOT reformat into severity groups" contradiction -- verify both SKILL.md prohibition lines are reconciled with the chosen report shape.
+- [ ] **Budget neutrality:** Often assumed, not measured -- verify an empirical n>=3 budget-gate run on the new grammar passes (do not reason from `wc -w` neutrality).
+- [ ] **History preserved:** Often corrupted by a blanket sweep -- verify `git diff` touches NO files under `.planning/`.
+- [ ] **XML attributes:** Often over-normalized -- verify `verify_request`/`pre_verified` `severity=` attributes remain lowercase-canonical.
+- [ ] **Atomic version bump:** Often partial -- verify the 5-surface version bump landed in one commit per convention.
+
+## Recovery Strategies
+
+When pitfalls occur despite prevention, how to recover.
+
+| Pitfall | Recovery Cost | Recovery Steps |
+|---------|---------------|----------------|
+| Worked-example drift (mixed output) | LOW | Grep both agent files for surviving shorthands; rewrite missed examples; re-run budget fixture |
+| Vacuous-pass fixture (silent green) | MEDIUM | Add `matched_count >= min` assertion; re-run against a known-good and a zero-finding input to confirm it fails loudly when appropriate |
+| Cross-surface drift leak (WR-04/WR-05 recurrence) | MEDIUM-HIGH | This is the documented 2-plan cleanup tail; budget a dedicated reconciliation step rather than hot-patching one surface |
+| Verbatim-contract erosion (paraphrase regression) | HIGH | Revert the skill-layer conversion; move expansion to the agent (Route A); re-validate via headless UAT that findings are not dropped/reordered |
+| `.planning/` history corruption | LOW-MEDIUM | `git checkout` the `.planning/` paths; re-scope the sweep to `plugins/lz-advisor/` |
+
+## Pitfall-to-Phase Mapping
+
+How roadmap phases should address these pitfalls.
+
+| Pitfall | Prevention Phase | Verification |
+|---------|------------------|--------------|
+| 5: Route A/B + verbatim-contract + no-regrouping contradiction | Requirements | Decision recorded; SKILL.md prohibition lines have a reconciliation plan |
+| 6: Downstream-consumer disposition table | Requirements | Per-surface disposition table covers all 6+ surfaces incl. eval JSON (N/A) and `.planning/` (history) |
+| 3: Cross-surface lexicon drift | Requirements (checklist) + Implementation (atomic edit) + Verification (grep) | `git grep` finds no unintended residue in `plugins/lz-advisor/`; 6-surface checklist ticked |
+| 1: Worked-example/grammar disagreement | Implementation | Both agent files: examples + format line + classification all use new labels; grammar-consistency grep clean |
+| 2: Regression-fixture lockstep | Implementation (sibling task to agent edit) | Fixtures authored fresh with anti-vacuous guard; empirical run green on real output, red on zero-finding input |
+| 4: Word/token budget interaction | Verification (empirical gate) | n>=3 budget-gate run passes on new grammar; severity-group headers excluded from per-finding caps |
 
 ## Sources
 
-### Anthropic Official Documentation (HIGH confidence)
-- [Advisor tool docs](https://platform.claude.com/docs/en/agents-and-tools/tool-use/advisor-tool) -- Timing guidance, cost control, suggested system prompts, output trimming data
-- [Prompting best practices for Claude 4.6](https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/claude-4-best-practices) -- Overtriggering, aggressive language, migration, overthinking, prefill deprecation
-- [Claude Code Skills docs](https://code.claude.com/docs/en/skills) -- Skill lifecycle, frontmatter reference, description limits, ultrathink trigger
-- [Claude Code Subagents docs](https://code.claude.com/docs/en/sub-agents) -- Model override, nesting limits, context isolation, tool restrictions
-- [Advisor strategy blog post](https://claude.com/blog/the-advisor-strategy) -- Benchmark results, architecture overview, cost data
+- `plugins/lz-advisor/agents/reviewer.md` (Format line, Severity Classification, 8 worked examples, `<output_constraints>` per-section budgets) -- HIGH
+- `plugins/lz-advisor/agents/security-reviewer.md` (Format line, `(formerly High/Medium)` legacy annotations, worked examples, budgets) -- HIGH
+- `plugins/lz-advisor/skills/review/SKILL.md:165-184` and `skills/security-review/SKILL.md:160-170` (render-verbatim contract + "Do NOT reformat into severity groups" prohibition) -- HIGH
+- `plugins/lz-advisor/references/context-packaging.md` (Hedge Marker / WR-01 carve-out, Verification template Severity field, verify_request schema severity attribute) -- HIGH
+- `.planning/PROJECT.md` Evolution entries 2026-05-03..2026-05-08 (Phase 7 WR-01/WR-02/WR-04/WR-05 severity-rename case study + budget-regression history) and milestone context -- HIGH
+- `.planning/milestones/v1.0-ROADMAP.md:233-240` (Plan 07-12/07-13/07-17 severity-vocabulary alignment + per-section budget + +10% fixture tolerance precedent) -- HIGH
+- `evals/lz-advisor/lz-advisor-review-eval.json`, `...security-review-eval.json` (confirmed trigger-only; NOT a rename surface) -- HIGH
+- `git ls-files` (confirmed budget fixtures are not git-tracked; must be authored fresh) -- HIGH
+- Project memory: `reference_sonnet_46_prompt_steering` (examples-over-prose steering), `feedback_no_cross_skill_body_references`, `version_numbers_not_load_bearing_prerelease` -- MEDIUM
 
-### GitHub Issues (HIGH confidence)
-- [#20409](https://github.com/anthropics/claude-code/issues/20409) -- Silent skill loading failure in plugins
-- [#26251](https://github.com/anthropics/claude-code/issues/26251) -- disable-model-invocation blocks slash commands
-- [#17283](https://github.com/anthropics/claude-code/issues/17283) -- context: fork and agent fields ignored by Skill tool
-- [#19751](https://github.com/anthropics/claude-code/issues/19751) -- context: fork breaks AskUserQuestion
-- [#30366](https://github.com/anthropics/claude-code/issues/30366) -- Unrecognized manifest keys (category, source)
-- [#31384](https://github.com/anthropics/claude-code/issues/31384) -- Manifest validation rejects unrecognized keys after installation
-- [#17832](https://github.com/anthropics/claude-code/issues/17832) -- Plugin installed but not enabled
-- [#34144](https://github.com/anthropics/claude-code/issues/34144) -- Plugin slash commands fail with custom CLAUDE_CONFIG_DIR
-- [#31977](https://github.com/anthropics/claude-code/issues/31977) -- In-process team agents lack Agent tool
-- [#1244](https://github.com/anthropics/claude-plugins-official/issues/1244) -- Marketplace schema validation errors
-
-### Community Sources (MEDIUM confidence)
-- [Multi-agent routing guide (BSWEN)](https://docs.bswen.com/blog/2026-03-22-claude-code-multi-agent-routing/) -- Cost mistakes, vague descriptions, too many agents
-- [Pitfalls of Claude Code (DEV Community)](https://dev.to/cheetah100/pitfalls-of-claude-code-1nb6) -- Rush to completion, sycophancy, unasked changes
-- [Claude Code updates broke engineering (DEV Community)](https://dev.to/shuicici/claude-codes-feb-mar-2026-updates-quietly-broke-complex-engineering-heres-the-technical-5b4h) -- Effort level changes, adaptive thinking side effects
+---
+*Pitfalls research for: structured-output severity-label expansion in the lz-advisor review/security-review grammar*
+*Researched: 2026-06-07*

@@ -1,245 +1,202 @@
-# Feature Landscape
+# Feature Research
 
-**Domain:** Claude Code marketplace plugin implementing the advisor strategy (Opus advisor + Sonnet executor)
-**Researched:** 2026-04-10
+**Domain:** Severity-labeled code-review report presentation (user-facing output for an AI review agent)
+**Researched:** 2026-06-07
+**Milestone:** v1.0.1 "No review report shorthands"
+**Confidence:** HIGH (all tool behaviors verified against current vendor docs/specs; trade-offs corroborated across multiple independent sources)
 
-## Table Stakes
+## Scope note
 
-Features users expect. Missing = plugin feels incomplete or not worth installing over manual `/model opusplan` usage.
+This milestone changes ONLY the *presentation* of severity in user-facing `review` / `security-review` reports. The reviewer/security-reviewer agents currently emit findings in a compact fragment grammar with severity shorthands (`crit:` / `imp:` / `sug:` / `q:`), and both skills render the agent response verbatim. The target is fully spelled-out labels (`Critical` / `Important` / `Suggestion` / `Question`), optionally grouped into `### Critical` / `### Important` / ... sections.
+
+This research maps how established review tools present severity so the requirements step can choose: (a) inline label per finding vs (b) grouped-by-severity sections, and decide the mechanical-conversion vs emit-spelled-out trade-off.
+
+## How established tools present severity (verified)
+
+| Tool | Severity vocabulary | Presentation | Cross-ref mechanism |
+|------|--------------------|--------------|--------------------|
+| **Conventional Comments** (spec) | `praise` / `nitpick` / `suggestion` / `issue` / `todo` / `question` / `thought` / `chore` / `note` (labels = comment *kind*); severity carried orthogonally by decorations `(blocking)` / `(non-blocking)` / `(if-minor)` | **Inline label per comment**, format `<label> [decorations]: <subject>` then optional discussion. One comment, one label. | None (each comment is standalone in a PR thread) |
+| **GitHub PR reviews** (convention, not enforced) | Ad-hoc prefixes: `nit:`, `Blocking:`, `[suggestion]`, `Question:`, `FYI:` | **Inline per comment** on the diff. UI itself only encodes one binary signal (approve / request-changes); severity lives in the comment text prefix. | None native; reviewers say "see comment above" (positional, fragile) |
+| **CodeRabbit** | Four severity buckets (critical / major / + filterable) PLUS orthogonal "comment type" (potential issue / refactor / nitpick) and "effort" (quick win / heavy lift) | **Hybrid**: high-level walkthrough summary + per-file inline comments tagged with severity. Newer "Change Stack" groups diff into cohorts. Custom team reports group by Priority (High/Medium/Low). | Filterable/sortable by bucket |
+| **reviewdog** | Three levels: `error` / `warning` / `info` (RDFormat `severity` field; LSP-inspired) | **Inline per diagnostic** at file:line. Severity is a structured field, not grouped sections. `-level` overrides reporting, `-fail-level` gates exit code. | Structured `Diagnostic` objects with optional `Code` (rule id) |
+| **SonarQube** | Legacy 5-level: `Blocker` / `Critical` / `Major` / `Minor` / `Info`. New (10.2+): `High` / `Medium` / `Low` | **Grouped + counted by severity**, ordered highest-to-lowest impact. Severity also rolls up into A-E letter ratings. Often crossed with issue *type* (Bug / Vulnerability / Code Smell). | Issue IDs; dashboard filters |
+| **Semgrep** | New 4-level: `Critical` / `High` / `Medium` / `Low`. Legacy CLI: `ERROR` / `WARNING` / `INFO` (= High/Medium/Low) | **Inline per finding** in text output; severity is a per-finding attribute. `--severity` filters which run. | Rule ID per finding |
+| **Danger (JS/Ruby)** | Three-tier by function: `fail` (blocking) > `warn` (non-blocking) > `message` (info); each has a distinct icon | **Grouped by function into one HTML table** (fails together, warns together), free-form `markdown()` below. Inline supported via optional `file`/`line`. | Markdown table rows; no finding numbers by default |
+
+**Key cross-tool findings:**
+
+1. **Spelled-out severity is universal in user-facing output.** Not one verified tool ships terse single-letter or 3-char severity codes to end users. Conventional Comments uses full words (`issue`, `suggestion`). reviewdog/Semgrep use `error`/`warning` (RDFormat is a *wire* format; rendered output is spelled out). SonarQube/CodeRabbit/Danger all spell severity out fully. The current `crit:`/`imp:`/`sug:`/`q:` shorthand is an outlier driven by an internal token-economy motivation (Phase 7 Plan 07-09) that PROJECT.md notes "may not bind" since word budgets are `wc -w`-based and spelled-out labels are word-neutral.
+
+2. **Two orthogonal axes recur: severity (how urgent) vs kind/intent (what kind).** Conventional Comments separates them cleanly (label = kind, decoration = blocking). CodeRabbit separates severity from "comment type" and "effort". The lz-advisor vocabulary conflates them: `Critical`/`Important`/`Suggestion` are severity tiers; `Question` is a *kind* (a genuine author question, not a severity tier). This matters for grouping -- a `### Question` section is a kind-section sitting alongside severity-sections.
+
+3. **The dominant modern pattern is a HYBRID**: a severity-grouped (or at least severity-counted) summary, PLUS per-finding inline severity at file:line, with findings carrying stable numbers/IDs for cross-referencing. CodeRabbit, SonarQube, and current agent-skill review templates all converge here.
+
+4. **Cross-referencing must survive regrouping.** Multiple sources warn that positional references ("the issue above") break when findings are regrouped into severity sections. The robust pattern is stable finding numbers/IDs (continuous across sections, or severity-prefixed like `CRIT-009`). The current reviewer.md `### Cross-Cutting Patterns` already references findings by ordinal ("Findings 1, 2, and 4 share a root cause...") -- so any grouping change MUST preserve a stable finding-number scheme or that section breaks.
+
+## Feature Landscape
+
+### Table Stakes (Users Expect These)
+
+Features users assume exist. Missing these = report feels incomplete or wrong.
 
 | Feature | Why Expected | Complexity | Notes |
 |---------|--------------|------------|-------|
-| Opus advisor agent with concise output | Core value proposition -- the advisor IS the plugin | Low | Under 100 words, enumerated steps, not explanations. Anthropic's trimming instruction cuts output 35-45% without quality loss |
-| Plan skill (`/lz-advisor.plan`) | Every competing plugin has planning (compound-engineering, deep-plan). Without it, no reason to install | Medium | Sonnet orients (reads files, gathers context), then consults Opus for strategic plan, then Sonnet produces actionable output |
-| Execute skill (`/lz-advisor.execute`) | The full executor-advisor loop is the core workflow. Without execution support, the plugin is just a planning toy | High | Must implement Anthropic's full timing pattern: consult after orientation, when stuck, when changing approach, before declaring done |
-| Review skill (`/lz-advisor.review`) | Code review is table stakes for coding plugins per 2026 ecosystem norms. Compound Engineering has 12-agent review; deep-implement has built-in review | Medium | Opus reviews completed work for correctness, patterns, edge cases. Single focused Opus pass, not multi-agent parallelism |
-| Advisor consultation at Anthropic-recommended timing points | Without disciplined timing, the plugin is just "ask Opus" -- no different from switching models manually | Low | Timing is prompt engineering, not orchestration. Encode in skill prompts |
-| Advisor output trimming (conciseness enforcement) | Cost control is critical -- untrimmed advisor output wastes Opus tokens. Anthropic proved trimming works without quality loss | Low | Single system prompt line: "respond in under 100 words and use enumerated steps, not explanations" |
-| Accept external plans in execute skill | Users may plan with other tools (compound-engineering, deep-plan, manual specs). Rejecting external plans kills adoption | Low | Optional parameter: path to plan file. If absent, execute skill handles orientation + advisor consultation for planning inline |
+| Severity spelled out in full (`Critical`/`Important`/`Suggestion`/`Question`) | Every verified peer tool ships spelled-out severity; `imp:`/`sug:`/`q:` shorthands are jargon a user must decode. This is the milestone's entire reason for existing. | LOW | Word-budget-neutral (`wc -w` counts `imp` and `Important` as 1 word each). The token-economy rationale that motivated shorthands does not bind. |
+| One unambiguous severity per finding | Users prioritize by severity; ambiguity defeats the purpose. Inline-per-finding is the most common form (reviewdog, Semgrep, GitHub, Conventional Comments). | LOW | Already present (one shorthand per fragment line) -- only the *label rendering* changes. |
+| Highest-severity-first ordering | SonarQube orders Blocker->Info; review-workflow guidance says address high severity first. Users scan top-down. | LOW | Current `### Findings` is a flat list in author-emit order, NOT severity order. Spelled-out-inline alone does NOT deliver this; grouping or sorting does. |
+| Finding count per severity (roll-up) | "X issues (Critical: 2, Important: 3...)" lets a user decide shippability at a glance. SonarQube counts per severity; agent-skill templates end with a roll-up. | LOW | Net-new. Cheap to add; high scannability payoff. A grouped layout makes counts implicit (count = section length). |
+| Stable finding identifiers that survive reordering | `### Cross-Cutting Patterns` already references "Findings 1, 2, 4". Cross-ref breaks if findings regroup without stable numbers. | MEDIUM | This is the load-bearing dependency for any grouping change (see Dependencies). |
 
-## Differentiators
+### Differentiators (Competitive Advantage)
 
-Features that set this plugin apart from `opusplan` mode, compound-engineering, and deep-plan. Not expected, but valued.
+Features that set the report apart. Not strictly required, but valuable.
 
 | Feature | Value Proposition | Complexity | Notes |
 |---------|-------------------|------------|-------|
-| Security review skill (`/lz-advisor.security-review`) | Dedicated security lens from Opus is rare in the plugin ecosystem. Most plugins bundle security into general review (compound-engineering has it as one of 12 review agents). A standalone security skill lets users invoke it explicitly for security-critical work | Medium | Threat modeling, injection vectors, auth/authz gaps, secret exposure, dependency risks. Opus's deeper reasoning matters most here |
-| Reconciliation pattern for advisor-executor disagreement | No competing plugin handles the case where empirical evidence contradicts advisor guidance. Anthropic's suggested prompt explicitly addresses this with a "reconcile call" pattern | Medium | When executor finds evidence contradicting advisor, surface the conflict in one more advisor call: "I found X, you suggest Y, which constraint breaks the tie?" |
-| Strategic advisor consultation (2-3 calls per task, not per-tool-call) | `opusplan` uses Opus for ALL plan-mode reasoning. Compound-engineering spawns 12+ subagents. This plugin's value is surgical Opus usage at high-leverage moments only | Low | Prompt discipline, not code. Key insight from Anthropic: advisor adds most value on first call (before approach crystallizes) and final check (after work done) |
-| Durable deliverable before final advisor check | Anthropic's prompt explicitly says: "BEFORE this call, make your deliverable durable: write the file, save the result, commit the change. The advisor call takes time; if the session ends during it, a durable result persists." No competing plugin enforces this | Low | Encoded in execute skill prompt. Protects user work from session timeouts during Opus inference |
-| Zero external dependencies | Compound-engineering optionally uses Gemini/OpenAI for review. deep-plan supports external LLM review. oh-my-claude requires an HTTP proxy. This plugin uses ONLY Claude Code's Agent tool -- nothing to configure, no API keys, no proxies | Low | Major UX advantage. One install, zero config. Works on any Claude Code plan (Team, individual) |
-| Inherits session model for executor | Unlike `opusplan` which forces Sonnet in execution mode, this plugin respects whatever model the user chose for their session. Optimized for Sonnet 4.6 but works with any model | Low | If a user is already on Opus, the advisor still adds value (Opus-advising-Opus is a valid pair per Anthropic's compatibility table) |
-| Advisor-guided stuck detection | When the executor hits recurring errors or approach isn't converging, the skill prompts trigger advisor consultation automatically. This is more nuanced than compound-engineering's "review after completion" pattern | Low | Prompt-level feature. Anthropic's timing: "When stuck -- errors recurring, approach not converging, results that don't fit" |
+| Section-per-severity grouping (`### Critical` / `### Important` / `### Suggestion` / `### Question`) | Maximum scannability: a user reads only the `### Critical` block to triage. Matches SonarQube grouping + agent-skill template convention. Section length IS the per-severity count. | MEDIUM | The milestone explicitly flags this "to be evaluated/decided in requirements." Tension: it restructures the agent's `### Findings` contract that the skill parses + that smoke fixtures (`FRAGMENT_RE`) match. Empty severity sections need an explicit "none" convention (SonarQube shows "(none or list)"). |
+| Severity as a leading column / aligned prefix | If staying inline (not grouped), aligning severity as the first token after file:line makes the column visually scannable even in a flat list. | LOW | Cheaper than full grouping; preserves the existing flat `### Findings` parser. The label simply expands `crit:` -> `Critical:` in place. |
+| Mechanical label-expansion at the skill layer (vs agent emitting spelled-out) | Preserves the render-verbatim contract: a deterministic find/replace (`crit:`->`Critical:`) cannot paraphrase or drop findings, satisfying PROJECT.md's "cannot paraphrase or drop findings" constraint. | MEDIUM | Trade-off vs having the agent emit spelled-out labels directly (simpler, but the agent could drift). A mechanical step is auditable and regression-testable but adds a skill-layer transform that must be exactly lossless. |
+| Decoration / kind separation (Conventional-Comments style) | Splitting "is this blocking?" from "what kind is it?" is the cleanest model. `Question` is really a *kind*, not a severity. | HIGH | OUT OF SCOPE for v1.0.1 -- it re-architects the vocabulary, not just the rendering. Note for future-consideration. |
 
-## Anti-Features
+### Anti-Features (Commonly Requested, Often Problematic)
 
-Features to explicitly NOT build. These are tempting but wrong for this plugin.
+Features that seem good but create problems for this specific milestone.
 
-| Anti-Feature | Why Avoid | What to Do Instead |
-|--------------|-----------|-------------------|
-| Hooks-based automatic advisor triggering | Hooks are global (can't scope to skill execution), lack conversation context for meaningful advisor consultation, and would fire on every session where the plugin is installed -- massive cost with no user intent signal | Keep advisor consultation purely skill-driven. Users explicitly invoke skills when they want the advisor pattern |
-| Task-type-specific skills (refactor, test, infra, etc.) | The advisor timing pattern is identical regardless of task type. What changes is the user's prompt, not the orchestration. Adding `/lz-advisor.refactor`, `/lz-advisor.test`, etc. would duplicate skill logic with minor prompt variations | Rely on generic phase-based skills (plan, implement, review). The user's natural language prompt provides task-type context |
-| Multi-agent parallel review (like compound-engineering's 12-agent approach) | Spawning 12 Sonnet agents for parallel review is compound-engineering's approach. This plugin's value proposition is Opus-level intelligence through a single focused advisor, not breadth through parallelism | Single Opus advisor review pass. Opus sees everything compound-engineering splits across 12 agents, but reasons about it holistically |
-| External LLM integration (Gemini, OpenAI, etc.) | deep-plan supports external LLM review. oh-my-claude routes to DeepSeek/ZhiPu. Adding external model support adds API key management, configuration complexity, and failure modes -- contradicting the zero-dependency value proposition | Claude-only. Opus as advisor, session model as executor. Zero external dependencies |
-| Claude API / `advisor_20260301` tool dependency | The API advisor tool requires the Messages API and beta headers. This plugin targets Claude Code users who don't write API code. Depending on the API tool would require an Anthropic SDK dependency and API key management | Replicate the advisor pattern using Claude Code's Agent tool with `model: "opus"`. Same pattern, native to the plugin system |
-| Plan storage/management system | deep-plan writes section files to disk and tracks completion via commit hashes. Compound-engineering stores brainstorms in docs/brainstorms/. Adding a plan storage system adds complexity for marginal value | Plans are conversation artifacts. If the user wants to persist a plan, they can save the output. The execute skill accepts a plan file path but doesn't manage plan lifecycle |
-| Automatic model detection/fallback | Detecting whether the user has Opus access, falling back to Sonnet-advising-Sonnet, etc. adds complexity and masks the core value proposition. If Opus isn't available, the plugin shouldn't pretend to work | Fail clearly if Opus is unavailable. Document the requirement. Don't degrade silently |
-| Per-tool-call advisor consultation | Anthropic's benchmarks show advisor adds most value at 2-3 strategic calls per task. Consulting on every tool call would be expensive and noisy, negating the cost advantage | Strategic consultation only: after orientation, when stuck, when changing approach, before declaring done |
-| Agent that writes code or calls tools | The advisor's role is guidance, not action. Giving it tool access turns it into a second executor, defeating the cost model | Restrict advisor agent to read-only tools at most (Read, Glob). Advisor returns plans and corrections, executor acts on them |
+| Feature | Why Requested | Why Problematic | Alternative |
+|---------|---------------|-----------------|-------------|
+| Numeric severity scores (e.g., 1-10 risk score) | Feels precise, sortable | A verified security tool *removed* its numeric score because "a number turns a highlighter into a judgment -- people anchor on the number instead of reading the findings." Adds calibration burden with no upside for a 4-tier scheme. | Keep the 4 named tiers; they are already the industry norm. |
+| Emoji / icon severity markers (Danger-style fail/warn icons) | Visually punchy | Violates the project's hard no-emoji / ASCII-only constraint (CLAUDE.md). Mojibake on Windows cp1252. | ASCII section headers (`### Critical`) or text labels carry the signal. |
+| Expanding the severity vocabulary (adding Blocker/Major/Minor, or Conventional-Comments' 9 labels) | "More granular = better triage" | Scope creep beyond "spell out the existing labels." More tiers = worse scannability ("if AI highlights everything, it highlights nothing"). The 4 tiers are already validated (Phase 4). Security-review uses a *different* set (Critical/High/Medium) -- do not unify them in this milestone. | Spell out the EXISTING per-skill vocab only. Vocabulary change is a separate decision. |
+| Paraphrasing findings into prose during the expansion step | "More readable than fragments" | Directly violates the render-verbatim contract and PROJECT.md's "cannot paraphrase or drop findings." Re-introduces the exact drift the fragment grammar was built to prevent. | Mechanical label-only substitution; leave the `<problem>. <fix>.` body byte-identical. |
+| A severity *column table* (`\| Severity \| File \| Finding \|`) | Looks structured | Markdown tables wrap badly in terminals, and the current `file:line:` prefix grammar is already column-like. Tables also complicate the `FRAGMENT_RE` smoke parser. | Keep one-line-per-finding fragment shape; expand the label token only. |
 
 ## Feature Dependencies
 
 ```
-Opus advisor agent (lz-advisor) --> all skills depend on this
-  |
-  |-- Plan skill (/lz-advisor.plan)
-  |     '-- Execute skill can consume plan output (optional dependency)
-  |
-  |-- Execute skill (/lz-advisor.execute)
-  |     |-- Uses advisor timing pattern (after orientation, when stuck, when changing approach, before done)
-  |     |-- Reconciliation pattern (when executor evidence contradicts advisor)
-  |     '-- Durable deliverable enforcement (before final advisor check)
-  |
-  |-- Review skill (/lz-advisor.review)
-  |     '-- No dependency on plan or implement -- reviews any completed work
-  |
-  '-- Security review skill (/lz-advisor.security-review)
-        '-- No dependency on plan or implement -- reviews any completed work with security lens
+[Spelled-out severity labels]  (the milestone core)
+    |
+    |--requires--> [Agent Output Constraint update]
+    |                 (reviewer.md + security-reviewer.md severity-prefix block
+    |                  + worked examples currently show crit:/imp:/sug:/q:)
+    |
+    |--requires--> [FRAGMENT_RE smoke-fixture update in lockstep]
+    |                 (D-reviewer-budget.sh / D-security-reviewer-budget.sh
+    |                  parse findings by the shorthand regex)
+    |
+    '--may-require--> [references/context-packaging.md severity-vocab sync]
+                          (WR-01 Hedge Marker carve-out references the vocab)
+
+[Section-per-severity grouping]  (optional differentiator)
+    |
+    |--requires--> [Stable finding-number scheme]
+    |                 (### Cross-Cutting Patterns references "Findings 1,2,4"
+    |                  by ordinal; regrouping breaks ordinals unless numbered)
+    |
+    |--conflicts--> [Author-emit-order flat ### Findings list]
+    |                 (grouping reorders; the skill parser + verbatim contract
+    |                  assume a single ### Findings block)
+    |
+    '--requires--> ["none" convention for empty severity sections]
+
+[Mechanical label-expansion at skill layer]
+    '--conflicts (tension)--> [Render-verbatim contract]
+          (resolved only if the transform is provably lossless:
+           label-token substitution, never body rewrite)
 ```
 
-## Detailed Feature Specifications
+### Dependency Notes
 
-### Advisor Agent (`lz-advisor`)
+- **Spelled-out labels requires Agent Output Constraint + smoke-fixture update in lockstep:** The shorthands live in the `### Findings` severity-prefix block AND in 5+ worked examples in `reviewer.md` (lines 64-67, 96-134) and the parallel `security-reviewer.md`. The `FRAGMENT_RE` in `D-reviewer-budget.sh` / `D-security-reviewer-budget.sh` parses findings by that regex; PROJECT.md mandates updating it "in lockstep so budget gates still parse findings." Changing one surface without the other breaks either the contract or the gate.
+- **Section-per-severity grouping requires stable finding numbers:** `### Cross-Cutting Patterns` ("Findings 1, 2, and 4 share a root cause") cross-references by positional ordinal. If findings are regrouped into severity sections, ordinals scramble unless an explicit, stable numbering scheme is introduced (continuous across sections, per the verified best practice). This is the single highest-complexity coupling in the milestone.
+- **Section-per-severity conflicts with the flat `### Findings` block:** Both review skills parse the agent's response around the literal `### Findings` and `### Cross-Cutting Patterns` headers (reviewer.md "Output Constraint"). Replacing one `### Findings` block with four `### Critical`/`### Important`/... blocks changes the output contract the skill enforces and the smoke fixtures assert.
+- **Mechanical expansion has a designed tension with render-verbatim:** PROJECT.md states "any skill-layer conversion must be a mechanical label expansion that cannot paraphrase or drop findings." A pure label-token substitution (`crit:`->`Critical:`) is lossless and testable; anything that touches the finding body re-opens the drift problem.
 
-**What it does:** An Opus 4.6 subagent that provides concise strategic guidance when consulted by skills.
+## MVP Definition
 
-**Advisor output format (from Anthropic's suggested prompt):**
-- Under 100 words
-- Enumerated steps
-- Not explanations -- actionable directives
-- Returns: a plan, a correction, or a stop signal
+### Launch With (v1.0.1)
 
-**Key behavioral constraints:**
-- The advisor never calls tools or produces user-facing output
-- Only provides guidance to the executor
-- Sees the full conversation context (task, tool calls, results)
+Minimum to satisfy the milestone goal -- "no shorthands in user-facing output."
 
-### Plan Skill (`/lz-advisor.plan`)
+- [ ] **Full severity labels inline** (`Critical:` / `Important:` / `Suggestion:` / `Question:` for review; the security-review set `Critical:`/`High:`/`Medium:` per its existing vocab) -- the milestone's reason for existing; word-budget-neutral.
+- [ ] **Updated agent Output Constraint + worked examples** in `reviewer.md` and `security-reviewer.md` so the agent emits (or the skill expands to) spelled-out labels -- the source surfaces that currently teach the shorthand.
+- [ ] **`FRAGMENT_RE` smoke fixtures updated in lockstep** (`D-reviewer-budget.sh`, `D-security-reviewer-budget.sh`) so budget gates still parse findings.
+- [ ] **`references/context-packaging.md` severity-vocab sync** (WR-01 Hedge Marker carve-out references the vocab) to avoid the schema/lexicon drift called out in PROJECT.md.
+- [ ] **Atomic 5-surface version bump** per the existing convention.
 
-**Workflow:**
-1. Executor (session model) orients: reads relevant files, gathers context, understands the codebase structure
-2. Executor consults advisor (Opus) with orientation context: "Here's what I found, what's the strategic approach?"
-3. Advisor returns concise enumerated plan (under 100 words)
-4. Executor expands advisor's plan into a detailed, actionable implementation plan with specific files, steps, and considerations
-5. Executor presents plan to user
+### Add After Validation (v1.x)
 
-**What makes a good plan output from an advisor-assisted flow:**
-- Advisor provides the strategic skeleton (high-level approach, ordering, key decisions)
-- Executor fills in tactical details (specific files, function signatures, test cases)
-- Plan is immediately actionable by execute skill or human developer
-- Dependencies between steps are explicit
-- Risk areas flagged for deeper attention during implementation
+- [ ] **Section-per-severity grouping** (`### Critical` / `### Important` / ...) -- trigger: the requirements step decides grouping is worth restructuring the `### Findings` contract. Requires the stable-finding-number dependency resolved first.
+- [ ] **Per-severity roll-up count** ("Critical: 2, Important: 3...") -- trigger: users want a triage-at-a-glance line; cheap once labels are spelled out.
+- [ ] **Highest-severity-first ordering** of the flat list (if grouping is NOT adopted) -- trigger: users report scanning friction in author-emit order.
 
-**Differentiation from competitors:**
-- Compound-engineering spawns 3 parallel research agents + 1 analyzer agent for planning (expensive, complex)
-- deep-plan runs research + interview + external LLM review (slow, multi-phase, external dependencies)
-- This plugin: one Opus consultation produces the strategic skeleton, executor expands it (fast, cheap, focused)
+### Future Consideration (v2+)
 
-### Execute Skill (`/lz-advisor.execute`)
+- [ ] **Severity/kind axis separation** (Conventional-Comments model: severity decoration vs comment-kind label; reclassify `Question` as a kind not a tier) -- defer: re-architects the vocabulary, not just rendering; out of this milestone's scope.
+- [ ] **Stable severity-prefixed finding IDs** (`CRIT-009`) for durable cross-referencing across reports -- defer: only valuable if reports are persisted/diffed across runs.
 
-**Full executor-advisor loop step by step:**
+## Feature Prioritization Matrix
 
-1. **Orientation phase** (executor only -- no advisor yet)
-   - Read relevant files, understand codebase structure
-   - Identify what needs to change and where
-   - If a plan file was provided, load and understand it
-   - Orientation is NOT substantive work -- don't consult advisor yet
+| Feature | User Value | Implementation Cost | Priority |
+|---------|------------|---------------------|----------|
+| Spelled-out severity labels (inline, in-place) | HIGH | LOW | P1 |
+| Agent Output Constraint + worked-example update | HIGH (enabler) | LOW | P1 |
+| `FRAGMENT_RE` smoke-fixture update in lockstep | HIGH (gate integrity) | LOW | P1 |
+| context-packaging.md vocab sync | MEDIUM (drift prevention) | LOW | P1 |
+| Mechanical lossless label-expansion (if chosen over agent-emit) | MEDIUM | MEDIUM | P2 |
+| Section-per-severity grouping | MEDIUM | MEDIUM-HIGH (breaks `### Findings` contract + needs stable numbers) | P2 |
+| Per-severity roll-up count | MEDIUM | LOW | P2 |
+| Highest-severity-first ordering (flat) | MEDIUM | LOW | P2 |
+| Numeric scores / emoji / vocab expansion | LOW or negative | -- | P3 (anti-feature) |
 
-2. **First advisor consultation** (BEFORE substantive work)
-   - After orientation, before writing any code
-   - Executor presents findings to advisor
-   - Advisor returns strategic approach as enumerated steps
-   - This is the highest-value consultation -- before the approach crystallizes
+**Priority key:**
+- P1: Must have for v1.0.1 launch
+- P2: Should have / next milestone
+- P3: Defer or avoid
 
-3. **Execution phase** (executor drives, advisor on standby)
-   - Executor implements following advisor's plan
-   - Writes code, runs tests, iterates
-   - Most turns are mechanical at executor cost
+## Trade-off: Inline labels vs Section-per-severity grouping
 
-4. **Stuck detection** (triggers mid-work advisor consultation)
-   - Errors recurring after 2-3 attempts
-   - Approach not converging on a solution
-   - Results that don't fit expectations
-   - Executor consults advisor: "I'm stuck on X, tried Y and Z, what am I missing?"
+The milestone explicitly asks this to be decided in requirements. Concrete trade-offs from the verified ecosystem:
 
-5. **Approach change** (triggers mid-work advisor consultation)
-   - When executor considers abandoning current approach
-   - Consults advisor before switching: "Current approach isn't working because X, considering Y instead"
+**Inline label per finding (expand shorthand in place -- lowest-risk path):**
+- + Preserves the existing flat `### Findings` block, the skill parser, and the `FRAGMENT_RE` shape (minimal contract churn).
+- + `### Cross-Cutting Patterns` ordinal references ("Findings 1, 2, 4") keep working unchanged.
+- + Matches reviewdog / Semgrep / GitHub / Conventional Comments (the most common form).
+- - No severity ordering by default; a user scanning for `Critical` must read every line.
+- - Per-severity count is not visible without manual tallying.
 
-6. **Durable deliverable** (executor enforces before final check)
-   - Write all files to disk
-   - Save all results
-   - Ensure work persists even if session ends during advisor call
+**Section-per-severity grouping (`### Critical` / `### Important` / ...):**
+- + Maximum scannability; SonarQube + agent-skill convention. Section length = per-severity count for free.
+- + A user can read only the `### Critical` section to triage shippability.
+- - Restructures the `### Findings` output contract that both skills parse and smoke fixtures assert.
+- - Breaks ordinal cross-referencing unless a stable finding-number scheme is added (the load-bearing dependency).
+- - Needs an explicit "none" convention for empty severity sections, and `Question` (a kind, not a severity) sits awkwardly as a peer section.
 
-7. **Final advisor consultation** (before declaring done)
-   - Advisor reviews the completed work in context
-   - Returns confirmation, corrections, or a stop signal
-   - If corrections needed, executor applies them
+**Hybrid (industry default):** a severity-grouped summary + inline labels + continuous finding numbers. Highest scannability, highest cost. Likely a v1.x target, not v1.0.1, because it compounds every dependency above.
 
-8. **Reconciliation** (when evidence conflicts with advice)
-   - If executor's empirical findings contradict advisor's recommendation
-   - Don't silently switch -- surface the conflict in one more advisor call
-   - "I found X, you suggest Y, which constraint breaks the tie?"
-   - Advisor may have underweighted evidence; reconcile call is cheaper than wrong branch
+**Recommendation for requirements:** Ship **inline spelled-out labels in place** for v1.0.1 (P1, low risk, directly satisfies the goal). Evaluate **grouping + roll-up counts** as a fast-follow once the stable-finding-number dependency is designed -- grouping without stable numbers will silently break `### Cross-Cutting Patterns`.
 
-**How the executor should treat advice (from Anthropic's suggested prompt):**
-- Give the advice serious weight
-- If a step fails empirically, or primary-source evidence contradicts a specific claim, adapt
-- A passing self-test is NOT evidence the advice is wrong -- it's evidence the test doesn't check what the advice is checking
+## Competitor Feature Analysis
 
-### Review Skill (`/lz-advisor.review`)
-
-**What an effective advisor code review covers:**
-- Correctness: Does the code do what it claims?
-- Edge cases: What inputs/states could break it?
-- Design patterns: Does it follow codebase conventions?
-- Maintainability: Will future developers understand this?
-- Test coverage: Are the important paths tested?
-- Performance: Any obvious bottlenecks or N+1 queries?
-- API contracts: Do interfaces match expectations?
-
-**Workflow:**
-1. Executor gathers context: changed files, git diff, test results
-2. Single Opus advisor review pass with full context
-3. Advisor returns enumerated findings (under 100 words per finding area)
-4. Executor presents findings to user with actionable suggestions
-
-**Differentiation:** Single focused Opus review vs. compound-engineering's 12 parallel Sonnet reviews. Opus holistically reasons about interactions between concerns that parallel agents can't see.
-
-### Security Review Skill (`/lz-advisor.security-review`)
-
-**Security-specific lens the advisor should apply:**
-- **Injection vectors:** SQL injection, XSS, command injection, path traversal
-- **Authentication/Authorization:** Missing auth checks, privilege escalation, broken access control
-- **Secret exposure:** Hardcoded credentials, secrets in logs, environment variable leaks
-- **Input validation:** Unvalidated user input, type confusion, buffer concerns
-- **Dependency risks:** Known CVEs in dependencies, outdated packages
-- **Data handling:** PII exposure, encryption gaps, insecure storage
-- **Threat modeling:** What can an attacker do with access to this code path?
-- **Configuration security:** Debug modes in production, permissive CORS, missing security headers
-
-**Workflow:** Same as review skill but with security-focused advisor prompt. The advisor applies OWASP Top 10 lens and threat actor perspective.
-
-## Competitive Landscape
-
-| Plugin/Feature | Planning | Implementation | Review | Multi-Model | Dependencies | Cost Model |
-|---------------|----------|---------------|--------|-------------|-------------|------------|
-| **lz-advisor (this plugin)** | Opus-guided plan | Full advisor loop with timing | Opus review | Opus advisor + session model executor | Zero | 2-3 Opus calls per task |
-| **opusplan mode** | Opus in plan mode | Sonnet in exec mode | No built-in review | Opus plan / Sonnet exec | Built-in | All plan-mode tokens at Opus rate |
-| **compound-engineering** | 3 parallel research agents + analyzer | Basic `/ce:work` | 12 parallel Sonnet agents | Sonnet only (no Opus) | Optional Gemini/OpenAI | Many subagent spawns |
-| **deep-plan + deep-implement** | Research + interview + LLM review | TDD with code review | Built into implement | Optional external LLM | Optional external API keys | Section-based, many agent spawns |
-| **workflow-orchestrator** | Task decomposition + dependency analysis | Multi-agent delegation | No dedicated review | Single model | None | Heavy orchestration overhead |
-
-### Key Differentiator Summary
-
-The plugin's competitive position is: **surgical Opus intelligence at strategic moments** vs. competitors that use either (a) Opus for everything in plan mode (`opusplan`), (b) many Sonnet agents in parallel (compound-engineering), or (c) complex multi-phase pipelines with external LLM dependencies (deep-plan).
-
-The cost argument: 2-3 Opus calls at 400-700 output tokens each is dramatically cheaper than running Opus for an entire plan mode session or spawning 12+ Sonnet subagents.
-
-## MVP Recommendation
-
-Prioritize (in build order):
-
-1. **Opus advisor agent** (`lz-advisor`) -- foundation for everything else
-2. **Execute skill** (`/lz-advisor.execute`) -- the core workflow, demonstrates full value proposition
-3. **Plan skill** (`/lz-advisor.plan`) -- standalone planning, also feeds execute skill
-4. **Review skill** (`/lz-advisor.review`) -- completes the development lifecycle
-
-Defer:
-- **Security review skill** (`/lz-advisor.security-review`): Same architecture as review skill with different prompt. Build after review skill is validated, since it's a prompt variation not a new orchestration pattern.
-
-## Confidence Assessment
-
-| Area | Confidence | Notes |
-|------|------------|-------|
-| Advisor timing pattern | HIGH | Directly from Anthropic's official suggested system prompt for coding tasks |
-| Advisor output format | HIGH | Directly from Anthropic's docs -- under 100 words, enumerated steps |
-| Reconciliation pattern | HIGH | Directly from Anthropic's suggested system prompt -- explicit "reconcile call" instruction |
-| Execute skill workflow | HIGH | Derived step-by-step from Anthropic's timing guidance and advice-treatment prompt |
-| Competitive landscape | MEDIUM | Based on WebSearch findings; plugin ecosystem moves fast. Verified compound-engineering and deep-plan exist as described |
-| Security review scope | MEDIUM | Based on industry standards (OWASP, common security review practices). No competing plugin specializes here, so no direct comparison |
-| Cost advantage claims | HIGH | Anthropic's benchmarks: Sonnet + Opus advisor = +2.7pp at 11.9% lower cost than Sonnet alone |
-| `opusplan` comparison | MEDIUM | Based on WebSearch; opusplan uses Opus for ALL plan mode tokens vs. 2-3 calls in this plugin. Directional comparison is sound but exact cost ratios depend on task |
+| Feature | Conventional Comments | SonarQube | CodeRabbit | Our Approach (recommended) |
+|---------|----------------------|-----------|------------|---------------------------|
+| Severity rendering | Full-word labels + blocking decoration | Full-word, ordered, counted | Full-word buckets + filters | Full-word labels, expanded in place from existing 4-tier vocab |
+| Layout | Inline per comment | Grouped + counted by severity | Hybrid (summary + inline + cohorts) | Inline now; grouped + roll-up as v1.x |
+| Severity vs kind | Separated (label=kind, decoration=severity) | Severity x type matrix | Severity x type x effort | Keep conflated for v1.0.1; separation is future-consideration |
+| Cross-referencing | None (PR threads) | Issue IDs | Bucket filters | Preserve existing ordinal "Finding N"; need stable numbers before grouping |
+| Numeric score | No | Letter ratings (A-E) | No (filters) | No -- avoid (anchoring anti-pattern) |
 
 ## Sources
 
-- Anthropic advisor tool docs: https://platform.claude.com/docs/en/agents-and-tools/tool-use/advisor-tool (HIGH confidence -- official documentation)
-- Anthropic advisor strategy blog: https://claude.com/blog/the-advisor-strategy (HIGH confidence -- official blog post)
-- [Compound Engineering Plugin](https://github.com/EveryInc/compound-engineering-plugin) (MEDIUM confidence -- GitHub repo, WebSearch descriptions)
-- [Deep Trilogy Plugins](https://github.com/piercelamb/deep-plan) (MEDIUM confidence -- GitHub repo, Medium blog posts)
-- [Claude Code model configuration](https://code.claude.com/docs/en/model-config) (MEDIUM confidence -- referenced in WebSearch)
-- [Claude Code subagents](https://code.claude.com/docs/en/sub-agents) (MEDIUM confidence -- referenced in WebSearch)
-- [oh-my-claude multi-model plugin](https://github.com/lgcyaxi/oh-my-claude) (LOW confidence -- WebSearch only)
-- [workflow-orchestrator plugin](https://github.com/barkain/claude-code-workflow-orchestration) (LOW confidence -- WebSearch only)
-- [Best Claude Code Plugins 2026](https://buildtolaunch.substack.com/p/best-claude-code-plugins-tested-review) (LOW confidence -- WebSearch summary)
-- [Claude Code Plugins Review 2026](https://aitoolanalysis.com/claude-code-plugins/) (LOW confidence -- WebSearch summary)
+- [Conventional Comments specification](https://conventionalcomments.org/) -- label vocabulary (praise/nitpick/suggestion/issue/todo/question/thought/chore/note) and decoration syntax (blocking/non-blocking/if-minor); confirms labels = kind, decorations = severity. HIGH.
+- [CodeRabbit custom reports docs](https://docs.coderabbit.ai/guides/custom-reports) + [Change Stack / Atlas blog](https://www.coderabbit.ai/blog/introducing-atlas-the-first-ai-native-code-review-interface) -- severity buckets, hybrid inline + grouped cohorts, grouping by priority. HIGH.
+- [reviewdog Diagnostic Format (DeepWiki)](https://deepwiki.com/reviewdog/reviewdog/3.2-reviewdog-diagnostic-format) + [reviewdog repo](https://github.com/reviewdog/reviewdog) -- error/warning/info levels, LSP-inspired structured severity, -level / -fail-level. HIGH.
+- [SonarQube Issues docs (10.3)](https://docs.sonarsource.com/sonarqube-server/10.3/user-guide/issues) + [metrics definition](https://docs.sonarsource.com/sonarqube-server/user-guide/code-metrics/metrics-definition) -- 5-level legacy + 3-level (10.2+) severity, grouping/counting, highest-first ordering, A-E ratings. HIGH.
+- [Semgrep CLI reference](https://semgrep.dev/docs/cli-reference) + [understand-severities KB](https://semgrep.dev/docs/kb/rules/understand-severities) -- Critical/High/Medium/Low (new) vs ERROR/WARNING/INFO (legacy), per-finding severity, --severity filter. HIGH.
+- [Danger reference](https://danger.systems/reference) + [Danger JS](https://danger.systems/js/) + [messaging plugin source](https://github.com/danger/danger/blob/master/lib/danger/danger_core/plugins/dangerfile_messaging_plugin.rb) -- fail/warn/message tiers grouped into one table, optional inline file/line, markdown table with Severity column. HIGH.
+- [Code review comment prefixes (emmer.dev)](https://emmer.dev/blog/code-review-comment-prefixes/) + [What does "nit" mean (Augment)](https://www.augmentcode.com/guides/what-does-nit-mean-in-code-review) + [Nitpicks vs must-fix (Propel)](https://www.propelcode.ai/blog/code-review-nitpicks-vs-must-fix-issues) -- GitHub PR severity conventions, blocking/non-blocking, "don't mix severity signals." MEDIUM (community convention, multi-source agreement).
+- [Banish "nitpick" / granular severity (codetinkerer)](https://www.codetinkerer.com/2024/01/12/nitpick-code-reviews.html) -- GitHub UI only encodes one binary signal; argument for explicit severity in text. MEDIUM.
+- WebSearch synthesis on grouped-vs-inline trade-offs (agent-skill review templates, security tooling) -- hybrid layout, continuous numbering across sections, "a number turns a highlighter into a judgment," "if AI highlights everything it highlights nothing." MEDIUM (multi-source; the numeric-score and over-highlighting cautions appeared in independent sources).
+
+---
+*Feature research for: severity-labeled code-review report presentation*
+*Researched: 2026-06-07*
