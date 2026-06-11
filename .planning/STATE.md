@@ -28,7 +28,7 @@ See: .planning/PROJECT.md (updated 2026-06-07)
 Phase: 13
 Plan: Not started
 Status: Milestone v1.0.1 shipped -- PR #1 (awaiting merge)
-Last activity: 2026-06-10 -- Shipped milestone v1.0.1 (PR #1)
+Last activity: 2026-06-11 -- Completed quick task 260611-c5l: addressed all PR #1 review findings (11 fixed, 1 won't-fix)
 
 ### Milestone v1.0.1 roadmap
 
@@ -144,6 +144,7 @@ Recent decisions affecting current work (v1.0.1):
 | 260417-lhe | Assess Opus 4.7 release impact on advisor plugin and propose upgrade path | 2026-04-17 | 593920d | Verified | [260417-lhe-assess-opus-4-7-release-impact-on-adviso](./quick/260417-lhe-assess-opus-4-7-release-impact-on-adviso/) |
 | 260601-f2a | Correct /plan "no built-in twin" claim in 09-03-SUMMARY + 09-VERIFICATION (Claude Code ships a built-in /plan; picker disambiguates) | 2026-06-01 | 401b7af | - | [260601-f2a-correct-the-no-built-in-twin-claim-for-p](./quick/260601-f2a-correct-the-no-built-in-twin-claim-for-p/) |
 | 260610-w0f | Correct dangling "Reviewer Escalation Hook" cross-ref (security-reviewer.md -> review/SKILL.md; security side hedged not-yet-wired) | 2026-06-10 | 0e3f6c4 | - | [260610-w0f-correct-dangling-reviewer-escalation-hoo](./quick/260610-w0f-correct-dangling-reviewer-escalation-hoo/) |
+| 260611-c5l | Address all PR #1 /code-review findings (#1-#9, #11, #12 fixed; #10 won't-fix per Phase 11 D-10) | 2026-06-11 | 5b57a0a | Verified | [260611-c5l-address-all-review-findings](./quick/260611-c5l-address-all-review-findings/) |
 
 ### Roadmap Evolution
 
