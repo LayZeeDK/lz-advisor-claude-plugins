@@ -43,9 +43,13 @@ set -euo pipefail
 SECURITY_AGENT="plugins/lz-advisor/agents/security-reviewer.md"
 MIN_FINDINGS=5        # D-04 anti-vacuous floor (security holistic example: 6 findings, min 5)
 PER_ENTRY_CAP=28      # D-09 per-entry outlier soft cap (prefix + OWASP tag EXCLUDED)
+SOFT_TARGET=22        # D-09 per-entry soft target; a WARNING, not a hard fail (the
+                      # binding caps are PER_ENTRY_CAP / AUTO_CLARITY_CAP)
 AUTO_CLARITY_CAP=75   # RES-PFV-OUTLIER-CAP for CVE/GHSA/CWE auto-clarity findings
 PATTERNS_CAP=160      # D-09 threat_patterns
 MISSED_CAP=30         # D-09 missed_surfaces
+MAX_COUNT=15          # #2: agents' <max_count>15</max_count> finding ceiling
+PFV_CAP=60            # #2: per_finding_validation per-entry cap (### Per-finding validation)
 
 PASS_COUNT=0
 FAIL_COUNT=0
@@ -139,7 +143,14 @@ REPORT="$(get_report)"
 #
 # (none) markers and blank lines are NOT findings -- they simply fail FINDING_RE
 # and are skipped; no special-casing needed.
-SEV_HEADERS='^### (Critical|Important|Suggestions|Questions)$'
+#
+# #4: SEV_HEADERS is a TOLERANT PREFIX match (no trailing "$" anchor) so a
+# header carrying a trailing space or a surviving CR still matches -- honoring
+# the "TOLERANT anchored matches, not byte-exact equality" rule above. The four
+# severity names are distinct words and the match only sets current_sev; finding
+# lines are matched separately by FINDING_RE, so a longer accidental prefix match
+# is harmless.
+SEV_HEADERS='^### (Critical|Important|Suggestions|Questions)'
 FINDING_RE='^[0-9]+\. `?[^[:space:]]+:[0-9]+(-[0-9]+)?: \[[^]]+\] '
 matched_count=0
 current_sev=""
@@ -217,16 +228,38 @@ pass "anti-vacuous: matched_count $matched_count >= $MIN_FINDINGS"
 for body in "${FINDING_BODIES[@]}"; do
   wc_words=$(printf '%s' "$body" | wc -w)
   cap="$PER_ENTRY_CAP"
+  is_auto_clarity=0
   if [[ "$body" =~ \[(CVE|GHSA|CWE) ]]; then
     cap="$AUTO_CLARITY_CAP"
+    is_auto_clarity=1
   fi
 
   if [ "$wc_words" -le "$cap" ]; then
     pass "per-entry budget: $wc_words <= $cap"
+
+    # #2(c): the 22w SOFT_TARGET is the per-entry target, NOT the binding cap
+    # (D-09). A body within its hard cap but over SOFT_TARGET emits a NON-FATAL
+    # [WARN] line and does NOT increment FAIL_COUNT, so it never changes the exit
+    # code. RESPECT the auto-clarity carve-out: do NOT warn on a [CVE]/[GHSA]/[CWE]
+    # body within 75w -- those findings are by-design over 22w (the holistic 36w
+    # CVE finding must not warn).
+    if [ "$is_auto_clarity" -eq 0 ] && [ "$wc_words" -gt "$SOFT_TARGET" ]; then
+      echo "[WARN] per-entry soft target: $wc_words > $SOFT_TARGET (within hard cap $cap) -- $body"
+    fi
   else
     fail "per-entry budget exceeded: $wc_words > $cap" "$body"
   fi
 done
+
+# #2(a): max_count=15 finding ceiling -- assert matched_count <= MAX_COUNT.
+# Mirrors the agents' <max_count>15</max_count>. Security holistic baseline=6,
+# well under the ceiling.
+if [ "$matched_count" -le "$MAX_COUNT" ]; then
+  pass "max_count ceiling: $matched_count <= $MAX_COUNT"
+else
+  fail "max_count ceiling exceeded: $matched_count > $MAX_COUNT" \
+       "the grouped grammar caps findings at $MAX_COUNT per response"
+fi
 
 # --- Section-body extraction over the normalized (de-quoted) report ---------
 # After get_report the "> " framing is gone, so section headings appear as plain
@@ -277,6 +310,31 @@ if [ -n "$(printf '%s' "$MISSED_BODY" | tr -d '[:space:]')" ]; then
   fi
 else
   pass "missed_surfaces: optional section absent -- skipped"
+fi
+
+# #2(b): Per-finding validation 60w/entry cap. The "### Per-finding validation"
+# section is OPTIONAL; when ABSENT (the holistic baseline has no PFV section)
+# emit a pass "optional section absent -- skipped" (mirrors the Missed-surfaces
+# optional handling). When present, each entry is a paragraph whose first line
+# begins "Validation of Finding N:"; treat each such line as one entry body and
+# assert <= PFV_CAP (60w). Extraction reuses the existing extract_section helper.
+# Robust to CRLF-normalized reports (from-trace already tr -d's CR).
+if printf '%s\n' "$REPORT" | awk '/^### Per-finding validation/{found=1} END{exit !found}'; then
+  PFV_BODY="$(extract_section '^### Per-finding validation')"
+  while IFS= read -r pfv_line; do
+    case "$pfv_line" in
+      "Validation of Finding "*)
+        pfv_wc=$(printf '%s' "$pfv_line" | wc -w)
+        if [ "$pfv_wc" -le "$PFV_CAP" ]; then
+          pass "per-finding validation budget: $pfv_wc <= $PFV_CAP"
+        else
+          fail "per-finding validation budget exceeded: $pfv_wc > $PFV_CAP" "$pfv_line"
+        fi
+        ;;
+    esac
+  done < <(printf '%s\n' "$PFV_BODY")
+else
+  pass "Per-finding validation section absent (optional) -- skipped"
 fi
 
 # --- Summary + exit (house style; validate-phase-03.sh:148-158) -------------

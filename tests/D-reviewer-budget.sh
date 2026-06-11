@@ -42,8 +42,12 @@ set -euo pipefail
 REVIEWER_AGENT="plugins/lz-advisor/agents/reviewer.md"
 MIN_FINDINGS=5    # anti-vacuous floor (holistic example has 7; headroom 2)
 PER_ENTRY_CAP=28  # D-09: per-finding outlier soft cap; prefix EXCLUDED from span
+SOFT_TARGET=22    # D-09: per-finding soft target; a WARNING, not a hard fail (the
+                  # binding cap is PER_ENTRY_CAP; the soft target informs concision)
 PATTERNS_CAP=160  # D-09: cross_cutting_patterns
 MISSED_CAP=30     # D-09: missed_surfaces (optional section)
+MAX_COUNT=15      # #2: agents' <max_count>15</max_count> finding ceiling
+PFV_CAP=60        # #2: per_finding_validation per-entry cap (### Per-finding validation)
 
 PASS_COUNT=0
 FAIL_COUNT=0
@@ -134,6 +138,27 @@ get_report() {
 REPORT="$(get_report)"
 
 # ---------------------------------------------------------------------------
+# extract_section: print the body lines strictly BETWEEN the matched heading
+# and the next "### " heading (or end of report).
+# ---------------------------------------------------------------------------
+# #3: GENERIC next-"### " boundary, mirroring the security fixture's
+# extract_section, instead of hardcoding "### Missed surfaces" as the
+# Cross-Cutting terminator. This is NOT dedup (D-10): the two fixtures stay
+# standalone; only the boundary LOGIC is aligned. The heading is matched by a
+# TOLERANT anchored regex ($0 ~ pat) so trailing variation ("(optional)",
+# trailing space, surviving CR) is absorbed, while a missing/renamed required
+# heading is caught by the explicit presence pre-check at the call site rather
+# than silently zeroing the body.
+extract_section() {
+  local pat="$1"
+  printf '%s\n' "$REPORT" | awk -v pat="$pat" '
+    $0 ~ pat          { in_sec = 1; next }
+    in_sec && /^### / { in_sec = 0 }
+    in_sec            { print }
+  ' | sed -E 's/^> ?//'
+}
+
+# ---------------------------------------------------------------------------
 # Parse findings (header-tracking + numbered-line parser, D-10).
 # ---------------------------------------------------------------------------
 # Severity headers carry the severity (no inline token). Track the current
@@ -149,7 +174,14 @@ REPORT="$(get_report)"
 #
 # (none) markers and blank lines are NOT findings -- they simply fail
 # FINDING_RE and are skipped; no special-casing needed.
-SEV_HEADERS='^### (Critical|Important|Suggestions|Questions)$'
+#
+# #4: SEV_HEADERS is a TOLERANT PREFIX match (no trailing "$" anchor) so a
+# header carrying a trailing space or a surviving CR still matches -- honoring
+# this fixture's "TOLERANT anchored matches, not byte-exact equality" rule. The
+# four severity names are distinct words and the match only sets current_sev;
+# finding lines are matched separately by FINDING_RE, so a longer accidental
+# prefix match is harmless.
+SEV_HEADERS='^### (Critical|Important|Suggestions|Questions)'
 FINDING_RE='^[0-9]+\. `?[^[:space:]]+:[0-9]+(-[0-9]+)?: '
 matched_count=0
 current_sev=""
@@ -225,34 +257,82 @@ pass "anti-vacuous: matched_count $matched_count >= $MIN_FINDINGS"
 
 # Per-finding loop: each body (prefix excluded) <= PER_ENTRY_CAP (28w).
 # No auto-clarity carve-out in the reviewer fixture (that is security-only).
+#
+# #2(c): the 22w SOFT_TARGET is the per-finding target, NOT the binding cap
+# (D-09). A body within PER_ENTRY_CAP (28w) but over SOFT_TARGET (22w) emits a
+# NON-FATAL [WARN] line and does NOT increment FAIL_COUNT, so it never changes
+# the exit code. The hard gate is PER_ENTRY_CAP.
 for body in "${FINDING_BODIES[@]}"; do
   wc_words=$(printf '%s' "$body" | wc -w)
   if [ "$wc_words" -le "$PER_ENTRY_CAP" ]; then
     pass "per-finding budget: $wc_words <= $PER_ENTRY_CAP -- $body"
+
+    if [ "$wc_words" -gt "$SOFT_TARGET" ]; then
+      echo "[WARN] per-finding soft target: $wc_words > $SOFT_TARGET (within hard cap $PER_ENTRY_CAP) -- $body"
+    fi
   else
     fail "per-finding budget exceeded: $wc_words > $PER_ENTRY_CAP" "$body"
   fi
 done
 
-# Cross-Cutting Patterns (REQUIRED): range between "### Cross-Cutting Patterns"
-# and "### Missed surfaces", strip any residual blockquote marker, wc -w, assert
-# <= 160w. The 's/^> ?//' sed strips the bare ">" separator form too (not just
-# "> "), so surviving blockquote-blank lines are not counted as words.
+# #2(a): max_count=15 finding ceiling -- assert matched_count <= MAX_COUNT.
+# Mirrors the agents' <max_count>15</max_count>. Reviewer holistic baseline=7,
+# well under the ceiling.
+if [ "$matched_count" -le "$MAX_COUNT" ]; then
+  pass "max_count ceiling: $matched_count <= $MAX_COUNT"
+else
+  fail "max_count ceiling exceeded: $matched_count > $MAX_COUNT" \
+    "the grouped grammar caps findings at $MAX_COUNT per response"
+fi
+
+# #2(b): Per-finding validation 60w/entry cap. The "### Per-finding validation"
+# section is OPTIONAL; when ABSENT (the holistic baseline has no PFV section)
+# emit a pass "optional section absent -- skipped" (mirrors the Missed-surfaces
+# optional handling). When present, each entry is a paragraph whose first line
+# begins "Validation of Finding N:"; treat each such line as one entry body and
+# assert <= PFV_CAP (60w). Extraction uses the generic extract_section() helper
+# (#3 boundary). Robust to CRLF-normalized reports (from-trace already tr -d's CR).
+if printf '%s\n' "$REPORT" | awk '/^### Per-finding validation/{found=1} END{exit !found}'; then
+  PFV_BODY="$(extract_section '^### Per-finding validation')"
+  pfv_entry_failed=0
+  while IFS= read -r pfv_line; do
+    case "$pfv_line" in
+      "Validation of Finding "*)
+        pfv_wc=$(printf '%s' "$pfv_line" | wc -w)
+        if [ "$pfv_wc" -le "$PFV_CAP" ]; then
+          pass "per-finding validation budget: $pfv_wc <= $PFV_CAP"
+        else
+          fail "per-finding validation budget exceeded: $pfv_wc > $PFV_CAP" "$pfv_line"
+          pfv_entry_failed=1
+        fi
+        ;;
+    esac
+  done < <(printf '%s\n' "$PFV_BODY")
+
+  if [ "$pfv_entry_failed" -eq 0 ]; then
+    : # all PFV entries (if any) passed; pass lines already emitted
+  fi
+else
+  pass "Per-finding validation section absent (optional) -- skipped"
+fi
+
+# Cross-Cutting Patterns (REQUIRED): range from "### Cross-Cutting Patterns" to
+# the NEXT "### " heading (generic boundary via extract_section, #3), strip any
+# residual blockquote marker, wc -w, assert <= 160w. The 's/^> ?//' sed (inside
+# extract_section) strips the bare ">" separator form too (not just "> "), so
+# surviving blockquote-blank lines are not counted as words.
 #
 # CR-WR-01: presence pre-check FIRST. This section is REQUIRED. Without a
 # presence check a missing header yields an empty body -> wc -w = 0 -> a
 # vacuous GREEN pass. Mirror the security fixture's Threat Patterns gate: fail
 # loudly when the required heading is absent.
-# CR-WR-02: start pattern is the TOLERANT prefix form (no trailing "$" anchor),
-# honoring this fixture's "TOLERANT anchored matches, not byte-exact" rule, so a
-# trailing-space / drifted header is caught by the presence check rather than
-# silently zeroing the body.
+# CR-WR-02 / #3: start pattern is the TOLERANT prefix form (no trailing "$"
+# anchor) and the terminator is the GENERIC next-"### " boundary (not the
+# hardcoded "### Missed surfaces"), so a future/added trailing section is not
+# swallowed and a trailing-space / drifted header is caught by the presence
+# check rather than silently zeroing the body.
 if printf '%s\n' "$REPORT" | awk '/^### Cross-Cutting Patterns/{f=1} END{exit !f}'; then
-  PATTERNS_BODY="$(
-    printf '%s\n' "$REPORT" \
-      | awk '/^### Cross-Cutting Patterns/{c=1;next} /^### Missed surfaces/{c=0} c' \
-      | sed -E 's/^> ?//'
-  )"
+  PATTERNS_BODY="$(extract_section '^### Cross-Cutting Patterns')"
   PATTERNS_WORDS=$(printf '%s' "$PATTERNS_BODY" | wc -w)
   if [ "$PATTERNS_WORDS" -le "$PATTERNS_CAP" ]; then
     pass "Cross-Cutting Patterns budget: $PATTERNS_WORDS <= $PATTERNS_CAP"
@@ -266,16 +346,13 @@ else
 fi
 
 # Missed surfaces (OPTIONAL): range from "### Missed surfaces" to the NEXT
-# "### " heading (or end of report), wc -w, assert <= 30w only when the section
-# is present. WR-04: the range is bounded at the next heading rather than run to
-# EOF, so any later section in a --from-trace input (a future per-finding block,
-# an appended section, trailing trace metadata) is NOT swallowed into the
-# Missed-surfaces word count -- mirrors the security fixture's extract_section.
-MISSED_BODY="$(
-  printf '%s\n' "$REPORT" \
-    | awk '/^### Missed surfaces/{m=1;next} m && /^### /{m=0} m' \
-    | sed -E 's/^> ?//'
-)"
+# "### " heading (or end of report) via the generic extract_section helper (#3),
+# wc -w, assert <= 30w only when the section is present. WR-04: the range is
+# bounded at the next heading rather than run to EOF, so any later section in a
+# --from-trace input (a future per-finding block, an appended section, trailing
+# trace metadata) is NOT swallowed into the Missed-surfaces word count -- mirrors
+# the security fixture's extract_section.
+MISSED_BODY="$(extract_section '^### Missed surfaces')"
 MISSED_WORDS=$(printf '%s' "$MISSED_BODY" | wc -w)
 if printf '%s\n' "$REPORT" | awk '/^### Missed surfaces/{found=1} END{exit !found}'; then
   if [ "$MISSED_WORDS" -le "$MISSED_CAP" ]; then
