@@ -160,6 +160,8 @@ Required output shape:
 >
 > [Security-reviewer agent's response, rendered verbatim. Begins with `### Critical`, continues with the four severity sections (`### Critical`, `### Important`, `### Suggestions`, `### Questions` -- each header always present; an empty section shows a single `(none)` line; each finding line carries an OWASP `[Axx]` tag like `[A03]` after its location), then the `### Threat Patterns` section.]
 
+The security-reviewer MAY also emit two optional sections that pass through verbatim like every other section: an optional `### Per-finding validation` section (severity-revision or confirmation prose) may appear AFTER `### Questions` and BEFORE the trailing `### Threat Patterns` section, and an optional `### Missed surfaces` section may appear at the very end. When present, render them unchanged; when absent, render nothing in their place.
+
 The security-reviewer ALREADY groups findings by severity under these four headers. This grouped shape IS the contracted output; the skill passes it through unchanged. Do NOT:
 - Collapse, merge, reorder, or flatten the four severity sections (`### Critical` / `### Important` / `### Suggestions` / `### Questions`) -- the security-reviewer carries severity in the section header (the single source of severity), so reformatting would destroy the contracted shape, not impose it.
 - Drop or rewrite an empty section's `(none)` marker -- each of the four headers is emitted unconditionally; preserve the header and its `(none)` line.
