@@ -28,7 +28,7 @@ See: .planning/PROJECT.md (updated 2026-06-07)
 Phase: 13
 Plan: Not started
 Status: Milestone v1.0.1 shipped -- PR #1 (awaiting merge)
-Last activity: 2026-06-11 -- Completed quick task 260611-c5l: addressed all PR #1 review findings (11 fixed, 1 won't-fix)
+Last activity: 2026-06-11 -- Completed quick task 260611-ebt: addressed 2nd /code-review pass findings (5 fixes)
 
 ### Milestone v1.0.1 roadmap
 
@@ -145,6 +145,7 @@ Recent decisions affecting current work (v1.0.1):
 | 260601-f2a | Correct /plan "no built-in twin" claim in 09-03-SUMMARY + 09-VERIFICATION (Claude Code ships a built-in /plan; picker disambiguates) | 2026-06-01 | 401b7af | - | [260601-f2a-correct-the-no-built-in-twin-claim-for-p](./quick/260601-f2a-correct-the-no-built-in-twin-claim-for-p/) |
 | 260610-w0f | Correct dangling "Reviewer Escalation Hook" cross-ref (security-reviewer.md -> review/SKILL.md; security side hedged not-yet-wired) | 2026-06-10 | 0e3f6c4 | - | [260610-w0f-correct-dangling-reviewer-escalation-hoo](./quick/260610-w0f-correct-dangling-reviewer-escalation-hoo/) |
 | 260611-c5l | Address all PR #1 /code-review findings (#1-#9, #11, #12 fixed; #10 won't-fix per Phase 11 D-10) | 2026-06-11 | 5b57a0a | Verified | [260611-c5l-address-all-review-findings](./quick/260611-c5l-address-all-review-findings/) |
+| 260611-ebt | Address 2nd /code-review pass findings (#1 deeper fix: confirmed Finding 3; #2 multi-line PFV + loud-fail; #3 plural revert; #4 dead var; #5 closed-vocab anchor) | 2026-06-11 | 56e8172 | Verified | [260611-ebt-address-the-review-findings](./quick/260611-ebt-address-the-review-findings/) |
 
 ### Roadmap Evolution
 
