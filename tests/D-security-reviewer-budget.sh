@@ -324,12 +324,13 @@ fi
 # <per_entry max_words=60>, "one paragraph per finding"), so accumulate each
 # entry's words ACROSS its paragraph -- a single-line count under-counts and
 # silently passes a >60w multi-line entry. An ENTRY begins at a
-# "Validation of Finding N:" line; its body runs from that line UP TO (but not
-# including) the next boundary, where a boundary is ANY of: the next
-# "Validation of Finding " line, the next blank line, or the next "### " heading.
-# Accumulate wc -w across the entry's span (the opening line PLUS its continuation
-# lines) and assert the running TOTAL <= PFV_CAP (60). Finalize the last open
-# entry at EOF of PFV_BODY.
+# "Validation of Finding N:" line and runs from that line UP TO (but not
+# including) the next "Validation of Finding " line, OR to end-of-body. An
+# intra-entry blank line is CONTINUATION (wc -w of an empty line is 0, so it
+# adds nothing), NOT a boundary -- only the next "Validation of Finding " line
+# and the post-loop EOF flush finalize an entry. Accumulate wc -w across the
+# entry's span (the opening line PLUS its continuation lines, blanks included)
+# and assert the running TOTAL <= PFV_CAP (60).
 #
 # FIX #2 (present-but-unparsed loud-fail): track a counter of PFV entries actually
 # parsed; if the "### Per-finding validation" header was PRESENT but ZERO entries
@@ -366,23 +367,11 @@ if printf '%s\n' "$REPORT" | awk '/^### Per-finding validation/{found=1} END{exi
         pfv_first="$pfv_line"
         pfv_acc=$(printf '%s' "$pfv_line" | wc -w)
         ;;
-      "### "*)
-        # Boundary: a heading ends the current entry's paragraph. (extract_section
-        # already stops at the next "### ", so this is belt-and-suspenders.)
-        if [ "$pfv_in_entry" -eq 1 ]; then
-          finalize_pfv_entry "$pfv_acc" "$pfv_first"
-          pfv_in_entry=0
-        fi
-        ;;
-      "")
-        # Boundary: a blank line ends the current entry's paragraph.
-        if [ "$pfv_in_entry" -eq 1 ]; then
-          finalize_pfv_entry "$pfv_acc" "$pfv_first"
-          pfv_in_entry=0
-        fi
-        ;;
       *)
-        # Continuation line of the open entry: accumulate its words.
+        # Continuation line of the open entry: accumulate its words. A blank line
+        # is wc -w = 0, so it adds nothing and does NOT close the entry (intra-entry
+        # blanks are continuation). The next "Validation of Finding " line and the
+        # post-loop EOF flush are the only finalizers.
         if [ "$pfv_in_entry" -eq 1 ]; then
           pfv_line_wc=$(printf '%s' "$pfv_line" | wc -w)
           pfv_acc=$((pfv_acc + pfv_line_wc))
