@@ -311,9 +311,7 @@ fi
 # anti-vacuous discipline) instead of falling through to a vacuous pass. The
 # absent-branch ("optional section absent -- skipped") is UNCHANGED.
 #
-# (FIX #4: the prior dead per-entry-failed flag variable + its no-op `if` are
-# gone; fail() already drives FAIL_COUNT / the exit code. The loop shape now
-# matches the security fixture.)
+# (No per-entry flag: fail() drives FAIL_COUNT / the exit code directly.)
 #
 # Extraction uses the generic extract_section() helper (#3 boundary). Robust to
 # CRLF-normalized reports (from-trace already tr -d's CR).
