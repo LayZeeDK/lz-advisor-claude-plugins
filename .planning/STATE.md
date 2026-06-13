@@ -1,17 +1,16 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.0.1
-milestone_name: No review report shorthands
-status: Awaiting next milestone
-stopped_at: Completed 13-07-PLAN.md (SC-4 third live re-measure GREEN 6/6; GATE-02 fully satisfied)
-last_updated: "2026-06-13T19:43:54.765Z"
-last_activity: 2026-06-13 — Completed quick task 260613-u6l: CHANGELOG.md + GitHub releases (v1.0.0, v1.0.1)
+milestone: v2.0.0
+milestone_name: Fable and prefixed skill names
+status: planning
+last_updated: "2026-06-13T21:11:08.090Z"
+last_activity: 2026-06-13
 progress:
-  total_phases: 3
-  completed_phases: 3
-  total_plans: 13
-  completed_plans: 13
-  percent: 100
+  total_phases: 0
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
+  percent: 0
 ---
 
 # Project State
@@ -38,10 +37,10 @@ Items acknowledged and deferred at the v1.0.1 milestone close (2026-06-11):
 
 ## Current Position
 
-Phase: Milestone v1.0.1 complete
+Phase: Not started (defining requirements)
 Plan: —
-Status: Awaiting next milestone
-Last activity: 2026-06-13 — Completed quick task 260613-u6l: CHANGELOG.md + GitHub releases (v1.0.0, v1.0.1)
+Status: Defining requirements
+Last activity: 2026-06-13 — Milestone v2.0.0 started
 
 ### Milestone v1.0.1 roadmap
 
