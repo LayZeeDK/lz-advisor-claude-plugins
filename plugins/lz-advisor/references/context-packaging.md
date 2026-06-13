@@ -51,11 +51,11 @@ Every advisor consultation follows these rules:
 
      - **Internal-prompt surface.** When the executor packages context for an Agent invocation (lz-advisor:advisor, lz-advisor:reviewer, lz-advisor:security-reviewer) via the Agent tool prompt, every pv-* synthesis MUST use the canonical XML form: `<pre_verified source="..." claim_id="pv-N">...<claim>...</claim><evidence method="...">...</evidence>...</pre_verified>`. This shape is load-bearing because Sonnet 4.6 / Opus 4.7 are trained to parse XML-tagged inputs reliably (Anthropic Best Practices "Use XML tags to structure your prompts" -- `https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/use-xml-tags`). Plain-bullet "Pre-verified Claims" sections in internal prompts (free-text bullets under a `## Pre-verified Claims` header without the XML shape) are non-conforming and MUST NOT be used.
 
-     - **User-facing artifact surface.** When the executor renders pv-* references in user-facing markdown artifacts (plan files, review/security-review output bodies, commit bodies, Strategic Direction blocks, plan-skill `## Key Decisions` sections), the canonical XML form is NOT mandatory; the executor MAY use markdown-natural shorthand if AND ONLY IF the shorthand pairs with concrete-source backing. Three acceptable shapes -- token reference + Verified: trailer, token reference + prose citation, and inline parenthetical token reference -- detailed below:
+     - **User-facing artifact surface.** When the executor renders pv-* references in user-facing markdown artifacts (plan files, lz-review/lz-security-review output bodies, commit bodies, Strategic Direction blocks, plan-skill `## Key Decisions` sections), the canonical XML form is NOT mandatory; the executor MAY use markdown-natural shorthand if AND ONLY IF the shorthand pairs with concrete-source backing. Three acceptable shapes -- token reference + Verified: trailer, token reference + prose citation, and inline parenthetical token reference -- detailed below:
 
        - **Token reference + Verified: trailer** (typical in commit bodies): the user-facing text contains the literal pv-* token AND a paired `Verified: <claim text>` trailer naming the concrete source backing the claim. Example: `Verified: @storybook/angular@10.3.5 exports fn() from storybook/test (see pv-storybook-fn-export block)`. The token (`pv-storybook-fn-export`) MUST resolve to a canonical `<pre_verified>` XML block in the executor's internal prompt to the agent during the same skill execution; the trailer MUST cite the concrete source (file path or URL) backing the claim.
 
-       - **Token reference + prose citation** (typical in plan/review/security-review bodies): the user-facing text contains the literal pv-* token AND a prose-form citation referencing the verification method and source. Example: "Verified via Read against `package.json` (see `pv-storybook-angular-10x-installed` block above)" or "Per pv-storybook-global-deprecation-10x: the `docs.autodocs` API was removed in Storybook 10.x." Same backing requirement: the token resolves to canonical XML in the internal prompt.
+       - **Token reference + prose citation** (typical in lz-plan/lz-review/lz-security-review bodies): the user-facing text contains the literal pv-* token AND a prose-form citation referencing the verification method and source. Example: "Verified via Read against `package.json` (see `pv-storybook-angular-10x-installed` block above)" or "Per pv-storybook-global-deprecation-10x: the `docs.autodocs` API was removed in Storybook 10.x." Same backing requirement: the token resolves to canonical XML in the internal prompt.
 
        - **Inline parenthetical token reference** (typical in finding lines): the user-facing finding line contains the literal pv-* token without separate Verified: trailer or prose citation, embedded inline as a verification anchor. Example: `pv-storybook-global-deprecation-10x` literal token in the body of a finding entry under its severity section. Same backing requirement.
 
@@ -370,7 +370,7 @@ This rule closes Finding C hop 8b: the security-review's `scope: security-threat
 
 ## Verify Request Schema
 
-The reviewer and security-reviewer agents emit `<verify_request>` blocks when they encounter a Class-2 (or Class 2-S) question that they cannot resolve from `[Read, Glob]` tool access alone AND that the executor's Phase 1 pre-emption did not anticipate. This schema defines the block's required and optional fields; the corresponding executor-side flow is documented in each skill's `<output>` block (see `review/SKILL.md` "Reviewer Escalation Hook" and `security-review/SKILL.md` -- not yet wired in current scope; reviewer-side wiring lands in Plan 07-05).
+The reviewer and security-reviewer agents emit `<verify_request>` blocks when they encounter a Class-2 (or Class 2-S) question that they cannot resolve from `[Read, Glob]` tool access alone AND that the executor's Phase 1 pre-emption did not anticipate. This schema defines the block's required and optional fields; the corresponding executor-side flow is documented in each skill's `<output>` block (see `lz-review/SKILL.md` "Reviewer Escalation Hook" and `lz-security-review/SKILL.md` -- not yet wired in current scope; reviewer-side wiring lands in Plan 07-05).
 
 ### Schema
 
@@ -414,8 +414,8 @@ The reviewer's finding entry (under its severity section) references the verify_
 
 The executor's flow on receiving verify_request blocks is documented in:
 
-- `review/SKILL.md` Phase 3 "Reviewer Escalation Hook" section
-- `security-review/SKILL.md` (when wired in a future phase -- Plan 07-05 scope is reviewer only)
+- `lz-review/SKILL.md` Phase 3 "Reviewer Escalation Hook" section
+- `lz-security-review/SKILL.md` (when wired in a future phase -- Plan 07-05 scope is reviewer only)
 
 The flow is one-shot: parse all verify_request blocks, perform all verifications in a single pre-pass (WebSearch + WebFetch + npm audit per class), synthesize pv-* blocks per Common Contract Rule 5b, re-invoke the reviewer (or security-reviewer) ONCE with the new anchors. Multi-round verification is forbidden per Spotify Honk one-shot principle.
 

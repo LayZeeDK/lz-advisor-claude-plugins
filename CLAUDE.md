@@ -48,14 +48,14 @@ plugins/lz-advisor/
 |   |-- reviewer.md              # Opus code quality reviewer agent
 |   '-- security-reviewer.md     # Opus security reviewer agent
 |-- skills/
-|   |-- plan/
-|   |   '-- SKILL.md             # Plan skill: orient -> advise -> plan (qualified: lz-advisor:plan)
-|   |-- execute/
-|   |   '-- SKILL.md             # Execute skill: full executor-advisor loop (qualified: lz-advisor:execute)
-|   |-- review/
-|   |   '-- SKILL.md             # Review skill: Opus reviews completed work (qualified: lz-advisor:review)
-|   '-- security-review/
-|       '-- SKILL.md             # Security review skill: Opus reviews with threat focus (qualified: lz-advisor:security-review)
+|   |-- lz-plan/
+|   |   '-- SKILL.md             # Plan skill: orient -> advise -> plan (qualified: lz-advisor:lz-plan)
+|   |-- lz-execute/
+|   |   '-- SKILL.md             # Execute skill: full executor-advisor loop (qualified: lz-advisor:lz-execute)
+|   |-- lz-review/
+|   |   '-- SKILL.md             # Review skill: Opus reviews completed work (qualified: lz-advisor:lz-review)
+|   '-- lz-security-review/
+|       '-- SKILL.md             # Security review skill: Opus reviews with threat focus (qualified: lz-advisor:lz-security-review)
 |-- references/
 |   '-- advisor-timing.md        # Anthropic's suggested timing patterns
 |-- README.md
@@ -191,8 +191,8 @@ For a UAT against an EXTERNAL target repo (e.g. ngx-smart-components), run with 
 
 ```bash
 # CWD = target repo
-claude --model sonnet --permission-mode auto --plugin-dir "D:/projects/github/LayZeeDK/lz-advisor-claude-plugins/plugins/lz-advisor" -p "/lz-advisor:plan <one-sentence directive>" --verbose --output-format stream-json
-claude --model sonnet --permission-mode auto --plugin-dir "...plugins/lz-advisor" -p "/lz-advisor:execute Implement the plan in plans/<name>.plan.md" --verbose --output-format stream-json
+claude --model sonnet --permission-mode auto --plugin-dir "D:/projects/github/LayZeeDK/lz-advisor-claude-plugins/plugins/lz-advisor" -p "/lz-advisor:lz-plan <one-sentence directive>" --verbose --output-format stream-json
+claude --model sonnet --permission-mode auto --plugin-dir "...plugins/lz-advisor" -p "/lz-advisor:lz-execute Implement the plan in plans/<name>.plan.md" --verbose --output-format stream-json
 ```
 
 - Use `/lz-advisor:<skill-name>` syntax (not natural-language triggers) for reliable skill activation
@@ -206,13 +206,13 @@ claude --model sonnet --permission-mode auto --plugin-dir "...plugins/lz-advisor
 
 **Headless `claude -p` gotchas** (learned 2026-05-31 gap-closure UAT 0.14.1; see `.planning/phases/08-*/uat-gap-closure-0.14.1/FINDINGS.md`):
 
-- **Never put an `@file` mention in the `-p` prompt.** It breaks `/skill` slash-command recognition -- the slash command stops auto-triggering and the model falls back to the Skill TOOL, which then errors. Reference the plan by PROSE PATH instead: `-p "/lz-advisor:execute Implement the plan in plans/x.plan.md"`. The skill Reads it during orient. (The `@` mention is fine interactively, not in `-p`.)
+- **Never put an `@file` mention in the `-p` prompt.** It breaks `/skill` slash-command recognition -- the slash command stops auto-triggering and the model falls back to the Skill TOOL, which then errors. Reference the plan by PROSE PATH instead: `-p "/lz-advisor:lz-execute Implement the plan in plans/x.plan.md"`. The skill Reads it during orient. (The `@` mention is fine interactively, not in `-p`.)
 - **Use `--permission-mode auto`.** `acceptEdits` DENIES the skill launch (Skill tool returns `is_error`) and blocks non-git Bash like `nx`; `--dangerously-skip-permissions` works but `auto` (classifier-gated) is preferred and sufficient. The skills' own `allowed-tools` only pre-approve `Bash(git:*)`, so the executor needs `auto` to run the verify target (`nx build-storybook`, etc.).
 - **Nested `claude -p` draws on the same 5-hour session usage pool** as the parent session. A multi-session UAT can hit `out_of_credits` (HTTP 429) mid-run; budget across reset windows.
-- **Fully-qualified skill name is `<plugin>:<skill>`**: the skill directories are plain (`plan`, `execute`, `review`, `security-review`), so the qualified name is simply `lz-advisor:execute` -- no redundant prefix and no dot-to-hyphen normalization artifact.
+- **Fully-qualified skill name is `<plugin>:<skill>`**: the skill directories are `lz-`-prefixed (`lz-plan`, `lz-execute`, `lz-review`, `lz-security-review`), so the qualified name is simply `lz-advisor:lz-execute` -- the `lz-` prefix de-shadows the Claude Code built-in `/plan`, `/review`, `/security-review`.
 - Grade from `--output-format stream-json` captured to a file; the advisor subagent's own tool-use (turns / glob-vs-synthesis) is in `~/.claude/projects/<cwd-hash>/<session>/subagents/agent-<id>.jsonl`.
 
-This approach was validated in Phase 2 (all 3 UAT items via `claude -p "/lz-advisor:plan ..."`) and again in Phase 8 gap-closure: GAP-S9 + GAP-S10 behaviorally proven on plugin 0.14.1 against ngx-smart-components (plan -> execute, `--permission-mode auto`).
+This approach was validated in Phase 2 (all 3 UAT items via `claude -p "/lz-advisor:lz-plan ..."`) and again in Phase 8 gap-closure: GAP-S9 + GAP-S10 behaviorally proven on plugin 0.14.1 against ngx-smart-components (plan -> execute, `--permission-mode auto`).
 <!-- GSD:conventions-end -->
 
 <!-- GSD:architecture-start source:ARCHITECTURE.md -->
