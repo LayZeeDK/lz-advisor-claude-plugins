@@ -38,9 +38,9 @@
 
 | REQ-ID | Phase | Status |
 |--------|-------|--------|
-| RENAME-01 | (filled by roadmap) | |
-| RENAME-02 | (filled by roadmap) | |
-| RENAME-03 | (filled by roadmap) | |
-| REL-01 | (filled by roadmap) | |
-| REL-02 | (filled by roadmap) | |
-| REL-03 | (filled by roadmap) | |
+| RENAME-01 | Phase 14 | Planned |
+| RENAME-02 | Phase 14 | Planned |
+| RENAME-03 | Phase 14 | Planned |
+| REL-01 | Phase 15 | Planned |
+| REL-02 | Phase 15 | Planned |
+| REL-03 | Phase 15 | Planned |

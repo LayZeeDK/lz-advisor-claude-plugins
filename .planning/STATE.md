@@ -38,12 +38,21 @@ Items deferred across milestones (v1.0.1 close 2026-06-11; v2.0.0 additions tagg
 
 ## Current Position
 
-Phase: Not started (defining requirements)
+Phase: 14 (lz- skill rename) -- not started
 Plan: —
-Status: Defining requirements
-Last activity: 2026-06-13 — Milestone v2.0.0 started
+Status: Roadmap created (Phases 14-15); ready to plan Phase 14
+Last activity: 2026-06-14 — Milestone v2.0.0 roadmap created (Phases 14-15)
 
-### Milestone v1.0.1 roadmap
+### Milestone v2.0.0 roadmap
+
+2 phases (14-15), continuing numbering from the v1.0.1 milestone's final phase (13):
+
+- **Phase 14 (lz- skill rename):** RENAME-01..03 -- rename all four skills (`plan`/`execute`/`review`/`security-review` -> `lz-*`) via `git mv` so they no longer shadow Claude Code built-ins; lockstep cross-ref sweep + closing `git grep` gate; interactive-picker bare-form collision check (human_needed).
+- **Phase 15 (v2.0.0 release & publication):** REL-01..03 -- atomic 5-surface 1.0.1 -> 2.0.0 bump + CHANGELOG `[2.0.0]` migration table + README + `git tag v2.0.0` + GitHub Release. Gated on Phase 14 verification.
+
+Locked decisions: all four skills renamed (incl. `execute`) for suite consistency; v2.0.0 MAJOR (breaking invocation surface); Fable advisor descoped (subagent-Fable API-blocked, SEED-001).
+
+### Milestone v1.0.1 roadmap (historical)
 
 3 phases, continuing from the v1.0 milestone's final integer phase (Phase 10):
 
