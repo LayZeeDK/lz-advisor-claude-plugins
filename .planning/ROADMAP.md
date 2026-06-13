@@ -27,7 +27,7 @@
 **Plans:** 1 plan
 
 Plans:
-- [ ] 14-01-PLAN.md -- git mv the 4 skill dirs + name: fields, lockstep cross-reference accuracy sweep, closing 5-pattern git grep gate + RENAME-02 interactive-picker recipe (human_needed)
+- [x] 14-01-PLAN.md -- git mv the 4 skill dirs + name: fields, lockstep cross-reference accuracy sweep, closing 5-pattern git grep gate + RENAME-02 interactive-picker recipe (human_needed)
 
 #### Phase 15: v2.0.0 release & publication
 **Requirements:** REL-01, REL-02, REL-03
@@ -84,7 +84,7 @@ Full phase details, success criteria, and the gap-closure trail are archived in 
 | 11. Fixture baseline | v1.0.1 | 2/2 | Complete | 2026-06-07 |
 | 12. Atomic grouped-grammar rewrite | v1.0.1 | 4/4 | Complete | 2026-06-07 |
 | 13. Empirical verification | v1.0.1 | 7/7 | Complete | 2026-06-08 |
-| 14. lz- skill rename | v2.0.0 | 0/1 | Planned | - |
+| 14. lz- skill rename | v2.0.0 | 1/1 | Complete   | 2026-06-13 |
 | 15. v2.0.0 release & publication | v2.0.0 | -/- | Not started | - |
 
 v1.0 + v1.0.1 shipped. **Active: v2.0.0 (Prefixed skill names)** -- 2 phases (14-15), continuing numbering from Phase 13. Next: `/gsd-plan-phase 14`. See `.planning/MILESTONES.md` for shipped-milestone summaries and `milestones/` for full detail.

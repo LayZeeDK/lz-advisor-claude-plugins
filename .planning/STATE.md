@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v2.0.0
 milestone_name: Prefixed skill names
-status: executing
-stopped_at: Phase 14 context gathered
-last_updated: "2026-06-13T23:26:37.471Z"
-last_activity: 2026-06-13 -- Phase 14 planning complete
+status: verifying
+stopped_at: Phase 14 Plan 01 executed (RENAME-01/03 done; gate GREEN; RENAME-02 human_needed)
+last_updated: "2026-06-13T23:44:36.722Z"
+last_activity: 2026-06-13 -- Phase 14 Plan 01 complete; awaiting phase verification + RENAME-02 picker check
 progress:
   total_phases: 2
-  completed_phases: 0
+  completed_phases: 1
   total_plans: 1
-  completed_plans: 0
-  percent: 0
+  completed_plans: 1
+  percent: 50
 ---
 
 # Project State
@@ -21,7 +21,7 @@ progress:
 See: .planning/PROJECT.md (updated 2026-06-11)
 
 **Core value:** Near-Opus intelligence at Sonnet cost for coding tasks, through strategic advisor consultation at high-leverage moments
-**Current focus:** Planning v2.0.0 (Prefixed skill names) -- breaking `lz-` skill rename + release. Fable advisor descoped (subagent-Fable API-blocked; SEED-001).
+**Current focus:** Phase 14 — lz-skill-rename
 
 ## Deferred Items
 
@@ -39,10 +39,10 @@ Items deferred across milestones (v1.0.1 close 2026-06-11; v2.0.0 additions tagg
 
 ## Current Position
 
-Phase: 14 (lz- skill rename) -- not started
-Plan: —
-Status: Ready to execute
-Last activity: 2026-06-13 -- Phase 14 planning complete
+Phase: 14 (lz-skill-rename) — PLANS COMPLETE, AWAITING VERIFICATION
+Plan: 1 of 1 (complete)
+Status: Phase complete — ready for verification (RENAME-01/03 done, gate GREEN; RENAME-02 human_needed)
+Last activity: 2026-06-13 -- Phase 14 Plan 01 executed
 
 ### Milestone v2.0.0 roadmap
 
@@ -123,6 +123,7 @@ Advisor runtime-proven on Opus 4.8. Final phase: Phase 10 (documentation-hygiene
 | Phase 13 P05 | ~40min | 3 tasks | 33 files |
 | Phase 13 P06 | ~25min | 3 tasks | 2 files |
 | Phase 13 P07 | ~30min | 3 tasks | 30 files |
+| Phase 14 P01 | 9min | 3 tasks | 13 files |
 
 ## Accumulated Context
 
@@ -147,6 +148,8 @@ Recent decisions affecting current work (v1.0.1):
 - [Phase ?]: [v1.0.1 / 13-06]: GAP-13-BUDGET-R2 iteration-2 concision fix landed (commits bfb8003 reviewer, 91ee635 security). FIX-R2-A/B/C applied atomically (WR-05) across both agents: FIX-R2-A routes a context-heavy reviewer Question's observation+evidence into the EXISTING 60w `### Per-finding validation` (body stays <=28w binary question; NO new 75w reviewer carve-out -- 13-GAP-RESEARCH Q3 option (b); PFV entries don't match the fixture FINDING_RE so the words leave the counted span); FIX-R2-B extends FIX-3 reference-by-shape to the security FIX/remediation clause (name the safe API in backticks, no full call expression, no second clause); FIX-R2-C splits the reviewer causal-chain (body = defect + fix <=28w, downstream consequence -> `### Cross-Cutting Patterns`). CAP VERDICT honored: 22/28/75/60 unchanged in agents, 28/5/75 unchanged in fixtures, `git status --porcelain tests/` empty (the close is genuine concision, the gate is NOT gamed). WRONG->RIGHT worked examples modeled on the actual over-cap captures (r2-review-4 45w->24w+45w PFV; r2-review-3 29w->15w; r2-security-1 33w->27w); do_not_include lists reinforced. WR-05 atomicity gate GREEN: both fixtures self-extract exit 0, self-test exit 1, residue sweeps exit 1, SHAPE + AGNT-03 byte-intact. FIX-R2-D (gate tolerance band) recorded as a flagged DEFERRED product-contract decision (a gate-design correction the user settles deliberately, NOT gaming the gate), NOT implemented here. Input for Plan 13-07 to re-measure SC-4 a THIRD time on live emission under the unchanged gate.
 - [Phase ?]: [v1.0.1 / 13-05]: SC-4 LIVE budget RE-MEASURE on the 13-04 fixed agents (n=5 per skill, R2 worktree off 019a26a, seeds byte-identical to 13-01 recovered from dangling commit 4fa7fd7). MEASURED (not reasoned, D-04): the 13-04 fix produced a LARGE improvement -- combined fully-passing c=2/6 -> 7/10 (Pass@1 0.333 -> 0.700; security half 0/3 -> 4/5; worst finding-body overshoot 46w -> 33w) -- but SC-4 is NOT fully GREEN: 3/10 runs retain a residual over-cap (r2-review-3 29w marginal deref-chain; r2-review-4 45w multi-clause Question with no reviewer carve-out; r2-security-1 four findings 30-33w verbose FIX-clause prose). SHAPE-only 10/10 (Pass^k=1.0, OWASP [Axx] byte-intact). Recorded HONESTLY (D-10) as GAP-13-BUDGET-R2 -> a SECOND concision iteration needed (reviewer Question concision/carve-out + security FIX-clause reference-by-shape + marginal reviewer body nudge), NOT patched in this re-measure plan. R2 worktree + branch torn down by exact name after D-08 custody; ngx [main]-only at bad1aed. GATE-02 stays PARTIAL. Evidence: uat/GRADE-LOG-R2.md + PASS-K-R2.md + 10 r2-*.agent.md + WORKTREE-PROVENANCE-R2.md.
 - [Phase ?]: [v1.0.1 / 13-04]: GAP-13-BUDGET atomic concision fix landed (commit 5085bca). FIX-1..4 applied to BOTH review agents in one plan (WR-05 atomicity): FIX-1 routes severity-divergence rationale to `### Per-finding validation` (60w, both agents), body stays terse; FIX-2 splits merged two-sink findings into separate numbered findings (security); FIX-3 references code by `path:line`, no multi-token inline reproduction (both); FIX-4 locks the 75w auto-clarity escape to `[CVE]`/`[GHSA]`/`[CWE]` brackets and corrects the prose to AGREE with the UNCHANGED `<auto_clarity_carve_out>` element (security) -- bracket-less Questions/architectural-disagreements stay terse. CAP VERDICT honored: PER_ENTRY_CAP/28/22/75 unchanged in agents AND fixtures. WRONG->RIGHT worked example added per fix; do_not_include lists reinforced. ATOMICITY GATE GREEN: both budget fixtures self-extract exit 0 on the edited worked examples; self-test exit 1; residue sweeps exit 1; SHAPE + AGNT-03 byte-intact; `git status --porcelain tests/` empty (fixtures unmodified). Input for Plan 13-05 to re-measure SC-4 GREEN on live emission and close GATE-02.
+- [Phase ?]: [v2.0.0 / 14-01]: Renamed all four lz-advisor skills via git mv (plan/execute/review/security-review -> lz-*), de-shadowing Claude Code built-in /plan, /review, /security-review; history preserved through d88df91; lockstep cross-ref sweep across 13 files; 5-pattern arm64-bracketed git grep gate GREEN at HEAD; no version/release work (Phase 15 boundary, D-09).
+- [Phase ?]: [v2.0.0 / 14-01]: RENAME-02 / SC-4 (bare-form de-shadow check) recorded as human_needed with an interactive-picker recipe (14-RENAME-02-PICKER-RECIPE.md); NOT auto-passed and NOT substituted with a headless probe (D-10; headless is blind to bare-form collisions).
 
 ### Pending Todos
 
@@ -180,9 +183,9 @@ Recent decisions affecting current work (v1.0.1):
 
 ## Session Continuity
 
-Last session: 2026-06-13T22:33:22.576Z
+Last session: 2026-06-13T23:43:25.364Z
 Stopped at: Phase 14 context gathered
-Resume file: .planning/phases/14-lz-skill-rename/14-CONTEXT.md
+Resume file: None
 Resume next: Phase 13 verification (verify_phase_goal -> spawn gsd-verifier for 13-VERIFICATION.md). All 7 plans executed; SC-4 is now GREEN on the 13-07 third live re-measure (combined c=6/6, Pass@k=Pass^k=1.0, every run exit 0 under the UNCHANGED hard gate; the 13-06 FIX-R2-A/B/C concision fix fully landed, fixtures never edited -- the close is genuine). All five UAT criteria PASS (SC-1/2/3/5 already PASS; SC-4 closed in 13-07). GATE-02 is FULLY SATISFIED (render half + budget half). NEXT: run the independent phase-goal verification (gsd-verifier) to produce 13-VERIFICATION.md, then the milestone audit. FIX-R2-D (gate tolerance band) was NOT needed to close SC-4 -- no residual stray surfaced; it remains a flagged product-contract decision the user may settle independently per 13-06-SUMMARY, NOT a blocker.
 
 ## Operator Next Steps
