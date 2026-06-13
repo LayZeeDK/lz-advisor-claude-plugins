@@ -24,6 +24,11 @@
 3. Doc references updated for accuracy: root + plugin README, CLAUDE.md (incl. the `claude -p` UAT examples), PROJECT.md.
 4. [human_needed] Interactive command-picker confirms the built-in `/plan` / `/review` / `/security-review` are no longer shadowed by the plugin (headless `claude -p` probes are structurally blind to bare-form collisions).
 
+**Plans:** 1 plan
+
+Plans:
+- [ ] 14-01-PLAN.md -- git mv the 4 skill dirs + name: fields, lockstep cross-reference accuracy sweep, closing 5-pattern git grep gate + RENAME-02 interactive-picker recipe (human_needed)
+
 #### Phase 15: v2.0.0 release & publication
 **Requirements:** REL-01, REL-02, REL-03
 **Goal:** Ship the rename as v2.0.0 -- atomic version bump, CHANGELOG with migration table, git tag, and GitHub Release. Gated on Phase 14 verification.
@@ -79,7 +84,7 @@ Full phase details, success criteria, and the gap-closure trail are archived in 
 | 11. Fixture baseline | v1.0.1 | 2/2 | Complete | 2026-06-07 |
 | 12. Atomic grouped-grammar rewrite | v1.0.1 | 4/4 | Complete | 2026-06-07 |
 | 13. Empirical verification | v1.0.1 | 7/7 | Complete | 2026-06-08 |
-| 14. lz- skill rename | v2.0.0 | -/- | Not started | - |
+| 14. lz- skill rename | v2.0.0 | 0/1 | Planned | - |
 | 15. v2.0.0 release & publication | v2.0.0 | -/- | Not started | - |
 
 v1.0 + v1.0.1 shipped. **Active: v2.0.0 (Prefixed skill names)** -- 2 phases (14-15), continuing numbering from Phase 13. Next: `/gsd-plan-phase 14`. See `.planning/MILESTONES.md` for shipped-milestone summaries and `milestones/` for full detail.
