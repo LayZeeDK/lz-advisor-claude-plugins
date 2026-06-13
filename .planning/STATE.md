@@ -4,8 +4,8 @@ milestone: v1.0.1
 milestone_name: No review report shorthands
 status: Awaiting next milestone
 stopped_at: Completed 13-07-PLAN.md (SC-4 third live re-measure GREEN 6/6; GATE-02 fully satisfied)
-last_updated: "2026-06-11T10:14:57.504Z"
-last_activity: 2026-06-11 — Milestone v1.0.1 completed and archived
+last_updated: "2026-06-13T19:43:54.765Z"
+last_activity: 2026-06-13 — Completed quick task 260613-u6l: CHANGELOG.md + GitHub releases (v1.0.0, v1.0.1)
 progress:
   total_phases: 3
   completed_phases: 3
@@ -41,7 +41,7 @@ Items acknowledged and deferred at the v1.0.1 milestone close (2026-06-11):
 Phase: Milestone v1.0.1 complete
 Plan: —
 Status: Awaiting next milestone
-Last activity: 2026-06-11 — Milestone v1.0.1 completed and archived
+Last activity: 2026-06-13 — Completed quick task 260613-u6l: CHANGELOG.md + GitHub releases (v1.0.0, v1.0.1)
 
 ### Milestone v1.0.1 roadmap
 
@@ -160,6 +160,7 @@ Recent decisions affecting current work (v1.0.1):
 | 260611-c5l | Address all PR #1 /code-review findings (#1-#9, #11, #12 fixed; #10 won't-fix per Phase 11 D-10) | 2026-06-11 | 5b57a0a | Verified | [260611-c5l-address-all-review-findings](./quick/260611-c5l-address-all-review-findings/) |
 | 260611-ebt | Address 2nd /code-review pass findings (#1 deeper fix: confirmed Finding 3; #2 multi-line PFV + loud-fail; #3 plural revert; #4 dead var; #5 closed-vocab anchor) | 2026-06-11 | 56e8172 | Verified | [260611-ebt-address-the-review-findings](./quick/260611-ebt-address-the-review-findings/) |
 | 260611-f98 | Address 3rd /code-review pass findings (#1 PFV multi-paragraph under-count + #2 dead `### ` branch -> two-arm loop; #3 Threat Patterns names confirmed Finding 3) | 2026-06-11 | 1a46b93 | Verified | [260611-f98-address-the-review-findings](./quick/260611-f98-address-the-review-findings/) |
+| 260613-u6l | Add CHANGELOG.md (v1.0.0 + v1.0.1) and create GitHub releases for v1.0.0 and v1.0.1 (renamed tag v1.0 -> v1.0.0) | 2026-06-13 | dc2e28d | - | [260613-u6l-add-changelog-md-v1-0-0-v1-0-1-and-creat](./quick/260613-u6l-add-changelog-md-v1-0-0-v1-0-1-and-creat/) |
 
 ### Roadmap Evolution
 
