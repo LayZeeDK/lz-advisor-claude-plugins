@@ -1,9 +1,9 @@
 ---
 gsd_state_version: 1.0
 milestone: v2.0.0
-milestone_name: Fable and prefixed skill names
+milestone_name: Prefixed skill names
 status: planning
-last_updated: "2026-06-13T21:11:08.090Z"
+last_updated: "2026-06-14T00:15:00.000Z"
 last_activity: 2026-06-13
 progress:
   total_phases: 0
@@ -20,14 +20,15 @@ progress:
 See: .planning/PROJECT.md (updated 2026-06-11)
 
 **Core value:** Near-Opus intelligence at Sonnet cost for coding tasks, through strategic advisor consultation at high-leverage moments
-**Current focus:** v1.0.1 shipped (plugin 1.0.1, PR #1 merged); planning next milestone
+**Current focus:** Planning v2.0.0 (Prefixed skill names) -- breaking `lz-` skill rename + release. Fable advisor descoped (subagent-Fable API-blocked; SEED-001).
 
 ## Deferred Items
 
-Items acknowledged and deferred at the v1.0.1 milestone close (2026-06-11):
+Items deferred across milestones (v1.0.1 close 2026-06-11; v2.0.0 additions tagged by category):
 
 | Category | Item | Status | Note |
 |----------|------|--------|------|
+| feature-deferred (v2.0.0) | on-demand-fable-advisor | deferred | Subagent-Fable blocked server-side (Anthropic API 404 "not available, use Opus 4.8"); interactive `/model fable` works but subagent dispatch is denied. Override mechanism proven (opus->haiku via subagent JSONL). SEED-001; evidence in research/FABLE-OVERRIDE-PROBE.md. Revisit when Anthropic enables Fable for subagent dispatch. |
 | backlog-todo | research-rtk-command-suitability-for-skills-and-agents | open | Future investigation: RTK command suitability for skills/agents (plugin-tooling); out of v1.0.1 scope -- carries to backlog. |
 | tech-debt (Phase 12) | dangling "Reviewer Escalation Hook" cross-ref | open | Pre-existing, out-of-scope; review-skill side IS wired, security-skill side unwired. Track as backlog. |
 | tech-debt (Phase 13) | FIX-R2-D budget-gate tolerance band | moot | Recorded deferred decision; now moot -- SC-4 closed GREEN 6/6 via genuine concision, no tolerance band needed. |

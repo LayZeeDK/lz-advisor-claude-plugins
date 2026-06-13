@@ -14,21 +14,22 @@ Near-Opus intelligence at Sonnet cost for coding tasks, achieved through strateg
 
 **Prior:** v1.0 MVP -- 2026-06-01, plugin 1.0.0 -- the full advisor / execute / review / security-review plugin (16 phases, 80 plans). Archived in `milestones/v1.0-*`.
 
-**Next:** Active milestone **v2.0.0 "Fable and prefixed skill names"** -- see Current Milestone below. Parked backlog item: research RTK command suitability for skills/agents (see STATE.md "Deferred Items").
+**Next:** Active milestone **v2.0.0 "Prefixed skill names"** -- see Current Milestone below. Parked backlog items: Fable advisor (deferred -- subagent-Fable is API-blocked; SEED-001); research RTK command suitability for skills/agents (see STATE.md "Deferred Items").
 
-## Current Milestone: v2.0.0 Fable and prefixed skill names
+## Current Milestone: v2.0.0 Prefixed skill names
 
-**Goal:** Fix the critical built-in-command shadowing bug by prefixing all four skills with `lz-`, and add on-demand Fable advisor model selection -- shipped as one breaking release.
+**Goal:** Fix the critical built-in-command shadowing bug by prefixing all four skills with `lz-`, shipped as one breaking release.
 
 **Target features:**
-- `lz-` prefixed skill names (`lz-plan`, `lz-execute`, `lz-review`, `lz-security-review`) -- fixes silent shadowing of Claude Code's built-in `/plan`, `/review`, `/security-review`. BREAKING.
-- On-demand Fable advisor: a `--model fable` (or natural-language "Fable") argument selects `claude-fable-5`; default stays Opus. Single agent per role keeps `model: opus` frontmatter as the safe default; the skill passes a per-invocation model override; resolved model is logged for observability.
-- Release + publication: plugin 1.0.1 -> 2.0.0 across all 5 surfaces, `CHANGELOG.md` `[2.0.0]` entry with a rename migration table, git tag `v2.0.0`, GitHub Release.
+- `lz-` prefixed skill names (`lz-plan`, `lz-execute`, `lz-review`, `lz-security-review`) -- fixes silent shadowing of Claude Code's built-in `/plan`, `/review`, `/security-review`. BREAKING. All four renamed for suite consistency + `/lz-` autocomplete grouping (per user decision), though only plan/review/security-review collide.
+- Release + publication: plugin 1.0.1 -> 2.0.0 across all 5 surfaces, `CHANGELOG.md` `[2.0.0]` entry with a rename migration table (old -> new, bare + qualified), git tag `v2.0.0`, GitHub Release.
+
+**Deferred (was originally in scope):**
+- On-demand Fable advisor -- DESCOPED 2026-06-14 after empirical probing proved subagent-Fable is blocked server-side by Anthropic (API `404 not_found`: "Claude Fable 5 is not available. Please use Opus 4.8"), even though interactive `/model fable` works as a primary model. The override mechanism itself is proven (opus->haiku, observable via subagent JSONL); only Fable access for subagent dispatch is denied. Deferred to **SEED-001**; evidence in `.planning/research/FABLE-OVERRIDE-PROBE.md`.
 
 **Key context:**
-- Per-invocation `model` override resolution priority (2) beats frontmatter (3); failure mode degrades safely to the Opus default (never broken).
-- Fable 5 is ~2x Opus cost and its subscription access suspends 2026-06-23 (credits after) -- strictly opt-in, Opus default, graceful fallback. Fable safety classifiers may refuse/hand-off security content (weakest fit for security-review).
-- `CLAUDE_CODE_SUBAGENT_MODEL` (priority 1) can override the plugin's choice -- document it.
+- Rename lockstep: 3 cross-ref classes -- MUST-change (skill dirs via `git mv` + `name:` fields); change-for-accuracy (READMEs, CLAUDE.md incl. `claude -p` examples, PROJECT.md); looks-relevant-but-NOT (eval JSON triggers, agent-path fixtures, plugin-name manifests). Closing `git grep` gate (Phase 9 precedent).
+- Bare-form collision verification MUST use the interactive picker, not a headless `claude -p` probe (headless is blind to bare-form collisions).
 
 ## Requirements
 
@@ -132,7 +133,7 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-06-13 -- **Milestone v2.0.0 (Fable and prefixed skill names) started** via `/gsd-new-milestone`. Goal: fix the critical built-in shadowing bug by prefixing all four skills with `lz-` (`lz-plan`/`lz-execute`/`lz-review`/`lz-security-review` -- BREAKING) and add on-demand Fable advisor selection (`--model fable`, default Opus; single agent per role retains `model: opus` frontmatter as the safe default and passes a per-invocation `model: claude-fable-5` override, resolution priority 2 > 3; resolved model logged). Release: plugin 1.0.1 -> 2.0.0 across 5 surfaces, CHANGELOG `[2.0.0]` + rename migration table, git tag `v2.0.0`, GitHub Release. Phase numbering continues from 13. Requirements and roadmap to follow.*
+*Last updated: 2026-06-14 -- **Milestone v2.0.0 (Prefixed skill names) started** via `/gsd-new-milestone`. Goal: fix the critical built-in shadowing bug by prefixing all four skills with `lz-` (`lz-plan`/`lz-execute`/`lz-review`/`lz-security-review` -- BREAKING), then release (plugin 1.0.1 -> 2.0.0 across 5 surfaces, CHANGELOG `[2.0.0]` + rename migration table, git tag `v2.0.0`, GitHub Release). Phase numbering continues from 13. The originally-scoped second feature -- on-demand Fable advisor -- was DESCOPED after research + empirical probing proved subagent-Fable is blocked server-side by Anthropic (API `404 not_found`: "Claude Fable 5 is not available. Please use Opus 4.8"); the override mechanism is proven (opus->haiku via subagent JSONL) but Fable access for subagent dispatch is denied. Deferred to SEED-001; evidence in `research/FABLE-OVERRIDE-PROBE.md`. Requirements and roadmap to follow.*
 
 *Last updated: 2026-06-11 -- **v1.0.1 milestone SHIPPED + ARCHIVED.** PR #1 (`feat/v1_0_1-no-review-shorthands`) merged to `main` via merge commit `cb4ae89`. Post-merge, four `/code-review` passes drove the branch to convergence: pass 1 found a prompt contradiction + a fixture coverage gap; pass 2 found imperfections in the pass-1 fixes (incomplete hedge-placement fix, a PFV coverage gap, a singular/plural regression); pass 3 found one narrow multi-paragraph PFV under-count; pass 4 found only two stale comments -- each round fixed via `/gsd-quick --validate` (planner + checker + executor + verifier) with both budget fixtures held GREEN, then a final inline comment cleanup. Milestone archived via `/gsd-complete-milestone`: ROADMAP/REQUIREMENTS/AUDIT -> `milestones/v1.0.1-*`, ROADMAP collapsed to milestone groupings, REQUIREMENTS.md removed (fresh for next milestone), git tag `v1.0.1`. Acknowledged deferred at close: the RTK-command-suitability research todo + 3 non-critical audit tech-debt items (see STATE.md "Deferred Items"). Tag NOT pushed (marketplace publication deferred, mirroring v1.0). Next: `/gsd-new-milestone`.*
 
