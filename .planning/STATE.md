@@ -2,14 +2,14 @@
 gsd_state_version: 1.0
 milestone: v2.0.0
 milestone_name: Prefixed skill names
-status: planning
+status: executing
 stopped_at: Phase 14 context gathered
-last_updated: "2026-06-13T22:33:22.583Z"
-last_activity: 2026-06-14 — Milestone v2.0.0 roadmap created (Phases 14-15)
+last_updated: "2026-06-13T23:26:37.471Z"
+last_activity: 2026-06-13 -- Phase 14 planning complete
 progress:
   total_phases: 2
   completed_phases: 0
-  total_plans: 0
+  total_plans: 1
   completed_plans: 0
   percent: 0
 ---
@@ -41,8 +41,8 @@ Items deferred across milestones (v1.0.1 close 2026-06-11; v2.0.0 additions tagg
 
 Phase: 14 (lz- skill rename) -- not started
 Plan: —
-Status: Roadmap created (Phases 14-15); ready to plan Phase 14
-Last activity: 2026-06-14 — Milestone v2.0.0 roadmap created (Phases 14-15)
+Status: Ready to execute
+Last activity: 2026-06-13 -- Phase 14 planning complete
 
 ### Milestone v2.0.0 roadmap
 
