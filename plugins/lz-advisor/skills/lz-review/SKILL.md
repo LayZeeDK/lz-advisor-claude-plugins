@@ -1,5 +1,5 @@
 ---
-name: review
+name: lz-review
 description: >
   This skill should be used when the user wants a code quality
   review of completed work, looking for bugs, logic errors, and

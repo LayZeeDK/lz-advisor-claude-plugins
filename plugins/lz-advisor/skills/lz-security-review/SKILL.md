@@ -1,5 +1,5 @@
 ---
-name: security-review
+name: lz-security-review
 description: >
   This skill should be used when the user wants a security-focused
   review of code, looking for vulnerabilities, attack surfaces, and

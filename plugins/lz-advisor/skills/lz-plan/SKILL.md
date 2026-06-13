@@ -1,5 +1,5 @@
 ---
-name: plan
+name: lz-plan
 description: >
   This skill should be used when the user wants to plan a coding
   task before starting implementation. Trigger phrases include

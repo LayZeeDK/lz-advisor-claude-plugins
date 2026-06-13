@@ -1,5 +1,5 @@
 ---
-name: execute
+name: lz-execute
 description: >
   This skill should be used when the user wants to implement,
   build, or execute a coding task with strategic advisor guidance.
