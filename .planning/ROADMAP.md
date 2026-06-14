@@ -105,7 +105,7 @@ Full phase details, success criteria, and the gap-closure trail are archived in 
 | 12. Atomic grouped-grammar rewrite | v1.0.1 | 4/4 | Complete | 2026-06-07 |
 | 13. Empirical verification | v1.0.1 | 7/7 | Complete | 2026-06-08 |
 | 14. lz- skill rename | v2.0.0 | 1/1 | Complete    | 2026-06-14 |
-| 14.1 lz-security-review canonical severities (INSERTED) | v2.0.0 | 1/1 | Complete   | 2026-06-14 |
+| 14.1 lz-security-review canonical severities (INSERTED) | v2.0.0 | 1/1 | Complete    | 2026-06-14 |
 | 14.2 Verdict scope marker label rename (INSERTED) | v2.0.0 | -/- | Not started | - |
 | 15. v2.0.0 release & publication | v2.0.0 | -/- | Not started | - |
 
