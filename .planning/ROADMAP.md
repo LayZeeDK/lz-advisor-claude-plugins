@@ -29,6 +29,26 @@
 Plans:
 - [x] 14-01-PLAN.md -- git mv the 4 skill dirs + name: fields, lockstep cross-reference accuracy sweep, closing 5-pattern git grep gate + RENAME-02 interactive-picker recipe (human_needed)
 
+#### Phase 14.1: lz-security-review canonical severities (Critical/High/Medium) (INSERTED)
+
+**Goal:** Migrate the lz-security-review skill + security-reviewer agent from the `Critical/Important/Suggestions/Questions` taxonomy to canonical security severities (`Critical/High/Medium`) as a breaking change. Scope is security-review only (lz-review keeps its taxonomy). Decided in `/gsd-discuss-phase` (D-01..D-18 in `14.1-CONTEXT.md`): the scale is the canonical 5-tier `Critical/High/Medium/Low/Informational` plus a non-severity `### Open Questions` section, omit-when-empty; the ROADMAP goal text + Phase 15 CHANGELOG read `C/H/M/L/Informational` (Task 5 lands the goal-text edit in the atomic execution commit).
+**Requirements:** SEV-AGNT-01, SEV-AGNT-02, SEV-AGNT-03, SEV-AGNT-04, SEV-SKILL-01, SEV-FIX-01, SEV-DOC-01, SEV-SCOPE-01
+**Depends on:** Phase 14
+**Plans:** 1 plan (ONE atomic lockstep unit -- agent + skill + fixture + 2 doc touch-ups, committed as ONE commit per the WR-05 few-shot-drift discipline)
+
+Plans:
+- [ ] 14.1-01-PLAN.md -- atomic 5-tier severity migration: agent grammar (headers/skeleton/all worked examples/output_constraints/hedge/Class-2 enum), skill render-verbatim + D-07 caveat, fixture SEV_HEADERS retarget + section-aware D-14 cap + omit-when-empty self-test, ROADMAP goal text + context-packaging.md enum-divergence annotation, closing asymmetric scope-fence proof
+
+#### Phase 14.2: Verdict scope marker label rename (INSERTED)
+
+**Goal:** Rename the human-facing `**Verdict scope:**` label on the cross-skill provenance marker to kill the "Verdict scope: scope:" word-on-word repeat (cosmetic / output-contract change, not an invocation-surface break). The machine-readable `scope: <value>` token is UNCHANGED, so the downstream scope-match parser keeps working. **Open decision for discuss:** which label wins (`Verdict axis:` lean) -- see `14.2-SEED.md`.
+**Requirements**: TBD (derive in /gsd-discuss-phase 14.2)
+**Depends on:** Phase 14
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd-plan-phase 14.2 to break down)
+
 #### Phase 15: v2.0.0 release & publication
 **Requirements:** REL-01, REL-02, REL-03
 **Goal:** Ship the rename as v2.0.0 -- atomic version bump, CHANGELOG with migration table, git tag, and GitHub Release. Gated on Phase 14 verification.
@@ -37,7 +57,7 @@ Plans:
 2. `CHANGELOG.md` `[2.0.0]` entry documents the breaking rename with an old->new migration table (bare + qualified forms) + a compare link; the plugin README "What's New" shows the 2.0.0 entry.
 3. A `v2.0.0` git tag is pushed to origin and a GitHub Release is published with the `[2.0.0]` notes.
 
-**Coverage:** 6/6 requirements mapped (RENAME-01..03 -> Phase 14; REL-01..03 -> Phase 15).
+**Coverage:** 6/6 requirements mapped (RENAME-01..03 -> Phase 14; REL-01..03 -> Phase 15). Phase 14.1 (SEV-AGNT-01..04, SEV-SKILL-01, SEV-FIX-01, SEV-DOC-01, SEV-SCOPE-01) + Phase 14.2 are inserted scope tracked separately.
 
 <details>
 <summary>[SHIPPED] v1.0 MVP (Phases 1-10) -- 2026-06-01, plugin 1.0.0</summary>
@@ -85,6 +105,8 @@ Full phase details, success criteria, and the gap-closure trail are archived in 
 | 12. Atomic grouped-grammar rewrite | v1.0.1 | 4/4 | Complete | 2026-06-07 |
 | 13. Empirical verification | v1.0.1 | 7/7 | Complete | 2026-06-08 |
 | 14. lz- skill rename | v2.0.0 | 1/1 | Complete    | 2026-06-14 |
+| 14.1 lz-security-review canonical severities (INSERTED) | v2.0.0 | 0/1 | Planned | - |
+| 14.2 Verdict scope marker label rename (INSERTED) | v2.0.0 | -/- | Not started | - |
 | 15. v2.0.0 release & publication | v2.0.0 | -/- | Not started | - |
 
-v1.0 + v1.0.1 shipped. **Active: v2.0.0 (Prefixed skill names)** -- 2 phases (14-15), continuing numbering from Phase 13. Next: `/gsd-plan-phase 14`. See `.planning/MILESTONES.md` for shipped-milestone summaries and `milestones/` for full detail.
+v1.0 + v1.0.1 shipped. **Active: v2.0.0 (Prefixed skill names)** -- 4 phases (14, 14.1, 14.2, 15), continuing numbering from Phase 13. Next: `/gsd-execute-phase 14.1`. See `.planning/MILESTONES.md` for shipped-milestone summaries and `milestones/` for full detail.
