@@ -4,8 +4,8 @@ milestone: v2.0.0
 milestone_name: Prefixed skill names
 status: executing
 stopped_at: Phase 15 context gathered
-last_updated: "2026-06-14T11:13:53.452Z"
-last_activity: 2026-06-14 -- Phase 15 planning complete
+last_updated: "2026-06-14T11:17:40.053Z"
+last_activity: 2026-06-14 -- Phase 15 execution started
 progress:
   total_phases: 4
   completed_phases: 3
@@ -39,10 +39,10 @@ Items deferred across milestones (v1.0.1 close 2026-06-11; v2.0.0 additions tagg
 
 ## Current Position
 
-Phase: 15
-Plan: Not started
-Status: Ready to execute
-Last activity: 2026-06-14 -- Phase 15 planning complete
+Phase: 15 (v2.0.0 release & publication) — EXECUTING
+Plan: 1 of 1
+Status: Executing Phase 15
+Last activity: 2026-06-14 -- Phase 15 execution started
 
 ### Milestone v2.0.0 roadmap
 
