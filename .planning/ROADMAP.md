@@ -12,8 +12,8 @@
 
 **Goal:** Fix the critical built-in-command shadowing bug by prefixing all four skills with `lz-`, shipped as a breaking (MAJOR) release.
 
-- [ ] **Phase 14: lz- skill rename** -- RENAME-01, RENAME-02, RENAME-03
-- [ ] **Phase 15: v2.0.0 release & publication** -- REL-01, REL-02, REL-03
+- [x] **Phase 14: lz- skill rename** -- RENAME-01, RENAME-02, RENAME-03
+- [x] **Phase 15: v2.0.0 release & publication** -- REL-01, REL-02, REL-03
 
 #### Phase 14: lz- skill rename
 **Requirements:** RENAME-01, RENAME-02, RENAME-03
@@ -60,7 +60,7 @@ Plans:
 **Plans:** 1 plan
 
 Plans:
-- [ ] 15-01-PLAN.md -- atomic 5-surface 1.0.1 -> 2.0.0 bump + CHANGELOG [2.0.0] migration table + README What's New collapse (committed on release/v2.0.0), then PR -> true merge commit -> tag the merge commit -> push -> publish GitHub Release (Latest)
+- [x] 15-01-PLAN.md -- atomic 5-surface 1.0.1 -> 2.0.0 bump + CHANGELOG [2.0.0] migration table + README What's New collapse (committed on release/v2.0.0), then PR -> true merge commit -> tag the merge commit -> push -> publish GitHub Release (Latest)
 
 **Coverage:** 6/6 requirements mapped (RENAME-01..03 -> Phase 14; REL-01..03 -> Phase 15). Phase 14.1 (SEV-AGNT-01..04, SEV-SKILL-01, SEV-FIX-01, SEV-DOC-01, SEV-SCOPE-01) + Phase 14.2 (VLABEL-01, VLABEL-02) are inserted scope tracked separately.
 
@@ -112,6 +112,6 @@ Full phase details, success criteria, and the gap-closure trail are archived in 
 | 14. lz- skill rename | v2.0.0 | 1/1 | Complete    | 2026-06-14 |
 | 14.1 lz-security-review canonical severities (INSERTED) | v2.0.0 | 1/1 | Complete    | 2026-06-14 |
 | 14.2 Verdict scope marker label rename (INSERTED) | v2.0.0 | 1/1 | Complete    | 2026-06-14 |
-| 15. v2.0.0 release & publication | v2.0.0 | -/- | Not started | - |
+| 15. v2.0.0 release & publication | v2.0.0 | 1/1 | Complete   | 2026-06-14 |
 
 v1.0 + v1.0.1 shipped. **Active: v2.0.0 (Prefixed skill names)** -- 4 phases (14, 14.1, 14.2, 15), continuing numbering from Phase 13. Next: `/gsd-execute-phase 14.1`. See `.planning/MILESTONES.md` for shipped-milestone summaries and `milestones/` for full detail.

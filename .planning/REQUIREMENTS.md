@@ -18,9 +18,9 @@
 
 ### Release & Publication (REL)
 
-- [ ] **REL-01**: Plugin version is `2.0.0` across all 5 surfaces (`plugin.json` + the 4 `SKILL.md` `version:` fields), bumped atomically.
-- [ ] **REL-02**: `CHANGELOG.md` has a `[2.0.0]` entry documenting the breaking rename with a migration table (old -> new, bare AND qualified forms) + a compare link; the plugin README "What's New" shows the 2.0.0 entry.
-- [ ] **REL-03**: A `v2.0.0` git tag is pushed to origin and a GitHub Release is published with the `[2.0.0]` notes.
+- [x] **REL-01**: Plugin version is `2.0.0` across all 5 surfaces (`plugin.json` + the 4 `SKILL.md` `version:` fields), bumped atomically. Verified Phase 15 (commit 672be13; 5/5 surfaces, zero stale 1.0.1).
+- [x] **REL-02**: `CHANGELOG.md` has a `[2.0.0]` entry documenting the breaking rename with a migration table (old -> new, bare AND qualified forms) + a compare link; the plugin README "What's New" shows the 2.0.0 entry. Verified Phase 15 (8-row table + compare/v1.0.1...v2.0.0 link; README collapsed to 2.0.0).
+- [x] **REL-03**: A `v2.0.0` git tag is pushed to origin and a GitHub Release is published with the `[2.0.0]` notes. Verified Phase 15 (PR #2 merged with merge commit c0a488e; annotated tag on the merge commit; Release published Latest, v1.0.1 demoted).
 
 ## Future Requirements (deferred)
 
@@ -48,6 +48,6 @@
 | RENAME-03 | Phase 14 | Planned |
 | VLABEL-01 | Phase 14.2 | Complete |
 | VLABEL-02 | Phase 14.2 | Complete |
-| REL-01 | Phase 15 | Planned |
-| REL-02 | Phase 15 | Planned |
-| REL-03 | Phase 15 | Planned |
+| REL-01 | Phase 15 | Complete |
+| REL-02 | Phase 15 | Complete |
+| REL-03 | Phase 15 | Complete |
