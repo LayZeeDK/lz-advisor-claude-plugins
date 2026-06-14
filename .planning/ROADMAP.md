@@ -57,6 +57,11 @@ Plans:
 2. `CHANGELOG.md` `[2.0.0]` entry documents the breaking rename with an old->new migration table (bare + qualified forms) + a compare link; the plugin README "What's New" shows the 2.0.0 entry.
 3. A `v2.0.0` git tag is pushed to origin and a GitHub Release is published with the `[2.0.0]` notes.
 
+**Plans:** 1 plan
+
+Plans:
+- [ ] 15-01-PLAN.md -- atomic 5-surface 1.0.1 -> 2.0.0 bump + CHANGELOG [2.0.0] migration table + README What's New collapse (committed on release/v2.0.0), then PR -> true merge commit -> tag the merge commit -> push -> publish GitHub Release (Latest)
+
 **Coverage:** 6/6 requirements mapped (RENAME-01..03 -> Phase 14; REL-01..03 -> Phase 15). Phase 14.1 (SEV-AGNT-01..04, SEV-SKILL-01, SEV-FIX-01, SEV-DOC-01, SEV-SCOPE-01) + Phase 14.2 (VLABEL-01, VLABEL-02) are inserted scope tracked separately.
 
 <details>
