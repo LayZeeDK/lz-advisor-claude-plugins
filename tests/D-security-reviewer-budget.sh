@@ -249,21 +249,25 @@ pass "anti-vacuous: matched_count $matched_count >= $MIN_FINDINGS"
 # carries a [CVE]/[GHSA]/[CWE] bracket (a hardening note that genuinely needs 75w
 # has an exploitation path and belongs on a vulnerability rung, not Informational).
 # The C/H/M/L (+ Open Questions) tiers keep the bracket-keyed 75w escape.
+# D-14: the per-finding cap decision, factored into one function so the main
+# budget loop AND the D-14 regression self-check (WR-03) below share a SINGLE
+# source of truth -- a future edit that drops the ### Informational branch is
+# then caught by the self-check, not silently left un-exercised.
+decide_cap() {
+  local _body="$1" _sev="$2" _cap="$PER_ENTRY_CAP"
+  if [[ "$_body" =~ \[(CVE|GHSA|CWE) ]]; then _cap="$AUTO_CLARITY_CAP"; fi
+  # ### Informational is DENIED the 75w escape -> hard 28w even with a bracket.
+  if [[ "$_sev" =~ ^###[[:space:]]+Informational([[:space:]]*)$ ]]; then _cap="$PER_ENTRY_CAP"; fi
+  printf '%s' "$_cap"
+}
+
 for i in "${!FINDING_BODIES[@]}"; do
   body="${FINDING_BODIES[$i]}"
   finding_sev="${FINDING_SEVS[$i]}"
   wc_words=$(printf '%s' "$body" | wc -w)
-  cap="$PER_ENTRY_CAP"
+  cap="$(decide_cap "$body" "$finding_sev")"
   is_auto_clarity=0
-  if [[ "$body" =~ \[(CVE|GHSA|CWE) ]]; then
-    cap="$AUTO_CLARITY_CAP"
-    is_auto_clarity=1
-  fi
-  # D-14: force the hard 28w cap under ### Informational, even with a bracket.
-  if [[ "$finding_sev" =~ ^###[[:space:]]+Informational([[:space:]]*)$ ]]; then
-    cap="$PER_ENTRY_CAP"
-    is_auto_clarity=0
-  fi
+  if [ "$cap" -eq "$AUTO_CLARITY_CAP" ]; then is_auto_clarity=1; fi
 
   if [ "$wc_words" -le "$cap" ]; then
     pass "per-entry budget: $wc_words <= $cap"
@@ -281,6 +285,26 @@ for i in "${!FINDING_BODIES[@]}"; do
     fail "per-entry budget exceeded: $wc_words > $cap" "$body"
   fi
 done
+
+# --- D-14 regression self-check (WR-03) -------------------------------------
+# The default self-extract run does not naturally exercise the D-14 section-aware
+# override: the holistic example carries no over-cap bracketed ### Informational
+# finding, and one CANNOT exist in a PASSING example (D-14 caps Informational at
+# the hard 28w regardless of a [CVE]/[GHSA]/[CWE] bracket). Assert the cap
+# decision directly via the shared decide_cap() so a regression that drops or
+# weakens the ### Informational branch fails the gate here -- exercising D-14
+# the way the holistic example cannot.
+D14_BODY='this informational hardening note carries a [CWE-693] bracket and is padded well beyond the twenty-eight word outlier cap on purpose to prove the section-aware override denies the seventy-five word auto-clarity escape for informational findings'
+if [ "$(decide_cap "$D14_BODY" '### Informational')" -eq "$PER_ENTRY_CAP" ]; then
+  pass "D-14 self-check: bracketed ### Informational denied the 75w escape (cap forced to ${PER_ENTRY_CAP}w)"
+else
+  fail "D-14 self-check: ### Informational kept the 75w escape" "section-aware override regressed (WR-03)"
+fi
+if [ "$(decide_cap "$D14_BODY" '### High')" -eq "$AUTO_CLARITY_CAP" ]; then
+  pass "D-14 negative control: same bracketed body under ### High keeps the 75w escape (${AUTO_CLARITY_CAP}w)"
+else
+  fail "D-14 negative control: ### High lost the bracket-keyed 75w escape" "auto-clarity carve-out regressed"
+fi
 
 # #2(a): max_count=15 finding ceiling -- assert matched_count <= MAX_COUNT.
 # Mirrors the agents' <max_count>15</max_count>. Security holistic baseline=6,
