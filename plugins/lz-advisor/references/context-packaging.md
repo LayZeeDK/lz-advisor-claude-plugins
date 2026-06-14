@@ -360,7 +360,7 @@ The scope tag is one of:
 
 ### Output template requirement
 
-Each skill's user-visible output (plan file body, execute completion summary, review summary, security review summary) MUST include a `**Verdict scope:** scope: <value>` line in a recognizable position so downstream skills reading the output can extract the scope mechanically. The 4 SKILL.md files (Plan 07-03 Task 3) place the marker in their output templates.
+Each skill's user-visible output (plan file body, execute completion summary, review summary, security review summary) MUST include a `**Verdict axis:** scope: <value>` line in a recognizable position so downstream skills reading the output can extract the scope mechanically. The 4 SKILL.md files (Plan 07-03 Task 3) place the marker in their output templates.
 
 ### Downstream consumer rule
 

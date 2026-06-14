@@ -206,11 +206,11 @@ If no `<verify_request>` blocks are present in the reviewer's first response (th
 
 The reviewer agent keeps `[Read, Glob]` tool grant per `agents/reviewer.md` -- principle of least privilege per OWASP AI Agent Security Cheat Sheet. The verify_request hook is the structured-output security control that lets the reviewer escalate WITHOUT extending its tool grant.
 
-### Verdict scope marker
+### Verdict axis marker
 
 After the reviewer's verbatim response, append a single line:
 
-`**Verdict scope:** scope: api-correctness`
+`**Verdict axis:** scope: api-correctness`
 
 The default scope for code-quality reviews is `api-correctness`. Reviewers focus on correctness, edge cases, maintainability, and CLAUDE.md violations -- the API-correctness axis. Security threats are out of scope (use `/lz-security-review`); performance and accessibility are out of scope (no scope tag for those; none implied).
 

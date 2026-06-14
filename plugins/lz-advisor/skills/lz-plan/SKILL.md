@@ -207,7 +207,7 @@ done in parallel and which are sequential.>
 
 ## Verdict
 
-**Verdict scope:** scope: api-correctness
+**Verdict axis:** scope: api-correctness
 
 The plan covers correctness of the proposed API integration / framework usage / build-tool orchestration. It does NOT cover security threats (use `/lz-security-review` after implementation), performance (no perf assertions), or accessibility (no a11y assertions). Downstream skills reading this plan MUST check scope-match per `references/context-packaging.md` "Scope-Disambiguated Provenance Markers" before treating the verdict as authoritative for their question.
 ```

@@ -178,11 +178,11 @@ If the security-reviewer rejected a finding the executor packaged, that rejectio
 
 If no security issues were found during scanning (Phase 1 produced zero findings), skip Phase 2 consultation and report directly: "No security vulnerabilities identified in the reviewed scope. Reviewed: [scope]." Note briefly what was examined. Do not invoke the security-reviewer agent with an empty Findings packet.
 
-### Verdict scope marker
+### Verdict axis marker
 
 After the security-reviewer's verbatim response, append a single line:
 
-`**Verdict scope:** scope: security-threats`
+`**Verdict axis:** scope: security-threats`
 
 The default scope for security reviews is `security-threats`. The security-reviewer focuses on OWASP Top 10 vulnerabilities, supply-chain risk, attack surfaces, and threat modeling -- the security-threats axis. API correctness on non-security axes is out of scope (e.g., a review's verdict on framework integration shape does NOT extend to a security clearance, and vice versa).
 

@@ -287,12 +287,12 @@ what tests pass.
 
 ### Completion Verdict (scope-disambiguated)
 
-When summarizing the completed work to the user, include a `**Verdict scope:**` line stating the axis of correctness the verification covers:
+When summarizing the completed work to the user, include a `**Verdict axis:**` line stating the axis of correctness the verification covers:
 
-- For most coding tasks: `**Verdict scope:** scope: api-correctness`
-- For security-focused execute invocations (rare; usually security-review handles those): `**Verdict scope:** scope: security-threats`
-- For performance-focused execute invocations: `**Verdict scope:** scope: performance`
-- For accessibility-focused execute invocations: `**Verdict scope:** scope: accessibility`
+- For most coding tasks: `**Verdict axis:** scope: api-correctness`
+- For security-focused execute invocations (rare; usually security-review handles those): `**Verdict axis:** scope: security-threats`
+- For performance-focused execute invocations: `**Verdict axis:** scope: performance`
+- For accessibility-focused execute invocations: `**Verdict axis:** scope: accessibility`
 
 Default to `scope: api-correctness` unless the task explicitly named a different axis. Per `references/context-packaging.md` "Scope-Disambiguated Provenance Markers", downstream consumers MUST check scope-match before treating the verdict as authoritative.
 </complete>
