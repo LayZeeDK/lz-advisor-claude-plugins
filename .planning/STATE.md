@@ -2,9 +2,9 @@
 gsd_state_version: 1.0
 milestone: v2.0.0
 milestone_name: Prefixed skill names
-status: verifying
-stopped_at: Phase 14 Plan 01 executed (RENAME-01/03 done; gate GREEN; RENAME-02 human_needed)
-last_updated: "2026-06-13T23:44:36.722Z"
+status: ready_to_plan
+stopped_at: Phase 14 complete (1/1) — ready to discuss Phase 15
+last_updated: 2026-06-14T00:13:37.697Z
 last_activity: 2026-06-13 -- Phase 14 Plan 01 complete; awaiting phase verification + RENAME-02 picker check
 progress:
   total_phases: 2
@@ -21,7 +21,7 @@ progress:
 See: .planning/PROJECT.md (updated 2026-06-11)
 
 **Core value:** Near-Opus intelligence at Sonnet cost for coding tasks, through strategic advisor consultation at high-leverage moments
-**Current focus:** Phase 14 — lz-skill-rename
+**Current focus:** Phase 15 — v2.0.0 release & publication
 
 ## Deferred Items
 
@@ -39,10 +39,10 @@ Items deferred across milestones (v1.0.1 close 2026-06-11; v2.0.0 additions tagg
 
 ## Current Position
 
-Phase: 14 (lz-skill-rename) — PLANS COMPLETE, AWAITING VERIFICATION
-Plan: 1 of 1 (complete)
-Status: Phase complete — ready for verification (RENAME-01/03 done, gate GREEN; RENAME-02 human_needed)
-Last activity: 2026-06-13 -- Phase 14 Plan 01 executed
+Phase: 15
+Plan: Not started
+Status: Ready to plan
+Last activity: 2026-06-14
 
 ### Milestone v2.0.0 roadmap
 
@@ -74,7 +74,7 @@ Advisor runtime-proven on Opus 4.8. Final phase: Phase 10 (documentation-hygiene
 
 **Velocity:**
 
-- Total plans completed: 116 (v1.0 milestone, all phases)
+- Total plans completed: 117 (v1.0 milestone, all phases)
 - Average duration: -
 - Total execution time: 0 hours
 
@@ -97,6 +97,7 @@ Advisor runtime-proven on Opus 4.8. Final phase: Phase 10 (documentation-hygiene
 | 11 | 2 | - | - |
 | 12 | 4 | - | - |
 | 13 | 7 | - | - |
+| 14 | 1 | - | - |
 
 **By Phase (v1.0.1 milestone):**
 

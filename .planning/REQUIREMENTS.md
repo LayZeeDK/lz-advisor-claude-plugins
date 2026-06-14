@@ -8,7 +8,7 @@
 ### Skill Rename (RENAME)
 
 - [x] **RENAME-01**: The four skills are invoked as `/lz-plan`, `/lz-execute`, `/lz-review`, `/lz-security-review` -- each skill directory and its `name:` frontmatter renamed with the `lz-` prefix via `git mv` (history preserved). Qualified forms become `lz-advisor:lz-<skill>`.
-- [ ] **RENAME-02**: Selecting Claude Code's built-in `/plan`, `/review`, or `/security-review` no longer invokes an lz-advisor skill -- the bare-name shadowing is gone. Verified in the interactive command picker (NOT a headless `claude -p` probe, which is blind to bare-form collisions).
+- [x] **RENAME-02**: Selecting Claude Code's built-in `/plan`, `/review`, or `/security-review` no longer invokes an lz-advisor skill -- the bare-name shadowing is gone. Verified in the interactive command picker (NOT a headless `claude -p` probe, which is blind to bare-form collisions). Confirmed by human picker check 2026-06-14.
 - [x] **RENAME-03**: All in-repo references to the old skill names are updated in lockstep (plugin + root README, CLAUDE.md including the `claude -p` UAT examples, PROJECT.md, eval workspace references). Closing gate: `git grep` for the old bare skill names returns zero hits under `plugins/lz-advisor/`.
 
 ### Release & Publication (REL)

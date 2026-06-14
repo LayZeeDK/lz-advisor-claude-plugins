@@ -51,17 +51,17 @@ The combined closing gate prints `[GATE-PASS]` at HEAD (commit f9636b8):
 
 ## Recorded observations
 
-_Pending human run. To be filled in by the operator after running steps 2-3 above._
+Human ran the picker check via `/plugin` on 2026-06-14 and reported "All confirmed".
 
 | Bare form | Expected | Observed |
 |-----------|----------|----------|
-| `/plan` | built-in only, no lz-advisor shadow | (pending) |
-| `/review` | built-in only, no lz-advisor shadow | (pending) |
-| `/security-review` | built-in only, no lz-advisor shadow | (pending) |
-| `/execute` | no stale bare lz-advisor entry | (pending) |
-| `/lz-plan` | resolves to lz-advisor plugin skill | (pending) |
-| `/lz-execute` | resolves to lz-advisor plugin skill | (pending) |
-| `/lz-review` | resolves to lz-advisor plugin skill | (pending) |
-| `/lz-security-review` | resolves to lz-advisor plugin skill | (pending) |
+| `/plan` | built-in only, no lz-advisor shadow | confirmed |
+| `/review` | built-in only, no lz-advisor shadow | confirmed |
+| `/security-review` | built-in only, no lz-advisor shadow | confirmed |
+| `/execute` | no stale bare lz-advisor entry | confirmed |
+| `/lz-plan` | resolves to lz-advisor plugin skill | confirmed |
+| `/lz-execute` | resolves to lz-advisor plugin skill | confirmed |
+| `/lz-review` | resolves to lz-advisor plugin skill | confirmed |
+| `/lz-security-review` | resolves to lz-advisor plugin skill | confirmed |
 
-**Verdict:** human_needed -- surfaced to the user by phase verification.
+**Verdict:** PASS -- human confirmed all picker assertions 2026-06-14. RENAME-02 / SC-4 satisfied.
