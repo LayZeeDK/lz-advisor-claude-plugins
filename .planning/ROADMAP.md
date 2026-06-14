@@ -44,10 +44,10 @@ Plans:
 **Goal:** Rename the human-facing `**Verdict scope:**` label on the cross-skill provenance marker to kill the "Verdict scope: scope:" word-on-word repeat (cosmetic / output-contract change, not an invocation-surface break). The machine-readable `scope: <value>` token is UNCHANGED, so the downstream scope-match parser keeps working. **Decided** (/gsd-discuss-phase, D-01..D-04 in `14.2-CONTEXT.md`): the new label is `**Verdict axis:**` (reuses the codebase's own word -- lz-execute:290 "the axis of correctness", context-packaging.md:367 "the relevant axis"); the label-consistent boundary also flips the two `### Verdict scope marker` doc headers to `### Verdict axis marker`; the `scope: <value>` token + parser prose stay frozen; one atomic WR-05 commit; no version work (Phase 15 owns the bump).
 **Requirements:** VLABEL-01 (rename all 9 bold-label sites + the 2 `### Verdict scope marker` doc headers to `Verdict axis`, atomic WR-05 commit), VLABEL-02 (closing `git grep` gate: zero "Verdict scope" under `plugins/lz-advisor/`, `scope: <enum>` token count unchanged at 16, `### Downstream consumer rule` parser prose byte-intact)
 **Depends on:** Phase 14
-**Plans:** 0 plans
+**Plans:** 1 plan
 
 Plans:
-- [ ] TBD (run /gsd-plan-phase 14.2 to break down)
+- [ ] 14.2-01-PLAN.md -- atomic Verdict-scope -> Verdict-axis label rename across all 5 surfaces (9 bold sites + 2 doc headers + lz-execute:290 prose), one WR-05 commit; closing 7 `git grep` gates prove completeness + frozen `scope:` token survival (16) + parser prose byte-intact
 
 #### Phase 15: v2.0.0 release & publication
 **Requirements:** REL-01, REL-02, REL-03
@@ -106,7 +106,7 @@ Full phase details, success criteria, and the gap-closure trail are archived in 
 | 13. Empirical verification | v1.0.1 | 7/7 | Complete | 2026-06-08 |
 | 14. lz- skill rename | v2.0.0 | 1/1 | Complete    | 2026-06-14 |
 | 14.1 lz-security-review canonical severities (INSERTED) | v2.0.0 | 1/1 | Complete    | 2026-06-14 |
-| 14.2 Verdict scope marker label rename (INSERTED) | v2.0.0 | -/- | Not started | - |
+| 14.2 Verdict scope marker label rename (INSERTED) | v2.0.0 | 0/1 | Not started | - |
 | 15. v2.0.0 release & publication | v2.0.0 | -/- | Not started | - |
 
 v1.0 + v1.0.1 shipped. **Active: v2.0.0 (Prefixed skill names)** -- 4 phases (14, 14.1, 14.2, 15), continuing numbering from Phase 13. Next: `/gsd-execute-phase 14.1`. See `.planning/MILESTONES.md` for shipped-milestone summaries and `milestones/` for full detail.
