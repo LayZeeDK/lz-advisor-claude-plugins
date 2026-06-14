@@ -8,13 +8,27 @@ A Claude Code marketplace plugin that implements the advisor strategy -- pairing
 
 Near-Opus intelligence at Sonnet cost for coding tasks, achieved through strategic advisor consultation at high-leverage moments rather than running Opus end-to-end.
 
+## Current Milestone: v2.1.0 lz-deep-research skill
+
+**Goal:** Add a fifth skill, `/lz-advisor:lz-deep-research`, that produces deep, multi-source, fact-checked, CITED research reports with adversarially verified claims -- the advisor strategy applied to research. The `lz-` prefix de-shadows Claude Code's built-in `/deep-research`.
+
+**Target features:**
+- `lz-deep-research` skill: decompose -> parallel web search -> fetch -> extract falsifiable claims -> adversarial verification of the top claims -> cited report with confidence levels
+- Cheap-tier worker subagents (search / extract / verify) for the fan-out + REUSE the existing Opus `advisor` at two read-only gates (scope, synthesis), preserving near-Opus-at-Sonnet-cost
+- Deterministic off-model `bin/lz-deep-research.mjs` aggregator (dedup / rank / vote-tally + quote-vs-stored-excerpt re-check) -- the plugin's first `bin/` component
+- File-blackboard orchestration: immutable per-worker files + receipt-only returns keep the main orchestrator context bounded (spike A2 proven)
+- Adversarial verification: Sonnet-default voters + hardened escalation (contested OR load-bearing OR audit-sample of unanimous upholds); a Haiku-first tier stays gated behind a pre-registered open-book eval (downgrade-only pilot already confirmed viability)
+- Ship as v2.1.0 (additive MINOR): validation fixture, CHANGELOG, README, release
+
+Grounded in this session's converged design (`plans/lz-research-design.md`, ingested into `.planning/research/`), triangulated across three model lineages and four empirical spikes.
+
 ## Current State
 
 **Shipped:** v2.0.0 "Prefixed skill names" -- 2026-06-14, plugin 2.0.0, PR #2 merged (true merge commit `c0a488e`); tag `v2.0.0` + GitHub Release (Latest). All four skills carry the `lz-` prefix (`lz-plan` / `lz-execute` / `lz-review` / `lz-security-review`), fixing the critical bug where the bare names silently shadowed Claude Code's built-in `/plan`, `/review`, `/security-review` (bare-form de-shadowing human picker-confirmed). Bundled refinements: security-review adopts the canonical pentest 5-tier severity scale (Critical/High/Medium/Low/Informational + Open Questions, omit-when-empty), and the verdict provenance-marker label reads `**Verdict axis:**` (the machine `scope:` token is unchanged). Breaking (MAJOR) release with an old->new migration table.
 
 **Prior:** v1.0.1 "No review report shorthands" -- 2026-06-11, plugin 1.0.1, PR #1 -- review/security-review findings grouped under fully spelled-out severity headlines (archived in `milestones/v1.0.1-*`). v1.0 MVP -- 2026-06-01, plugin 1.0.0 -- the full advisor / execute / review / security-review plugin, 16 phases / 80 plans (archived in `milestones/v1.0-*`).
 
-**Next:** No active milestone. Start the next cycle with `/gsd-new-milestone`. Parked backlog: on-demand Fable advisor (deferred -- subagent-Fable is API-blocked; SEED-001); RTK command suitability research for skills/agents (see STATE.md "Deferred Items").
+**Next:** Milestone v2.1.0 "lz-deep-research skill" -- IN PROGRESS (started 2026-06-15 via `/gsd-new-milestone`; requirements + roadmap to follow). Parked backlog: on-demand stronger-than-Opus advisor (SEED-001 -- note Fable/Mythos are now GLOBALLY suspended by a US export-control directive 2026-06-12, so the trigger is further off than the seed records); RTK command suitability research for skills/agents (see STATE.md "Deferred Items").
 
 ## Requirements
 
@@ -66,7 +80,7 @@ The items previously tracked here all shipped in v1.0 and are Validated:
 
 ### Active
 
-None. v1.0, v1.0.1, and v2.0.0 are all shipped. The next milestone's requirements will be defined via `/gsd-new-milestone`.
+Milestone v2.1.0 (lz-deep-research skill) -- requirements being defined via `/gsd-new-milestone`; REQUIREMENTS.md to follow.
 
 ### Out of Scope
 
@@ -135,6 +149,8 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
+*Last updated: 2026-06-15 -- **Milestone v2.1.0 (lz-deep-research skill) started** via `/gsd-new-milestone`. Goal: add a fifth skill `/lz-advisor:lz-deep-research` (de-shadowing the built-in `/deep-research`) that does decompose -> parallel search -> fetch -> extract -> adversarial-verify -> cited report, applying the advisor strategy to research. Grounded in this session's converged design (`plans/lz-research-design.md`): file-blackboard orchestration (immutable per-worker files, bounded main context -- spike A2 proven), deterministic off-model `bin/` aggregator with a quote-vs-stored-excerpt re-check (spike A1 proven), reuse the Opus `advisor` at 2 read-only gates, Sonnet-default adversarial voters + hardened escalation (Haiku-first gated on a pre-registered open-book eval -- downgrade-only viability pilot passed). Additive MINOR (2.0.0 -> 2.1.0). User selected fresh 4-agent domain research + session-design ingest. Phase numbering continues from 15. Requirements and roadmap to follow.*
+
 *Last updated: 2026-06-14 after v2.0.0 milestone -- **v2.0.0 "Prefixed skill names" MILESTONE COMPLETE + ARCHIVED** (plugin 2.0.0). Audit PASSED: 8/8 in-scope requirements (RENAME-01..03, VLABEL-01/02, REL-01..03) + 8/8 inserted-scope SEV-* satisfied with three-source agreement; 6/6 cross-phase integration CLEAN; 6/6 flows. 4 phases (14, 14.1, 14.2, 15), 4 plans, 12 tasks; plugin tree +148/-146 over 10 files (surgical rename + severity migration + label relabel). The breaking `lz-` rename de-shadows the built-in `/plan` / `/review` / `/security-review` (human picker-confirmed) and shipped via PR #2 (true merge commit `c0a488e`), annotated `v2.0.0` tag on origin, GitHub Release marked Latest. Milestone archived via `/gsd-complete-milestone`: ROADMAP/REQUIREMENTS/AUDIT -> `milestones/v2.0.0-*`, ROADMAP collapsed to milestone groupings, REQUIREMENTS.md removed (fresh for next milestone). Acknowledged deferred at close: SEED-001 Fable advisor (subagent-Fable API-blocked) + the RTK-command-suitability research todo + 2 carryover tech-debt items (dangling security-side "Reviewer Escalation Hook" cross-ref; inert ngx `safety/edge-aion-986dae1` quarantine branch). The other 10 `audit-open` flags were false positives (status-less quick-task SUMMARYs, a resolved UAT gap, CONTEXT decision-bullet misreads). Tag + Release were already published in Phase 15, so the close was purely archival. Next: `/gsd-new-milestone`.*
 
 *Last updated: 2026-06-14 -- **Phase 14.2 (verdict-scope-marker-label-rename) COMPLETE** (VERIFICATION passed, 8/8 must-haves; decisions D-01..D-04). Cosmetic output-contract polish: the human-facing provenance-marker label `**Verdict scope:**` was renamed to `**Verdict axis:**` across all 5 plugin surfaces (9 bold-label sites) plus the 2 `### Verdict scope marker` doc headers -> `### Verdict axis marker`, killing the `Verdict scope: scope:` word-on-word repeat ("axis" reuses the codebase's own word -- lz-execute:290 "the axis of correctness", context-packaging.md:367 "the relevant axis"; the swap also fixed the pre-existing lz-execute:290 label/prose mismatch). All 11 occurrences flipped in ONE atomic commit (596d1ef, WR-05 few-shot-drift discipline). The HARD CONSTRAINT held: the machine token `scope: <value>` is byte-frozen (count unchanged at 16), the `### Scope tag values` section + "Scope-Disambiguated Provenance Marker" concept name + `### Downstream consumer rule` parser prose are all untouched, so the downstream `scope:`-match parser is unaffected -- this is provably parser-safe (the consumer keys on the token, never the bold label; `tests/` is marker-blind, verified). Closed by a 7-gate `git grep` static-assertion suite (3 zero-hit + 4 must-survive incl. the token-count=16 survival proof); no new test fixture warranted. NO version/release work (D-03 -- Phase 15 owns the atomic 5-surface 1.0.1 -> 2.0.0 bump; the `[2.0.0]` CHANGELOG should note this label change). Requirements VLABEL-01 (rename) + VLABEL-02 (closing gate + token survival) derived in plan-phase, added to REQUIREMENTS.md traceability, both Complete. Regression gate green (all 4 maintained fixtures pass; reviewer/security-reviewer agent grammar byte-untouched). Plan-checker caught + fixed one BLOCKER pre-execution (gates 4-5 piped through `bc`, absent in this Git Bash env -> swapped to `awk` summation). Next: Phase 15 (v2.0.0 release & publication) -- the final phase of milestone v2.0.0.*

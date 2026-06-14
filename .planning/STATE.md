@@ -1,17 +1,16 @@
 ---
 gsd_state_version: 1.0
-milestone: v2.0.0
-milestone_name: Prefixed skill names
-status: Awaiting next milestone
-stopped_at: "Phase 15 complete -- v2.0.0 published (PR #2 merged, tag + GitHub Release Latest)"
-last_updated: "2026-06-14T18:24:18.082Z"
-last_activity: 2026-06-14 — Milestone v2.0.0 completed and archived
+milestone: v2.1.0
+milestone_name: lz-deep-research skill
+status: planning
+last_updated: "2026-06-14T22:51:32.186Z"
+last_activity: 2026-06-14
 progress:
-  total_phases: 4
-  completed_phases: 4
-  total_plans: 4
-  completed_plans: 4
-  percent: 100
+  total_phases: 0
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
+  percent: 0
 ---
 
 # Project State
@@ -39,10 +38,10 @@ At the v2.0.0 close (2026-06-14) the pre-close `audit-open` flagged 12 items; th
 
 ## Current Position
 
-Phase: Milestone v2.0.0 complete
+Phase: Not started (defining requirements)
 Plan: —
-Status: Awaiting next milestone
-Last activity: 2026-06-14 — Milestone v2.0.0 completed and archived
+Status: Defining requirements
+Last activity: 2026-06-14 — Milestone v2.1.0 started
 
 ### Milestone v2.0.0 roadmap
 
