@@ -1,5 +1,22 @@
 # Milestones
 
+## v2.0.0 Prefixed skill names (Shipped: 2026-06-14)
+
+**Phases completed:** 4 phases (14, 14.1, 14.2, 15), 4 plans, 12 tasks, plugin 1.0.1 -> 2.0.0. Merged via PR #2 (true merge commit `c0a488e`); tag `v2.0.0` + GitHub Release (Latest).
+
+**Delivered:** All four skills renamed with the `lz-` prefix (`lz-plan` / `lz-execute` / `lz-review` / `lz-security-review`) to fix the critical bug where the bare skill names silently shadowed Claude Code's built-in `/plan`, `/review`, and `/security-review`. Shipped as a breaking (MAJOR) release with an old->new migration table. Two contract/cosmetic refinements rode along: the security-review severity scale and the verdict provenance-marker label.
+
+**Key accomplishments:**
+
+- Renamed all four lz-advisor skills (plan/execute/review/security-review -> lz-plan/lz-execute/lz-review/lz-security-review) via `git mv` (history preserved) to de-shadow the built-in `/plan`, `/review`, `/security-review`; complete lockstep cross-reference sweep across 13 files + a GREEN 5-pattern arm64-bracketed `git grep` gate. Bare-form de-shadowing human picker-confirmed (RENAME-02).
+- Migrated the security-review output contract from Critical/Important/Suggestions/Questions to the canonical pentest 5-tier scale Critical/High/Medium/Low/Informational + a non-severity Open Questions section (omit-when-empty), scoped to security-review ONLY -- an intentional vocabulary divergence from lz-review/reviewer -- landed as ONE atomic commit gated by the retargeted budget fixture.
+- Renamed the human-facing provenance-marker label `**Verdict scope:**` -> `**Verdict axis:**` across all 5 plugin surfaces (9 bold sites + 2 doc headers), killing the `Verdict scope: scope:` word-on-word repeat while leaving the machine `scope: <enum>` token (16 occurrences) and the downstream parser prose byte-intact.
+- Shipped as v2.0.0: atomic 5-surface version bump (plugin.json + 4 SKILL.md), CHANGELOG `[2.0.0]` with an 8-row old->new migration table (bare + qualified forms) + compare link, README "What's New" collapsed to 2.0.0, PR #2 merged with a true merge commit, annotated `v2.0.0` tag on origin, and a GitHub Release marked Latest.
+
+**Known deferred items at close:** 2 genuine deferred items acknowledged -- the RTK-command-suitability research todo (backlog) and SEED-001 on-demand Fable advisor (subagent-Fable blocked server-side by Anthropic API 404; override mechanism proven). Plus carryover tech-debt from prior phases (dangling "Reviewer Escalation Hook" security-side cross-ref; inert external-repo `safety/edge-aion-986dae1` quarantine branch). The 10 other `audit-open` flags were false positives (7 status-less quick-task SUMMARYs, 1 resolved UAT gap, 2 CONTEXT decision-bullet misreads). See STATE.md "Deferred Items".
+
+---
+
 ## v1.0.1 No review report shorthands (Shipped: 2026-06-11)
 
 **Phases completed:** 3 phases (11-13), 13 plans, plugin 1.0.0 -> 1.0.1. Merged via PR #1.

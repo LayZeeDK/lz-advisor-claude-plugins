@@ -77,6 +77,42 @@ Both review agents rewritten to emit findings grouped under fully spelled-out se
 
 ---
 
+## Milestone: v2.0.0 -- Prefixed skill names
+
+**Shipped:** 2026-06-14 (plugin 2.0.0, PR #2 merged) | **Phases:** 4 (14, 14.1, 14.2, 15) | **Plans:** 4
+
+### What Was Built
+A breaking (MAJOR) release that prefixed all four skills with `lz-` (`lz-plan` / `lz-execute` / `lz-review` / `lz-security-review`) to fix the critical bug where the bare names silently shadowed Claude Code's built-in `/plan`, `/review`, `/security-review`. Two contract refinements were folded in via mid-milestone decimal inserts: security-review migrated to the canonical pentest 5-tier severity scale (14.1) and the verdict provenance-marker label was renamed `**Verdict scope:**` -> `**Verdict axis:**` (14.2). Shipped with an 8-row CHANGELOG migration table, a true merge commit, an annotated tag, and a GitHub Release (Latest). A surgical product change: plugin tree +148/-146 over 10 files.
+
+### What Worked
+- **Precedent reuse.** Phase 14 mirrored the Phase 9 rename methodology exactly -- `git mv` (history preserved) + lockstep cross-reference sweep + a pathspec-scoped identifier-form `git grep` regression gate -- making the rename mechanical and gate-provable rather than judgment-heavy.
+- **Atomic WR-05 commit discipline.** Each contract change (the severity migration, the label rename) landed as ONE atomic commit, so the few-shot worked examples never went mixed-vocabulary between commits -- the documented few-shot-drift scar stayed closed.
+- **Scope-fence proofs.** 14.1 changed security-review ONLY and proved it by an asymmetric fence (the reviewer surfaces absent from `git status`, the reviewer fixture still green); 14.2 renamed the display label while freezing the machine `scope:` token (count-unchanged gate). Both made "I didn't touch the frozen surface" a checkable assertion, not a claim.
+- **Merge-commit-before-tag release.** Tagging the true merge commit (not the branch tip) with an identity guard (`assert tag == merge_sha` before push) produced a clean, Latest-marked Release on the first try.
+
+### What Was Inefficient
+- **Scope creep via inserts.** The milestone opened as a clean two-phase "rename + release" and grew to four phases through two mid-milestone inserts. Both were genuine improvements, but bundling three breaking/contract changes into one MAJOR widened the CHANGELOG and the audit surface. Decimal inserts are cheap mechanically; their cost is release-surface breadth.
+- **Verification-artifact drift.** Phase 15's VALIDATION.md was left a stale draft (sign-off unticked, `nyquist_compliant:false`) even though every REL gate was independently verified green -- the audit could only score nyquist PARTIAL on artifact hygiene. The REQUIREMENTS.md traceability table likewise lagged (RENAME rows stuck at "Planned" while the checkboxes were `[x]`).
+- **Un-automatable check.** RENAME-02 (bare-form de-shadow) is invisible to headless verification -- a `claude -p` probe resolves qualified names and cannot see a bare-form collision -- so it stayed `human_needed` until the interactive-picker check.
+
+### Patterns Established
+- Mechanical behavior-preserving rename: `git mv` + lockstep sweep + identifier-form `git grep` gate, pathspec-scoped to the plugin tree as the structural guard against sweeping frozen `.planning/` history.
+- Scope-fence preservation: the frozen machine TOKEN vocabulary is distinct from the human display LABEL; a label rename must leave the token byte-intact, proven by a must-survive count gate.
+- Per-surface taxonomy divergence: security uses the canonical pentest scale; review keeps the Conventional-Commits-derived lexicon -- divergence proven asymmetrically.
+- Section-aware budget enforcement: a parallel `FINDING_SEVS` array lets the fixture apply a tier-specific cap (Informational denied the 75w auto-clarity escape).
+
+### Key Lessons
+- A bare-form command-shadowing collision is invisible to headless verification; only the interactive picker reveals it. Record such checks as `human_needed` with a precise recipe -- never substitute a structurally-blind probe and call it passed.
+- When renaming a human-facing label that shares a word with a machine token, edit each site individually (never a blanket replace) and add a token-count must-survive gate so "the token was frozen" is provable, not asserted.
+- Flip verification artifacts (VALIDATION.md sign-off, REQUIREMENTS traceability status) at phase close, not at milestone audit -- otherwise the audit scores PARTIAL on pure artifact hygiene while the work is actually done.
+- Mid-milestone inserts are mechanically cheap but widen the release surface; decide deliberately whether a refinement belongs in the current MAJOR or a follow-up.
+
+### Cost Observations
+- Model mix: orchestration on the session model; planner / checker / executor / verifier + the three plugin agents on opus per the quality profile.
+- Low-cost milestone relative to v1.0 / v1.0.1: four single-plan phases, surgical edits, and -- unlike both prior milestones -- no external-repo (`ngx-smart-components`) headless `claude -p` UAT, because the rename is statically gate-provable. The only human-in-the-loop step was the interactive-picker de-shadow check.
+
+---
+
 ## Cross-Milestone Trends
 
-(Trends accumulate from v1.1 onward. Two milestones shipped to date: v1.0 MVP (16 phases / 80 plans, 2026-06-01) and v1.0.1 (3 phases / 13 plans, 2026-06-11). Early signal: heavy use of self-extracting regression fixtures + adversarial `/code-review` convergence loops as the quality mechanism for a prompt-engineering codebase.)
+(Three milestones shipped to date: v1.0 MVP (16 phases / 80 plans, 2026-06-01), v1.0.1 (3 phases / 13 plans, 2026-06-11), and v2.0.0 (4 phases / 4 plans, 2026-06-14). Signals: self-extracting regression fixtures + adversarial `/code-review` convergence loops as the quality mechanism for a prompt-engineering codebase (v1.0, v1.0.1); a shift toward statically gate-provable changes -- `git mv` + pathspec-scoped `git grep` gates + scope-fence count assertions -- that close without external-repo UAT (v2.0.0). Recurring friction across all three: verification/requirement-doc text drifts behind the implementation and gets reconciled at milestone boundaries. Release maturity climbed from "tag, do not push" (v1.0) to PR-merged true-merge-commit tag + GitHub Release Latest (v1.0.1 retro-tagged, v2.0.0 native).)

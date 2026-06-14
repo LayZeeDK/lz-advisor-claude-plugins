@@ -2,10 +2,10 @@
 gsd_state_version: 1.0
 milestone: v2.0.0
 milestone_name: Prefixed skill names
-status: executing
+status: Awaiting next milestone
 stopped_at: "Phase 15 complete -- v2.0.0 published (PR #2 merged, tag + GitHub Release Latest)"
-last_updated: "2026-06-14T17:24:07.018Z"
-last_activity: 2026-06-14 -- Phase 15 execution started
+last_updated: "2026-06-14T18:24:18.082Z"
+last_activity: 2026-06-14 — Milestone v2.0.0 completed and archived
 progress:
   total_phases: 4
   completed_phases: 4
@@ -18,10 +18,10 @@ progress:
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-06-11)
+See: .planning/PROJECT.md (updated 2026-06-14 after v2.0.0 milestone)
 
 **Core value:** Near-Opus intelligence at Sonnet cost for coding tasks, through strategic advisor consultation at high-leverage moments
-**Current focus:** Phase 15 — v2.0.0 release & publication
+**Current focus:** No active milestone -- v2.0.0 (Prefixed skill names) shipped + archived at plugin 2.0.0; start the next cycle with /gsd-new-milestone
 
 ## Deferred Items
 
@@ -35,14 +35,14 @@ Items deferred across milestones (v1.0.1 close 2026-06-11; v2.0.0 additions tagg
 | tech-debt (Phase 13) | FIX-R2-D budget-gate tolerance band | moot | Recorded deferred decision; now moot -- SC-4 closed GREEN 6/6 via genuine concision, no tolerance band needed. |
 | tech-debt (Phase 13) | external-repo safety branch safety/edge-aion-986dae1 (ngx clone) | open | Inert quarantine of a transient UAT stray; ngx main + user work confirmed clean. Cleanup when convenient. |
 
-(The 6 quick-task entries flagged by `audit-open` were false positives -- their SUMMARYs lack a `status:` frontmatter field but all are verified-complete; the Phase 13 UAT "gap" was already `resolved` with 0 open scenarios.)
+At the v2.0.0 close (2026-06-14) the pre-close `audit-open` flagged 12 items; the above were acknowledged-and-deferred, the other 10 were false positives: 7 quick-task entries (their SUMMARYs lack a `status:` frontmatter field but all are verified-complete), 1 resolved UAT gap (Phase 14 `14-HUMAN-UAT.md`, 0 open scenarios), and 2 CONTEXT "open questions" (Phase 14.1 + 15 -- actually locked D-NN decisions, not open questions).
 
 ## Current Position
 
-Phase: 15 (v2.0.0 release & publication) — EXECUTING
-Plan: 1 of 1
-Status: Executing Phase 15
-Last activity: 2026-06-14 -- Phase 15 execution started
+Phase: Milestone v2.0.0 complete
+Plan: —
+Status: Awaiting next milestone
+Last activity: 2026-06-14 — Milestone v2.0.0 completed and archived
 
 ### Milestone v2.0.0 roadmap
 
@@ -193,10 +193,10 @@ Recent decisions affecting current work (v1.0.1):
 
 ## Session Continuity
 
-Last session: 2026-06-14T17:24:07.012Z
-Stopped at: Phase 15 complete -- v2.0.0 published (PR #2 merged, tag + GitHub Release Latest)
+Last session: 2026-06-14 -- v2.0.0 milestone completed and archived via /gsd-complete-milestone
+Stopped at: Milestone v2.0.0 complete -- ROADMAP/REQUIREMENTS/AUDIT archived to milestones/v2.0.0-*, ROADMAP collapsed to milestone groupings, REQUIREMENTS.md removed (fresh for next milestone), PROJECT.md evolved, RETROSPECTIVE.md appended. Tag v2.0.0 + GitHub Release (Latest) were already published in Phase 15, so the close was purely archival.
 Resume file: None
-Resume next: Phase 14.2 verification (verify_phase_goal -> spawn gsd-verifier for 14.2-VERIFICATION.md). The single atomic rename plan is executed and committed (596d1ef); all 7 git grep gates GREEN (3 zero-hit: **Verdict scope:** / ### Verdict scope marker / Verdict scope all exit 1; 4 must-survive: **Verdict axis:**=9, ### Verdict axis marker=2, frozen scope: <enum> token=16 UNCHANGED, ### Downstream consumer rule parser prose=1). VLABEL-01/VLABEL-02 added to REQUIREMENTS.md (the inserted-phase requirements were not in the original v2.0.0 milestone scope) and marked Complete. NEXT: run the independent phase-goal verification (gsd-verifier) to produce 14.2-VERIFICATION.md. No version/release work performed (D-03; Phase 15 owns the atomic 5-surface 1.0.1 -> 2.0.0 bump).
+Resume next: Start the next milestone with /gsd-new-milestone (questioning -> research -> requirements -> roadmap). Phase numbering continues from 15.
 
 ## Operator Next Steps
 
