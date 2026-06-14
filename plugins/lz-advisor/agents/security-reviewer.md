@@ -300,7 +300,7 @@ Per-section budgets (this block supersedes the prior aggregate-300w prose; per t
     <per_entry max_words="22" outlier_soft_cap="28" auto_clarity_cap="75"/>
   </section>
   <max_count>15</max_count>
-  <auto_clarity_carve_out cap="75">A finding under `### Critical` / `### High` / `### Medium` / `### Low` (or `### Open Questions`) whose body carries a [CVE-...] / [GHSA-...] / [CWE-...] bracket may drop the terse one-line shape for full prose; its per-entry budget escalates from the 28w outlier soft cap to 75 words. Security advisories need full prose. `### Informational` is DENIED this escape (hard 28w, D-14): a hardening note that genuinely needs 75w has an exploitation path and therefore belongs on a vulnerability rung, not Informational. A bare [CWE-xxx] class reference may still appear in an Informational entry without the long form.
+  <auto_clarity_carve_out cap="75">A finding under `### Critical` / `### High` / `### Medium` / `### Low` (or `### Open Questions`) whose body carries a [CVE-...] / [GHSA-...] / [CWE-...] bracket may drop the terse one-line shape for full prose; its per-entry budget escalates from the 28w outlier soft cap to 75 words. Security advisories need full prose. `### Informational` is DENIED this escape (hard 28w, D-14): a hardening note that genuinely needs 75w has an exploitation path and therefore belongs on a vulnerability rung, not Informational. A bare [CWE-xxx] class reference may still appear in an Informational entry without the long form.</auto_clarity_carve_out>
   <section name="per_finding_validation" type="repeating" optional="true">
     <heading>### Per-finding validation</heading>
     <per_entry max_words="60"/>

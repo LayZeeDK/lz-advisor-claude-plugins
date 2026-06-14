@@ -288,7 +288,7 @@ authoritative and do NOT re-verify them.
 - Finding N: [title]
   - File: `path:line-range`
   - Severity (initial): [Critical/Important/Suggestion for review;
-    Critical/Important/Suggestion for security-review]
+    Critical/High/Medium/Low/Informational for security-review]
   - OWASP category (security-review only): [e.g., A03 Injection]
   - Description: [one paragraph]
   - Code context: [fenced block showing the relevant lines]
@@ -316,7 +316,7 @@ developer machine + CI/CD build environment.
 
 ## Findings
 1. @compodoc/compodoc not in package.json -- File: package.json:1-40
-   Severity: Important
+   Severity: High
    OWASP: A06 Vulnerable and Outdated Components
    Description: Compodoc is a transitive dep, so `npm install` may resolve
    a different version than the one tested. A malicious dep higher in the
