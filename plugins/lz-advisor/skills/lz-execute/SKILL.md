@@ -16,7 +16,7 @@ description: >
   completed code, or run security audits -- those are handled by
   sibling skills lz-plan, lz-review, and
   lz-security-review respectively.
-version: 1.0.1
+version: 2.0.0
 allowed-tools: Agent(lz-advisor:advisor), Read, Glob, Edit, Write, Bash(git:*), WebSearch, WebFetch
 ---
 

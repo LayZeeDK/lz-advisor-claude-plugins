@@ -76,29 +76,15 @@ Opus 4.7 (released 2026-04-16) is auto-selected via the `opus` alias; no user ac
 
 ## What's New
 
-### 1.0.1
+### 2.0.0
 
-Review report grammar overhaul. The `/lz-review` and `/lz-security-review` agents now
-present findings GROUPED under fully spelled-out severity headlines --
-`### Critical`, `### Important`, `### Suggestions`, and `### Questions` -- in a
-fixed order, replacing the prior inline two-letter severity fragment shorthand
-that prefixed each finding line. Findings carry continuous integer numbers across all sections so
-cross-references stay unambiguous, every severity section is always emitted with
-an explicit `(none)` marker when empty, and the OWASP `[Axx]` category tags are
-preserved verbatim on security findings. The render-verbatim contract and the
-per-section word-budget gates are intact -- the skills carry the grouped shape to
-the user without reformatting.
-
-### 1.0.0
-
-Initial stable release. The advisor-strategy plugin pairs an Opus advisor with
-your session model across four skills -- `/lz-plan`, `/lz-execute`, `/lz-review`, and
-`/lz-security-review` -- each backed by a dedicated Opus agent (`advisor`,
-`reviewer`, `security-reviewer`) using the same orient -> consult -> produce
-pattern. Highlights: verification-chain integrity (pre-verified-claim discipline,
-hedge-marker handling, ToolSearch-backed web verification), per-section output
-budgets for the review agents, change-surface-matched verification targets, and
-pack-then-trust final advisor consultations.
+Breaking release. The four skills are renamed with an `lz-` prefix --
+`/lz-plan`, `/lz-execute`, `/lz-review`, `/lz-security-review` (qualified
+`lz-advisor:lz-<skill>`) -- so they no longer shadow Claude Code's built-in
+`/plan`, `/review`, and `/security-review`. The `/lz-security-review` report also
+adopts the canonical 5-tier security severity taxonomy
+(`Critical` / `High` / `Medium` / `Low` / `Informational`, plus `Open Questions`).
+See [CHANGELOG.md](../../CHANGELOG.md) for the full old-to-new migration table.
 
 ## License
 
