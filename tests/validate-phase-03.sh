@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
-# Structural validation for Phase 3: Execute Skill (lz-advisor-execute)
-# Tests verify content patterns in skills/lz-advisor-execute/SKILL.md.
+# Structural validation for Phase 3: Execute Skill (lz-execute)
+# Tests verify content patterns in plugins/lz-advisor/skills/lz-execute/SKILL.md.
 # Framework: git grep / bash assertions (no external dependencies).
 # Run from the repository root: bash tests/validate-phase-03.sh
 
 set -euo pipefail
 
-SKILL="skills/lz-advisor-execute/SKILL.md"
+SKILL="plugins/lz-advisor/skills/lz-execute/SKILL.md"
 PASS_COUNT=0
 FAIL_COUNT=0
 
@@ -122,23 +122,22 @@ fi
 # ---------------------------------------------------------------------------
 # 03-01-05 (IMPL-09): Package relevant context at each advisor consultation point
 #
-# Requirement: At least 2 sections contain numbered context packaging lists
-# starting with "1. The user's original task" or "1. The original task".
-#
-# git grep counts lines matching "^1\." -- there should be at least 2
-# consultation-point lists (first consult and final consult).
-# The <durable> section also starts a numbered list (write/run/commit) but
-# does NOT start with "The user's" or "The original task", so we count only
-# lines that match the consultation packaging pattern.
+# Requirement: the skill instructs context packaging at >= 2 advisor consultation
+# points (the pre-execute consult and the final review consult). The execute skill
+# now DELEGATES the packaging format to the shared reference -- it instructs
+# "Package the <...> consultation prompt per <...> references/context-packaging.md"
+# rather than inlining a "1. The user's original task" numbered list.
+# (Repaired 2026-06-14: the prior assertion matched the inline numbered-list form,
+# replaced by the shared references/context-packaging.md delegation in Phase 5.4/6.)
 # ---------------------------------------------------------------------------
 
-CONSULT_LIST_COUNT=$(git grep -c "^1\. The" "$SKILL" 2>/dev/null | cut -d: -f2 || echo 0)
+PACK_COUNT=$(git grep -c "consultation prompt per the" "$SKILL" 2>/dev/null | cut -d: -f2 || echo 0)
 
-if [ "$CONSULT_LIST_COUNT" -ge 2 ]; then
-  pass "03-01-05 IMPL-09 (context packaging): found $CONSULT_LIST_COUNT numbered context packaging lists (need >= 2)"
+if [ "${PACK_COUNT:-0}" -ge 2 ]; then
+  pass "03-01-05 IMPL-09 (context packaging): $PACK_COUNT 'Package the ... consultation prompt per ...' instructions (need >= 2, via references/context-packaging.md)"
 else
-  fail "03-01-05 IMPL-09 (context packaging): found $CONSULT_LIST_COUNT numbered context packaging lists starting with '1. The', need >= 2" \
-    "IMPL-09 requires context packaging at each advisor consultation point"
+  fail "03-01-05 IMPL-09 (context packaging): found ${PACK_COUNT:-0} delegated packaging instructions, need >= 2" \
+    "IMPL-09 requires context packaging at each advisor consultation point (now via references/context-packaging.md)"
 fi
 
 # ---------------------------------------------------------------------------
