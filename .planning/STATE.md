@@ -2,9 +2,9 @@
 gsd_state_version: 1.0
 milestone: v2.0.0
 milestone_name: Prefixed skill names
-status: verifying
-stopped_at: Phase 14.2 context gathered
-last_updated: "2026-06-14T09:35:13.531Z"
+status: ready_to_plan
+stopped_at: Phase 14.2 complete (1/1) — ready to discuss Phase 15
+last_updated: 2026-06-14T09:45:17.797Z
 last_activity: 2026-06-14
 progress:
   total_phases: 4
@@ -21,7 +21,7 @@ progress:
 See: .planning/PROJECT.md (updated 2026-06-11)
 
 **Core value:** Near-Opus intelligence at Sonnet cost for coding tasks, through strategic advisor consultation at high-leverage moments
-**Current focus:** Phase 14.2 — verdict-scope-marker-label-rename
+**Current focus:** Phase 15 — v2.0.0 release & publication
 
 ## Deferred Items
 
@@ -39,9 +39,9 @@ Items deferred across milestones (v1.0.1 close 2026-06-11; v2.0.0 additions tagg
 
 ## Current Position
 
-Phase: 14.2 (verdict-scope-marker-label-rename) — EXECUTING
-Plan: 1 of 1
-Status: Phase complete — ready for verification
+Phase: 15
+Plan: Not started
+Status: Ready to plan
 Last activity: 2026-06-14
 
 ### Milestone v2.0.0 roadmap
@@ -74,7 +74,7 @@ Advisor runtime-proven on Opus 4.8. Final phase: Phase 10 (documentation-hygiene
 
 **Velocity:**
 
-- Total plans completed: 118 (v1.0 milestone, all phases)
+- Total plans completed: 119 (v1.0 milestone, all phases)
 - Average duration: -
 - Total execution time: 0 hours
 
@@ -99,6 +99,7 @@ Advisor runtime-proven on Opus 4.8. Final phase: Phase 10 (documentation-hygiene
 | 13 | 7 | - | - |
 | 14 | 1 | - | - |
 | 14.1 | 1 | - | - |
+| 14.2 | 1 | - | - |
 
 **By Phase (v1.0.1 milestone):**
 

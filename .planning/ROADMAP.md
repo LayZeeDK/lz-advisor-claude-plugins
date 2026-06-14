@@ -106,7 +106,7 @@ Full phase details, success criteria, and the gap-closure trail are archived in 
 | 13. Empirical verification | v1.0.1 | 7/7 | Complete | 2026-06-08 |
 | 14. lz- skill rename | v2.0.0 | 1/1 | Complete    | 2026-06-14 |
 | 14.1 lz-security-review canonical severities (INSERTED) | v2.0.0 | 1/1 | Complete    | 2026-06-14 |
-| 14.2 Verdict scope marker label rename (INSERTED) | v2.0.0 | 1/1 | Complete   | 2026-06-14 |
+| 14.2 Verdict scope marker label rename (INSERTED) | v2.0.0 | 1/1 | Complete    | 2026-06-14 |
 | 15. v2.0.0 release & publication | v2.0.0 | -/- | Not started | - |
 
 v1.0 + v1.0.1 shipped. **Active: v2.0.0 (Prefixed skill names)** -- 4 phases (14, 14.1, 14.2, 15), continuing numbering from Phase 13. Next: `/gsd-execute-phase 14.1`. See `.planning/MILESTONES.md` for shipped-milestone summaries and `milestones/` for full detail.
