@@ -37,7 +37,7 @@ Plans:
 **Plans:** 1 plan (ONE atomic lockstep unit -- agent + skill + fixture + 2 doc touch-ups, committed as ONE commit per the WR-05 few-shot-drift discipline)
 
 Plans:
-- [ ] 14.1-01-PLAN.md -- atomic 5-tier severity migration: agent grammar (headers/skeleton/all worked examples/output_constraints/hedge/Class-2 enum), skill render-verbatim + D-07 caveat, fixture SEV_HEADERS retarget + section-aware D-14 cap + omit-when-empty self-test, ROADMAP goal text + context-packaging.md enum-divergence annotation, closing asymmetric scope-fence proof
+- [x] 14.1-01-PLAN.md -- atomic 5-tier severity migration: agent grammar (headers/skeleton/all worked examples/output_constraints/hedge/Class-2 enum), skill render-verbatim + D-07 caveat, fixture SEV_HEADERS retarget + section-aware D-14 cap + omit-when-empty self-test, ROADMAP goal text + context-packaging.md enum-divergence annotation, closing asymmetric scope-fence proof
 
 #### Phase 14.2: Verdict scope marker label rename (INSERTED)
 
@@ -105,7 +105,7 @@ Full phase details, success criteria, and the gap-closure trail are archived in 
 | 12. Atomic grouped-grammar rewrite | v1.0.1 | 4/4 | Complete | 2026-06-07 |
 | 13. Empirical verification | v1.0.1 | 7/7 | Complete | 2026-06-08 |
 | 14. lz- skill rename | v2.0.0 | 1/1 | Complete    | 2026-06-14 |
-| 14.1 lz-security-review canonical severities (INSERTED) | v2.0.0 | 0/1 | Planned | - |
+| 14.1 lz-security-review canonical severities (INSERTED) | v2.0.0 | 1/1 | Complete   | 2026-06-14 |
 | 14.2 Verdict scope marker label rename (INSERTED) | v2.0.0 | -/- | Not started | - |
 | 15. v2.0.0 release & publication | v2.0.0 | -/- | Not started | - |
 
