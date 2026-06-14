@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v2.0.0
 milestone_name: Prefixed skill names
 status: ready_to_plan
-stopped_at: Phase 14 complete (1/1) — ready to discuss Phase 15
-last_updated: 2026-06-14T00:13:37.697Z
-last_activity: 2026-06-13 -- Phase 14 Plan 01 complete; awaiting phase verification + RENAME-02 picker check
+stopped_at: Phase 14.1 context gathered
+last_updated: "2026-06-14T01:40:43.051Z"
+last_activity: 2026-06-14
 progress:
-  total_phases: 2
+  total_phases: 4
   completed_phases: 1
   total_plans: 1
   completed_plans: 1
-  percent: 50
+  percent: 25
 ---
 
 # Project State
@@ -21,7 +21,7 @@ progress:
 See: .planning/PROJECT.md (updated 2026-06-11)
 
 **Core value:** Near-Opus intelligence at Sonnet cost for coding tasks, through strategic advisor consultation at high-leverage moments
-**Current focus:** Phase 15 — v2.0.0 release & publication
+**Current focus:** Phase 14.1 -- lz-security-review canonical severities (Critical/High/Medium), breaking; gates Phase 15 release
 
 ## Deferred Items
 
@@ -39,9 +39,9 @@ Items deferred across milestones (v1.0.1 close 2026-06-11; v2.0.0 additions tagg
 
 ## Current Position
 
-Phase: 15
+Phase: 14.1
 Plan: Not started
-Status: Ready to plan
+Status: ready_to_plan
 Last activity: 2026-06-14
 
 ### Milestone v2.0.0 roadmap
@@ -182,11 +182,14 @@ Recent decisions affecting current work (v1.0.1):
 
 (v1.0 milestone roadmap-evolution history archived in `milestones/v1.0-ROADMAP.md`.)
 
+- Phase 14.1 inserted after Phase 14: lz-security-review skill + security-reviewer agent migrate to canonical Critical/High/Medium severities (breaking) (URGENT)
+- Phase 14.2 inserted after Phase 14: rename the human-facing Verdict scope provenance-marker label (kill the scope: scope: repeat); machine token + parser unchanged
+
 ## Session Continuity
 
-Last session: 2026-06-13T23:43:25.364Z
-Stopped at: Phase 14 context gathered
-Resume file: None
+Last session: 2026-06-14T01:40:43.044Z
+Stopped at: Phase 14.1 context gathered
+Resume file: .planning/phases/14.1-lz-security-review-canonical-severities-critical-high-medium/14.1-CONTEXT.md
 Resume next: Phase 13 verification (verify_phase_goal -> spawn gsd-verifier for 13-VERIFICATION.md). All 7 plans executed; SC-4 is now GREEN on the 13-07 third live re-measure (combined c=6/6, Pass@k=Pass^k=1.0, every run exit 0 under the UNCHANGED hard gate; the 13-06 FIX-R2-A/B/C concision fix fully landed, fixtures never edited -- the close is genuine). All five UAT criteria PASS (SC-1/2/3/5 already PASS; SC-4 closed in 13-07). GATE-02 is FULLY SATISFIED (render half + budget half). NEXT: run the independent phase-goal verification (gsd-verifier) to produce 13-VERIFICATION.md, then the milestone audit. FIX-R2-D (gate tolerance band) was NOT needed to close SC-4 -- no residual stray surfaced; it remains a flagged product-contract decision the user may settle independently per 13-06-SUMMARY, NOT a blocker.
 
 ## Operator Next Steps
