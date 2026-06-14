@@ -1,18 +1,22 @@
 #!/usr/bin/env bash
-# Budget smoke fixture for the security-reviewer agent (grouped severity grammar).
+# Budget smoke fixture for the security-reviewer agent (canonical 5-tier severity grammar).
 #
-# Parses the grouped severity grammar emitted by
-# plugins/lz-advisor/agents/security-reviewer.md -- findings grouped under
-# ### Critical / ### Important / ### Suggestions / ### Questions headers, each
-# finding a "N. <file>:<line>: [<OWASP-tag>] <threat>. <fix>." line with a
+# Parses the canonical severity grammar emitted by
+# plugins/lz-advisor/agents/security-reviewer.md -- findings grouped under the
+# ### Critical / ### High / ### Medium / ### Low / ### Informational severity
+# headers plus the non-severity ### Open Questions section (omit-when-empty: a
+# tier section appears only when it has at least one finding; NO empty-section markers),
+# each finding a "N. <file>:<line>: [<OWASP-tag>] <threat>. <fix>." line with a
 # leading continuous integer and NO inline severity token (the section header is
 # the sole severity source). The OWASP / CVE / GHSA / CWE bracket is asserted
 # present immediately after the location (a finding losing its tag fails to parse
 # and the anti-vacuous guard catches the shortfall). Asserts the per-section word
 # budgets with a 75w auto-clarity outlier cap (RES-PFV-OUTLIER-CAP) for
-# CVE/GHSA/CWE findings, and exits 0 (green) on the current grammar. This is the
-# security-reviewer half of the regression gate, retargeted in lockstep with the
-# Phase 12 agent rewrite (D-10).
+# CVE/GHSA/CWE findings on the C/H/M/L (+ Open Questions) tiers; ### Informational
+# is DENIED the 75w escape (hard 28w, D-14) enforced section-aware below. Exits 0
+# (green) on the current grammar. This is the security-reviewer half of the
+# regression gate, retargeted in lockstep with the Phase 14.1 canonical-severity
+# migration.
 #
 # Header-tracking parser: track the current ### severity header; count numbered
 # finding lines beneath it. There is no inline-severity alternation in this
@@ -28,8 +32,10 @@
 #   --from-trace <file>       parse a captured response file through the same
 #                             parser + assertions (Phase 13 supplies live traces;
 #                             capability check here).
-#   --self-test               synthesize a zero-finding input and assert the
-#                             anti-vacuous guard fires (NON-zero exit).
+#   --self-test               synthesize a zero-finding input (omit-when-empty:
+#                             only the required ### Threat Patterns header, no
+#                             severity sections) and assert the anti-vacuous guard
+#                             fires (NON-zero exit).
 #
 # No live `claude -p` invocation (Phase 13 supplies live traces). Standalone,
 # zero-dependency: bash + coreutils only (no shared helper lib).
@@ -41,7 +47,8 @@ set -euo pipefail
 # --- Config constants -------------------------------------------------------
 # Post-Phase-9 path (NOT the stale top-level agents/ path; see RESEARCH Pitfall 1).
 SECURITY_AGENT="plugins/lz-advisor/agents/security-reviewer.md"
-MIN_FINDINGS=5        # D-04 anti-vacuous floor (security holistic example: 6 findings, min 5)
+MIN_FINDINGS=5        # D-04 anti-vacuous floor (security holistic example: 7 findings across the
+                      # canonical tiers + 1 Open Questions item, min 5)
 PER_ENTRY_CAP=28      # D-09 per-entry outlier soft cap (prefix + OWASP tag EXCLUDED)
 SOFT_TARGET=22        # D-09 per-entry soft target; a WARNING, not a hard fail (the
                       # binding caps are PER_ENTRY_CAP / AUTO_CLARITY_CAP)
@@ -112,11 +119,11 @@ get_report() {
       tr -d '\r' < "$TRACE_FILE"
       ;;
     self-test)
-      # Zero-finding synthetic input in the NEW grouped grammar: all four severity
-      # headers present, each with a literal (none) marker, plus the trailing
-      # Threat Patterns header. No numbered finding lines, so the anti-vacuous
-      # guard must fire.
-      printf '### Critical\n\n(none)\n\n### Important\n\n(none)\n\n### Suggestions\n\n(none)\n\n### Questions\n\n(none)\n\n### Threat Patterns\n\nNo chaining across this set -- the findings are independent.\n'
+      # Zero-finding synthetic input in the canonical omit-when-empty grammar (D-04):
+      # a clean report with no findings emits NO severity sections at all -- only the
+      # required ### Threat Patterns header + a one-sentence body. No numbered finding
+      # lines, so the anti-vacuous guard must fire (the truest omit-when-empty shape).
+      printf '### Threat Patterns\n\nNo chaining across this set -- the findings are independent.\n'
       ;;
   esac
 }
@@ -141,23 +148,28 @@ REPORT="$(get_report)"
 # prefix, so the count regex and the strip regex cannot diverge and leave the
 # location prefix or the first bracket inside the counted wc -w span.
 #
-# (none) markers and blank lines are NOT findings -- they simply fail FINDING_RE
-# and are skipped; no special-casing needed.
+# Blank lines and any non-finding prose are NOT findings -- they simply fail
+# FINDING_RE and are skipped; no special-casing needed. (Under the canonical
+# omit-when-empty grammar there are no empty-section placeholder markers to skip.)
 #
-# #5: SEV_HEADERS is a CLOSED-VOCABULARY anchored match -- the 4 EXACT severity
-# headers (### Critical / ### Important / ### Suggestions / ### Questions) with
-# OPTIONAL TRAILING WHITESPACE ([[:space:]]*$). The trailing-whitespace tolerance
-# absorbs a stray trailing space or a surviving CR (CR is already normalized
-# upstream: from-trace does tr -d '\r'; self-extract reads the LF agent file) while
-# the closing anchor PREVENTS an over-broad bare-prefix match (e.g. a foreign
-# "### Critical findings" heading would otherwise set current_sev and let its
-# numbered lines be counted as findings). Finding lines are matched separately by
-# FINDING_RE; the header match only sets current_sev.
-SEV_HEADERS='^### (Critical|Important|Suggestions|Questions)[[:space:]]*$'
+# #5: SEV_HEADERS is a CLOSED-VOCABULARY anchored match -- the canonical 5 severity
+# headers (### Critical / ### High / ### Medium / ### Low / ### Informational) plus
+# the non-severity ### Open Questions header (note the space in "Open Questions"),
+# with OPTIONAL TRAILING WHITESPACE ([[:space:]]*$). The trailing-whitespace
+# tolerance absorbs a stray trailing space or a surviving CR (CR is already
+# normalized upstream: from-trace does tr -d '\r'; self-extract reads the LF agent
+# file) while the closing anchor PREVENTS an over-broad bare-prefix match (e.g. a
+# foreign "### Critical findings" heading would otherwise set current_sev and let
+# its numbered lines be counted as findings). Finding lines are matched separately
+# by FINDING_RE; the header match only sets current_sev.
+SEV_HEADERS='^### (Critical|High|Medium|Low|Informational|Open Questions)[[:space:]]*$'
 FINDING_RE='^[0-9]+\. `?[^[:space:]]+:[0-9]+(-[0-9]+)?: \[[^]]+\] '
 matched_count=0
 current_sev=""
 declare -a FINDING_BODIES=()
+declare -a FINDING_SEVS=()   # D-14: parallel array recording each finding's ### severity
+                             # section so the budget loop can deny ### Informational the
+                             # 75w auto-clarity escape (section-aware hard 28w cap).
 
 while IFS= read -r line; do
   # SKIP verify_request escalation lines: they trail the affected finding, are
@@ -182,6 +194,9 @@ while IFS= read -r line; do
     # the auto-clarity detection below still fires on CVE/GHSA/CWE findings.
     body="$(printf '%s' "$line" | sed -E 's/^[0-9]+\. `?[^[:space:]]+:[0-9]+(-[0-9]+)?: \[[^]]+\] //; s/`$//')"
     FINDING_BODIES+=("$body")
+    # D-14: record the section this finding sits under so the budget loop can
+    # force the hard 28w cap when current_sev is "### Informational" (no 75w escape).
+    FINDING_SEVS+=("$current_sev")
   fi
 done < <(printf '%s\n' "$REPORT")
 
@@ -228,14 +243,31 @@ pass "anti-vacuous: matched_count $matched_count >= $MIN_FINDINGS"
 # stripped, so a [CVE-...] token appearing as a SECOND bracket in the body still
 # triggers the carve-out. CVE/GHSA/CWE detection uses bash [[ =~ ]] (never the
 # bare grep command).
-for body in "${FINDING_BODIES[@]}"; do
+#
+# D-14 section-aware override: a finding under ### Informational is DENIED the 75w
+# auto-clarity escape -- it stays at the hard 28w PER_ENTRY_CAP even if its body
+# carries a [CVE]/[GHSA]/[CWE] bracket (a hardening note that genuinely needs 75w
+# has an exploitation path and belongs on a vulnerability rung, not Informational).
+# The C/H/M/L (+ Open Questions) tiers keep the bracket-keyed 75w escape.
+# D-14: the per-finding cap decision, factored into one function so the main
+# budget loop AND the D-14 regression self-check (WR-03) below share a SINGLE
+# source of truth -- a future edit that drops the ### Informational branch is
+# then caught by the self-check, not silently left un-exercised.
+decide_cap() {
+  local _body="$1" _sev="$2" _cap="$PER_ENTRY_CAP"
+  if [[ "$_body" =~ \[(CVE|GHSA|CWE) ]]; then _cap="$AUTO_CLARITY_CAP"; fi
+  # ### Informational is DENIED the 75w escape -> hard 28w even with a bracket.
+  if [[ "$_sev" =~ ^###[[:space:]]+Informational([[:space:]]*)$ ]]; then _cap="$PER_ENTRY_CAP"; fi
+  printf '%s' "$_cap"
+}
+
+for i in "${!FINDING_BODIES[@]}"; do
+  body="${FINDING_BODIES[$i]}"
+  finding_sev="${FINDING_SEVS[$i]}"
   wc_words=$(printf '%s' "$body" | wc -w)
-  cap="$PER_ENTRY_CAP"
+  cap="$(decide_cap "$body" "$finding_sev")"
   is_auto_clarity=0
-  if [[ "$body" =~ \[(CVE|GHSA|CWE) ]]; then
-    cap="$AUTO_CLARITY_CAP"
-    is_auto_clarity=1
-  fi
+  if [ "$cap" -eq "$AUTO_CLARITY_CAP" ]; then is_auto_clarity=1; fi
 
   if [ "$wc_words" -le "$cap" ]; then
     pass "per-entry budget: $wc_words <= $cap"
@@ -253,6 +285,26 @@ for body in "${FINDING_BODIES[@]}"; do
     fail "per-entry budget exceeded: $wc_words > $cap" "$body"
   fi
 done
+
+# --- D-14 regression self-check (WR-03) -------------------------------------
+# The default self-extract run does not naturally exercise the D-14 section-aware
+# override: the holistic example carries no over-cap bracketed ### Informational
+# finding, and one CANNOT exist in a PASSING example (D-14 caps Informational at
+# the hard 28w regardless of a [CVE]/[GHSA]/[CWE] bracket). Assert the cap
+# decision directly via the shared decide_cap() so a regression that drops or
+# weakens the ### Informational branch fails the gate here -- exercising D-14
+# the way the holistic example cannot.
+D14_BODY='this informational hardening note carries a [CWE-693] bracket and is padded well beyond the twenty-eight word outlier cap on purpose to prove the section-aware override denies the seventy-five word auto-clarity escape for informational findings'
+if [ "$(decide_cap "$D14_BODY" '### Informational')" -eq "$PER_ENTRY_CAP" ]; then
+  pass "D-14 self-check: bracketed ### Informational denied the 75w escape (cap forced to ${PER_ENTRY_CAP}w)"
+else
+  fail "D-14 self-check: ### Informational kept the 75w escape" "section-aware override regressed (WR-03)"
+fi
+if [ "$(decide_cap "$D14_BODY" '### High')" -eq "$AUTO_CLARITY_CAP" ]; then
+  pass "D-14 negative control: same bracketed body under ### High keeps the 75w escape (${AUTO_CLARITY_CAP}w)"
+else
+  fail "D-14 negative control: ### High lost the bracket-keyed 75w escape" "auto-clarity carve-out regressed"
+fi
 
 # #2(a): max_count=15 finding ceiling -- assert matched_count <= MAX_COUNT.
 # Mirrors the agents' <max_count>15</max_count>. Security holistic baseline=6,

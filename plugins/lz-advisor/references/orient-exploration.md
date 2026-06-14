@@ -127,7 +127,7 @@ the cross-cutting packaging contract on pre-verified claims, see
 
 ## Cross-Skill Hedge Tracking
 
-When a skill is invoked with input from another skill -- review file passed to plan-skill, plan file passed to execute-skill, commit range plus prior plan/review passed to security-review -- the upstream output may contain verify-first markers that the upstream skill placed deliberately. Sentinel patterns: `\b(unverified)\b`, `\bverify .+ before acting\b`, `\bAssuming .+ \(unverified\)\b`, `\bconfirm .+ before\b`, `\bfall back to .+ if .+\b`. These markers signal that the upstream skill could not resolve the hedged claim within its own scope and is asking the downstream skill (or the user) to either verify or carry the hedge forward.
+When a skill is invoked with input from another skill -- review file passed to plan-skill, plan file passed to execute-skill, commit range plus prior lz-plan/lz-review passed to security-review -- the upstream output may contain verify-first markers that the upstream skill placed deliberately. Sentinel patterns: `\b(unverified)\b`, `\bverify .+ before acting\b`, `\bAssuming .+ \(unverified\)\b`, `\bconfirm .+ before\b`, `\bfall back to .+ if .+\b`. These markers signal that the upstream skill could not resolve the hedged claim within its own scope and is asking the downstream skill (or the user) to either verify or carry the hedge forward.
 
 The downstream skill MUST NOT strip these markers silently. Stripping is the laundering pathway documented in the 7-hop confidence-laundering chain (Finding C hop 3): an upstream review's "Assuming X (unverified) ... Verify Y before acting" gets repackaged as "X" without the hedge by the downstream plan-fixes executor; the plan output asserts X as established fact; downstream execute and security-review propagate X with no verification anchor.
 
@@ -146,10 +146,10 @@ This rule applies WITHIN one user-driven workflow (a sequence of skill invocatio
 
 A typical 4-skill workflow surfaces a hedge that must propagate intact:
 
-1. `/review` flags Finding 4 with hedge: "Assuming `continuous: true` disables caching for this target (unverified against the installed Nx version), the practical impact is limited."
-2. User invokes `/plan @review-output.md` to plan fixes. The plan-skill orient phase scans `review-output.md` for sentinels; the marker survives. Per Rule 5c, the marker either gets resolved (Read Nx docs / package.json + synthesize pv-* block) OR carries verbatim into the plan-skill consultation source material.
+1. `/lz-review` flags Finding 4 with hedge: "Assuming `continuous: true` disables caching for this target (unverified against the installed Nx version), the practical impact is limited."
+2. User invokes `/lz-plan @review-output.md` to plan fixes. The plan-skill orient phase scans `review-output.md` for sentinels; the marker survives. Per Rule 5c, the marker either gets resolved (Read Nx docs / package.json + synthesize pv-* block) OR carries verbatim into the plan-skill consultation source material.
 3. The plan output preserves the marker in the plan-file's `## Findings Disposition` section (per Plan 07-02 silent-resolve fix) AND -- if unresolved -- in the plan rationale.
-4. User invokes `/execute @plan-output.md` to apply fixes. The execute-skill orient phase scans `plan-output.md` for sentinels; the marker survives. Per Rule 5c + Plan 07-02 `<verify_before_commit>` block, the marker triggers verification before commit, with the outcome recorded via a `Verified:` trailer.
+4. User invokes `/lz-execute @plan-output.md` to apply fixes. The execute-skill orient phase scans `plan-output.md` for sentinels; the marker survives. Per Rule 5c + Plan 07-02 `<verify_before_commit>` block, the marker triggers verification before commit, with the outcome recorded via a `Verified:` trailer.
 
 The marker survives all 4 hops or gets resolved at the first hop where empirical verification is available. The chain breaks only when stripping occurs without verification -- the failure mode this rule prohibits.
 

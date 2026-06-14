@@ -1,17 +1,17 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.0.1
-milestone_name: No review report shorthands
-status: Awaiting next milestone
-stopped_at: Completed 13-07-PLAN.md (SC-4 third live re-measure GREEN 6/6; GATE-02 fully satisfied)
-last_updated: "2026-06-13T19:43:54.765Z"
-last_activity: 2026-06-13 — Completed quick task 260613-u6l: CHANGELOG.md + GitHub releases (v1.0.0, v1.0.1)
+milestone: v2.0.0
+milestone_name: Prefixed skill names
+status: executing
+stopped_at: Phase 15 context gathered
+last_updated: "2026-06-14T11:17:40.053Z"
+last_activity: 2026-06-14 -- Phase 15 execution started
 progress:
-  total_phases: 3
+  total_phases: 4
   completed_phases: 3
-  total_plans: 13
-  completed_plans: 13
-  percent: 100
+  total_plans: 4
+  completed_plans: 3
+  percent: 75
 ---
 
 # Project State
@@ -21,14 +21,15 @@ progress:
 See: .planning/PROJECT.md (updated 2026-06-11)
 
 **Core value:** Near-Opus intelligence at Sonnet cost for coding tasks, through strategic advisor consultation at high-leverage moments
-**Current focus:** v1.0.1 shipped (plugin 1.0.1, PR #1 merged); planning next milestone
+**Current focus:** Phase 15 — v2.0.0 release & publication
 
 ## Deferred Items
 
-Items acknowledged and deferred at the v1.0.1 milestone close (2026-06-11):
+Items deferred across milestones (v1.0.1 close 2026-06-11; v2.0.0 additions tagged by category):
 
 | Category | Item | Status | Note |
 |----------|------|--------|------|
+| feature-deferred (v2.0.0) | on-demand-fable-advisor | deferred | Subagent-Fable blocked server-side (Anthropic API 404 "not available, use Opus 4.8"); interactive `/model fable` works but subagent dispatch is denied. Override mechanism proven (opus->haiku via subagent JSONL). SEED-001; evidence in research/FABLE-OVERRIDE-PROBE.md. Revisit when Anthropic enables Fable for subagent dispatch. |
 | backlog-todo | research-rtk-command-suitability-for-skills-and-agents | open | Future investigation: RTK command suitability for skills/agents (plugin-tooling); out of v1.0.1 scope -- carries to backlog. |
 | tech-debt (Phase 12) | dangling "Reviewer Escalation Hook" cross-ref | open | Pre-existing, out-of-scope; review-skill side IS wired, security-skill side unwired. Track as backlog. |
 | tech-debt (Phase 13) | FIX-R2-D budget-gate tolerance band | moot | Recorded deferred decision; now moot -- SC-4 closed GREEN 6/6 via genuine concision, no tolerance band needed. |
@@ -38,12 +39,21 @@ Items acknowledged and deferred at the v1.0.1 milestone close (2026-06-11):
 
 ## Current Position
 
-Phase: Milestone v1.0.1 complete
-Plan: —
-Status: Awaiting next milestone
-Last activity: 2026-06-13 — Completed quick task 260613-u6l: CHANGELOG.md + GitHub releases (v1.0.0, v1.0.1)
+Phase: 15 (v2.0.0 release & publication) — EXECUTING
+Plan: 1 of 1
+Status: Executing Phase 15
+Last activity: 2026-06-14 -- Phase 15 execution started
 
-### Milestone v1.0.1 roadmap
+### Milestone v2.0.0 roadmap
+
+2 phases (14-15), continuing numbering from the v1.0.1 milestone's final phase (13):
+
+- **Phase 14 (lz- skill rename):** RENAME-01..03 -- rename all four skills (`plan`/`execute`/`review`/`security-review` -> `lz-*`) via `git mv` so they no longer shadow Claude Code built-ins; lockstep cross-ref sweep + closing `git grep` gate; interactive-picker bare-form collision check (human_needed).
+- **Phase 15 (v2.0.0 release & publication):** REL-01..03 -- atomic 5-surface 1.0.1 -> 2.0.0 bump + CHANGELOG `[2.0.0]` migration table + README + `git tag v2.0.0` + GitHub Release. Gated on Phase 14 verification.
+
+Locked decisions: all four skills renamed (incl. `execute`) for suite consistency; v2.0.0 MAJOR (breaking invocation surface); Fable advisor descoped (subagent-Fable API-blocked, SEED-001).
+
+### Milestone v1.0.1 roadmap (historical)
 
 3 phases, continuing from the v1.0 milestone's final integer phase (Phase 10):
 
@@ -64,7 +74,7 @@ Advisor runtime-proven on Opus 4.8. Final phase: Phase 10 (documentation-hygiene
 
 **Velocity:**
 
-- Total plans completed: 116 (v1.0 milestone, all phases)
+- Total plans completed: 119 (v1.0 milestone, all phases)
 - Average duration: -
 - Total execution time: 0 hours
 
@@ -87,6 +97,9 @@ Advisor runtime-proven on Opus 4.8. Final phase: Phase 10 (documentation-hygiene
 | 11 | 2 | - | - |
 | 12 | 4 | - | - |
 | 13 | 7 | - | - |
+| 14 | 1 | - | - |
+| 14.1 | 1 | - | - |
+| 14.2 | 1 | - | - |
 
 **By Phase (v1.0.1 milestone):**
 
@@ -113,6 +126,9 @@ Advisor runtime-proven on Opus 4.8. Final phase: Phase 10 (documentation-hygiene
 | Phase 13 P05 | ~40min | 3 tasks | 33 files |
 | Phase 13 P06 | ~25min | 3 tasks | 2 files |
 | Phase 13 P07 | ~30min | 3 tasks | 30 files |
+| Phase 14 P01 | 9min | 3 tasks | 13 files |
+| Phase 14.1 P01 | 13min | 6 tasks | 5 files |
+| Phase 14.2 P01 | 6min | 1 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -137,6 +153,10 @@ Recent decisions affecting current work (v1.0.1):
 - [Phase ?]: [v1.0.1 / 13-06]: GAP-13-BUDGET-R2 iteration-2 concision fix landed (commits bfb8003 reviewer, 91ee635 security). FIX-R2-A/B/C applied atomically (WR-05) across both agents: FIX-R2-A routes a context-heavy reviewer Question's observation+evidence into the EXISTING 60w `### Per-finding validation` (body stays <=28w binary question; NO new 75w reviewer carve-out -- 13-GAP-RESEARCH Q3 option (b); PFV entries don't match the fixture FINDING_RE so the words leave the counted span); FIX-R2-B extends FIX-3 reference-by-shape to the security FIX/remediation clause (name the safe API in backticks, no full call expression, no second clause); FIX-R2-C splits the reviewer causal-chain (body = defect + fix <=28w, downstream consequence -> `### Cross-Cutting Patterns`). CAP VERDICT honored: 22/28/75/60 unchanged in agents, 28/5/75 unchanged in fixtures, `git status --porcelain tests/` empty (the close is genuine concision, the gate is NOT gamed). WRONG->RIGHT worked examples modeled on the actual over-cap captures (r2-review-4 45w->24w+45w PFV; r2-review-3 29w->15w; r2-security-1 33w->27w); do_not_include lists reinforced. WR-05 atomicity gate GREEN: both fixtures self-extract exit 0, self-test exit 1, residue sweeps exit 1, SHAPE + AGNT-03 byte-intact. FIX-R2-D (gate tolerance band) recorded as a flagged DEFERRED product-contract decision (a gate-design correction the user settles deliberately, NOT gaming the gate), NOT implemented here. Input for Plan 13-07 to re-measure SC-4 a THIRD time on live emission under the unchanged gate.
 - [Phase ?]: [v1.0.1 / 13-05]: SC-4 LIVE budget RE-MEASURE on the 13-04 fixed agents (n=5 per skill, R2 worktree off 019a26a, seeds byte-identical to 13-01 recovered from dangling commit 4fa7fd7). MEASURED (not reasoned, D-04): the 13-04 fix produced a LARGE improvement -- combined fully-passing c=2/6 -> 7/10 (Pass@1 0.333 -> 0.700; security half 0/3 -> 4/5; worst finding-body overshoot 46w -> 33w) -- but SC-4 is NOT fully GREEN: 3/10 runs retain a residual over-cap (r2-review-3 29w marginal deref-chain; r2-review-4 45w multi-clause Question with no reviewer carve-out; r2-security-1 four findings 30-33w verbose FIX-clause prose). SHAPE-only 10/10 (Pass^k=1.0, OWASP [Axx] byte-intact). Recorded HONESTLY (D-10) as GAP-13-BUDGET-R2 -> a SECOND concision iteration needed (reviewer Question concision/carve-out + security FIX-clause reference-by-shape + marginal reviewer body nudge), NOT patched in this re-measure plan. R2 worktree + branch torn down by exact name after D-08 custody; ngx [main]-only at bad1aed. GATE-02 stays PARTIAL. Evidence: uat/GRADE-LOG-R2.md + PASS-K-R2.md + 10 r2-*.agent.md + WORKTREE-PROVENANCE-R2.md.
 - [Phase ?]: [v1.0.1 / 13-04]: GAP-13-BUDGET atomic concision fix landed (commit 5085bca). FIX-1..4 applied to BOTH review agents in one plan (WR-05 atomicity): FIX-1 routes severity-divergence rationale to `### Per-finding validation` (60w, both agents), body stays terse; FIX-2 splits merged two-sink findings into separate numbered findings (security); FIX-3 references code by `path:line`, no multi-token inline reproduction (both); FIX-4 locks the 75w auto-clarity escape to `[CVE]`/`[GHSA]`/`[CWE]` brackets and corrects the prose to AGREE with the UNCHANGED `<auto_clarity_carve_out>` element (security) -- bracket-less Questions/architectural-disagreements stay terse. CAP VERDICT honored: PER_ENTRY_CAP/28/22/75 unchanged in agents AND fixtures. WRONG->RIGHT worked example added per fix; do_not_include lists reinforced. ATOMICITY GATE GREEN: both budget fixtures self-extract exit 0 on the edited worked examples; self-test exit 1; residue sweeps exit 1; SHAPE + AGNT-03 byte-intact; `git status --porcelain tests/` empty (fixtures unmodified). Input for Plan 13-05 to re-measure SC-4 GREEN on live emission and close GATE-02.
+- [Phase ?]: [v2.0.0 / 14-01]: Renamed all four lz-advisor skills via git mv (plan/execute/review/security-review -> lz-*), de-shadowing Claude Code built-in /plan, /review, /security-review; history preserved through d88df91; lockstep cross-ref sweep across 13 files; 5-pattern arm64-bracketed git grep gate GREEN at HEAD; no version/release work (Phase 15 boundary, D-09).
+- [Phase ?]: [v2.0.0 / 14-01]: RENAME-02 / SC-4 (bare-form de-shadow check) recorded as human_needed with an interactive-picker recipe (14-RENAME-02-PICKER-RECIPE.md); NOT auto-passed and NOT substituted with a headless probe (D-10; headless is blind to bare-form collisions).
+- [Phase ?]: [v2.0.0 / 14.1-01]: Migrated security-review ONLY to the canonical 5-tier Critical/High/Medium/Low/Informational + a non-severity Open Questions section (omit-when-empty, NO (none) markers); reviewer surfaces intentionally KEEP Critical/Important/Suggestions/Questions -- the Phase 14.1 divergence point reversing Phase 7's unified lexicon for security alone. Landed as ONE atomic commit (36960ae, WR-05 few-shot-drift discipline: agent grammar + all worked examples + skill render-verbatim contract + fixture self-extract source change together). D-12 binary triage (concrete exploitation path? minor->Low, none->Informational) + 3 locked anchors in the agent severity defs; D-14 Informational-denied-75w enforced SECTION-AWARE in D-security-reviewer-budget.sh (parallel FINDING_SEVS array; proven by a 31w [CWE]-bracketed Informational finding FAILING the 28w gate). D-07 completeness caveat verbatim skill-side under ## Security Review Summary; D-11 verify_request severity= enum forked security-only (critical|high|medium|low|informational) in context-packaging.md WITHOUT changing reviewer's enum. Budget caps unchanged (22/28/75/60/160/30 -- genuine concision). ROADMAP Phase 14.1 heading + goal -> C/H/M/L/Informational. SCOPE FENCE held: reviewer.md / D-reviewer-budget.sh / lz-review byte-intact (absent from git status), reviewer fixture STILL green, reviewer taxonomy STILL present (asymmetric divergence proof). Verdict scope marker UNCHANGED (Phase 14.2 owns it).
+- [Phase ?]: [v2.0.0 / 14.2-01]: Renamed the human-facing provenance-marker label **Verdict scope:** -> **Verdict axis:** across all 5 plugin surfaces (9 bold-label sites) + 2 doc headers ### Verdict scope marker -> ### Verdict axis marker, killing the word-on-word Verdict scope: scope: repeat. ONE atomic commit (596d1ef, WR-05, D-04). Frozen scope fence byte-intact (D-02): scope: <enum> token UNCHANGED at 16, enum values, ### Scope tag values, Scope-Disambiguated concept name, ### Downstream consumer rule scope:-match parser prose untouched. Fixed lz-execute:290 label/prose mismatch (D-01). No version/release work (D-03, Phase 15 boundary). All 7 git grep gates GREEN.
 
 ### Pending Todos
 
@@ -168,12 +188,15 @@ Recent decisions affecting current work (v1.0.1):
 
 (v1.0 milestone roadmap-evolution history archived in `milestones/v1.0-ROADMAP.md`.)
 
+- Phase 14.1 inserted after Phase 14: lz-security-review skill + security-reviewer agent migrate to canonical Critical/High/Medium severities (breaking) (URGENT)
+- Phase 14.2 inserted after Phase 14: rename the human-facing Verdict scope provenance-marker label (kill the scope: scope: repeat); machine token + parser unchanged
+
 ## Session Continuity
 
-Last session: 2026-06-08T21:30:38.617Z
-Stopped at: Completed 13-07-PLAN.md (SC-4 third live re-measure GREEN 6/6; GATE-02 fully satisfied)
-Resume file: None
-Resume next: Phase 13 verification (verify_phase_goal -> spawn gsd-verifier for 13-VERIFICATION.md). All 7 plans executed; SC-4 is now GREEN on the 13-07 third live re-measure (combined c=6/6, Pass@k=Pass^k=1.0, every run exit 0 under the UNCHANGED hard gate; the 13-06 FIX-R2-A/B/C concision fix fully landed, fixtures never edited -- the close is genuine). All five UAT criteria PASS (SC-1/2/3/5 already PASS; SC-4 closed in 13-07). GATE-02 is FULLY SATISFIED (render half + budget half). NEXT: run the independent phase-goal verification (gsd-verifier) to produce 13-VERIFICATION.md, then the milestone audit. FIX-R2-D (gate tolerance band) was NOT needed to close SC-4 -- no residual stray surfaced; it remains a flagged product-contract decision the user may settle independently per 13-06-SUMMARY, NOT a blocker.
+Last session: 2026-06-14T10:39:10.434Z
+Stopped at: Phase 15 context gathered
+Resume file: .planning/phases/15-v2-0-0-release-publication/15-CONTEXT.md
+Resume next: Phase 14.2 verification (verify_phase_goal -> spawn gsd-verifier for 14.2-VERIFICATION.md). The single atomic rename plan is executed and committed (596d1ef); all 7 git grep gates GREEN (3 zero-hit: **Verdict scope:** / ### Verdict scope marker / Verdict scope all exit 1; 4 must-survive: **Verdict axis:**=9, ### Verdict axis marker=2, frozen scope: <enum> token=16 UNCHANGED, ### Downstream consumer rule parser prose=1). VLABEL-01/VLABEL-02 added to REQUIREMENTS.md (the inserted-phase requirements were not in the original v2.0.0 milestone scope) and marked Complete. NEXT: run the independent phase-goal verification (gsd-verifier) to produce 14.2-VERIFICATION.md. No version/release work performed (D-03; Phase 15 owns the atomic 5-surface 1.0.1 -> 2.0.0 bump).
 
 ## Operator Next Steps
 

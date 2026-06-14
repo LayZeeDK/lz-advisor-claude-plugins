@@ -8,16 +8,16 @@ The advisor strategy pairs a stronger model (Opus 4.7, auto-selected via the `op
 
 Anthropic's internal benchmarks (measured on Opus 4.6) show that Sonnet 4.6 paired with an Opus advisor achieved +2.7 percentage points on SWE-bench Multilingual coding benchmarks at 11.9% lower cost compared to Sonnet solo. The advisor adds most value on the first call, before the approach crystallizes, and on the final check after work is complete.
 
-This plugin uses Claude Code's native Agent tool to implement the pattern -- no API keys, no external dependencies, no additional setup beyond installation. The skills consult one of three Opus agents at strategic moments: `advisor` (used by `/plan` and `/execute`), `reviewer` (used by `/review`), and `security-reviewer` (used by `/security-review`).
+This plugin uses Claude Code's native Agent tool to implement the pattern -- no API keys, no external dependencies, no additional setup beyond installation. The skills consult one of three Opus agents at strategic moments: `advisor` (used by `/lz-plan` and `/lz-execute`), `reviewer` (used by `/lz-review`), and `security-reviewer` (used by `/lz-security-review`).
 
 ## Skills
 
 | Skill | Description |
 |-------|-------------|
-| `/plan` | Get an Opus-informed strategic plan before writing code. The executor orients on the codebase, consults the advisor for strategic direction, then produces an actionable plan. |
-| `/execute` | Execute tasks with strategic Opus consultation at high-leverage moments. The executor works through the task, consulting the advisor before substantive work, when stuck, and before declaring done. |
-| `/review` | Opus-powered code quality review of completed work. The executor scans the changes and packages context for the advisor to provide deep quality analysis. |
-| `/security-review` | Opus-powered security-focused threat analysis. The executor identifies attack surfaces and packages findings for the advisor to assess threats and recommend mitigations. |
+| `/lz-plan` | Get an Opus-informed strategic plan before writing code. The executor orients on the codebase, consults the advisor for strategic direction, then produces an actionable plan. |
+| `/lz-execute` | Execute tasks with strategic Opus consultation at high-leverage moments. The executor works through the task, consulting the advisor before substantive work, when stuck, and before declaring done. |
+| `/lz-review` | Opus-powered code quality review of completed work. The executor scans the changes and packages context for the advisor to provide deep quality analysis. |
+| `/lz-security-review` | Opus-powered security-focused threat analysis. The executor identifies attack surfaces and packages findings for the advisor to assess threats and recommend mitigations. |
 
 ## Installation
 
@@ -45,7 +45,7 @@ Look for `lz-advisor` in the loaded plugins output. If skills do not trigger, ve
 ## How it works
 
 - Skills run on your session model (typically Sonnet 4.6) as the executor.
-- At strategic moments, the executor consults the relevant Opus agent -- `advisor` for `/plan` and `/execute`, `reviewer` for `/review`, `security-reviewer` for `/security-review`.
+- At strategic moments, the executor consults the relevant Opus agent -- `advisor` for `/lz-plan` and `/lz-execute`, `reviewer` for `/lz-review`, `security-reviewer` for `/lz-security-review`.
 - The advisor provides concise guidance -- under 100 words, enumerated steps focused on what to do.
 - The executor continues with the task, informed by the advice.
 
@@ -76,29 +76,15 @@ Opus 4.7 (released 2026-04-16) is auto-selected via the `opus` alias; no user ac
 
 ## What's New
 
-### 1.0.1
+### 2.0.0
 
-Review report grammar overhaul. The `/review` and `/security-review` agents now
-present findings GROUPED under fully spelled-out severity headlines --
-`### Critical`, `### Important`, `### Suggestions`, and `### Questions` -- in a
-fixed order, replacing the prior inline two-letter severity fragment shorthand
-that prefixed each finding line. Findings carry continuous integer numbers across all sections so
-cross-references stay unambiguous, every severity section is always emitted with
-an explicit `(none)` marker when empty, and the OWASP `[Axx]` category tags are
-preserved verbatim on security findings. The render-verbatim contract and the
-per-section word-budget gates are intact -- the skills carry the grouped shape to
-the user without reformatting.
-
-### 1.0.0
-
-Initial stable release. The advisor-strategy plugin pairs an Opus advisor with
-your session model across four skills -- `/plan`, `/execute`, `/review`, and
-`/security-review` -- each backed by a dedicated Opus agent (`advisor`,
-`reviewer`, `security-reviewer`) using the same orient -> consult -> produce
-pattern. Highlights: verification-chain integrity (pre-verified-claim discipline,
-hedge-marker handling, ToolSearch-backed web verification), per-section output
-budgets for the review agents, change-surface-matched verification targets, and
-pack-then-trust final advisor consultations.
+Breaking release. The four skills are renamed with an `lz-` prefix --
+`/lz-plan`, `/lz-execute`, `/lz-review`, `/lz-security-review` (qualified
+`lz-advisor:lz-<skill>`) -- so they no longer shadow Claude Code's built-in
+`/plan`, `/review`, and `/security-review`. The `/lz-security-review` report also
+adopts the canonical 5-tier security severity taxonomy
+(`Critical` / `High` / `Medium` / `Low` / `Informational`, plus `Open Questions`).
+See [CHANGELOG.md](../../CHANGELOG.md) for the full old-to-new migration table.
 
 ## License
 

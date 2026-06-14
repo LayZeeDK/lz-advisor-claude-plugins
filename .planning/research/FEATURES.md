@@ -1,202 +1,173 @@
 # Feature Research
 
-**Domain:** Severity-labeled code-review report presentation (user-facing output for an AI review agent)
-**Researched:** 2026-06-07
-**Milestone:** v1.0.1 "No review report shorthands"
-**Confidence:** HIGH (all tool behaviors verified against current vendor docs/specs; trade-offs corroborated across multiple independent sources)
+**Domain:** On-demand advisor-model selection + prefixed-skill UX in a Claude Code plugin (lz-advisor v2.0.0)
+**Researched:** 2026-06-13
+**Confidence:** HIGH (Claude Code model-config + sub-agents docs are authoritative and current)
 
-## Scope note
+> Scope note: This file covers ONLY the two new v2.0.0 user-facing features -- `lz-` prefixed skill
+> names and on-demand `--model fable` advisor selection. The orient -> consult -> produce loop, the
+> four skills, and the three Opus agents already shipped in v1.0.1 and are not re-evaluated here.
 
-This milestone changes ONLY the *presentation* of severity in user-facing `review` / `security-review` reports. The reviewer/security-reviewer agents currently emit findings in a compact fragment grammar with severity shorthands (`crit:` / `imp:` / `sug:` / `q:`), and both skills render the agent response verbatim. The target is fully spelled-out labels (`Critical` / `Important` / `Suggestion` / `Question`), optionally grouped into `### Critical` / `### Important` / ... sections.
+## How model selection works (the mechanism this milestone builds on)
 
-This research maps how established review tools present severity so the requirements step can choose: (a) inline label per finding vs (b) grouped-by-severity sections, and decide the mechanical-conversion vs emit-spelled-out trade-off.
+Verified against the current Claude Code docs (`/en/sub-agents`, `/en/model-config`):
 
-## How established tools present severity (verified)
-
-| Tool | Severity vocabulary | Presentation | Cross-ref mechanism |
-|------|--------------------|--------------|--------------------|
-| **Conventional Comments** (spec) | `praise` / `nitpick` / `suggestion` / `issue` / `todo` / `question` / `thought` / `chore` / `note` (labels = comment *kind*); severity carried orthogonally by decorations `(blocking)` / `(non-blocking)` / `(if-minor)` | **Inline label per comment**, format `<label> [decorations]: <subject>` then optional discussion. One comment, one label. | None (each comment is standalone in a PR thread) |
-| **GitHub PR reviews** (convention, not enforced) | Ad-hoc prefixes: `nit:`, `Blocking:`, `[suggestion]`, `Question:`, `FYI:` | **Inline per comment** on the diff. UI itself only encodes one binary signal (approve / request-changes); severity lives in the comment text prefix. | None native; reviewers say "see comment above" (positional, fragile) |
-| **CodeRabbit** | Four severity buckets (critical / major / + filterable) PLUS orthogonal "comment type" (potential issue / refactor / nitpick) and "effort" (quick win / heavy lift) | **Hybrid**: high-level walkthrough summary + per-file inline comments tagged with severity. Newer "Change Stack" groups diff into cohorts. Custom team reports group by Priority (High/Medium/Low). | Filterable/sortable by bucket |
-| **reviewdog** | Three levels: `error` / `warning` / `info` (RDFormat `severity` field; LSP-inspired) | **Inline per diagnostic** at file:line. Severity is a structured field, not grouped sections. `-level` overrides reporting, `-fail-level` gates exit code. | Structured `Diagnostic` objects with optional `Code` (rule id) |
-| **SonarQube** | Legacy 5-level: `Blocker` / `Critical` / `Major` / `Minor` / `Info`. New (10.2+): `High` / `Medium` / `Low` | **Grouped + counted by severity**, ordered highest-to-lowest impact. Severity also rolls up into A-E letter ratings. Often crossed with issue *type* (Bug / Vulnerability / Code Smell). | Issue IDs; dashboard filters |
-| **Semgrep** | New 4-level: `Critical` / `High` / `Medium` / `Low`. Legacy CLI: `ERROR` / `WARNING` / `INFO` (= High/Medium/Low) | **Inline per finding** in text output; severity is a per-finding attribute. `--severity` filters which run. | Rule ID per finding |
-| **Danger (JS/Ruby)** | Three-tier by function: `fail` (blocking) > `warn` (non-blocking) > `message` (info); each has a distinct icon | **Grouped by function into one HTML table** (fails together, warns together), free-form `markdown()` below. Inline supported via optional `file`/`line`. | Markdown table rows; no finding numbers by default |
-
-**Key cross-tool findings:**
-
-1. **Spelled-out severity is universal in user-facing output.** Not one verified tool ships terse single-letter or 3-char severity codes to end users. Conventional Comments uses full words (`issue`, `suggestion`). reviewdog/Semgrep use `error`/`warning` (RDFormat is a *wire* format; rendered output is spelled out). SonarQube/CodeRabbit/Danger all spell severity out fully. The current `crit:`/`imp:`/`sug:`/`q:` shorthand is an outlier driven by an internal token-economy motivation (Phase 7 Plan 07-09) that PROJECT.md notes "may not bind" since word budgets are `wc -w`-based and spelled-out labels are word-neutral.
-
-2. **Two orthogonal axes recur: severity (how urgent) vs kind/intent (what kind).** Conventional Comments separates them cleanly (label = kind, decoration = blocking). CodeRabbit separates severity from "comment type" and "effort". The lz-advisor vocabulary conflates them: `Critical`/`Important`/`Suggestion` are severity tiers; `Question` is a *kind* (a genuine author question, not a severity tier). This matters for grouping -- a `### Question` section is a kind-section sitting alongside severity-sections.
-
-3. **The dominant modern pattern is a HYBRID**: a severity-grouped (or at least severity-counted) summary, PLUS per-finding inline severity at file:line, with findings carrying stable numbers/IDs for cross-referencing. CodeRabbit, SonarQube, and current agent-skill review templates all converge here.
-
-4. **Cross-referencing must survive regrouping.** Multiple sources warn that positional references ("the issue above") break when findings are regrouped into severity sections. The robust pattern is stable finding numbers/IDs (continuous across sections, or severity-prefixed like `CRIT-009`). The current reviewer.md `### Cross-Cutting Patterns` already references findings by ordinal ("Findings 1, 2, and 4 share a root cause...") -- so any grouping change MUST preserve a stable finding-number scheme or that section breaks.
+1. **Subagent `model` resolution priority** (HIGH): (1) `CLAUDE_CODE_SUBAGENT_MODEL` env var ->
+   (2) per-invocation `model` parameter on the Agent tool -> (3) the agent's `model:` frontmatter ->
+   (4) the main conversation's model. The milestone's documented "2 beats 3, env var beats all"
+   assumption is exactly correct.
+2. **The `model` field accepts `fable` and full IDs** (HIGH, supersedes a stale GitHub issue):
+   `/en/sub-agents` -> "Choose a model" lists `sonnet`, `opus`, `haiku`, `fable`, a full ID such as
+   `claude-opus-4-8`, or `inherit`, and states it "Accepts the same values as the `--model` flag."
+   An older issue (anthropics/claude-code#34821, closed-as-not-planned) reported the Agent tool's
+   `model` parameter was hardcoded to a 3-value enum (`sonnet`/`opus`/`haiku`); the current docs
+   contradict that, so `fable` IS a valid per-invocation/frontmatter value now. FLAG for empirical
+   verification during the milestone (it is the load-bearing assumption).
+3. **`$ARGUMENTS` is a single string, not parsed flags** (HIGH): Claude Code does not pre-parse
+   `--model fable` into structured argv. The skill body must instruct the executor to detect the
+   intent (flag form or natural language) from the raw argument string and choose the Agent-tool
+   `model` value accordingly. This is a prompt-engineering task, not a config feature.
+4. **Fable safety classifiers + non-interactive refusal** (HIGH, critical for security-review):
+   Fable flags cybersecurity/biology content and auto-falls-back to Opus with a transcript notice
+   interactively -- but "In non-interactive mode and SDK integrations that can't show the prompt, a
+   flagged request ends the turn with a refusal instead." A security-review run on Fable in headless
+   mode (the project's own `claude -p` UAT path) can hard-fail rather than gracefully degrade.
 
 ## Feature Landscape
 
 ### Table Stakes (Users Expect These)
 
-Features users assume exist. Missing these = report feels incomplete or wrong.
-
 | Feature | Why Expected | Complexity | Notes |
 |---------|--------------|------------|-------|
-| Severity spelled out in full (`Critical`/`Important`/`Suggestion`/`Question`) | Every verified peer tool ships spelled-out severity; `imp:`/`sug:`/`q:` shorthands are jargon a user must decode. This is the milestone's entire reason for existing. | LOW | Word-budget-neutral (`wc -w` counts `imp` and `Important` as 1 word each). The token-economy rationale that motivated shorthands does not bind. |
-| One unambiguous severity per finding | Users prioritize by severity; ambiguity defeats the purpose. Inline-per-finding is the most common form (reviewdog, Semgrep, GitHub, Conventional Comments). | LOW | Already present (one shorthand per fragment line) -- only the *label rendering* changes. |
-| Highest-severity-first ordering | SonarQube orders Blocker->Info; review-workflow guidance says address high severity first. Users scan top-down. | LOW | Current `### Findings` is a flat list in author-emit order, NOT severity order. Spelled-out-inline alone does NOT deliver this; grouping or sorting does. |
-| Finding count per severity (roll-up) | "X issues (Critical: 2, Important: 3...)" lets a user decide shippability at a glance. SonarQube counts per severity; agent-skill templates end with a roll-up. | LOW | Net-new. Cheap to add; high scannability payoff. A grouped layout makes counts implicit (count = section length). |
-| Stable finding identifiers that survive reordering | `### Cross-Cutting Patterns` already references "Findings 1, 2, 4". Cross-ref breaks if findings regroup without stable numbers. | MEDIUM | This is the load-bearing dependency for any grouping change (see Dependencies). |
+| `lz-` prefix removes built-in shadowing | `/review` and `/security-review` silently collided with Claude Code built-ins; users expect their installed plugin command to win | MEDIUM | `git mv` 4 skill dirs + `name:` frontmatter; sweep every cross-reference (SKILL.md, references/*, agents, README, CHANGELOG, CLAUDE.md, tests, in-repo `claude -p` examples). This is the bug-fix half of the milestone and is non-negotiable. |
+| Opus stays the default advisor | The whole value prop is "near-Opus at Sonnet cost"; users who pass no model must get the proven Opus behavior | LOW | Keep `model: opus` in all three agent frontmatter. No change = safe default by construction. |
+| `fable` is strictly opt-in | Fable is ~2x Opus cost; nobody should pay 2x by accident | LOW | Opt-in only via explicit flag/intent in the skill argument. Never auto-select. |
+| Graceful fallback on unrecognized/unavailable model | A typo (`--model fabel`) or no-access must not break the skill | MEDIUM | If the requested override is not a recognized opt-in value, fall back to the Opus default and say so. Mirrors Claude Code's own warn-and-fallback and `availableModels`-blocked-override behavior (a blocked subagent override "falls back to the inherited or default model rather than failing the request"). |
+| Observability: announce the resolved advisor model | This project's stated principle is "model/tool usage must be observable"; a silent fallback or a Fable->Opus provider handoff otherwise hides what actually ran | LOW-MEDIUM | Emit a one-line "Consulting advisor on `<model>`..." before the Agent spawn, and surface when a requested model was NOT honored (fell back to Opus). This is the single most important quality gate for the model-selection feature. |
+| `/lz-` prefix surfaces the suite in autocomplete | Typing `/lz-` should list all four skills together so the suite is discoverable as a group | LOW | Free side-effect of the prefix: Claude Code plugin skills DO appear in slash autocomplete by prefix (the missing-from-autocomplete bug #21526 was specifically about `.claude/commands/`, not plugin skills). The prefix doubles as a discovery namespace, like `uv pip` / `gh pr`. |
+| Migration guidance for the rename | Existing users (and the project's own CONVENTIONS.md `claude -p` invocations) reference the old names; a BREAKING rename without a map is hostile | LOW | CHANGELOG `[2.0.0]` rename table (old -> new), README "What's New", and updated in-repo `claude -p` examples. Standard CLI-rename hygiene: changelog + migration table + rationale. |
 
 ### Differentiators (Competitive Advantage)
 
-Features that set the report apart. Not strictly required, but valuable.
-
 | Feature | Value Proposition | Complexity | Notes |
 |---------|-------------------|------------|-------|
-| Section-per-severity grouping (`### Critical` / `### Important` / `### Suggestion` / `### Question`) | Maximum scannability: a user reads only the `### Critical` block to triage. Matches SonarQube grouping + agent-skill template convention. Section length IS the per-severity count. | MEDIUM | The milestone explicitly flags this "to be evaluated/decided in requirements." Tension: it restructures the agent's `### Findings` contract that the skill parses + that smoke fixtures (`FRAGMENT_RE`) match. Empty severity sections need an explicit "none" convention (SonarQube shows "(none or list)"). |
-| Severity as a leading column / aligned prefix | If staying inline (not grouped), aligning severity as the first token after file:line makes the column visually scannable even in a flat list. | LOW | Cheaper than full grouping; preserves the existing flat `### Findings` parser. The label simply expands `crit:` -> `Critical:` in place. |
-| Mechanical label-expansion at the skill layer (vs agent emitting spelled-out) | Preserves the render-verbatim contract: a deterministic find/replace (`crit:`->`Critical:`) cannot paraphrase or drop findings, satisfying PROJECT.md's "cannot paraphrase or drop findings" constraint. | MEDIUM | Trade-off vs having the agent emit spelled-out labels directly (simpler, but the agent could drift). A mechanical step is auditable and regression-testable but adds a skill-layer transform that must be exactly lossless. |
-| Decoration / kind separation (Conventional-Comments style) | Splitting "is this blocking?" from "what kind is it?" is the cleanest model. `Question` is really a *kind*, not a severity. | HIGH | OUT OF SCOPE for v1.0.1 -- it re-architects the vocabulary, not just the rendering. Note for future-consideration. |
+| Per-skill, per-invocation advisor escalation to Fable | Pay for Fable-class reasoning only on the one hard task that needs it, inside an existing skill, without `/model fable` for the whole session or a session relaunch | MEDIUM | The plugin's edge over the now-native `--advisor fable` (see Competitor Analysis): selection lives in the skill call, scoped to that consultation, with the plugin's curated context-packaging + word-budget contract still applied. |
+| Natural-language model intent ("use Fable") alongside `--model fable` | Skills are invoked conversationally; forcing exact flag syntax fights the medium | LOW-MEDIUM | Since `$ARGUMENTS` is unparsed, the skill prompt should recognize BOTH `--model fable` and prose like "use Fable for this" / "fable advisor". Flag form is the documented canonical; NL is the convenience layer. Precedence inside the skill: explicit flag > NL phrasing > default Opus. |
+| Honest per-call cost/observability framing | Telling users "this consult ran on Fable (~2x Opus)" turns the cost into an informed choice, not a surprise | LOW | One line at consult time. Reinforces the observability principle and the strictly-opt-in cost posture. |
+| Security-review Fable caveat surfaced inline | Fable's classifiers make it the weakest fit for security content; the plugin can warn before the user wastes a flagged/refused run | LOW-MEDIUM | If `fable` is requested for `lz-security-review`, warn that the classifier may refuse/hand off (and that headless mode hard-refuses). Optionally steer to Opus. Differentiator because the native advisor tool does not pre-warn per workflow. |
 
 ### Anti-Features (Commonly Requested, Often Problematic)
 
-Features that seem good but create problems for this specific milestone.
-
 | Feature | Why Requested | Why Problematic | Alternative |
 |---------|---------------|-----------------|-------------|
-| Numeric severity scores (e.g., 1-10 risk score) | Feels precise, sortable | A verified security tool *removed* its numeric score because "a number turns a highlighter into a judgment -- people anchor on the number instead of reading the findings." Adds calibration burden with no upside for a 4-tier scheme. | Keep the 4 named tiers; they are already the industry norm. |
-| Emoji / icon severity markers (Danger-style fail/warn icons) | Visually punchy | Violates the project's hard no-emoji / ASCII-only constraint (CLAUDE.md). Mojibake on Windows cp1252. | ASCII section headers (`### Critical`) or text labels carry the signal. |
-| Expanding the severity vocabulary (adding Blocker/Major/Minor, or Conventional-Comments' 9 labels) | "More granular = better triage" | Scope creep beyond "spell out the existing labels." More tiers = worse scannability ("if AI highlights everything, it highlights nothing"). The 4 tiers are already validated (Phase 4). Security-review uses a *different* set (Critical/High/Medium) -- do not unify them in this milestone. | Spell out the EXISTING per-skill vocab only. Vocabulary change is a separate decision. |
-| Paraphrasing findings into prose during the expansion step | "More readable than fragments" | Directly violates the render-verbatim contract and PROJECT.md's "cannot paraphrase or drop findings." Re-introduces the exact drift the fragment grammar was built to prevent. | Mechanical label-only substitution; leave the `<problem>. <fix>.` body byte-identical. |
-| A severity *column table* (`\| Severity \| File \| Finding \|`) | Looks structured | Markdown tables wrap badly in terminals, and the current `file:line:` prefix grammar is already column-like. Tables also complicate the `FRAGMENT_RE` smoke parser. | Keep one-line-per-finding fragment shape; expand the label token only. |
+| Prompt the user for a model on every invocation | "Make it flexible / always ask" | Friction on every call; defeats the strategic 2-3-consults-per-task discipline; punishes the 95% Opus-default case | Default to Opus silently; opt in per-invocation only when the user passes a flag/intent. |
+| Make Fable the default advisor | "Use the best model" | ~2x Opus cost on every task; Fable subscription access suspends 2026-06-23 (credits-only after); classifiers refuse security/biology content -> broken default for `lz-security-review` | Opus default, Fable strictly opt-in, graceful fallback to Opus. |
+| Persistent plugin-level model setting (a config file the plugin reads) | "Set it once, remember my choice" | Zero-dependency, no-runtime constraint -- a plugin skill is Markdown; it cannot reliably read/write a settings file or own resolution priority. Duplicates Claude Code's own `advisorModel` / `CLAUDE_CODE_SUBAGENT_MODEL`, risking precedence conflicts | Per-invocation selection only. For a persistent default, point users at Claude Code's native `CLAUDE_CODE_SUBAGENT_MODEL` (which already overrides the plugin's per-invocation choice -- document it, don't reimplement it). |
+| Silent model switch with no notice | "Less noise" | Violates the observability principle; a Fable->Opus classifier handoff or a typo-triggered fallback becomes invisible, and the user can't reason about cost or refusals | Always announce the resolved model and any non-honored request. |
+| Keep old skill names as working aliases | "Don't break my scripts" | Re-introduces the exact built-in shadowing bug the milestone exists to fix (`/review` / `/security-review` collide); a "deprecation alias" here is the disease, not the cure | Clean BREAKING rename + a migration table. The whole point is to STOP colliding; aliasing would defeat it. (The standard "keep the old name as an alias" advice does NOT apply when the old name is the bug.) |
+| Arbitrary free-form model values (`--model gpt-4`, any string) | "Let me route anywhere" | Plugin can't validate; non-Anthropic/unknown values either error or silently no-op; expands the test matrix without value for this milestone | Recognize a small, validated opt-in set (Fable; Opus as the default). Treat anything else as unrecognized -> fall back to Opus with a notice. |
 
 ## Feature Dependencies
 
 ```
-[Spelled-out severity labels]  (the milestone core)
-    |
-    |--requires--> [Agent Output Constraint update]
-    |                 (reviewer.md + security-reviewer.md severity-prefix block
-    |                  + worked examples currently show crit:/imp:/sug:/q:)
-    |
-    |--requires--> [FRAGMENT_RE smoke-fixture update in lockstep]
-    |                 (D-reviewer-budget.sh / D-security-reviewer-budget.sh
-    |                  parse findings by the shorthand regex)
-    |
-    '--may-require--> [references/context-packaging.md severity-vocab sync]
-                          (WR-01 Hedge Marker carve-out references the vocab)
+[lz- prefix rename]  (BREAKING, the shadowing fix)
+    |--enables--> [/lz- autocomplete grouping]   (free discoverability side-effect)
+    '--requires--> [cross-reference sweep + migration table]   (rename hygiene)
 
-[Section-per-severity grouping]  (optional differentiator)
-    |
-    |--requires--> [Stable finding-number scheme]
-    |                 (### Cross-Cutting Patterns references "Findings 1,2,4"
-    |                  by ordinal; regrouping breaks ordinals unless numbered)
-    |
-    |--conflicts--> [Author-emit-order flat ### Findings list]
-    |                 (grouping reorders; the skill parser + verbatim contract
-    |                  assume a single ### Findings block)
-    |
-    '--requires--> ["none" convention for empty severity sections]
+[On-demand model selection]
+    |--requires--> [Agent-tool `model` accepts `fable`]   (VERIFY empirically; load-bearing)
+    |--requires--> [argument-intent parsing in skill body]   ($ARGUMENTS is one string)
+    |--requires--> [graceful fallback to Opus]   (unrecognized/unavailable -> default)
+    '--requires--> [resolved-model announcement]   (observability gate)
+            |--enhances--> [per-call cost framing]
+            '--enhances--> [security-review Fable caveat]
 
-[Mechanical label-expansion at skill layer]
-    '--conflicts (tension)--> [Render-verbatim contract]
-          (resolved only if the transform is provably lossless:
-           label-token substitution, never body rewrite)
+[Opus default]  --guarantees safe behavior for-->  [On-demand model selection]
+[CLAUDE_CODE_SUBAGENT_MODEL]  --overrides-->  [the plugin's per-invocation choice]   (document, don't fight)
 ```
 
 ### Dependency Notes
 
-- **Spelled-out labels requires Agent Output Constraint + smoke-fixture update in lockstep:** The shorthands live in the `### Findings` severity-prefix block AND in 5+ worked examples in `reviewer.md` (lines 64-67, 96-134) and the parallel `security-reviewer.md`. The `FRAGMENT_RE` in `D-reviewer-budget.sh` / `D-security-reviewer-budget.sh` parses findings by that regex; PROJECT.md mandates updating it "in lockstep so budget gates still parse findings." Changing one surface without the other breaks either the contract or the gate.
-- **Section-per-severity grouping requires stable finding numbers:** `### Cross-Cutting Patterns` ("Findings 1, 2, and 4 share a root cause") cross-references by positional ordinal. If findings are regrouped into severity sections, ordinals scramble unless an explicit, stable numbering scheme is introduced (continuous across sections, per the verified best practice). This is the single highest-complexity coupling in the milestone.
-- **Section-per-severity conflicts with the flat `### Findings` block:** Both review skills parse the agent's response around the literal `### Findings` and `### Cross-Cutting Patterns` headers (reviewer.md "Output Constraint"). Replacing one `### Findings` block with four `### Critical`/`### Important`/... blocks changes the output contract the skill enforces and the smoke fixtures assert.
-- **Mechanical expansion has a designed tension with render-verbatim:** PROJECT.md states "any skill-layer conversion must be a mechanical label expansion that cannot paraphrase or drop findings." A pure label-token substitution (`crit:`->`Critical:`) is lossless and testable; anything that touches the finding body re-opens the drift problem.
+- **Model selection requires the Agent tool to accept `fable`:** Current docs say yes; a stale
+  closed issue said no. This is the milestone's single point of failure -- verify with a headless
+  `claude -p` probe (CONVENTIONS.md pattern) before building the prompt surface around it.
+- **Selection requires argument parsing in the skill body:** `$ARGUMENTS` is unparsed, so flag-vs-NL
+  intent detection is a prompt concern in each skill (or a shared `references/*.md` doc, per the
+  no-cross-skill-body-references convention).
+- **Fallback + announcement are inseparable from selection:** A selection feature without a "what
+  actually ran" notice fails this project's observability principle and hides cost/refusals.
+- **The prefix rename enables autocomplete grouping for free:** No extra work; the namespace IS the
+  discovery surface.
+- **`CLAUDE_CODE_SUBAGENT_MODEL` sits above the plugin:** It overrides the per-invocation `model`.
+  Document this precedence so users understand why a session-wide override wins; do not attempt to
+  defeat or detect it.
 
 ## MVP Definition
 
-### Launch With (v1.0.1)
+### Launch With (v2.0.0)
 
-Minimum to satisfy the milestone goal -- "no shorthands in user-facing output."
+- [ ] `lz-`-prefixed skill names (4 skills renamed; full cross-reference sweep) -- the BREAKING shadowing fix
+- [ ] Opus remains the default advisor across all three agents (no frontmatter change) -- safe default
+- [ ] Per-invocation opt-in to Fable via `--model fable` AND natural-language "fable" intent -- the new capability
+- [ ] Graceful fallback to Opus on any unrecognized/unavailable model value -- never-broken guarantee
+- [ ] Resolved-advisor-model announcement ("Consulting advisor on `<model>`...") + notice when a request was not honored -- the observability gate
+- [ ] CHANGELOG `[2.0.0]` + rename migration table + README "What's New"; update in-repo `claude -p` examples -- migration hygiene
+- [ ] `CLAUDE_CODE_SUBAGENT_MODEL` precedence documented -- avoids confusion when a session override wins
 
-- [ ] **Full severity labels inline** (`Critical:` / `Important:` / `Suggestion:` / `Question:` for review; the security-review set `Critical:`/`High:`/`Medium:` per its existing vocab) -- the milestone's reason for existing; word-budget-neutral.
-- [ ] **Updated agent Output Constraint + worked examples** in `reviewer.md` and `security-reviewer.md` so the agent emits (or the skill expands to) spelled-out labels -- the source surfaces that currently teach the shorthand.
-- [ ] **`FRAGMENT_RE` smoke fixtures updated in lockstep** (`D-reviewer-budget.sh`, `D-security-reviewer-budget.sh`) so budget gates still parse findings.
-- [ ] **`references/context-packaging.md` severity-vocab sync** (WR-01 Hedge Marker carve-out references the vocab) to avoid the schema/lexicon drift called out in PROJECT.md.
-- [ ] **Atomic 5-surface version bump** per the existing convention.
+### Add After Validation (v2.x)
 
-### Add After Validation (v1.x)
+- [ ] Security-review-specific Fable caveat/steer (warn about classifier refusal, headless hard-refusal) -- add once base selection is proven
+- [ ] Per-call cost framing ("~2x Opus") in the announcement -- low cost, add if users want it surfaced
 
-- [ ] **Section-per-severity grouping** (`### Critical` / `### Important` / ...) -- trigger: the requirements step decides grouping is worth restructuring the `### Findings` contract. Requires the stable-finding-number dependency resolved first.
-- [ ] **Per-severity roll-up count** ("Critical: 2, Important: 3...") -- trigger: users want a triage-at-a-glance line; cheap once labels are spelled out.
-- [ ] **Highest-severity-first ordering** of the flat list (if grouping is NOT adopted) -- trigger: users report scanning friction in author-emit order.
+### Future Consideration (post-2.x)
 
-### Future Consideration (v2+)
-
-- [ ] **Severity/kind axis separation** (Conventional-Comments model: severity decoration vs comment-kind label; reclassify `Question` as a kind not a tier) -- defer: re-architects the vocabulary, not just rendering; out of this milestone's scope.
-- [ ] **Stable severity-prefixed finding IDs** (`CRIT-009`) for durable cross-referencing across reports -- defer: only valuable if reports are persisted/diffed across runs.
+- [ ] Re-evaluate the plugin's reason-to-exist against Claude Code's now-native `advisor` tool
+      (`--advisor fable`, `advisorModel`) -- the native feature overlaps the core value prop; the
+      plugin's edge is per-skill scoping + curated context-packaging + word-budget contracts. Defer
+      to a strategy review, not this milestone.
 
 ## Feature Prioritization Matrix
 
 | Feature | User Value | Implementation Cost | Priority |
 |---------|------------|---------------------|----------|
-| Spelled-out severity labels (inline, in-place) | HIGH | LOW | P1 |
-| Agent Output Constraint + worked-example update | HIGH (enabler) | LOW | P1 |
-| `FRAGMENT_RE` smoke-fixture update in lockstep | HIGH (gate integrity) | LOW | P1 |
-| context-packaging.md vocab sync | MEDIUM (drift prevention) | LOW | P1 |
-| Mechanical lossless label-expansion (if chosen over agent-emit) | MEDIUM | MEDIUM | P2 |
-| Section-per-severity grouping | MEDIUM | MEDIUM-HIGH (breaks `### Findings` contract + needs stable numbers) | P2 |
-| Per-severity roll-up count | MEDIUM | LOW | P2 |
-| Highest-severity-first ordering (flat) | MEDIUM | LOW | P2 |
-| Numeric scores / emoji / vocab expansion | LOW or negative | -- | P3 (anti-feature) |
+| `lz-` prefix rename (shadowing fix) | HIGH | MEDIUM | P1 |
+| Opus default preserved | HIGH | LOW | P1 |
+| `--model fable` + NL opt-in | HIGH | MEDIUM | P1 |
+| Graceful fallback to Opus | HIGH | MEDIUM | P1 |
+| Resolved-model announcement (observability) | HIGH | LOW-MEDIUM | P1 |
+| Migration table + changelog + example updates | MEDIUM | LOW | P1 |
+| `CLAUDE_CODE_SUBAGENT_MODEL` precedence doc | MEDIUM | LOW | P1 |
+| `/lz-` autocomplete grouping | MEDIUM | LOW (free) | P2 |
+| Security-review Fable caveat | MEDIUM | LOW-MEDIUM | P2 |
+| Per-call cost framing | LOW-MEDIUM | LOW | P3 |
 
 **Priority key:**
-- P1: Must have for v1.0.1 launch
-- P2: Should have / next milestone
-- P3: Defer or avoid
-
-## Trade-off: Inline labels vs Section-per-severity grouping
-
-The milestone explicitly asks this to be decided in requirements. Concrete trade-offs from the verified ecosystem:
-
-**Inline label per finding (expand shorthand in place -- lowest-risk path):**
-- + Preserves the existing flat `### Findings` block, the skill parser, and the `FRAGMENT_RE` shape (minimal contract churn).
-- + `### Cross-Cutting Patterns` ordinal references ("Findings 1, 2, 4") keep working unchanged.
-- + Matches reviewdog / Semgrep / GitHub / Conventional Comments (the most common form).
-- - No severity ordering by default; a user scanning for `Critical` must read every line.
-- - Per-severity count is not visible without manual tallying.
-
-**Section-per-severity grouping (`### Critical` / `### Important` / ...):**
-- + Maximum scannability; SonarQube + agent-skill convention. Section length = per-severity count for free.
-- + A user can read only the `### Critical` section to triage shippability.
-- - Restructures the `### Findings` output contract that both skills parse and smoke fixtures assert.
-- - Breaks ordinal cross-referencing unless a stable finding-number scheme is added (the load-bearing dependency).
-- - Needs an explicit "none" convention for empty severity sections, and `Question` (a kind, not a severity) sits awkwardly as a peer section.
-
-**Hybrid (industry default):** a severity-grouped summary + inline labels + continuous finding numbers. Highest scannability, highest cost. Likely a v1.x target, not v1.0.1, because it compounds every dependency above.
-
-**Recommendation for requirements:** Ship **inline spelled-out labels in place** for v1.0.1 (P1, low risk, directly satisfies the goal). Evaluate **grouping + roll-up counts** as a fast-follow once the stable-finding-number dependency is designed -- grouping without stable numbers will silently break `### Cross-Cutting Patterns`.
+- P1: Must have for v2.0.0 launch
+- P2: Should have / fast-follow
+- P3: Nice to have, defer
 
 ## Competitor Feature Analysis
 
-| Feature | Conventional Comments | SonarQube | CodeRabbit | Our Approach (recommended) |
-|---------|----------------------|-----------|------------|---------------------------|
-| Severity rendering | Full-word labels + blocking decoration | Full-word, ordered, counted | Full-word buckets + filters | Full-word labels, expanded in place from existing 4-tier vocab |
-| Layout | Inline per comment | Grouped + counted by severity | Hybrid (summary + inline + cohorts) | Inline now; grouped + roll-up as v1.x |
-| Severity vs kind | Separated (label=kind, decoration=severity) | Severity x type matrix | Severity x type x effort | Keep conflated for v1.0.1; separation is future-consideration |
-| Cross-referencing | None (PR threads) | Issue IDs | Bucket filters | Preserve existing ordinal "Finding N"; need stable numbers before grouping |
-| Numeric score | No | Letter ratings (A-E) | No (filters) | No -- avoid (anchoring anti-pattern) |
+| Feature | Claude Code native `advisor` tool | Claude Code `/model fable` / subagent `model:` | lz-advisor v2.0.0 (our approach) |
+|---------|-----------------------------------|------------------------------------------------|----------------------------------|
+| Select a stronger advisor model | `--advisor fable` / `advisorModel: fable` / `/advisor fable`; server-side, full transcript auto-sent | `/model fable` switches the whole session; subagent frontmatter sets one model for the whole subtask | Per-invocation Fable opt-in scoped to a single skill consultation, with curated context-packaging + word budget |
+| Default | Off unless configured | Opus/Sonnet per tier; Fable never default | Opus default, Fable opt-in |
+| When the strong model runs | Claude decides, mid-task | Whole session / whole subtask | At the skill's strategic consult points only |
+| Cost control | Decision-point calls only | Session-wide (expensive) | 2-3 consults per task by design |
+| Availability constraint | Anthropic API only; not Bedrock/Vertex/Foundry; v2.1.98+ | Broad | Inherits Claude Code's model availability; zero extra deps |
+| Observability | "Advising" transcript line | Status line / `/status` | Explicit "Consulting advisor on `<model>`..." + fallback notice |
 
 ## Sources
 
-- [Conventional Comments specification](https://conventionalcomments.org/) -- label vocabulary (praise/nitpick/suggestion/issue/todo/question/thought/chore/note) and decoration syntax (blocking/non-blocking/if-minor); confirms labels = kind, decorations = severity. HIGH.
-- [CodeRabbit custom reports docs](https://docs.coderabbit.ai/guides/custom-reports) + [Change Stack / Atlas blog](https://www.coderabbit.ai/blog/introducing-atlas-the-first-ai-native-code-review-interface) -- severity buckets, hybrid inline + grouped cohorts, grouping by priority. HIGH.
-- [reviewdog Diagnostic Format (DeepWiki)](https://deepwiki.com/reviewdog/reviewdog/3.2-reviewdog-diagnostic-format) + [reviewdog repo](https://github.com/reviewdog/reviewdog) -- error/warning/info levels, LSP-inspired structured severity, -level / -fail-level. HIGH.
-- [SonarQube Issues docs (10.3)](https://docs.sonarsource.com/sonarqube-server/10.3/user-guide/issues) + [metrics definition](https://docs.sonarsource.com/sonarqube-server/user-guide/code-metrics/metrics-definition) -- 5-level legacy + 3-level (10.2+) severity, grouping/counting, highest-first ordering, A-E ratings. HIGH.
-- [Semgrep CLI reference](https://semgrep.dev/docs/cli-reference) + [understand-severities KB](https://semgrep.dev/docs/kb/rules/understand-severities) -- Critical/High/Medium/Low (new) vs ERROR/WARNING/INFO (legacy), per-finding severity, --severity filter. HIGH.
-- [Danger reference](https://danger.systems/reference) + [Danger JS](https://danger.systems/js/) + [messaging plugin source](https://github.com/danger/danger/blob/master/lib/danger/danger_core/plugins/dangerfile_messaging_plugin.rb) -- fail/warn/message tiers grouped into one table, optional inline file/line, markdown table with Severity column. HIGH.
-- [Code review comment prefixes (emmer.dev)](https://emmer.dev/blog/code-review-comment-prefixes/) + [What does "nit" mean (Augment)](https://www.augmentcode.com/guides/what-does-nit-mean-in-code-review) + [Nitpicks vs must-fix (Propel)](https://www.propelcode.ai/blog/code-review-nitpicks-vs-must-fix-issues) -- GitHub PR severity conventions, blocking/non-blocking, "don't mix severity signals." MEDIUM (community convention, multi-source agreement).
-- [Banish "nitpick" / granular severity (codetinkerer)](https://www.codetinkerer.com/2024/01/12/nitpick-code-reviews.html) -- GitHub UI only encodes one binary signal; argument for explicit severity in text. MEDIUM.
-- WebSearch synthesis on grouped-vs-inline trade-offs (agent-skill review templates, security tooling) -- hybrid layout, continuous numbering across sections, "a number turns a highlighter into a judgment," "if AI highlights everything it highlights nothing." MEDIUM (multi-source; the numeric-score and over-highlighting cautions appeared in independent sources).
+- Claude Code, Model configuration -- <https://code.claude.com/docs/en/model-config> (HIGH: aliases incl. `fable`/`best`, Fable not default, content-classifier fallback, fallback chains, `--model` flag vs settings, `availableModels`, `CLAUDE_CODE_SUBAGENT_MODEL` precedence, non-interactive refusal)
+- Claude Code, Create custom subagents -- <https://code.claude.com/docs/en/sub-agents> (HIGH: `model` field accepts `fable`/full IDs/`inherit`; 4-step resolution priority; per-invocation `model` parameter; plugin agent frontmatter)
+- Claude Code, Advisor tool -- <https://code.claude.com/docs/en/advisor> (HIGH: native `advisorModel`/`--advisor fable`, advisor pairings, "Advising" notice, compare-with-subagents -- competitor context)
+- anthropics/claude-code#34821 -- <https://github.com/anthropics/claude-code/issues/34821> (MEDIUM, stale: Task-tool model-enum restriction, closed-as-not-planned; CONTRADICTED by current sub-agents docs -- flagged for empirical verification)
+- anthropics/claude-code#21526 -- <https://github.com/anthropics/claude-code/issues/21526> (MEDIUM: autocomplete surfaces `.claude/skills/` by prefix; the missing-from-autocomplete bug was `.claude/commands/`-specific, so plugin-skill prefix grouping works)
+- Claude Code slash-command argument handling -- WebSearch synthesis (MEDIUM: `$ARGUMENTS` is a single unparsed string; the model decides parsing; `--model` is a flag/frontmatter mechanism, not parsed from `$ARGUMENTS`)
+- CLI rename/deprecation conventions -- WebSearch synthesis (MEDIUM: changelog + migration table + rationale; "keep old name as alias" is the standard pattern but does NOT apply when the old name is the bug being fixed)
+- Project context -- `.planning/PROJECT.md` Current Milestone + Key context (HIGH: Opus default, priority 2>3, Fable ~2x cost + 2026-06-23 access suspension + security-classifier weakness, `CLAUDE_CODE_SUBAGENT_MODEL` priority 1)
 
 ---
-*Feature research for: severity-labeled code-review report presentation*
-*Researched: 2026-06-07*
+*Feature research for: on-demand advisor-model selection + prefixed-skill UX (lz-advisor v2.0.0)*
+*Researched: 2026-06-13*

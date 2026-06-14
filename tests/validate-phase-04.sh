@@ -1,16 +1,16 @@
 #!/usr/bin/env bash
 # Structural validation for Phase 4: Review Skills
 # Tests verify content patterns in skills and agents for both
-# lz-advisor-review and lz-advisor-security-review.
+# lz-review and lz-security-review (under plugins/lz-advisor/).
 # Framework: git grep / bash assertions (no external dependencies).
 # Run from the repository root: bash tests/validate-phase-04.sh
 
 set -euo pipefail
 
-REVIEW_SKILL="skills/lz-advisor-review/SKILL.md"
-SECURITY_SKILL="skills/lz-advisor-security-review/SKILL.md"
-REVIEWER_AGENT="agents/reviewer.md"
-SECURITY_AGENT="agents/security-reviewer.md"
+REVIEW_SKILL="plugins/lz-advisor/skills/lz-review/SKILL.md"
+SECURITY_SKILL="plugins/lz-advisor/skills/lz-security-review/SKILL.md"
+REVIEWER_AGENT="plugins/lz-advisor/agents/reviewer.md"
+SECURITY_AGENT="plugins/lz-advisor/agents/security-reviewer.md"
 
 PASS_COUNT=0
 FAIL_COUNT=0
@@ -111,12 +111,15 @@ else
       "Expected 'model: opus' in $REVIEWER_AGENT"
   fi
 
-  # 04-01-03 (REVW-03): ~300 word output budget (D-02)
-  if git grep -q "300 words" "$REVIEWER_AGENT" 2>/dev/null; then
-    pass "REVW-03 (budget): reviewer agent has ~300 word output budget"
+  # 04-01-03 (REVW-03): per-section word budget via <output_constraints> (D-02).
+  # Repaired 2026-06-14: Phase 7 replaced the aggregate "300 words" prose with a
+  # per-section <output_constraints> block (reviewer.md: "this block supersedes the
+  # prior aggregate-300w prose"); assert the per-entry budget instead.
+  if git grep -q "<output_constraints>" "$REVIEWER_AGENT" 2>/dev/null && git grep -q 'max_words="22"' "$REVIEWER_AGENT" 2>/dev/null; then
+    pass "REVW-03 (budget): reviewer agent enforces per-section word budgets (<output_constraints>, per_entry max_words=22)"
   else
-    fail "REVW-03 (budget): 300 word budget not found" \
-      "Expected '300 words' in $REVIEWER_AGENT"
+    fail "REVW-03 (budget): per-section <output_constraints> budget not found" \
+      "Expected '<output_constraints>' + 'max_words=\"22\"' in $REVIEWER_AGENT (Phase 7 per-section budget model)"
   fi
 
   # 04-01-03 (REVW-03): cross-cutting pattern recognition (D-11)
