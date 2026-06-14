@@ -41,8 +41,8 @@ Plans:
 
 #### Phase 14.2: Verdict scope marker label rename (INSERTED)
 
-**Goal:** Rename the human-facing `**Verdict scope:**` label on the cross-skill provenance marker to kill the "Verdict scope: scope:" word-on-word repeat (cosmetic / output-contract change, not an invocation-surface break). The machine-readable `scope: <value>` token is UNCHANGED, so the downstream scope-match parser keeps working. **Open decision for discuss:** which label wins (`Verdict axis:` lean) -- see `14.2-SEED.md`.
-**Requirements**: TBD (derive in /gsd-discuss-phase 14.2)
+**Goal:** Rename the human-facing `**Verdict scope:**` label on the cross-skill provenance marker to kill the "Verdict scope: scope:" word-on-word repeat (cosmetic / output-contract change, not an invocation-surface break). The machine-readable `scope: <value>` token is UNCHANGED, so the downstream scope-match parser keeps working. **Decided** (/gsd-discuss-phase, D-01..D-04 in `14.2-CONTEXT.md`): the new label is `**Verdict axis:**` (reuses the codebase's own word -- lz-execute:290 "the axis of correctness", context-packaging.md:367 "the relevant axis"); the label-consistent boundary also flips the two `### Verdict scope marker` doc headers to `### Verdict axis marker`; the `scope: <value>` token + parser prose stay frozen; one atomic WR-05 commit; no version work (Phase 15 owns the bump).
+**Requirements:** VLABEL-01 (rename all 9 bold-label sites + the 2 `### Verdict scope marker` doc headers to `Verdict axis`, atomic WR-05 commit), VLABEL-02 (closing `git grep` gate: zero "Verdict scope" under `plugins/lz-advisor/`, `scope: <enum>` token count unchanged at 16, `### Downstream consumer rule` parser prose byte-intact)
 **Depends on:** Phase 14
 **Plans:** 0 plans
 
@@ -57,7 +57,7 @@ Plans:
 2. `CHANGELOG.md` `[2.0.0]` entry documents the breaking rename with an old->new migration table (bare + qualified forms) + a compare link; the plugin README "What's New" shows the 2.0.0 entry.
 3. A `v2.0.0` git tag is pushed to origin and a GitHub Release is published with the `[2.0.0]` notes.
 
-**Coverage:** 6/6 requirements mapped (RENAME-01..03 -> Phase 14; REL-01..03 -> Phase 15). Phase 14.1 (SEV-AGNT-01..04, SEV-SKILL-01, SEV-FIX-01, SEV-DOC-01, SEV-SCOPE-01) + Phase 14.2 are inserted scope tracked separately.
+**Coverage:** 6/6 requirements mapped (RENAME-01..03 -> Phase 14; REL-01..03 -> Phase 15). Phase 14.1 (SEV-AGNT-01..04, SEV-SKILL-01, SEV-FIX-01, SEV-DOC-01, SEV-SCOPE-01) + Phase 14.2 (VLABEL-01, VLABEL-02) are inserted scope tracked separately.
 
 <details>
 <summary>[SHIPPED] v1.0 MVP (Phases 1-10) -- 2026-06-01, plugin 1.0.0</summary>
