@@ -29,9 +29,9 @@
 Plans:
 - [x] 14-01-PLAN.md -- git mv the 4 skill dirs + name: fields, lockstep cross-reference accuracy sweep, closing 5-pattern git grep gate + RENAME-02 interactive-picker recipe (human_needed)
 
-#### Phase 14.1: lz-security-review canonical severities (Critical/High/Medium) (INSERTED)
+#### Phase 14.1: lz-security-review canonical severities (Critical/High/Medium/Low/Informational) (INSERTED)
 
-**Goal:** Migrate the lz-security-review skill + security-reviewer agent from the `Critical/Important/Suggestions/Questions` taxonomy to canonical security severities (`Critical/High/Medium`) as a breaking change. Scope is security-review only (lz-review keeps its taxonomy). Decided in `/gsd-discuss-phase` (D-01..D-18 in `14.1-CONTEXT.md`): the scale is the canonical 5-tier `Critical/High/Medium/Low/Informational` plus a non-severity `### Open Questions` section, omit-when-empty; the ROADMAP goal text + Phase 15 CHANGELOG read `C/H/M/L/Informational` (Task 5 lands the goal-text edit in the atomic execution commit).
+**Goal:** Migrate the lz-security-review skill + security-reviewer agent from the `Critical/Important/Suggestions/Questions` taxonomy to canonical security severities (`Critical/High/Medium/Low/Informational`) as a breaking change. Scope is security-review only (lz-review keeps its taxonomy). Decided in `/gsd-discuss-phase` (D-01..D-18 in `14.1-CONTEXT.md`): the scale is the canonical 5-tier `Critical/High/Medium/Low/Informational` plus a non-severity `### Open Questions` section, omit-when-empty; the ROADMAP goal text + Phase 15 CHANGELOG read `C/H/M/L/Informational` (Task 5 lands the goal-text edit in the atomic execution commit).
 **Requirements:** SEV-AGNT-01, SEV-AGNT-02, SEV-AGNT-03, SEV-AGNT-04, SEV-SKILL-01, SEV-FIX-01, SEV-DOC-01, SEV-SCOPE-01
 **Depends on:** Phase 14
 **Plans:** 1 plan (ONE atomic lockstep unit -- agent + skill + fixture + 2 doc touch-ups, committed as ONE commit per the WR-05 few-shot-drift discipline)

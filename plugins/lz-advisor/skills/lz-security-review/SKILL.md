@@ -11,7 +11,8 @@ description: >
   and "audit for security". This skill provides Opus-level security
   review at Sonnet cost by consulting the security-reviewer agent
   for OWASP Top 10-informed threat analysis. Findings are
-  classified as Critical, Important, or Suggestion with OWASP category
+  classified by canonical security severity (Critical / High / Medium /
+  Low / Informational) with OWASP category
   tags. This skill should NOT be used for general code quality
   reviews, bug finding, or style issues -- use lz-review
   instead. It should also NOT be used for planning or implementing
@@ -123,7 +124,7 @@ Skip (do not flag):
 - Theoretical vulnerabilities in code paths that are never exposed to external input
 - Issues a SAST tool would flag without context (pure pattern matching)
 
-Curate the top 3-5 highest-severity security findings with file:line references and relevant code context. For each finding, include an initial severity assessment (Critical / Important / Suggestion).
+Curate the top 3-5 highest-severity security findings with file:line references and relevant code context. For each finding, include an initial severity assessment (Critical / High / Medium / Low for vulnerabilities; Informational for opportunistic hardening observations noted in passing -- never a hunt goal).
 
 Do not consult the security-reviewer agent during scanning. Scanning is preparation.
 </scan>
@@ -148,7 +149,7 @@ conversation -- all relevant context goes in the prompt.
 <output>
 ## Phase 3: Structure Output
 
-Render the security-reviewer agent's response verbatim to the user. The security-reviewer emits findings grouped under four fixed-order severity headers -- the literal headers `### Critical`, `### Important`, `### Suggestions`, and `### Questions` (always emitted in that order, every time, even when a severity has zero findings) -- followed later by the literal header `### Threat Patterns`, per its Output Constraint contract. These five headers are the skill's output shape and MUST reach the user intact.
+Render the security-reviewer agent's response verbatim to the user. The security-reviewer emits findings grouped under the canonical severity headers -- the literal headers `### Critical`, `### High`, `### Medium`, `### Low`, and `### Informational`, plus the non-severity `### Open Questions` section -- followed later by the literal header `### Threat Patterns`, per its Output Constraint contract. Omit-when-empty: each severity tier section appears ONLY when it has at least one finding (there are no empty-section placeholder markers); the relative order among populated sections is `### Critical` -> `### High` -> `### Medium` -> `### Low` -> `### Informational` -> `### Open Questions`. These headers are the skill's output shape and MUST reach the user intact.
 
 Prepend a one-line scope summary BEFORE the security-reviewer's verbatim response (so the user sees what was reviewed), then emit the security-reviewer's response unchanged.
 
@@ -158,20 +159,22 @@ Required output shape:
 >
 > Reviewed: [scope description -- files, directories, or commit range]
 >
-> [Security-reviewer agent's response, rendered verbatim. Begins with `### Critical`, continues with the four severity sections (`### Critical`, `### Important`, `### Suggestions`, `### Questions` -- each header always present; an empty section shows a single `(none)` line; each finding line carries an OWASP `[Axx]` tag like `[A03]` after its location), then the `### Threat Patterns` section.]
+> Scope note: a curated set of the highest-priority findings in the reviewed code at this point in time -- not an exhaustive audit. An absent severity is not a guarantee that none exist.
+>
+> [Security-reviewer agent's response, rendered verbatim. The populated severity sections (`### Critical`, `### High`, `### Medium`, `### Low`, `### Informational`) appear in that relative order -- omit-when-empty, so only tiers with at least one finding are present (there are no empty-section placeholder markers); the non-severity `### Open Questions` section follows when present; each finding line carries an OWASP `[Axx]` tag like `[A03]` after its location, then the `### Threat Patterns` section.]
 
-The security-reviewer MAY also emit two optional sections that pass through verbatim like every other section: an optional `### Per-finding validation` section (severity-revision or confirmation prose) may appear AFTER `### Questions` and BEFORE the trailing `### Threat Patterns` section, and an optional `### Missed surfaces` section may appear at the very end. When present, render them unchanged; when absent, render nothing in their place.
+The security-reviewer MAY also emit two optional sections that pass through verbatim like every other section: an optional `### Per-finding validation` section (severity-revision or confirmation prose) may appear AFTER `### Open Questions` and BEFORE the trailing `### Threat Patterns` section, and an optional `### Missed surfaces` section may appear at the very end. When present, render them unchanged; when absent, render nothing in their place.
 
-The security-reviewer ALREADY groups findings by severity under these four headers. This grouped shape IS the contracted output; the skill passes it through unchanged. Do NOT:
-- Collapse, merge, reorder, or flatten the four severity sections (`### Critical` / `### Important` / `### Suggestions` / `### Questions`) -- the security-reviewer carries severity in the section header (the single source of severity), so reformatting would destroy the contracted shape, not impose it.
-- Drop or rewrite an empty section's `(none)` marker -- each of the four headers is emitted unconditionally; preserve the header and its `(none)` line.
-- Strip, rename, or bold any of the four severity headers or the `### Threat Patterns` header.
+The security-reviewer ALREADY groups findings by severity under the canonical headers. This grouped shape IS the contracted output; the skill passes it through unchanged. Do NOT:
+- Collapse, merge, reorder, or flatten the severity sections (`### Critical` / `### High` / `### Medium` / `### Low` / `### Informational`) or the non-severity `### Open Questions` section -- the security-reviewer carries severity in the section header (the single source of severity), so reformatting would destroy the contracted shape, not impose it.
+- Inject an empty-section placeholder marker -- the security-reviewer emits a severity tier section ONLY when it has at least one finding (omit-when-empty); do NOT add a placeholder line or a header for any tier the agent omitted.
+- Strip, rename, or bold any of the severity headers, the `### Open Questions` header, or the `### Threat Patterns` header.
 - Strip or rewrite the OWASP `[Axx]` tags on finding lines -- they are preserved verbatim by the security-reviewer's contract.
 - Drop the `### Threat Patterns` section even if its body is short -- the security-reviewer emits the header unconditionally per its Output Constraint; pass it through.
 - Add a "Recommended Action" or next-steps section.
 - Add Opus attribution tags, a "Threat Analysis" wrapper, or any other section not present in the security-reviewer's response.
 
-If the security-reviewer rejected a finding the executor packaged, that rejection appears within the security-reviewer's severity sections (validation step). The executor does not second-guess: pass the full four-severity-section body and the `### Threat Patterns` content through.
+If the security-reviewer rejected a finding the executor packaged, that rejection appears within the security-reviewer's severity sections (validation step). The executor does not second-guess: pass the full set of populated severity sections, the `### Open Questions` section, and the `### Threat Patterns` content through.
 
 If no security issues were found during scanning (Phase 1 produced zero findings), skip Phase 2 consultation and report directly: "No security vulnerabilities identified in the reviewed scope. Reviewed: [scope]." Note briefly what was examined. Do not invoke the security-reviewer agent with an empty Findings packet.
 
