@@ -397,6 +397,44 @@ test('TEST-9 path-traversal via a malformed excerpt_id fails closed (aggregate t
   }
 });
 
+test('R1-1 path-traversal claim id rejected at read-time with .file naming the worker', () => {
+  // Sibling of TEST-9 (which path-traverses excerpt_id). KEY DIFFERENCE: assert err.file -- the
+  // read-time annotation -- not merely the throw. Pitfall-4 option (a): a path-traversal id on an
+  // OTHERWISE-VALID claim with NO excerpts dir. If the read-time safeId(c.id, ...) guard in
+  // mergeClusters were ABSENT, the claim would DROP at quote-recheck (its quote matches no excerpt)
+  // BEFORE reaching tally -- so aggregate would NOT throw at all. Only the read-time guard rejects
+  // the id here; this keeps the test a clean read-time discriminator independent of tally's
+  // (now .file-carrying) late safeId calls.
+  //
+  // MUTATION TO KILL: remove the read-time `safeId(c.id, path.join(claimsDir, f))` from
+  // mergeClusters -> with no excerpts the claim drops at quote-recheck and aggregate does NOT throw
+  // -> assert.throws FAILS.
+  const runDir = tmpRunDirWithWorker({
+    worker: 'w1',
+    source: 's1',
+    claims: [{ id: '../evil', text: 'X reduces Y by 30%', quote: 'X reduces Y by 30%', excerpt_id: 'e1' }],
+  });
+
+  try {
+    let caught;
+    assert.throws(
+      () => aggregate(runDir),
+      (err) => {
+        caught = err;
+
+        return /path traversal rejected/.test(err.message);
+      },
+    );
+    // The DISCRIMINATING assertions (kill the mutation): the abort carries the worker file, proving
+    // read-time rejection in mergeClusters (NOT a .file-less or dropped-silently late behavior).
+    assert.equal(caught.name, 'ContractError');
+    assert.equal(typeof caught.file, 'string');
+    assert.ok(caught.file.endsWith('w1.json'), 'ContractError.file must name the authoring worker');
+  } finally {
+    fs.rmSync(runDir, { recursive: true, force: true });
+  }
+});
+
 test('TEST-2 cross-file-order stability: listJson sorts the directory listing (host-independent, fails iff .sort() removed)', () => {
   // TEST-2 (Important) -- the AGG-01 determinism guarantee is that worker files are processed in a
   // fixed lexical order regardless of the filesystem's readdir order, which mergeClusters relies on

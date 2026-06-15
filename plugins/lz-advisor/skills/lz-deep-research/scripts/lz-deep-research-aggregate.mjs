@@ -251,6 +251,14 @@ export function mergeClusters(runDir) {
         throw new ContractError('claim missing non-empty id', path.join(claimsDir, f));
       }
 
+      // R1-1 (mirrors the WR-02 excerpt_id precedent): reject a path-traversal claim id (e.g.
+      // "../evil") at READ time with the originating worker file, not LATE in tally() with a
+      // .file-less ContractError. safeId throws ContractError('unsafe id (path traversal rejected):
+      // ...', file); the return value is discarded (c.id is unchanged) -- this is a validating
+      // side-effect at the read boundary. The AGG-1 non-empty guard above is KEPT for its distinct
+      // 'claim missing non-empty id' message (safeId's empty-id message differs); both coexist.
+      safeId(c.id, path.join(claimsDir, f));
+
       // Fail closed on a missing text/quote (WR-01/WR-02): both are required, load-bearing fields of
       // the FROZEN survivor record (claim: cl.text) and the fidelity guard (normalize(quote)).
       // A missing text drops `claim` from survivors.json (JSON.stringify omits undefined props); a
