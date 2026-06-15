@@ -4,8 +4,8 @@ milestone: v2.1.0
 milestone_name: lz-deep-research skill
 status: executing
 stopped_at: Phase 17.2 context gathered
-last_updated: "2026-06-15T19:40:45.659Z"
-last_activity: 2026-06-15 -- Phase 17.2 planning complete
+last_updated: "2026-06-15T19:42:40.170Z"
+last_activity: 2026-06-15 -- Phase 17.2 execution started
 progress:
   total_phases: 7
   completed_phases: 3
@@ -21,7 +21,7 @@ progress:
 See: .planning/PROJECT.md (updated 2026-06-15 -- milestone v2.1.0 started)
 
 **Core value:** Near-Opus intelligence at Sonnet cost, through strategic advisor consultation at high-leverage moments -- now extended from coding tasks to deep research
-**Current focus:** Phase 18 — haiku prompt engineering deep research + verify voter + early gating eval
+**Current focus:** Phase 17.2 — address-lz-review-findings-for-lz-deep-research-aggregator-r
 
 ## Deferred Items
 
@@ -37,10 +37,10 @@ Items deferred across milestones (v1.0.1 close 2026-06-11; v2.0.0 additions tagg
 
 ## Current Position
 
-Phase: 18
-Plan: Not started
-Status: Ready to execute
-Last activity: 2026-06-15 -- Phase 17.2 planning complete
+Phase: 17.2 (address-lz-review-findings-for-lz-deep-research-aggregator-r) — EXECUTING
+Plan: 1 of 2
+Status: Executing Phase 17.2
+Last activity: 2026-06-15 -- Phase 17.2 execution started
 
 ### Milestone v2.1.0 roadmap (REVISED 2026-06-15)
 

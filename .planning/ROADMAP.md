@@ -124,8 +124,8 @@ Full phase details, success criteria, and decision logs are archived in [milesto
 **Goal**: Close all Important and Suggestion findings from the 3-pass `/lz-advisor:lz-review` audit of Phases 16/17/17.1 work (aggregator source, test suite, schema reference). The two Important findings are load-bearing: R1-1 (claim `id` path-safety missing at read-time in `mergeClusters`, violating AGG-5/6/7 `.file` discipline) and R2-1 (`readJson(f).verdict` throws raw `TypeError` on literal-null vote file, bypassing ContractError). Four Suggestion findings address labeling hygiene and test coverage gaps.
 **Depends on:** Phase 17.1
 **Requirements**: R1-1, R2-1 (Important), R2-2, R1-2, R1-3, R2-3 (Suggestion)
-**Plans:** 2 plans
-- [ ] 17.2-01-PLAN.md -- R1-1 read-time claim-id path-safety guard in mergeClusters + .file-annotated tally safeId calls + R2-1 non-object vote-record fail-closed guard, each with a mutation-verified regression test (R1-1, R2-1, R1-3, R2-3)
+**Plans:** 1/2 plans executed
+- [x] 17.2-01-PLAN.md -- R1-1 read-time claim-id path-safety guard in mergeClusters + .file-annotated tally safeId calls + R2-1 non-object vote-record fail-closed guard, each with a mutation-verified regression test (R1-1, R2-1, R1-3, R2-3)
 - [ ] 17.2-02-PLAN.md -- WR-04 label-overload relabel: AGG-1 primary on the missing-id anchors (WR-04 co-label retained for SC-4) + QR-01 on the substring caveat, across source/test/schema with a closing git grep gate (R2-2, R1-2)
 
 ### Phase 18: Haiku prompt-engineering deep research + verify-voter + early gating eval
