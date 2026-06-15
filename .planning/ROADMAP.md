@@ -95,7 +95,9 @@ Full phase details, success criteria, and decision logs are archived in [milesto
   2. The tally rubric is written down and maps every possible vote tally to exactly one confidence level from the frozen enum (High / Medium / Low / Contested / Unsupported), with refuted = downgrade-not-delete unless explicit refutation.
   3. The schema mandates that every claim record carries a confidence-level field, so a confidence level is structurally attached to each claim (not left to model discretion).
   4. The reference defines "quote verified verbatim" and "claim supported by the quote" as two SEPARATE assurance fields, so the eventual report can distinguish them rather than conflating quote-presence with entailment.
-**Plans**: TBD
+**Plans**: 2 plans
+- [ ] 17-01-PLAN.md -- Lockstep GA-1/D-02 aggregator correction: rewrite tally() to the Option I 5-tier enum (drop Rejected, un-fuse Low/Contested, Contested-on-split, downgrade-not-delete) + 5-label stdout line + four new per-tier fixture cases/assertions (PIPE-07)
+- [ ] 17-02-PLAN.md -- Write references/lz-deep-research-schema.md freezing the corrected shapes (records, tally rubric, single enum, two assurances + worked example, named-ceilings + quote-recheck + D-12 anti-drift) + reconcile 16-01-SUMMARY (PIPE-07, VERIF-06)
 
 ### Phase 18: Haiku prompt-engineering deep research + verify-voter + early gating eval
 **Goal**: The Haiku verify-voter prompt is engineered from a dedicated deep-research pass on Haiku prompt-engineering patterns (captured as a reference artifact) BEFORE any Haiku agent is authored; the Sonnet baseline verify-voter and the research-grounded Haiku verify-voter variant are then authored against the frozen vote schema; and the pre-registered gating eval (lock rule written first, false-uphold as the sole hard gate) runs standalone against the voter -- settling the Haiku-first flag, or raising the decision to the user if Haiku is non-viable. Runs isolated from the orchestrator, search, and extract workers, driven by the existing pilot harness over the Phase-16 tally + Phase-17 vote schema.
@@ -143,7 +145,7 @@ Phases execute in numeric order: 16 -> 17 -> 18 -> 19 -> 20
 | 11-13 (v1.0.1) | v1.0.1 | 13/13 | Complete | 2026-06-08 |
 | 14-15 (v2.0.0, incl. 14.1, 14.2) | v2.0.0 | 4/4 | Complete | 2026-06-14 |
 | 16. Aggregator + fixture | v2.1.0 | 2/2 | Complete    | 2026-06-15 |
-| 17. Schema + contract | v2.1.0 | 0/TBD | Not started | - |
+| 17. Schema + contract | v2.1.0 | 0/2 | Not started | - |
 | 18. Haiku research + voter + early eval | v2.1.0 | 0/TBD | Not started | - |
 | 19. Search + extract workers | v2.1.0 | 0/TBD | Not started | - |
 | 20. Orchestrator + scale | v2.1.0 | 0/TBD | Not started | - |
