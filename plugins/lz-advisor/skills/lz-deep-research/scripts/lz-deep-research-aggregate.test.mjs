@@ -61,6 +61,14 @@ test('SC5-2 real-quote / wrong-passage downgraded (kept, fidelity lowered, not d
     r.survivors.some((s) => s.quote_fidelity === 'downgraded'),
     'expected a survivor with quote_fidelity === downgraded',
   );
+
+  // TEST-4: the fixture has a SINGLE claim -> a single downgraded survivor, and its vote files are
+  // member-id-named (c1-0/1/2.json, all unrefuted). Locking the confidence at High proves the
+  // member-id vote-file FALLBACK actually fired (cluster-id lookup misses, member-id lookup hits);
+  // a silent fallback failure would yield Unsupported (0 readable seats) and go uncaught otherwise.
+  assert.equal(r.survivors.length, 1, 'wrong-passage-downgraded fixture must yield exactly one survivor');
+  assert.equal(r.survivors[0].quote_fidelity, 'downgraded');
+  assert.equal(r.survivors[0].confidence, 'High');
 });
 
 test('SC5-3 paraphrase pair from ONE source merges into one cluster, NOT double-counted (corroboration 1)', () => {
@@ -150,52 +158,57 @@ test('PIPE-07 / D-02 stdout by-confidence line names all five canonical labels, 
   fs.mkdirSync(excerptsDir, { recursive: true });
   fs.mkdirSync(votesDir, { recursive: true });
 
-  // Two non-mergeable claims (disjoint token sets so they never cluster together).
-  fs.writeFileSync(
-    path.join(claimsDir, 'w1.json'),
-    JSON.stringify({
-      worker: 'w1',
-      source: 's1',
-      claims: [
-        { id: 'ca', text: 'X reduces Y by 30%', quote: 'X reduces Y by 30%', excerpt_id: 'ea' },
-        { id: 'cb', text: 'P boosts Q tenfold', quote: 'P boosts Q tenfold', excerpt_id: 'eb' },
-      ],
-    }),
-    'utf8',
-  );
-  fs.writeFileSync(path.join(excerptsDir, 'ea.txt'), 'The study found that X reduces Y by 30% overall.', 'utf8');
-  fs.writeFileSync(path.join(excerptsDir, 'eb.txt'), 'The report states that P boosts Q tenfold in trials.', 'utf8');
+  // TEST-5: wrap the run-dir lifetime in try/finally so the OS temp dir is always cleaned up.
+  try {
+    // Two non-mergeable claims (disjoint token sets so they never cluster together).
+    fs.writeFileSync(
+      path.join(claimsDir, 'w1.json'),
+      JSON.stringify({
+        worker: 'w1',
+        source: 's1',
+        claims: [
+          { id: 'ca', text: 'X reduces Y by 30%', quote: 'X reduces Y by 30%', excerpt_id: 'ea' },
+          { id: 'cb', text: 'P boosts Q tenfold', quote: 'P boosts Q tenfold', excerpt_id: 'eb' },
+        ],
+      }),
+      'utf8',
+    );
+    fs.writeFileSync(path.join(excerptsDir, 'ea.txt'), 'The study found that X reduces Y by 30% overall.', 'utf8');
+    fs.writeFileSync(path.join(excerptsDir, 'eb.txt'), 'The report states that P boosts Q tenfold in trials.', 'utf8');
 
-  // Deterministic rank: corroboration is 1 for both, so the lexical tiebreak orders them; the
-  // FIRST cluster gets cluster0, the second cluster1. Seed cluster0 as a Contested split.
-  fs.writeFileSync(path.join(votesDir, 'cluster0-0.json'), JSON.stringify({ verdict: 'unrefuted' }), 'utf8');
-  fs.writeFileSync(path.join(votesDir, 'cluster0-1.json'), JSON.stringify({ verdict: 'refuted' }), 'utf8');
-  // cluster1 has no vote files -> Unsupported.
+    // Deterministic rank: corroboration is 1 for both, so the lexical tiebreak orders them; the
+    // FIRST cluster gets cluster0, the second cluster1. Seed cluster0 as a Contested split.
+    fs.writeFileSync(path.join(votesDir, 'cluster0-0.json'), JSON.stringify({ verdict: 'unrefuted' }), 'utf8');
+    fs.writeFileSync(path.join(votesDir, 'cluster0-1.json'), JSON.stringify({ verdict: 'refuted' }), 'utf8');
+    // cluster1 has no vote files -> Unsupported.
 
-  const r = aggregate(runDir);
+    const r = aggregate(runDir);
 
-  // The by-confidence receipt names all five canonical labels.
-  for (const label of ['High', 'Medium', 'Low', 'Contested', 'Unsupported']) {
-    assert.ok(r.summary.includes(label + ' '), 'summary by-confidence line must name the label ' + label);
+    // The by-confidence receipt names all five canonical labels.
+    for (const label of ['High', 'Medium', 'Low', 'Contested', 'Unsupported']) {
+      assert.ok(r.summary.includes(label + ' '), 'summary by-confidence line must name the label ' + label);
+    }
+
+    // The spike artifacts are gone from the receipt. Assemble the forbidden tokens from fragments
+    // so the stale strings never appear literally in this test source (keeps the closing git grep
+    // gate -- zero hits for the un-canonical fused token / the dropped terminal label -- clean).
+    const fusedToken = 'Low' + '/' + 'Contested';
+    const droppedLabel = 'Reje' + 'cted';
+    assert.ok(!r.summary.includes(fusedToken), 'summary must not contain the un-fused-away spike token');
+    assert.ok(!r.summary.includes(droppedLabel), 'summary must not contain the dropped terminal spike label');
+
+    // The two tiers are actually represented (not a vacuous label-name match): one Contested, one Unsupported.
+    assert.ok(
+      r.survivors.some((s) => s.confidence === 'Contested'),
+      'expected a Contested survivor in the spanning run-dir',
+    );
+    assert.ok(
+      r.survivors.some((s) => s.confidence === 'Unsupported'),
+      'expected an Unsupported survivor in the spanning run-dir',
+    );
+  } finally {
+    fs.rmSync(runDir, { recursive: true, force: true });
   }
-
-  // The spike artifacts are gone from the receipt. Assemble the forbidden tokens from fragments
-  // so the stale strings never appear literally in this test source (keeps the closing git grep
-  // gate -- zero hits for the un-canonical fused token / the dropped terminal label -- clean).
-  const fusedToken = 'Low' + '/' + 'Contested';
-  const droppedLabel = 'Reje' + 'cted';
-  assert.ok(!r.summary.includes(fusedToken), 'summary must not contain the un-fused-away spike token');
-  assert.ok(!r.summary.includes(droppedLabel), 'summary must not contain the dropped terminal spike label');
-
-  // The two tiers are actually represented (not a vacuous label-name match): one Contested, one Unsupported.
-  assert.ok(
-    r.survivors.some((s) => s.confidence === 'Contested'),
-    'expected a Contested survivor in the spanning run-dir',
-  );
-  assert.ok(
-    r.survivors.some((s) => s.confidence === 'Unsupported'),
-    'expected an Unsupported survivor in the spanning run-dir',
-  );
 });
 
 test('CR-01 summary first line reports true PRE-merge raw count and non-zero merged count', () => {
@@ -237,7 +250,11 @@ test('WR-01/WR-02 malformed claim missing text fails closed (aggregate throws, n
     claims: [{ id: 'c1', quote: 'X reduces Y by 30%', excerpt_id: 'e1' }],
   });
 
-  assert.throws(() => aggregate(runDir), /missing non-empty text/);
+  try {
+    assert.throws(() => aggregate(runDir), /missing non-empty text/);
+  } finally {
+    fs.rmSync(runDir, { recursive: true, force: true });
+  }
 });
 
 test('WR-01 malformed claim missing quote fails closed (aggregate throws)', () => {
@@ -250,7 +267,11 @@ test('WR-01 malformed claim missing quote fails closed (aggregate throws)', () =
     claims: [{ id: 'c1', text: 'X reduces Y by 30%', excerpt_id: 'e1' }],
   });
 
-  assert.throws(() => aggregate(runDir), /missing non-empty quote/);
+  try {
+    assert.throws(() => aggregate(runDir), /missing non-empty quote/);
+  } finally {
+    fs.rmSync(runDir, { recursive: true, force: true });
+  }
 });
 
 test('WR-03 worker file missing source fails closed (aggregate throws, no null in frozen sources[])', () => {
@@ -262,7 +283,11 @@ test('WR-03 worker file missing source fails closed (aggregate throws, no null i
     claims: [{ id: 'c1', text: 'X reduces Y by 30%', quote: 'X reduces Y by 30%', excerpt_id: 'e1' }],
   });
 
-  assert.throws(() => aggregate(runDir), /missing non-empty source/);
+  try {
+    assert.throws(() => aggregate(runDir), /missing non-empty source/);
+  } finally {
+    fs.rmSync(runDir, { recursive: true, force: true });
+  }
 });
 
 test('WR-04 claim missing id fails closed (aggregate throws)', () => {
@@ -278,6 +303,95 @@ test('WR-04 claim missing id fails closed (aggregate throws)', () => {
 
   try {
     assert.throws(() => aggregate(runDir), /missing non-empty id/);
+  } finally {
+    fs.rmSync(runDir, { recursive: true, force: true });
+  }
+});
+
+test('TEST-6 malformed JSON in a claims file fails closed (aggregate throws /malformed JSON/)', () => {
+  // readJson catches JSON.parse failures and rethrows ContractError('malformed JSON: ...'). Build a
+  // run-dir like tmpRunDirWithWorker but write RAW non-JSON bytes (no JSON.stringify) so the parse
+  // throws. Exercises the otherwise-uncovered malformed-JSON branch.
+  const runDir = fs.mkdtempSync(path.join(os.tmpdir(), 'lz-dr-badjson-'));
+  const claimsDir = path.join(runDir, 'claims');
+  fs.mkdirSync(claimsDir, { recursive: true });
+
+  try {
+    fs.writeFileSync(path.join(claimsDir, 'w1.json'), 'not json', 'utf8');
+    assert.throws(() => aggregate(runDir), /malformed JSON/);
+  } finally {
+    fs.rmSync(runDir, { recursive: true, force: true });
+  }
+});
+
+test('TEST-7 worker file missing claims[] array fails closed (aggregate throws /missing claims\\[\\] array/)', () => {
+  // A worker file with no `claims` key trips mergeClusters' !Array.isArray(w.claims) guard. Exercises
+  // the otherwise-uncovered missing-claims[] branch.
+  const runDir = tmpRunDirWithWorker({ worker: 'w1', source: 's1' });
+
+  try {
+    assert.throws(() => aggregate(runDir), /missing claims\[\] array/);
+  } finally {
+    fs.rmSync(runDir, { recursive: true, force: true });
+  }
+});
+
+test('TEST-8 extra vote seat beyond VOTES_PER_CLAIM is counted observably (summary votes_ignored 1)', () => {
+  // One valid surviving claim plus FOUR vote seat files for its cluster (cluster0-0..3). Seats 0-2
+  // are read; the 4th (index 3) is beyond VOTES_PER_CLAIM=3 and is counted into caps.votes_ignored.
+  // Exercises the EXISTING extra-seat count path only (the AGG-2 non-contiguous-gap behavior is
+  // DEFERRED to Phase 18 per D-02 -- do NOT assert non-contiguous behavior here).
+  const runDir = fs.mkdtempSync(path.join(os.tmpdir(), 'lz-dr-votesignored-'));
+  const claimsDir = path.join(runDir, 'claims');
+  const excerptsDir = path.join(runDir, 'excerpts');
+  const votesDir = path.join(runDir, 'votes');
+  fs.mkdirSync(claimsDir, { recursive: true });
+  fs.mkdirSync(excerptsDir, { recursive: true });
+  fs.mkdirSync(votesDir, { recursive: true });
+
+  try {
+    fs.writeFileSync(
+      path.join(claimsDir, 'w1.json'),
+      JSON.stringify({
+        worker: 'w1',
+        source: 's1',
+        claims: [{ id: 'c1', text: 'X reduces Y by 30%', quote: 'X reduces Y by 30%', excerpt_id: 'e1' }],
+      }),
+      'utf8',
+    );
+    // Matching excerpt so the claim survives the quote re-check (else it would be dropped).
+    fs.writeFileSync(path.join(excerptsDir, 'e1.txt'), 'The study found that X reduces Y by 30% overall.', 'utf8');
+
+    // Four seat files for cluster0; the 4th (index 3) is the extra ignored seat.
+    for (const s of [0, 1, 2, 3]) {
+      fs.writeFileSync(path.join(votesDir, 'cluster0-' + s + '.json'), JSON.stringify({ verdict: 'unrefuted' }), 'utf8');
+    }
+
+    const r = aggregate(runDir);
+
+    assert.equal(r.survivors.length, 1, 'the single claim must survive the quote re-check');
+    assert.match(r.summary, /votes_ignored 1/, 'the 4th seat beyond VOTES_PER_CLAIM must be counted as votes_ignored 1');
+  } finally {
+    fs.rmSync(runDir, { recursive: true, force: true });
+  }
+});
+
+test('TEST-9 path-traversal via a malformed excerpt_id fails closed (aggregate throws /path traversal rejected/)', () => {
+  // quoteOutcome calls safeId(String(member.excerpt_id)) on worker-authored data. A `../evil`
+  // excerpt_id must be rejected with a ContractError (the fail-hard posture documented in D-01 /
+  // Plan 17.1-01). The field guards (id/text/quote/source) pass, and the run reaches quoteOutcome
+  // where safeId throws. A matching excerpt is present so nothing short-circuits before safeId.
+  const runDir = tmpRunDirWithWorker({
+    worker: 'w1',
+    source: 's1',
+    claims: [{ id: 'c1', text: 'X reduces Y by 30%', quote: 'X reduces Y by 30%', excerpt_id: '../evil' }],
+  });
+  const excerptsDir = path.join(runDir, 'excerpts');
+  fs.mkdirSync(excerptsDir, { recursive: true });
+  fs.writeFileSync(path.join(excerptsDir, 'evil.txt'), 'The study found that X reduces Y by 30% overall.', 'utf8');
+
+  try {
+    assert.throws(() => aggregate(runDir), /path traversal rejected/);
   } finally {
     fs.rmSync(runDir, { recursive: true, force: true });
   }
@@ -392,28 +506,33 @@ test('SC-2 CRLF+BOM excerpt (written at runtime) still matches an LF quote (veri
   fs.mkdirSync(votesDir, { recursive: true });
   fs.mkdirSync(excerptsDir, { recursive: true });
 
-  // Copy the committed pure-ASCII claims/ + votes/ verbatim into the temp run-dir.
-  for (const f of fs.readdirSync(path.join(srcDir, 'claims'))) {
-    fs.copyFileSync(path.join(srcDir, 'claims', f), path.join(claimsDir, f));
+  // TEST-5: wrap the run-dir lifetime in try/finally so the OS temp dir is always cleaned up.
+  try {
+    // Copy the committed pure-ASCII claims/ + votes/ verbatim into the temp run-dir.
+    for (const f of fs.readdirSync(path.join(srcDir, 'claims'))) {
+      fs.copyFileSync(path.join(srcDir, 'claims', f), path.join(claimsDir, f));
+    }
+
+    for (const f of fs.readdirSync(path.join(srcDir, 'votes'))) {
+      fs.copyFileSync(path.join(srcDir, 'votes', f), path.join(votesDir, f));
+    }
+
+    // Generate the BOM+CRLF excerpt at runtime (the only non-ASCII bytes, never committed).
+    const bomCrlfBody =
+      String.fromCharCode(0xfeff) +
+      'The study found that X reduces Y by 30% across all trials.\r\n';
+    fs.writeFileSync(path.join(excerptsDir, 'e1.txt'), bomCrlfBody, 'utf8');
+
+    const r = aggregate(runDir);
+
+    // The LF/ASCII quote still matches the BOM+CRLF excerpt -> the claim survives as 'verified',
+    // proving normalize()'s BOM strip + CRLF->LF fold (Layer A+B) on the actual host.
+    assert.equal(r.dropped.length, 0);
+    assert.equal(r.survivors.length, 1);
+    assert.equal(r.survivors[0].quote_fidelity, 'verified');
+  } finally {
+    fs.rmSync(runDir, { recursive: true, force: true });
   }
-
-  for (const f of fs.readdirSync(path.join(srcDir, 'votes'))) {
-    fs.copyFileSync(path.join(srcDir, 'votes', f), path.join(votesDir, f));
-  }
-
-  // Generate the BOM+CRLF excerpt at runtime (the only non-ASCII bytes, never committed).
-  const bomCrlfBody =
-    String.fromCharCode(0xfeff) +
-    'The study found that X reduces Y by 30% across all trials.\r\n';
-  fs.writeFileSync(path.join(excerptsDir, 'e1.txt'), bomCrlfBody, 'utf8');
-
-  const r = aggregate(runDir);
-
-  // The LF/ASCII quote still matches the BOM+CRLF excerpt -> the claim survives as 'verified',
-  // proving normalize()'s BOM strip + CRLF->LF fold (Layer A+B) on the actual host.
-  assert.equal(r.dropped.length, 0);
-  assert.equal(r.survivors.length, 1);
-  assert.equal(r.survivors[0].quote_fidelity, 'verified');
 });
 
 test('SC-1 aggregate is deterministic (same input -> deep-equal output)', () => {
