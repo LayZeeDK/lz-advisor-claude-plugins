@@ -1,0 +1,62 @@
+name: test-act
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - .actrc
+      - .github/workflows/ci.yml
+      - .github/workflows/test-act.yml
+      - .node-version
+      - plugins/lz-advisor/skills/**/*.test.mjs
+      - plugins/lz-advisor/skills/**/scripts/*.mjs
+  pull_request:
+    branches: [main]
+    paths:
+      - .actrc
+      - .github/workflows/ci.yml
+      - .github/workflows/test-act.yml
+      - .node-version
+      - plugins/lz-advisor/skills/**/*.test.mjs
+      - plugins/lz-advisor/skills/**/scripts/*.mjs
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  act:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      ACT_VERSION: 0.2.89
+      # The image pin lives canonically in ./.actrc; this env MUST stay byte-for-byte in
+      # sync with that -P value (no drift). Stricter form: catthehacker/ubuntu@sha256:<digest>.
+      ACT_IMAGE: catthehacker/ubuntu:act-22.04
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+
+      - name: Install and verify act (pinned release + checksum)
+        run: |
+          set -euo pipefail
+          base="https://github.com/nektos/act/releases/download/v${ACT_VERSION}"
+          curl -fsSL -o act.tar.gz "${base}/act_Linux_x86_64.tar.gz"
+          curl -fsSL -o checksums.txt "${base}/checksums.txt"
+          sha256sum --ignore-missing -c checksums.txt
+          tar -xzf act.tar.gz act
+          ./act --version
+
+      - name: act structure + dry-run + real run against ci.yml
+        env:
+          GH_TOKEN_FOR_ACT: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          ./act --list -W .github/workflows/ci.yml
+          ./act -n push -j test -W .github/workflows/ci.yml -P "ubuntu-latest=${ACT_IMAGE}"
+          ./act push -j test -W .github/workflows/ci.yml \
+            -P "ubuntu-latest=${ACT_IMAGE}" \
+            -s GITHUB_TOKEN="${GH_TOKEN_FOR_ACT}"

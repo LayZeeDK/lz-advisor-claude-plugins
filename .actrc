@@ -1,0 +1,5 @@
+# Single source of the pinned act runner image (D-13). The runner reads this ./.actrc
+# from the checked-out workspace root, defusing act's interactive image-size prompt for
+# both local dev and the test-act.yml runner. test-act.yml re-states the SAME image in its
+# ACT_IMAGE env (no drift). Stricter pin form: catthehacker/ubuntu@sha256:<digest>.
+-P ubuntu-latest=catthehacker/ubuntu:act-22.04
