@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v2.1.0
 milestone_name: lz-deep-research skill
 status: executing
-stopped_at: "Phase 17 context gathered (GA-1 re-decided by cross-model consensus: single enum, Option I)"
-last_updated: "2026-06-15T11:29:49.105Z"
-last_activity: 2026-06-15 -- Phase 17 planning complete
+stopped_at: "Phase 17 Plan 01 complete (tally() corrected to the single D-01 confidence enum; 19-test fixture green)"
+last_updated: "2026-06-15T11:48:01.221Z"
+last_activity: 2026-06-15
 progress:
   total_phases: 5
   completed_phases: 1
   total_plans: 4
-  completed_plans: 2
+  completed_plans: 3
   percent: 20
 ---
 
@@ -21,7 +21,7 @@ progress:
 See: .planning/PROJECT.md (updated 2026-06-15 -- milestone v2.1.0 started)
 
 **Core value:** Near-Opus intelligence at Sonnet cost, through strategic advisor consultation at high-leverage moments -- now extended from coding tasks to deep research
-**Current focus:** Phase 17 — json schema + verification contract reference
+**Current focus:** Phase 17 -- json-schema-verification-contract-reference
 
 ## Deferred Items
 
@@ -37,10 +37,10 @@ Items deferred across milestones (v1.0.1 close 2026-06-11; v2.0.0 additions tagg
 
 ## Current Position
 
-Phase: 17
-Plan: Not started
-Status: Ready to execute
-Last activity: 2026-06-15 -- Phase 17 planning complete
+Phase: 17 (json-schema-verification-contract-reference) -- EXECUTING
+Plan: 2 of 2
+Status: Plan 17-01 complete; ready to execute Plan 17-02
+Last activity: 2026-06-15 -- Phase 17 Plan 01 executed (aggregator confidence-enum correction + per-tier fixtures)
 
 ### Milestone v2.1.0 roadmap (REVISED 2026-06-15)
 
@@ -144,6 +144,7 @@ Advisor runtime-proven on Opus 4.8. Final phase: Phase 10 (documentation-hygiene
 | Phase 14.2 P01 | 6min | 1 tasks | 5 files |
 | Phase 16 P01 | 24min | 2 tasks | 1 files |
 | Phase 16 P16-02 | 7min | 3 tasks | 98 files |
+| Phase 17 P01 | 8min | 2 tasks | 20 files |
 
 ## Accumulated Context
 
@@ -170,6 +171,8 @@ Recent decisions affecting current work (v2.1.0):
 
 - [Phase ?]: [v2.1.0 / Phase 16 P02]: the aggregator is locked by a committed node:test validation fixture (lz-deep-research-aggregate.test.mjs) -- 9 named tests (5 SC-5 behaviors + CRLF/BOM/determinism/zero-dep hardening) over 6 committed immutable __fixtures__ run-dirs; phase gate is node --test FILE exits 0 (the dir form false-fails on this host); BOM/CRLF excerpt written at runtime so zero non-ASCII bytes committed.
 - [Phase ?]: [v2.1.0 / Phase 16 P02]: paraphrase-one-source fixture uses the genuinely-merging pair (Jaccard 1.0), NOT the RESEARCH-suggested Jaccard-0.5 pair, and the test asserts survivors.length===1 BEFORE corroboration_lower_bound===1 -- closing the vacuous-pass hole the plan-checker flagged.
+- [Phase ?]: [v2.1.0 / Phase 17 P01]: aggregator tally() CORRECTED to the single canonical D-01 confidence enum {High, Medium, Low, Contested, Unsupported} -- spike artifacts Rejected (dropped) and Low/Contested (un-fused) gone from code/stdout/fixture comment. Option I branch order: Unsupported guard -> High -> Contested(split) -> Medium -> Low; split MUST precede Medium (D-03); 0 unrefuted/N refuted -> Low, claim never removed (downgrade-not-delete, D-03b).
+- [Phase ?]: [v2.1.0 / Phase 17 P01]: per-tier confidence coverage added -- four new committed __fixtures__ trees (medium-two-unrefuted, low-thin-support, low-refuted-downgraded, contested-split) + unsupported-no-votes (Pattern A, no votes/ dir); five per-tier assertions + a 5-label stdout assertion; suite 19 tests green via the FILE-form gate. Forbidden Low/Contested + Rejected tokens assembled from fragments so the closing git grep zero-hit gate stays clean. The corrected aggregator is now the source 17-02 freezes verbatim (D-12).
 
 ### Pending Todos
 
@@ -206,11 +209,11 @@ Recent decisions affecting current work (v2.1.0):
 
 ## Session Continuity
 
-Last session: 2026-06-15T10:26:14.884Z
-Stopped at: Phase 17 context gathered (GA-1 re-decided by cross-model consensus: single enum, Option I)
-Resume file: .planning/phases/17-json-schema-verification-contract-reference/17-CONTEXT.md
-Resume next: Execute Plan 16-02 (node:test fixture lz-deep-research-aggregate.test.mjs + committed __fixtures__/<case>/{claims,excerpts,votes}/ data; run via the explicit FILE form `node --test <file>`). Then schema (17), Haiku-research + voter + early eval (18), search/extract workers (19), orchestrator+scale (20).
+Last session: 2026-06-15T11:47:13.970Z
+Stopped at: Phase 17 Plan 01 complete (tally() corrected to the single D-01 confidence enum; 19-test fixture green via the FILE form)
+Resume file: .planning/phases/17-json-schema-verification-contract-reference/17-02-PLAN.md
+Resume next: Execute Plan 17-02 (write references/lz-deep-research-schema.md freezing the CORRECTED aggregator shapes verbatim -- records, the Option I tally rubric, the single 5-tier enum, the two assurances + worked example, named-ceilings + quote-recheck + the D-12 anti-drift rule; reconcile 16-01-SUMMARY). The freeze-from-corrected-code prerequisite (Pitfall 1) is now satisfied: 17-01 dropped Rejected / un-fused Low/Contested. Then Haiku-research + voter + early eval (18), search/extract workers (19), orchestrator+scale (20).
 
 ## Operator Next Steps
 
-- Execute Plan 16-02 (the validation fixture asserting all five SC-5 behaviors against the shipped aggregator's frozen output contract -- recorded in 16-01-SUMMARY.md).
+- Execute Plan 17-02 (the schema reference doc freezing the corrected aggregator's shapes; PIPE-07 + VERIF-06 close once it lands and the phase verifier runs).
