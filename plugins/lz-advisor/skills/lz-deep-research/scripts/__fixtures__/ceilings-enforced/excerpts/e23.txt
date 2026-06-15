@@ -1,0 +1,1 @@
+Reported observation: whiskey metric rises 23 units in the controlled run.

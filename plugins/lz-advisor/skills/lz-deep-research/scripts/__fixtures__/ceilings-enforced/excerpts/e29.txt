@@ -1,0 +1,1 @@
+Reported observation: cherry metric rises 29 units in the controlled run.

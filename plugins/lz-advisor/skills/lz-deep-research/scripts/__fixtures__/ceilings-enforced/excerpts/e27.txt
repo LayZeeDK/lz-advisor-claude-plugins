@@ -1,0 +1,1 @@
+Reported observation: apple metric rises 27 units in the controlled run.

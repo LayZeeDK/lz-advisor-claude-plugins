@@ -1,0 +1,1 @@
+Reported observation: charlie metric rises 3 units in the controlled run.

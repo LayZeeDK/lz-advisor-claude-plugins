@@ -1,0 +1,1 @@
+Reported observation: foxtrot metric rises 6 units in the controlled run.

@@ -1,0 +1,1 @@
+Reported observation: bravo metric rises 2 units in the controlled run.
