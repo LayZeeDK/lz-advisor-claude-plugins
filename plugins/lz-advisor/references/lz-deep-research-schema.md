@@ -144,7 +144,7 @@ The PIPE-05 worker-input shape, read by `mergeClusters`. One file per worker; a
 |-------|------|----------|-------|
 | `worker` | string | yes | The producing worker id. |
 | `source` | string | yes (fail-closed) | The canonical source key (D-08). `mergeClusters` rejects a missing or empty `source` (WR-03): a missing source would leak `null` into the frozen `sources[]` and silently under-count corroboration. |
-| `claims[].id` | string | yes | Claim id; used as the first-member fallback for the vote-file lookup. |
+| `claims[].id` | string | yes (fail-closed) | Claim id; used as the first-member fallback for the vote-file lookup. `mergeClusters` rejects a missing or empty `id` (WR-04: `ContractError('claim missing non-empty id', ...)`). Without the guard a missing `id` coerces to the literal `"undefined"` in `tally()`'s member-id vote-file fallback (`votes/undefined-0.json`), cross-contaminating vote tallies across all id-less claims. (Note: the source labels this guard WR-04, which also names the unrelated normalized-substring caveat section below.) |
 | `claims[].text` | string | yes (fail-closed) | The claim text; becomes the survivor `claim`. `mergeClusters` rejects a missing or empty `text` (WR-02). |
 | `claims[].quote` | string | yes (fail-closed) | The verbatim supporting quote; checked by the quote-recheck. `mergeClusters` rejects a missing or empty `quote` (WR-01). |
 | `claims[].excerpt_id` | string | optional | The cited excerpt's basename. If absent, the cited-excerpt check is skipped and the quote can only verify as `downgraded` via some other excerpt. |
@@ -226,7 +226,7 @@ For a member's normalized quote `nq = normalize(member.quote)`:
 
 | Outcome | Condition | Effect |
 |---------|-----------|--------|
-| `verified` | `nq` is present in its CITED excerpt (`cited.includes(nq)`) | Full quote-fidelity assurance; member kept. |
+| `verified` | `nq` is present in its CITED excerpt (`cited != null && cited.includes(nq)`) | Full quote-fidelity assurance; member kept. The null check is load-bearing: it fires when `excerpt_id` is absent (a valid optional case per the claim schema), so a missing cited excerpt cannot throw and the quote falls through to the downgraded/dropped paths. |
 | `downgraded` | `nq` is absent from the cited excerpt but present in SOME OTHER stored excerpt (`allExcerpts.some(ex => ex.includes(nq))`) | Real text, wrong attribution -- member KEPT, fidelity lowered, NOT dropped. |
 | `dropped` | `nq` is absent from ALL stored excerpts, OR `nq === ''` (empty normalized quote) | Member removed. |
 
@@ -296,6 +296,7 @@ SURFACED, never deleted. `Low` covers BOTH "weak / thin support" AND
 | 3 | 0 | 0 | 3 | `High` |
 | 2 | 0 | 0 | 2 | `Medium` |
 | 1 | 0 | 0 | 1 | `Low` (thin support) |
+| 1 | 0 | 2 | 1 | `Low` (thin support) |
 | 0 | 3 | 0 | 3 | `Low` (downgrade-not-delete; surfaced, never deleted) |
 | 2 | 1 | 0 | 3 | `Contested` (voter split) |
 | 1 | 1 | 1 | 2 | `Contested` (voter split) |
@@ -475,6 +476,15 @@ quote-recheck: verified <A> | downgraded <B> | dropped <C>
 capped: <none | claims X->24 [synth Y->20] [votes_ignored N]>
 survivors: <Z> (High <h>, Medium <m>, Low <l>, Contested <c>, Unsupported <u>)
 ```
+
+**`votes_ignored` scope caveat.** When both `MAX_VERIFY_CLAIMS` and `SYNTH_CAP`
+fire, `votes_ignored` may include counts from clusters that did not survive
+`SYNTH_CAP` (e.g. clusters 21-24 in the `MAX_VERIFY_CLAIMS=24` / `SYNTH_CAP=20`
+gap): `tally()` accumulates extra-seat counts for all ranked clusters before
+`SYNTH_CAP` drops the overflow. This is a documented scope caveat of the EXISTING
+observability counter; tightening the count to survivors-only is deferred (AGG-4,
+Phase 18 review D-02). It does not affect tally results -- only the reported
+`votes_ignored` figure.
 
 CLI exit codes: `0` on success (writes `survivors.json`, prints the summary);
 `2` on a contract violation -- a missing or non-directory `<run-dir>`, or any
