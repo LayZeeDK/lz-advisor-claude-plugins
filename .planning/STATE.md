@@ -5,7 +5,7 @@ milestone_name: lz-deep-research skill
 status: ready_to_plan
 stopped_at: Phase 17.2 complete (2/2) — ready to discuss Phase 18
 last_updated: 2026-06-15T20:09:30.959Z
-last_activity: 2026-06-15 -- Phase 17.2 execution started
+last_activity: 2026-06-15 - Completed quick task 260615-wje: Fix security review findings: verdict enum validation, Windows device names, claims ceiling, schema source-to-filename note
 progress:
   total_phases: 7
   completed_phases: 3
@@ -204,6 +204,7 @@ Recent decisions affecting current work (v2.1.0):
 | 260611-ebt | Address 2nd /code-review pass findings (#1 deeper fix: confirmed Finding 3; #2 multi-line PFV + loud-fail; #3 plural revert; #4 dead var; #5 closed-vocab anchor) | 2026-06-11 | 56e8172 | Verified | [260611-ebt-address-the-review-findings](./quick/260611-ebt-address-the-review-findings/) |
 | 260611-f98 | Address 3rd /code-review pass findings (#1 PFV multi-paragraph under-count + #2 dead `### ` branch -> two-arm loop; #3 Threat Patterns names confirmed Finding 3) | 2026-06-11 | 1a46b93 | Verified | [260611-f98-address-the-review-findings](./quick/260611-f98-address-the-review-findings/) |
 | 260613-u6l | Add CHANGELOG.md (v1.0.0 + v1.0.1) and create GitHub releases for v1.0.0 and v1.0.1 (renamed tag v1.0 -> v1.0.0) | 2026-06-13 | dc2e28d | - | [260613-u6l-add-changelog-md-v1-0-0-v1-0-1-and-creat](./quick/260613-u6l-add-changelog-md-v1-0-0-v1-0-1-and-creat/) |
+| 260615-wje | Fix security review findings: verdict enum validation, Windows device names, claims ceiling, schema source-to-filename note | 2026-06-15 | 7a5f5ba | - | [260615-wje-fix-security-review-findings-verdict-enu](./quick/260615-wje-fix-security-review-findings-verdict-enu/) |
 
 ### Roadmap Evolution
 
