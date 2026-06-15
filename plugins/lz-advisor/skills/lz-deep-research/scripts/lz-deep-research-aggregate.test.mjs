@@ -27,7 +27,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { aggregate, normalize, CEILINGS } from './lz-deep-research-aggregate.mjs';
+import { aggregate, normalize, CEILINGS, listJson } from './lz-deep-research-aggregate.mjs';
 
 // Resolve __fixtures__ test-file-relative (NEVER process.cwd() -- T-16-05 / Pitfall 3:
 // cwd drifts under GSD worktrees and headless `claude -p`).
@@ -397,18 +397,52 @@ test('TEST-9 path-traversal via a malformed excerpt_id fails closed (aggregate t
   }
 });
 
-test('TEST-2 cross-file-order stability: survivors[0] is independent of claims-file read order (listJson sort)', () => {
-  // TEST-2 (Important): build a run-dir with TWO non-mergeable claims in worker files whose
-  // ALPHABETICAL order (a-worker.json, z-worker.json) differs from CREATION order (z first, a
-  // second). Each claim has disjoint token sets (jaccard < 0.6 -> never cluster together) and the
-  // SAME corroboration (1 distinct source each), so rankClusters' normalized-text lexical tiebreak
-  // decides survivor order. The a-worker claim normalizes to "alpha beats beta always" and the
-  // z-worker claim to "zeta tops omega daily" -- "alpha..." sorts lexically before "zeta...", so
-  // survivors[0] MUST be the a-worker claim. This is stable ONLY because listJson sorts the
-  // directory listing before processing; if listJson's .sort() were removed, readdirSync's raw OS
-  // order could surface z-worker first and (combined with any non-deterministic downstream order)
-  // would let the output drift. The load-bearing property: read order does not change the output.
+test('TEST-2 cross-file-order stability: listJson sorts the directory listing (host-independent, fails iff .sort() removed)', () => {
+  // TEST-2 (Important) -- the AGG-01 determinism guarantee is that worker files are processed in a
+  // fixed lexical order regardless of the filesystem's readdir order, which mergeClusters relies on
+  // to assign cluster ids by first-seen order deterministically. The PROVABLE invariant lives in
+  // listJson's `.sort()`.
+  //
+  // WR-01 fix: the earlier version of this test ran the full aggregate() over two on-disk worker
+  // files and asserted survivors[0]. That was TAUTOLOGICAL -- rankClusters re-sorts the cluster
+  // array by (corroboration DESC, normalize(text) ASC), which masks listJson's read order from
+  // survivors[0]; AND on this host (NTFS/ReFS) readdirSync already returns entries alphabetically,
+  // so the "z before a" creation order it tried to perturb was never actually perturbed. A mutation
+  // harness proved removing listJson's .sort() left that test green (it did not discriminate the
+  // behavior it claimed to guard).
+  //
+  // This version targets listJson DIRECTLY through its injectable readdir seam, feeding a
+  // deliberately UNSORTED listing. listJson MUST return it lexically sorted on EVERY host because
+  // the injected reader bypasses the filesystem's own ordering entirely. Removing the `.sort()` makes
+  // this assertion fail unconditionally -- a genuine, host-independent guard (verified by mutation).
   const runDir = fs.mkdtempSync(path.join(os.tmpdir(), 'lz-dr-order-'));
+
+  try {
+    // existsSync(runDir) is true (real temp dir), so listJson proceeds to the injected reader; the
+    // reader's return value -- NOT the real (empty) dir contents -- is what gets sorted.
+    const unsortedListing = ['z-worker.json', 'a-worker.json', 'm-worker.json', 'note.txt'];
+    const result = listJson(runDir, () => unsortedListing);
+
+    // .json filter drops note.txt; .sort() orders the survivors lexically.
+    assert.deepEqual(
+      result,
+      ['a-worker.json', 'm-worker.json', 'z-worker.json'],
+      'listJson must return *.json entries in lexical order regardless of the underlying read order; ' +
+        'this fails iff listJson .sort() is removed (host-independent via the injected reader)',
+    );
+
+    // Belt-and-suspenders: the result is its own sorted copy (catches a partial-sort regression too).
+    assert.deepEqual(result, [...result].sort(), 'listJson output must equal its lexically sorted copy');
+  } finally {
+    fs.rmSync(runDir, { recursive: true, force: true });
+  }
+});
+
+test('TEST-2b end-to-end determinism: aggregate output is byte-identical across runs (AGG-01)', () => {
+  // Complements TEST-2: confirms the FULL pipeline is deterministic over a real run-dir. (This does
+  // NOT prove the listJson sort is load-bearing -- TEST-2 owns that via the injected reader -- it
+  // only locks run-to-run reproducibility of the assembled survivor records.)
+  const runDir = fs.mkdtempSync(path.join(os.tmpdir(), 'lz-dr-order2-'));
   const claimsDir = path.join(runDir, 'claims');
   const excerptsDir = path.join(runDir, 'excerpts');
   fs.mkdirSync(claimsDir, { recursive: true });
@@ -418,8 +452,6 @@ test('TEST-2 cross-file-order stability: survivors[0] is independent of claims-f
     const aClaim = 'alpha beats beta always';
     const zClaim = 'zeta tops omega daily';
 
-    // Write z-worker.json FIRST, a-worker.json SECOND -- creation order is the reverse of
-    // alphabetical order, so this discriminates listJson's sort from readdirSync's raw order.
     fs.writeFileSync(
       path.join(claimsDir, 'z-worker.json'),
       JSON.stringify({
@@ -438,23 +470,14 @@ test('TEST-2 cross-file-order stability: survivors[0] is independent of claims-f
       }),
       'utf8',
     );
-
-    // Matching excerpts so both claims survive the quote re-check (else they would be dropped).
     fs.writeFileSync(path.join(excerptsDir, 'ea.txt'), 'The trial showed alpha beats beta always.', 'utf8');
     fs.writeFileSync(path.join(excerptsDir, 'ez.txt'), 'The report says zeta tops omega daily.', 'utf8');
 
     const r = aggregate(runDir);
-
-    // Both distinct claims survive as separate clusters (precondition: they did not merge).
     assert.equal(r.survivors.length, 2, 'two disjoint claims must form two distinct clusters');
 
-    // Load-bearing: the alphabetically-first worker's claim is survivors[0] regardless of the
-    // z-before-a creation order on disk. listJson's .sort() normalizes the read order away.
-    assert.equal(r.survivors[0].claim, aClaim, 'survivors[0] must be the alphabetically-first worker claim');
-
-    // Strengthening cross-check: a second run over the SAME run-dir is byte-identical (AGG-01).
     const r2 = aggregate(runDir);
-    assert.deepEqual(r, r2, 'aggregate must be deterministic over the same run-dir');
+    assert.deepEqual(r, r2, 'aggregate must be deterministic (byte-identical) over the same run-dir');
   } finally {
     fs.rmSync(runDir, { recursive: true, force: true });
   }
