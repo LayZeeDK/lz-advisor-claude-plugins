@@ -119,6 +119,16 @@ Full phase details, success criteria, and decision logs are archived in [milesto
 - [x] 17.1-02-PLAN.md -- Test suite additions: TEST-1 SYNTH_CAP assertion + TEST-2 cross-file-order determinism (inline tmpRunDir, D-03) + TEST-3 WR-04 missing-id + TEST-4/6/7/8/9 coverage + TEST-5 temp-dir cleanup (Wave 2, depends on 17.1-01)
 - [x] 17.1-03-PLAN.md -- Schema corrections: SCHEMA-1 id fail-closed promotion (post-AGG-1, references WR-04) + SCHEMA-2 null-guard + SCHEMA-3 truth-table row + SCHEMA-4 votes_ignored caveat (Wave 2, depends on 17.1-01, parallel with 17.1-02)
 
+### Phase 17.2: Address lz-review findings for lz-deep-research aggregator (R1-1 R2-1 R2-2 R1-2 R1-3 R2-3) (INSERTED)
+
+**Goal**: Close all Important and Suggestion findings from the 3-pass `/lz-advisor:lz-review` audit of Phases 16/17/17.1 work (aggregator source, test suite, schema reference). The two Important findings are load-bearing: R1-1 (claim `id` path-safety missing at read-time in `mergeClusters`, violating AGG-5/6/7 `.file` discipline) and R2-1 (`readJson(f).verdict` throws raw `TypeError` on literal-null vote file, bypassing ContractError). Four Suggestion findings address labeling hygiene and test coverage gaps.
+**Depends on:** Phase 17.1
+**Requirements**: TBD
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd-plan-phase 17.2 to break down)
+
 ### Phase 18: Haiku prompt-engineering deep research + verify-voter + early gating eval
 **Goal**: The Haiku verify-voter prompt is engineered from a dedicated deep-research pass on Haiku prompt-engineering patterns (captured as a reference artifact) BEFORE any Haiku agent is authored; the Sonnet baseline verify-voter and the research-grounded Haiku verify-voter variant are then authored against the frozen vote schema; and the pre-registered gating eval (lock rule written first, false-uphold as the sole hard gate) runs standalone against the voter -- settling the Haiku-first flag, or raising the decision to the user if Haiku is non-viable. Runs isolated from the orchestrator, search, and extract workers, driven by the existing pilot harness over the Phase-16 tally + Phase-17 vote schema.
 **Depends on**: Phase 16 (the aggregator tally) and Phase 17 (the frozen vote schema); decoupled from the pipeline -- proven standalone by the existing pilot harness, which needs only a voter prompt + a labeled dataset (no orchestrator/search/extract)

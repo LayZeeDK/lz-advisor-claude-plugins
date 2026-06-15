@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v2.1.0
 milestone_name: lz-deep-research skill
-status: ready_to_plan
-stopped_at: Phase 17.1 complete (3/3) — ready to discuss Phase 18
-last_updated: 2026-06-15T14:57:21.253Z
-last_activity: 2026-06-15 -- Phase 17.1 execution started
+status: planning
+stopped_at: Phase 17.1 context gathered
+last_updated: "2026-06-15T18:13:12.544Z"
+last_activity: 2026-06-15
 progress:
-  total_phases: 6
-  completed_phases: 2
+  total_phases: 7
+  completed_phases: 3
   total_plans: 7
   completed_plans: 7
-  percent: 33
+  percent: 43
 ---
 
 # Project State
@@ -214,6 +214,7 @@ Recent decisions affecting current work (v2.1.0):
 (v1.0 milestone roadmap-evolution history archived in `milestones/v1.0-ROADMAP.md`. Phase 14.1 / 14.2 were inserted after Phase 14 during the v2.0.0 build.)
 
 - Phase 17.1 inserted after Phase 17: Address Phase 16/17 review findings (URGENT)
+- Phase 17.2 inserted after Phase 17.1: Address lz-review Important findings R1-1 (id path-safety in mergeClusters) and R2-1 (null vote file TypeError) plus 4 Suggestion findings (URGENT)
 
 ## Session Continuity
 
