@@ -86,6 +86,8 @@ _Note: This plan's frontmatter is `tdd="true"`, but per the plan's `<verificatio
 
 ## LOAD-BEARING Output Contract (for Plan 16-02 + Phase 17 to freeze verbatim)
 
+> **SUPERSEDED IN PART by Phase 17 (GA-1, 2026-06-15).** The `confidence` vocabulary recorded below (`Rejected`, fused `Low/Contested`) is Phase 16's AS-SHIPPED output, retained for history. Phase 17 ratified a SINGLE enum `High | Medium | Low | Contested | Unsupported` -- `Rejected` dropped, `Low/Contested` un-fused, and the tally emits `Contested` on a per-claim voter split (>=1 unrefuted AND >=1 refuted) -- decided by unanimous repo-blind cross-model consensus. The aggregator `tally()` + the stdout summary line + the validation fixture are corrected in the Phase-17 plan (in lockstep). Authoritative spec: `.planning/phases/17-json-schema-verification-contract-reference/17-CONTEXT.md` (D-01..D-03c). Everything else in this contract (record field set, run-dir layout, quote-recheck, ceilings, stdout structure, exit codes) stands UNCHANGED.
+
 ### Exported surface (function/const names)
 
 ```
