@@ -852,3 +852,68 @@ test('L-1 safeId does NOT reject non-reserved names (context, c1, con2text, nul1
     );
   }
 });
+
+// ---------------------------------------------------------------------------
+// L-2 per-worker claims ceiling guard before the O(n^2) merge loop
+// ---------------------------------------------------------------------------
+
+test('L-2 worker with 121 claims (> ceiling 120) throws ContractError /exceeds ceiling/', () => {
+  // CEILINGS.MAX_VERIFY_CLAIMS (24) * CEILINGS.ANGLES (5) = 120 is the per-worker ceiling.
+  // A worker with 121 claims must be rejected before reaching the O(n^2) merge loop.
+  // Each claim needs id, text, quote, excerpt_id to pass the field guards before reaching
+  // the ceiling check (the ceiling check fires BEFORE the per-claim field guards loop).
+  const claims = Array.from({ length: 121 }, (_, i) => ({
+    id: 'c' + i,
+    text: 'claim text ' + i,
+    quote: 'claim text ' + i,
+    excerpt_id: 'e' + i,
+  }));
+  const runDir = tmpRunDirWithWorker({ worker: 'w1', source: 's1', claims });
+
+  try {
+    assert.throws(() => aggregate(runDir), /exceeds ceiling/);
+  } finally {
+    fs.rmSync(runDir, { recursive: true, force: true });
+  }
+});
+
+test('L-2 boundary: worker with exactly 120 claims (= ceiling) does NOT throw ceiling error', () => {
+  // Exactly at the ceiling (120 = 24 * 5) is allowed. This guards the strict-greater-than
+  // boundary so a legitimate 120-claim worker is not accidentally rejected.
+  // Use a single shared excerpt so the quote-recheck can verify all claims.
+  const claims = Array.from({ length: 120 }, (_, i) => ({
+    id: 'c' + i,
+    text: 'unique claim text number ' + i,
+    quote: 'unique claim text number ' + i,
+    excerpt_id: 'e0',
+  }));
+  const runDir = tmpRunDirWithWorker({ worker: 'w1', source: 's1', claims });
+  const excerptsDir = path.join(runDir, 'excerpts');
+  fs.mkdirSync(excerptsDir, { recursive: true });
+  // One excerpt that contains all 120 quote texts (each is short and unique by index).
+  const excerptText = claims.map((c) => c.quote).join(' ');
+  fs.writeFileSync(path.join(excerptsDir, 'e0.txt'), excerptText, 'utf8');
+
+  try {
+    // Must not throw /exceeds ceiling/ -- any other behavior (ContractError for other reasons,
+    // or clean success) is acceptable; we only assert the ceiling guard does NOT fire.
+    let threw = false;
+    let threwMessage = '';
+
+    try {
+      aggregate(runDir);
+    } catch (err) {
+      threw = true;
+      threwMessage = err && err.message ? err.message : String(err);
+    }
+
+    if (threw) {
+      assert.ok(
+        !/exceeds ceiling/.test(threwMessage),
+        'aggregate must not throw "exceeds ceiling" for exactly 120 claims; threw: ' + threwMessage,
+      );
+    }
+  } finally {
+    fs.rmSync(runDir, { recursive: true, force: true });
+  }
+});

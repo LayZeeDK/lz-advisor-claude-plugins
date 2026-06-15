@@ -242,6 +242,15 @@ export function mergeClusters(runDir) {
       throw new ContractError('worker file missing non-empty source', path.join(claimsDir, f));
     }
 
+    const CLAIMS_CEILING = CEILINGS.MAX_VERIFY_CLAIMS * CEILINGS.ANGLES;
+
+    if (w.claims.length > CLAIMS_CEILING) {
+      throw new ContractError(
+        'worker claims[] exceeds ceiling (' + w.claims.length + '>' + CLAIMS_CEILING + ')',
+        path.join(claimsDir, f),
+      );
+    }
+
     for (const c of w.claims) {
       // Fail closed on a missing/empty id (AGG-1): id is a required, load-bearing field. A missing id
       // otherwise coerces to the literal string "undefined" in tally()'s member-id vote-file fallback
