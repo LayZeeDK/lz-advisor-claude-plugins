@@ -108,13 +108,15 @@ Full phase details, success criteria, and decision logs are archived in [milesto
 - Have the CI workflow calculate and enforce test coverage in all supported dimensions -- and, if feasible, MC/DC plus coverage of nullish-coalescing (`??`) and optional-chaining (`?.`) expressions.
 - Configure a `concurrency` strategy on the workflow (group by ref/workflow with in-progress cancellation) so superseded runs on the same branch/PR are cancelled.
 - Configure least-privilege `permissions` for the workflow (default-minimal `contents: read`, granting only what each job needs).
+- (SCOPE EXPANSION, user-directed 2026-06-16) Add a separate `.github/workflows/test-act.yml` meta-CI workflow that runs `act` (nektos/act) against `ci.yml` inside a GitHub-hosted runner to verify and test the CI workflow itself. Narrowly triggered (paths-filtered + `workflow_dispatch`) to avoid double-running, pinned act install + runner image, same least-privilege/concurrency posture as `ci.yml`.
 
-**Requirements**: CI-01 (Node LTS pin), CI-02 (test job + glob discovery), CI-03 (fail-closed coverage gate), CI-04 (concurrency cancel), CI-05 (least-privilege permissions)
+**Requirements**: CI-01 (Node LTS pin), CI-02 (test job + glob discovery), CI-03 (fail-closed coverage gate), CI-04 (concurrency cancel), CI-05 (least-privilege permissions), CI-06 (act meta-CI: test-act.yml runs act against ci.yml)
 **Depends on:** Phase 17
-**Plans:** 1/1 plans complete
+**Plans:** 2 plans (1 complete)
 
 Plans:
 - [x] 17.3-01-PLAN.md -- Measure coverage on Node 24, add the node:coverage bootstrap pragma (D-03), then author .node-version (lts/krypton) + .github/workflows/ci.yml (SHA-pinned actions, glob test discovery, fail-closed coverage gate, concurrency, contents:read)
+- [ ] 17.3-02-PLAN.md -- TBD (run /gsd-plan-phase 17.3 --auto to break down): author .github/workflows/test-act.yml meta-CI running act against ci.yml (CI-06)
 
 ### Phase 17.1: Address Phase 16/17 review findings (INSERTED)
 
