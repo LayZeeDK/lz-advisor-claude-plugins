@@ -2,9 +2,9 @@
 gsd_state_version: 1.0
 milestone: v2.1.0
 milestone_name: lz-deep-research skill
-status: verifying
-stopped_at: Completed 16-01-PLAN.md (aggregator shipped)
-last_updated: "2026-06-15T07:27:59.927Z"
+status: ready_to_plan
+stopped_at: Phase 16 complete (2/2) — ready to discuss Phase 17
+last_updated: 2026-06-15T07:55:47.564Z
 last_activity: 2026-06-15
 progress:
   total_phases: 5
@@ -21,7 +21,7 @@ progress:
 See: .planning/PROJECT.md (updated 2026-06-15 -- milestone v2.1.0 started)
 
 **Core value:** Near-Opus intelligence at Sonnet cost, through strategic advisor consultation at high-leverage moments -- now extended from coding tasks to deep research
-**Current focus:** Phase 16 — deterministic-off-model-aggregator-validation-fixture
+**Current focus:** Phase 17 — json schema + verification contract reference
 
 ## Deferred Items
 
@@ -37,9 +37,9 @@ Items deferred across milestones (v1.0.1 close 2026-06-11; v2.0.0 additions tagg
 
 ## Current Position
 
-Phase: 16 (deterministic-off-model-aggregator-validation-fixture) — EXECUTING
-Plan: 2 of 2
-Status: Phase complete -- ready for verification
+Phase: 17
+Plan: Not started
+Status: Ready to plan
 Last activity: 2026-06-15
 
 ### Milestone v2.1.0 roadmap (REVISED 2026-06-15)
@@ -84,7 +84,7 @@ Advisor runtime-proven on Opus 4.8. Final phase: Phase 10 (documentation-hygiene
 
 **Velocity:**
 
-- Total plans completed: 119 (v1.0 milestone, all phases)
+- Total plans completed: 121 (v1.0 milestone, all phases)
 - Average duration: -
 - Total execution time: 0 hours
 
@@ -110,6 +110,7 @@ Advisor runtime-proven on Opus 4.8. Final phase: Phase 10 (documentation-hygiene
 | 14 | 1 | - | - |
 | 14.1 | 1 | - | - |
 | 14.2 | 1 | - | - |
+| 16 | 2 | - | - |
 
 **By Phase (v2.1.0 milestone):**
 
