@@ -116,7 +116,7 @@ Full phase details, success criteria, and decision logs are archived in [milesto
 
 Plans:
 - [x] 17.3-01-PLAN.md -- Measure coverage on Node 24, add the node:coverage bootstrap pragma (D-03), then author .node-version (lts/krypton) + .github/workflows/ci.yml (SHA-pinned actions, glob test discovery, fail-closed coverage gate, concurrency, contents:read)
-- [ ] 17.3-02-PLAN.md -- TBD (run /gsd-plan-phase 17.3 --auto to break down): author .github/workflows/test-act.yml meta-CI running act against ci.yml (CI-06)
+- [ ] 17.3-02-PLAN.md -- Author repo-root .actrc (single-source pinned -P image) + .github/workflows/test-act.yml meta-CI running pinned+checksum-verified act against ci.yml (CI-06; D-11/D-12/D-13: workflow_dispatch + paths-filtered triggers, SHA-pinned checkout, -P landmine + no-drift image match, contents:read, concurrency)
 
 ### Phase 17.1: Address Phase 16/17 review findings (INSERTED)
 
