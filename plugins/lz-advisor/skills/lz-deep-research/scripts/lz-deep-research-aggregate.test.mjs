@@ -109,6 +109,20 @@ test('I-1 partial-drop: recheckClusters narrows 3-source cluster to corroboratio
   assert.equal(r.survivors[0].confidence, 'High', '3 unrefuted votes on cluster0');
 });
 
+test('I-5 downgrade-then-rank: post-recheck corroboration drives rank order (not merge-time count)', () => {
+  // Cluster A (cluster0 by file order): 3-source merge, 2 sources quote-dropped -> corroboration 1 post-recheck.
+  // Cluster B (cluster1 by file order): 2-source merge, both verified -> corroboration 2 post-recheck.
+  // rankClusters sorts by post-recheck sources.size DESC: B ranks first despite A having higher merge-time count.
+  const r = aggregate(fx('partial-drop-rank-competition'));
+
+  assert.equal(r.survivors.length, 2, 'both clusters survive (each has at least one verified member)');
+  // B (cluster1) ranks first: post-recheck corroboration 2 > A's post-recheck corroboration 1
+  assert.equal(r.survivors[0].id, 'cluster1', 'B (cluster1) ranks first on post-recheck corroboration');
+  assert.equal(r.survivors[0].corroboration_lower_bound, 2, 'B has 2 verified sources');
+  assert.equal(r.survivors[1].id, 'cluster0', 'A (cluster0) ranks second despite 3-source merge-time count');
+  assert.equal(r.survivors[1].corroboration_lower_bound, 1, 'A has only 1 verified source after drop');
+});
+
 // ---------------------------------------------------------------------------
 // PIPE-07 per-tier confidence coverage (Option I rubric, D-01/D-02/D-03/D-03b).
 // Each tier (Medium / Low-thin / Low-refuted / Contested / Unsupported) is exercised by a
