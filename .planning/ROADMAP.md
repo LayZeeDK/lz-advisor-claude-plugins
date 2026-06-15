@@ -114,8 +114,10 @@ Full phase details, success criteria, and decision logs are archived in [milesto
   6. The `claims[].id` schema row is updated with correct enforcement annotation (SCHEMA-1).
   7. All Suggestion findings (AGG-2 through AGG-7, TEST-4 through TEST-9, SCHEMA-3, SCHEMA-4) addressed or explicitly deferred with rationale.
   8. `node --test plugins/lz-advisor/skills/lz-deep-research/scripts/lz-deep-research-aggregate.test.mjs` passes green.
-**Plans**: TBD (3-4 plans: A aggregator code fixes, B test suite additions, C schema corrections, D observability Suggestion fixes)
-- [ ] TBD (run /gsd-plan-phase 17.1 to break down)
+**Plans**: 3 plans (Plan D -- AGG-2 + AGG-4, observability-only -- DEFERRED to Phase 18 review per CONTEXT.md D-02)
+- [ ] 17.1-01-PLAN.md -- Aggregator code fixes: AGG-1 claims[].id fail-closed guard + AGG-Q1 fail-hard posture comment (D-01); AGG-3 dead-branch removal; AGG-5/6/7 ContractError .file annotation consistency in loadExcerpts + listJson (Wave 1)
+- [ ] 17.1-02-PLAN.md -- Test suite additions: TEST-1 SYNTH_CAP assertion + TEST-2 cross-file-order determinism (inline tmpRunDir, D-03) + TEST-3 WR-04 missing-id + TEST-4/6/7/8/9 coverage + TEST-5 temp-dir cleanup (Wave 2, depends on 17.1-01)
+- [ ] 17.1-03-PLAN.md -- Schema corrections: SCHEMA-1 id fail-closed promotion (post-AGG-1, references WR-04) + SCHEMA-2 null-guard + SCHEMA-3 truth-table row + SCHEMA-4 votes_ignored caveat (Wave 2, depends on 17.1-01, parallel with 17.1-02)
 
 ### Phase 18: Haiku prompt-engineering deep research + verify-voter + early gating eval
 **Goal**: The Haiku verify-voter prompt is engineered from a dedicated deep-research pass on Haiku prompt-engineering patterns (captured as a reference artifact) BEFORE any Haiku agent is authored; the Sonnet baseline verify-voter and the research-grounded Haiku verify-voter variant are then authored against the frozen vote schema; and the pre-registered gating eval (lock rule written first, false-uphold as the sole hard gate) runs standalone against the voter -- settling the Haiku-first flag, or raising the decision to the user if Haiku is non-viable. Runs isolated from the orchestrator, search, and extract workers, driven by the existing pilot harness over the Phase-16 tally + Phase-17 vote schema.
@@ -164,7 +166,7 @@ Phases execute in numeric order: 16 -> 17 -> 17.1 -> 18 -> 19 -> 20
 | 14-15 (v2.0.0, incl. 14.1, 14.2) | v2.0.0 | 4/4 | Complete | 2026-06-14 |
 | 16. Aggregator + fixture | v2.1.0 | 2/2 | Complete    | 2026-06-15 |
 | 17. Schema + contract | v2.1.0 | 2/2 | Complete    | 2026-06-15 |
-| 17.1. Address Phase 16/17 review findings (INSERTED) | v2.1.0 | 0/TBD | Not started | - |
+| 17.1. Address Phase 16/17 review findings (INSERTED) | v2.1.0 | 0/3 | Not started | - |
 | 18. Haiku research + voter + early eval | v2.1.0 | 0/TBD | Not started | - |
 | 19. Search + extract workers | v2.1.0 | 0/TBD | Not started | - |
 | 20. Orchestrator + scale | v2.1.0 | 0/TBD | Not started | - |
