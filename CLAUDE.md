@@ -213,6 +213,18 @@ claude --model sonnet --permission-mode auto --plugin-dir "...plugins/lz-advisor
 - Grade from `--output-format stream-json` captured to a file; the advisor subagent's own tool-use (turns / glob-vs-synthesis) is in `~/.claude/projects/<cwd-hash>/<session>/subagents/agent-<id>.jsonl`.
 
 This approach was validated in Phase 2 (all 3 UAT items via `claude -p "/lz-advisor:lz-plan ..."`) and again in Phase 8 gap-closure: GAP-S9 + GAP-S10 behaviorally proven on plugin 0.14.1 against ngx-smart-components (plan -> execute, `--permission-mode auto`).
+
+### Disabling the marketplace lz-advisor during development and UAT
+
+This repo ships a committed `.claude/settings.json` that disables the marketplace build of this plugin in this directory only:
+
+```json
+{ "enabledPlugins": { "lz-advisor@lz-advisor-claude-plugins": false } }
+```
+
+lz-advisor is installed at USER scope from the marketplace (`scope: user`, enabled globally), but its source lives here. The project-scoped `false` overrides the user-scoped `true` for this repo so the published copy cannot shadow or double-load the working-tree source under test -- which is always loaded explicitly via `--plugin-dir plugins/lz-advisor`. Verified via `claude plugin list --json`: `enabled: false` inside this repo, `enabled: true` elsewhere. No restart needed for `plugin list`; start a fresh session for skill-surfacing to re-resolve.
+
+**Apply the same disable temporarily to any OTHER repo used as an lz-advisor UAT target under the GSD workflow.** When a UAT exercises `/lz-advisor:*` against an external project (e.g. ngx-smart-components), the marketplace plugin is still enabled there and competes with the `--plugin-dir` build -- you can silently exercise the published version instead of your working tree. Before such a UAT, add the same `enabledPlugins` entry to the target repo's `.claude/settings.json`, then REMOVE it after the UAT so the target's own use of lz-advisor is restored. If the entry must stay uncommitted in the target, put it in that repo's `.claude/settings.local.json` -- but the key must ALSO exist in its committed `.claude/settings.json` (even as `"enabledPlugins": {}`), or the local override is silently dropped on merge (claude-code#27247).
 <!-- GSD:conventions-end -->
 
 <!-- GSD:architecture-start source:ARCHITECTURE.md -->
