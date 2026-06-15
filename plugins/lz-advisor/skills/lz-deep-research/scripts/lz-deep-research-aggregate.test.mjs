@@ -646,3 +646,54 @@ test('SC-2 zero-dependency contract: aggregator imports only node:/relative, no 
     dir = parent;
   }
 });
+
+test('R2-1 literal-null vote record fails closed with ContractError naming the file (not TypeError)', () => {
+  // A literal-null vote file (well-formed JSON `null`) parses cleanly to null; the old
+  // `readJson(f).verdict` then threw a raw TypeError (.name 'TypeError', .file undefined),
+  // bypassing the ContractError .file discipline. The R2-1 guard fails closed with a ContractError
+  // carrying the vote file. Build a surviving single claim (matching excerpt so it passes
+  // quote-recheck and reaches tally), then write votes/cluster0-0.json containing literal null. The
+  // cluster-id lookup (votes/cluster0-0.json) hits first (:507 region), so tally reads this seat.
+  //
+  // MUTATION TO KILL: revert tally to `const verdict = readJson(f).verdict;` -> `null.verdict`
+  // throws a TypeError (name 'TypeError', .file undefined) -> the `err.name === 'ContractError'`
+  // predicate is false -> assert.throws rejects the error -> test FAILS.
+  const runDir = fs.mkdtempSync(path.join(os.tmpdir(), 'lz-dr-nullvote-'));
+  const claimsDir = path.join(runDir, 'claims');
+  const excerptsDir = path.join(runDir, 'excerpts');
+  const votesDir = path.join(runDir, 'votes');
+  fs.mkdirSync(claimsDir, { recursive: true });
+  fs.mkdirSync(excerptsDir, { recursive: true });
+  fs.mkdirSync(votesDir, { recursive: true });
+
+  try {
+    fs.writeFileSync(
+      path.join(claimsDir, 'w1.json'),
+      JSON.stringify({
+        worker: 'w1',
+        source: 's1',
+        claims: [{ id: 'c1', text: 'X reduces Y by 30%', quote: 'X reduces Y by 30%', excerpt_id: 'e1' }],
+      }),
+      'utf8',
+    );
+    fs.writeFileSync(path.join(excerptsDir, 'e1.txt'), 'The study found that X reduces Y by 30% overall.', 'utf8');
+    // The seat the claim reads (cluster0-0): the JSON literal null -- parses cleanly, returns null.
+    fs.writeFileSync(path.join(votesDir, 'cluster0-0.json'), 'null', 'utf8');
+
+    let caught;
+    assert.throws(
+      () => aggregate(runDir),
+      (err) => {
+        caught = err;
+
+        return err.name === 'ContractError'; // NOT a raw TypeError
+      },
+    );
+    assert.equal(caught.name, 'ContractError', 'a null vote record must fail closed as ContractError');
+    assert.ok(/malformed vote record/.test(caught.message), 'message names the malformed-record cause');
+    assert.equal(typeof caught.file, 'string');
+    assert.ok(caught.file.endsWith('cluster0-0.json'), 'ContractError.file must name the offending vote file');
+  } finally {
+    fs.rmSync(runDir, { recursive: true, force: true });
+  }
+});

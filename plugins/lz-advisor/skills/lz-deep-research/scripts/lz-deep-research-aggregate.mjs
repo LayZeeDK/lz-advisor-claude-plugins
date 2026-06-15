@@ -527,7 +527,20 @@ export function tally(cl, runDir, capsOut) {
       continue;
     }
 
-    const verdict = readJson(f).verdict;
+    // R2-1: a structurally-null / non-object vote RECORD is malformed worker output (there is no
+    // record) -- fail closed with a ContractError naming the vote file, restoring the .file
+    // discipline a raw `null.verdict` TypeError would bypass. This is categorically distinct from a
+    // well-formed record whose `verdict` FIELD is absent/null, which stays lenient -> 'insufficient'
+    // on the next line (the :523 leniency, PRESERVED). `typeof null === 'object'` is why the explicit
+    // `rec == null` term comes first. An array is `typeof 'object'` and reads `.verdict` as undefined
+    // -> the lenient path (no Array.isArray rejection -- that would be scope creep beyond D-02).
+    const rec = readJson(f);
+
+    if (rec == null || typeof rec !== 'object') {
+      throw new ContractError('malformed vote record (expected object): ' + JSON.stringify(rec), f);
+    }
+
+    const verdict = rec.verdict;
     seats.push(verdict == null ? 'insufficient' : verdict);
     readableSeats += 1;
   }
