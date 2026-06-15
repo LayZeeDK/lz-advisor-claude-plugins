@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v2.1.0
 milestone_name: lz-deep-research skill
-status: ready_to_plan
-stopped_at: Phase 17.2 complete (2/2) — ready to discuss Phase 18
-last_updated: 2026-06-15T20:09:30.959Z
-last_activity: 2026-06-15 - Completed quick task 260615-x72: Fix schema observability sentence: distinguish trim caps from fail-closed ceilings
+status: planning
+stopped_at: Phase 17.2 context gathered
+last_updated: "2026-06-15T22:03:01.652Z"
+last_activity: 2026-06-15
 progress:
-  total_phases: 7
-  completed_phases: 3
+  total_phases: 8
+  completed_phases: 4
   total_plans: 9
   completed_plans: 9
-  percent: 43
+  percent: 50
 ---
 
 # Project State
@@ -21,7 +21,7 @@ progress:
 See: .planning/PROJECT.md (updated 2026-06-15 -- milestone v2.1.0 started)
 
 **Core value:** Near-Opus intelligence at Sonnet cost, through strategic advisor consultation at high-leverage moments -- now extended from coding tasks to deep research
-**Current focus:** Phase 18 — haiku prompt engineering deep research + verify voter + early gating eval
+**Current focus:** Phase 17.3 -- add GitHub Actions CI workflow for bundled plugin script tests (URGENT insert, runs before Phase 18)
 
 ## Deferred Items
 
@@ -219,6 +219,7 @@ Recent decisions affecting current work (v2.1.0):
 
 - Phase 17.1 inserted after Phase 17: Address Phase 16/17 review findings (URGENT)
 - Phase 17.2 inserted after Phase 17.1: Address lz-review Important findings R1-1 (id path-safety in mergeClusters) and R2-1 (null vote file TypeError) plus 4 Suggestion findings (URGENT)
+- Phase 17.3 inserted after Phase 17: Add GitHub Actions workflow for script tests (URGENT)
 
 ## Session Continuity
 

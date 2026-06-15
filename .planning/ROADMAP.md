@@ -100,6 +100,22 @@ Full phase details, success criteria, and decision logs are archived in [milesto
 - [x] 17-01-PLAN.md -- Lockstep GA-1/D-02 aggregator correction: rewrite tally() to the Option I 5-tier enum (drop Rejected, un-fuse Low/Contested, Contested-on-split, downgrade-not-delete) + 5-label stdout line + four new per-tier fixture cases/assertions (PIPE-07)
 - [x] 17-02-PLAN.md -- Write references/lz-deep-research-schema.md freezing the corrected shapes (records, tally rubric, single enum, two assurances + worked example, named-ceilings + quote-recheck + D-12 anti-drift) + reconcile 16-01-SUMMARY (PIPE-07, VERIF-06)
 
+### Phase 17.3: Add GitHub Actions workflow for script tests (INSERTED)
+
+**Goal:** Stand up CI for the bundled lz-advisor plugin scripts so `node --test` runs (and coverage is enforced) on every push/PR. Scope:
+- Add a `.node-version` file in the format `lts/<lts-codename>` pinning the Node.js LTS recommended for Claude agent skill scripts.
+- Add a GitHub Actions "CI" workflow with a `test` job that runs `node --test` across all bundled lz-advisor plugin scripts.
+- Have the CI workflow calculate and enforce test coverage in all supported dimensions -- and, if feasible, MC/DC plus coverage of nullish-coalescing (`??`) and optional-chaining (`?.`) expressions.
+- Configure a `concurrency` strategy on the workflow (group by ref/workflow with in-progress cancellation) so superseded runs on the same branch/PR are cancelled.
+- Configure least-privilege `permissions` for the workflow (default-minimal `contents: read`, granting only what each job needs).
+
+**Requirements**: TBD (run /gsd-plan-phase 17.3 to break down)
+**Depends on:** Phase 17
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd-plan-phase 17.3 to break down)
+
 ### Phase 17.1: Address Phase 16/17 review findings (INSERTED)
 
 **Goal**: Close all Important and Suggestion findings from the 5-round `/lz-advisor:lz-review` audit of Phases 16-17 (aggregator source, test suite, schema reference) before Phase 18 authoring begins. The two Important source findings (AGG-1: missing `claims[].id` validation; SCHEMA-2: doc-vs-code null-guard divergence) and the two Important test gaps (TEST-1: SYNTH_CAP unasserted; TEST-2: determinism test cannot detect sort removal) are hard blockers for downstream work. Full findings documented in `.planning/phase-17.1-review-findings.md`.
