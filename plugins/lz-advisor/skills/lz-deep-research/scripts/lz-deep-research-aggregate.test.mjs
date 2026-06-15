@@ -23,6 +23,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -86,6 +87,73 @@ test('SC5-4 near-duplicate pair from TWO sources merged (corroboration 2, confid
   assert.equal(r.survivors[0].confidence, 'High');
 });
 
+test('CR-01 summary first line reports true PRE-merge raw count and non-zero merged count', () => {
+  // Regression guard for CR-01: the load-bearing stdout receipt (D-03 / D-11) must report the true
+  // PRE-merge claim total and the count of claims folded away by dedup. The near-duplicate-merged
+  // fixture has TWO claims (from s1, s2) that merge into ONE cluster, so the receipt must read
+  // `raw: 2 -> clusters: 1 (merged: 1)`. Before the fix, rawCount = clusters.length (post-merge),
+  // pinning merged to 0 and mis-reporting raw as 1 -- this test fails against the pre-fix code.
+  const r = aggregate(fx('near-duplicate-merged'));
+
+  // Regex tolerant of exact inter-token spacing, anchored to the FIRST summary line (the frozen
+  // line-1 structure). Asserts raw 2, clusters 1, merged 1 -- the human-meaningful merge receipt.
+  assert.match(
+    r.summary,
+    /^raw:\s*2\s*->\s*clusters:\s*1\s*\(merged:\s*1\)/m,
+    'summary line 1 must report raw: 2 -> clusters: 1 (merged: 1) on the near-duplicate fixture',
+  );
+});
+
+// Build a throwaway run-dir under the OS temp dir from one worker record (WR-01/02/03 + WR-05:
+// never write the bad/runtime input into the committed __fixtures__ tree). Returns the run-dir path.
+function tmpRunDirWithWorker(worker) {
+  const runDir = fs.mkdtempSync(path.join(os.tmpdir(), 'lz-dr-agg-'));
+  const claimsDir = path.join(runDir, 'claims');
+  fs.mkdirSync(claimsDir, { recursive: true });
+  fs.writeFileSync(path.join(claimsDir, 'w1.json'), JSON.stringify(worker), 'utf8');
+
+  return runDir;
+}
+
+test('WR-01/WR-02 malformed claim missing text fails closed (aggregate throws, not silent corruption)', () => {
+  // A claim with no `text` would drop the FROZEN `claim` field from survivors.json (JSON.stringify
+  // omits undefined props) AND normalize(undefined) used to coerce to the token "undefined". The
+  // hardened mergeClusters must REJECT it (exit 2 via ContractError) rather than emit a corrupt
+  // frozen artifact.
+  const runDir = tmpRunDirWithWorker({
+    worker: 'w1',
+    source: 's1',
+    claims: [{ id: 'c1', quote: 'X reduces Y by 30%', excerpt_id: 'e1' }],
+  });
+
+  assert.throws(() => aggregate(runDir), /missing non-empty text/);
+});
+
+test('WR-01 malformed claim missing quote fails closed (aggregate throws)', () => {
+  // A missing `quote` normalized to the literal token "undefined" and could false-verify against any
+  // excerpt containing the word "undefined". The quote is the load-bearing fidelity input, so a
+  // missing quote must fail closed rather than silently pass the re-check.
+  const runDir = tmpRunDirWithWorker({
+    worker: 'w1',
+    source: 's1',
+    claims: [{ id: 'c1', text: 'X reduces Y by 30%', excerpt_id: 'e1' }],
+  });
+
+  assert.throws(() => aggregate(runDir), /missing non-empty quote/);
+});
+
+test('WR-03 worker file missing source fails closed (aggregate throws, no null in frozen sources[])', () => {
+  // A missing worker `source` leaked `null` into the frozen sources: string[] and under-counted
+  // corroboration (two undefined-source workers collapse to one Set entry). Source is load-bearing
+  // for the corroboration mechanism (D-08), so a missing source must fail closed.
+  const runDir = tmpRunDirWithWorker({
+    worker: 'w1',
+    claims: [{ id: 'c1', text: 'X reduces Y by 30%', quote: 'X reduces Y by 30%', excerpt_id: 'e1' }],
+  });
+
+  assert.throws(() => aggregate(runDir), /missing non-empty source/);
+});
+
 test('SC5-5 over-ceiling input capped observably + CEILINGS is the single frozen source', () => {
   const r = aggregate(fx('ceilings-enforced'));
 
@@ -110,17 +178,36 @@ test('SC-2 normalize strips BOM, folds CRLF, folds number-word, drops percent', 
 });
 
 test('SC-2 CRLF+BOM excerpt (written at runtime) still matches an LF quote (verified) -- Layer A+B on host', () => {
-  // Author the ONLY BOM/CRLF byte sequence of this phase HERE at runtime, so no non-ASCII byte is
-  // ever committed. The committed crlf-bom-safe run-dir holds only pure-ASCII claim/vote files;
-  // the excerpt is produced now via String.fromCharCode(0xFEFF) + CRLF newlines.
-  const excerptsDir = path.join(fx('crlf-bom-safe'), 'excerpts');
+  // Author the ONLY BOM/CRLF byte sequence of this phase at runtime, so no non-ASCII byte is ever
+  // committed. WR-05: assemble the ENTIRE run-dir under the OS temp dir (claims + votes copied from
+  // the committed crlf-bom-safe case, excerpt generated now) instead of writing the BOM excerpt into
+  // the committed __fixtures__ tree -- that left an untracked artifact and made the suite dirty the
+  // working tree. The temp run-dir is self-contained and leaves the committed fixtures untouched.
+  const srcDir = fx('crlf-bom-safe');
+  const runDir = fs.mkdtempSync(path.join(os.tmpdir(), 'lz-dr-crlf-bom-'));
+  const claimsDir = path.join(runDir, 'claims');
+  const votesDir = path.join(runDir, 'votes');
+  const excerptsDir = path.join(runDir, 'excerpts');
+  fs.mkdirSync(claimsDir, { recursive: true });
+  fs.mkdirSync(votesDir, { recursive: true });
   fs.mkdirSync(excerptsDir, { recursive: true });
+
+  // Copy the committed pure-ASCII claims/ + votes/ verbatim into the temp run-dir.
+  for (const f of fs.readdirSync(path.join(srcDir, 'claims'))) {
+    fs.copyFileSync(path.join(srcDir, 'claims', f), path.join(claimsDir, f));
+  }
+
+  for (const f of fs.readdirSync(path.join(srcDir, 'votes'))) {
+    fs.copyFileSync(path.join(srcDir, 'votes', f), path.join(votesDir, f));
+  }
+
+  // Generate the BOM+CRLF excerpt at runtime (the only non-ASCII bytes, never committed).
   const bomCrlfBody =
     String.fromCharCode(0xfeff) +
     'The study found that X reduces Y by 30% across all trials.\r\n';
   fs.writeFileSync(path.join(excerptsDir, 'e1.txt'), bomCrlfBody, 'utf8');
 
-  const r = aggregate(fx('crlf-bom-safe'));
+  const r = aggregate(runDir);
 
   // The LF/ASCII quote still matches the BOM+CRLF excerpt -> the claim survives as 'verified',
   // proving normalize()'s BOM strip + CRLF->LF fold (Layer A+B) on the actual host.
