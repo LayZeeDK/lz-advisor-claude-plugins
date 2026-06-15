@@ -141,13 +141,18 @@ export function stripBom(s) {
 // Path safety (V12 / T-16-01): treat a file-content-derived id (excerpt_id, worker id) as a
 // BASENAME only. Reject anything containing a path separator or a parent-dir reference so a
 // crafted id cannot traverse outside the run dir.
-export function safeId(id) {
+// `file` is OPTIONAL (AGG-6): callers that pass it get a ContractError carrying the offending file
+// path in .file (the CLI's `(${err.file})` annotation); callers that omit it are unaffected.
+// AGG-3: the redundant exact-parent-dir equality term is removed -- it is subsumed by the
+// includes('..') term below. The single-dot equality (id === '.') is KEPT (a single dot is NOT
+// caught by includes('..')).
+export function safeId(id, file) {
   if (typeof id !== 'string' || id.length === 0) {
-    throw new ContractError('invalid id (expected non-empty string): ' + JSON.stringify(id));
+    throw new ContractError('invalid id (expected non-empty string): ' + JSON.stringify(id), file);
   }
 
-  if (/[\\/]/.test(id) || id === '.' || id === '..' || id.includes('..')) {
-    throw new ContractError('unsafe id (path traversal rejected): ' + JSON.stringify(id));
+  if (/[\\/]/.test(id) || id === '.' || id.includes('..')) {
+    throw new ContractError('unsafe id (path traversal rejected): ' + JSON.stringify(id), file);
   }
 
   return id;
@@ -178,10 +183,18 @@ function listJson(dir) {
     return [];
   }
 
-  return fs
-    .readdirSync(dir)
-    .filter((f) => f.endsWith('.json'))
-    .sort();
+  // AGG-7: wrap the bare readdirSync so a permission/IO failure rethrows as a ContractError carrying
+  // .file, consistent with readJson. The existsSync pre-check screens the common absent-dir case; this
+  // try/catch screens permission/IO failures.
+  let entries;
+
+  try {
+    entries = fs.readdirSync(dir);
+  } catch (err) {
+    throw new ContractError('cannot read dir: ' + err.message, dir);
+  }
+
+  return entries.filter((f) => f.endsWith('.json')).sort();
 }
 
 // ---------------------------------------------------------------------------
@@ -219,6 +232,16 @@ export function mergeClusters(runDir) {
     }
 
     for (const c of w.claims) {
+      // Fail closed on a missing/empty id (AGG-1): id is a required, load-bearing field. A missing id
+      // otherwise coerces to the literal string "undefined" in tally()'s member-id vote-file fallback
+      // (safeId(String(cl.members[0].id)) -> votes/undefined-0.json), cross-contaminating vote tallies
+      // across ALL id-less claims. The member-id fallback is in active use: the wrong-passage-downgraded
+      // and fabricated-quote-dropped committed fixtures name their vote files by member id (e.g.
+      // c1-0.json). Validate id FIRST (before text/quote) so the member is never used with a bad id.
+      if (typeof c.id !== 'string' || c.id.length === 0) {
+        throw new ContractError('claim missing non-empty id', path.join(claimsDir, f));
+      }
+
       // Fail closed on a missing text/quote (WR-01/WR-02): both are required, load-bearing fields of
       // the FROZEN survivor record (claim: cl.text) and the fidelity guard (normalize(quote)).
       // A missing text drops `claim` from survivors.json (JSON.stringify omits undefined props); a
@@ -274,14 +297,33 @@ export function loadExcerpts(runDir) {
     return { byId, all };
   }
 
-  const files = fs
-    .readdirSync(excerptsDir)
-    .filter((f) => f.endsWith('.txt'))
-    .sort();
+  // AGG-7: wrap the bare directory read so a permission/IO failure carries .file (matches listJson).
+  let entries;
+
+  try {
+    entries = fs.readdirSync(excerptsDir);
+  } catch (err) {
+    throw new ContractError('cannot read dir: ' + err.message, excerptsDir);
+  }
+
+  const files = entries.filter((f) => f.endsWith('.txt')).sort();
 
   for (const f of files) {
-    const id = safeId(f.slice(0, -'.txt'.length));
-    const normalized = normalize(readText(path.join(excerptsDir, f)));
+    const excerptPath = path.join(excerptsDir, f);
+    // AGG-6: pass the file path to safeId so a malformed excerpt filename yields a ContractError
+    // carrying .file for the CLI annotation.
+    const id = safeId(f.slice(0, -'.txt'.length), excerptPath);
+    // AGG-5: wrap the bare excerpt read so a failing read rethrows as a ContractError carrying .file
+    // (mirrors readJson's try/catch/rethrow), not a bare native Error.
+    let raw;
+
+    try {
+      raw = readText(excerptPath);
+    } catch (err) {
+      throw new ContractError('cannot read file: ' + err.message, excerptPath);
+    }
+
+    const normalized = normalize(raw);
     byId.set(id, normalized);
     all.push(normalized);
   }
@@ -308,6 +350,10 @@ export function quoteOutcome(member, excerptsById, allExcerpts) {
     return 'dropped';
   }
 
+  // Fail-hard on a malformed excerpt_id (AGG-Q1 / D-01): a path-traversal attempt in worker-authored
+  // data (e.g. '../../etc/passwd') makes safeId throw ContractError, ABORTING the entire run rather
+  // than silently skipping this member. This is intentional -- consistent with the ContractError
+  // discipline for all other required fields (id/text/quote/source). Do NOT switch to a fail-soft skip.
   const citedId = member.excerpt_id == null ? null : safeId(String(member.excerpt_id));
   const cited = citedId == null ? undefined : excerptsById.get(citedId);
 
