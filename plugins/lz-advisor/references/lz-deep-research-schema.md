@@ -471,11 +471,20 @@ Enforcement is split across two stages:
 | `VOTES_PER_CLAIM` | 3 | Aggregator (`tally`) | Vote seats read per claim; extra seats are ignored and counted into `caps.votes_ignored`. |
 | `SYNTH_CAP` | 20 | Aggregator (`aggregate`) | The `survivors` output array (the cap is recorded in `caps.synth`). |
 | `ANGLES` | 5 | Phase-20 orchestrator (at wave dispatch) | Number of decomposition angles / search waves. CARRIED by the aggregator, not enforced by it. |
-| `MAX_FETCH` | 15 | Aggregator (`mergeClusters`, aggregate raw-claims ceiling: `MAX_FETCH * MAX_VERIFY_CLAIMS` = 360); Phase-20 orchestrator (dispatch) | Max distinct fetches per run. NOW ALSO enforced by the aggregator as the aggregate raw-claims ceiling (`MAX_FETCH * MAX_VERIFY_CLAIMS` = 360 total pre-merge claims across all worker files). |
+| `MAX_FETCH` | 15 | Aggregator (`mergeClusters`, aggregate raw-claims ceiling: `MAX_FETCH * MAX_VERIFY_CLAIMS` = 360); Phase-20 orchestrator (dispatch) | Max distinct fetches per run. NOW ALSO enforced by the aggregator as the aggregate raw-claims ceiling (`MAX_FETCH * MAX_VERIFY_CLAIMS` = 360 total pre-merge claims across all worker files). Aggregator enforcement is FAIL-CLOSED: overflow throws `ContractError` (exit 2, stderr), it does NOT appear in the `capped:` line. |
 
-Every cap fires observably: the aggregator records each fired cap in the `caps`
-object and surfaces it in the stdout summary's `capped:` line (no silent
-truncation).
+The aggregator's ceilings fire observably in one of two ways, never as silent
+truncation:
+
+- **Trim caps** (`MAX_VERIFY_CLAIMS`, `SYNTH_CAP`, `VOTES_PER_CLAIM`): the
+  aggregator slices the overflow and records each fired cap in the `caps` object,
+  surfacing it in the stdout summary's `capped:` line. The run still succeeds
+  (exit 0).
+- **Fail-closed ceilings** (the per-file `MAX_VERIFY_CLAIMS * ANGLES = 120` and
+  the aggregate `MAX_FETCH * MAX_VERIFY_CLAIMS = 360`): an overflow throws
+  `ContractError`, aborting the run with exit 2 and a stderr message naming the
+  offending file (see "CLI exit codes" below). These never appear in the
+  `capped:` line.
 
 ## The stdout summary and exit codes
 
