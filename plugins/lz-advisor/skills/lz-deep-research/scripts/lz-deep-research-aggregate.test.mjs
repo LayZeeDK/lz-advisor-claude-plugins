@@ -9,7 +9,7 @@
 // sub-assertions. The assertion field names/enums match the FROZEN contract recorded in
 // 16-01-SUMMARY.md (survivor record: id, claim, sources, corroboration_lower_bound,
 // quote_fidelity in {verified, downgraded}, confidence in
-// {High, Medium, Low/Contested, Rejected, Unsupported}).
+// {High, Medium, Low, Contested, Unsupported}).
 //
 // HOST QUIRK (load-bearing): on this host (Node v24.13.0 / Windows arm64 / Git Bash) the phase
 // gate MUST target the explicit FILE form:
@@ -85,6 +85,114 @@ test('SC5-4 near-duplicate pair from TWO sources merged (corroboration 2, confid
   assert.equal(r.survivors.length, 1, 'near-duplicate pair must merge into exactly one cluster');
   assert.equal(r.survivors[0].corroboration_lower_bound, 2);
   assert.equal(r.survivors[0].confidence, 'High');
+});
+
+// ---------------------------------------------------------------------------
+// PIPE-07 per-tier confidence coverage (Option I rubric, D-01/D-02/D-03/D-03b).
+// Each tier (Medium / Low-thin / Low-refuted / Contested / Unsupported) is exercised by a
+// distinct committed fixture differing ONLY in its votes/ seat verdicts. High is covered by SC5-4.
+// ---------------------------------------------------------------------------
+
+test('PIPE-07 Medium tier: 2 unrefuted + 1 missing seat -> confidence Medium', () => {
+  // Two readable unrefuted seats (cluster0-0, cluster0-1) and a missing third seat
+  // (insufficient) -> the unrefuted === 2, refuted === 0 branch -> Medium.
+  const r = aggregate(fx('medium-two-unrefuted'));
+  assert.equal(r.survivors.length, 1);
+  assert.equal(r.survivors[0].confidence, 'Medium');
+});
+
+test('PIPE-07 Low tier (thin support): 1 unrefuted + 2 missing seats -> confidence Low', () => {
+  // One readable unrefuted seat, two missing -> falls through to the Low branch (thin support).
+  const r = aggregate(fx('low-thin-support'));
+  assert.equal(r.survivors.length, 1);
+  assert.equal(r.survivors[0].confidence, 'Low');
+});
+
+test('PIPE-07 Low tier (downgrade-not-delete, D-03b): 3/3 refuted -> Low AND claim survives', () => {
+  // A unanimous refutation (0 unrefuted / 3 refuted) is a DOWNGRADE to Low, never a delete:
+  // the tally never removes a claim (only the quote-recheck dropped path does). The survivor
+  // must remain present AND carry confidence Low.
+  const r = aggregate(fx('low-refuted-downgraded'));
+  assert.equal(r.survivors.length, 1, 'refuted claim must NOT be deleted (downgrade-not-delete, D-03b)');
+  assert.equal(r.survivors[0].confidence, 'Low');
+});
+
+test('PIPE-07 Contested tier (D-03): >=1 unrefuted AND >=1 refuted -> confidence Contested', () => {
+  // A voter split (cluster0-0 unrefuted, cluster0-1 refuted) -> the split branch fires BEFORE
+  // the Medium branch, so the dissent is surfaced as Contested rather than silently Medium.
+  const r = aggregate(fx('contested-split'));
+  assert.equal(r.survivors.length, 1);
+  assert.equal(r.survivors[0].confidence, 'Contested');
+});
+
+test('PIPE-07 Unsupported tier: 0 readable vote seats -> confidence Unsupported', () => {
+  // No votes/ dir at all -> every seat is insufficient, readableSeats === 0 -> Unsupported.
+  const r = aggregate(fx('unsupported-no-votes'));
+  assert.equal(r.survivors.length, 1);
+  assert.equal(r.survivors[0].confidence, 'Unsupported');
+});
+
+test('PIPE-07 / D-02 stdout by-confidence line names all five canonical labels, never the fused token', () => {
+  // Build a survivors set spanning multiple tiers in ONE run-dir: one Contested cluster (a
+  // distinct-text claim with an unrefuted + a refuted seat) and one Unsupported cluster (a
+  // distinct-text claim with no vote seats). The summary's by-confidence receipt must enumerate
+  // all five D-01 labels in enum order and must never contain the fused un-canonical token nor
+  // the dropped terminal label (both spike artifacts D-01 removed). The forbidden tokens are
+  // assembled from fragments below so this source file itself stays free of the stale strings.
+  const runDir = fs.mkdtempSync(path.join(os.tmpdir(), 'lz-dr-5label-'));
+  const claimsDir = path.join(runDir, 'claims');
+  const excerptsDir = path.join(runDir, 'excerpts');
+  const votesDir = path.join(runDir, 'votes');
+  fs.mkdirSync(claimsDir, { recursive: true });
+  fs.mkdirSync(excerptsDir, { recursive: true });
+  fs.mkdirSync(votesDir, { recursive: true });
+
+  // Two non-mergeable claims (disjoint token sets so they never cluster together).
+  fs.writeFileSync(
+    path.join(claimsDir, 'w1.json'),
+    JSON.stringify({
+      worker: 'w1',
+      source: 's1',
+      claims: [
+        { id: 'ca', text: 'X reduces Y by 30%', quote: 'X reduces Y by 30%', excerpt_id: 'ea' },
+        { id: 'cb', text: 'P boosts Q tenfold', quote: 'P boosts Q tenfold', excerpt_id: 'eb' },
+      ],
+    }),
+    'utf8',
+  );
+  fs.writeFileSync(path.join(excerptsDir, 'ea.txt'), 'The study found that X reduces Y by 30% overall.', 'utf8');
+  fs.writeFileSync(path.join(excerptsDir, 'eb.txt'), 'The report states that P boosts Q tenfold in trials.', 'utf8');
+
+  // Deterministic rank: corroboration is 1 for both, so the lexical tiebreak orders them; the
+  // FIRST cluster gets cluster0, the second cluster1. Seed cluster0 as a Contested split.
+  fs.writeFileSync(path.join(votesDir, 'cluster0-0.json'), JSON.stringify({ verdict: 'unrefuted' }), 'utf8');
+  fs.writeFileSync(path.join(votesDir, 'cluster0-1.json'), JSON.stringify({ verdict: 'refuted' }), 'utf8');
+  // cluster1 has no vote files -> Unsupported.
+
+  const r = aggregate(runDir);
+
+  // The by-confidence receipt names all five canonical labels.
+  for (const label of ['High', 'Medium', 'Low', 'Contested', 'Unsupported']) {
+    assert.ok(r.summary.includes(label + ' '), 'summary by-confidence line must name the label ' + label);
+  }
+
+  // The spike artifacts are gone from the receipt. Assemble the forbidden tokens from fragments
+  // so the stale strings never appear literally in this test source (keeps the closing git grep
+  // gate -- zero hits for the un-canonical fused token / the dropped terminal label -- clean).
+  const fusedToken = 'Low' + '/' + 'Contested';
+  const droppedLabel = 'Reje' + 'cted';
+  assert.ok(!r.summary.includes(fusedToken), 'summary must not contain the un-fused-away spike token');
+  assert.ok(!r.summary.includes(droppedLabel), 'summary must not contain the dropped terminal spike label');
+
+  // The two tiers are actually represented (not a vacuous label-name match): one Contested, one Unsupported.
+  assert.ok(
+    r.survivors.some((s) => s.confidence === 'Contested'),
+    'expected a Contested survivor in the spanning run-dir',
+  );
+  assert.ok(
+    r.survivors.some((s) => s.confidence === 'Unsupported'),
+    'expected an Unsupported survivor in the spanning run-dir',
+  );
 });
 
 test('CR-01 summary first line reports true PRE-merge raw count and non-zero merged count', () => {
