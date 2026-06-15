@@ -55,7 +55,17 @@ export const NUMWORDS = {
 // HARDEN per D-04: strip a leading BOM and fold CRLF / lone CR to LF BEFORE lowercasing, so a
 // CRLF-saved excerpt still matches an LF-captured quote (and vice versa) regardless of host.
 export function normalize(s) {
-  return String(s)
+  // Fail-soft type guard (WR-01): a non-string (missing quote/text, null, number) must NOT coerce
+  // to a comparable token. String(undefined) -> 'undefined' / String(null) -> 'null' would yield a
+  // non-empty token that can false-verify a missing quote or wrongly merge two text-less claims.
+  // Returning '' instead routes a missing quote through quoteOutcome's nq === '' -> 'dropped' guard
+  // and makes text-less claims non-mergeable (empty token set). Hard fail-closed validation of the
+  // required text/quote/source fields lives in mergeClusters (WR-02/WR-03).
+  if (typeof s !== 'string') {
+    return '';
+  }
+
+  return s
     .replace(/^\uFEFF/, '') // strip leading BOM (the escape U+FEFF, never a literal byte)
     .replace(/\r\n/g, '\n') // CRLF -> LF
     .replace(/\r/g, '\n') // lone CR -> LF
@@ -183,6 +193,11 @@ function listJson(dir) {
 // ONE source -> size 1, NOT 2). Keep the UNDER-merge bias (D-07): merge only at jaccard >= 0.6.
 //
 // runDir is a PARAMETER (not a module-level ROOT) so this is a pure function the test can call.
+//
+// Returns { clusters, rawClaimCount } (CR-01): clusters is the post-merge cluster array; rawClaimCount
+// is the PRE-merge per-claim total so aggregate() can report a true `raw:` figure and a non-zero
+// `merged:` count. Returning only `clusters` (as before) discarded the raw total and pinned the
+// summary's merged count to 0 for every input.
 export function mergeClusters(runDir) {
   const claimsDir = path.join(runDir, 'claims');
   const files = listJson(claimsDir);
@@ -195,7 +210,27 @@ export function mergeClusters(runDir) {
       throw new ContractError('worker file missing claims[] array', path.join(claimsDir, f));
     }
 
+    // Fail closed on a missing source (WR-03): w.source is load-bearing for corroboration (D-08,
+    // counted by DISTINCT source id). A missing source would leak `null` into the frozen
+    // sources: string[] and collapse two distinct undefined-source workers to one Set entry,
+    // silently UNDER-counting corroboration. Reject instead of coercing.
+    if (typeof w.source !== 'string' || w.source.length === 0) {
+      throw new ContractError('worker file missing non-empty source', path.join(claimsDir, f));
+    }
+
     for (const c of w.claims) {
+      // Fail closed on a missing text/quote (WR-01/WR-02): both are required, load-bearing fields of
+      // the FROZEN survivor record (claim: cl.text) and the fidelity guard (normalize(quote)).
+      // A missing text drops `claim` from survivors.json (JSON.stringify omits undefined props); a
+      // missing quote normalizes to '' and could false-verify. Reject the corrupt input outright.
+      if (typeof c.text !== 'string' || c.text.length === 0) {
+        throw new ContractError('claim missing non-empty text', path.join(claimsDir, f));
+      }
+
+      if (typeof c.quote !== 'string' || c.quote.length === 0) {
+        throw new ContractError('claim missing non-empty quote', path.join(claimsDir, f));
+      }
+
       raw.push({ ...c, source: w.source });
     }
   }
@@ -218,7 +253,7 @@ export function mergeClusters(runDir) {
     }
   }
 
-  return clusters;
+  return { clusters, rawClaimCount: raw.length };
 }
 
 // ---------------------------------------------------------------------------
@@ -276,6 +311,14 @@ export function quoteOutcome(member, excerptsById, allExcerpts) {
   const citedId = member.excerpt_id == null ? null : safeId(String(member.excerpt_id));
   const cited = citedId == null ? undefined : excerptsById.get(citedId);
 
+  // WR-04 (accepted, frozen): the re-check is a normalized-SUBSTRING test (.includes on the
+  // space-joined token string), NOT a token-sequence/boundary test. A short numeric quote can
+  // therefore match inside a longer token -- e.g. normalize('30') is "present" in
+  // normalize('the rate is 130 overall') because "...130 overall".includes("30") is true. This is
+  // the proven, frozen lexical contract inherited from the spike (quoteInExcerpt) and is an
+  // accepted LOWER-BOUND fidelity property, consistent with the "corroboration is a lower bound"
+  // framing (D-09): the re-check guards verbatim CONSISTENCY only and may over-verify on substrings.
+  // Do NOT add token-boundary padding here without re-freezing the Phase-17 match semantics.
   if (cited != null && cited.includes(nq)) {
     return 'verified';
   }
@@ -462,8 +505,10 @@ export function tally(cl, runDir, capsOut) {
 //   { id, claim, sources: [...], corroboration_lower_bound, quote_fidelity, confidence }
 // The summary is a counts-only, deterministic, bounded string (never raw source text, D-03).
 export function aggregate(runDir) {
-  const clusters = mergeClusters(runDir);
-  const rawCount = clusters.length;
+  // rawCount is the PRE-merge claim total (CR-01): mergeClusters now returns it alongside the
+  // post-merge clusters so the summary can report a true `raw:` figure and a non-zero `merged:`.
+  const { clusters, rawClaimCount } = mergeClusters(runDir);
+  const rawCount = rawClaimCount;
 
   const excerpts = loadExcerpts(runDir);
   const { kept: survived, dropped } = recheckClusters(clusters, excerpts);
@@ -493,7 +538,11 @@ export function aggregate(runDir) {
     survivors = survivors.slice(0, CEILINGS.SYNTH_CAP);
   }
 
-  const merged = rawCount === 0 ? 0 : rawCount - (survived.length + dropped.length);
+  // merged = claims folded away by dedup (CR-01). rawCount is the PRE-merge claim total; clusters
+  // is the POST-merge cluster array (survived + dropped is a partition of it, so clusters.length
+  // is the post-merge cluster count). Previously rawCount was clusters.length, pinning merged to 0.
+  const clusterCount = clusters.length;
+  const merged = rawCount === 0 ? 0 : rawCount - clusterCount;
   const byConfidence = (label) => survivors.filter((s) => s.confidence === label).length;
 
   const capLine =
@@ -505,7 +554,7 @@ export function aggregate(runDir) {
       : 'capped: none';
 
   const summary = [
-    'raw: ' + rawCount + ' -> clusters: ' + (survived.length + dropped.length) + ' (merged: ' + merged + ')',
+    'raw: ' + rawCount + ' -> clusters: ' + clusterCount + ' (merged: ' + merged + ')',
     'quote-recheck: verified ' + verifiedCount + ' | downgraded ' + downgradedCount + ' | dropped ' + droppedCount,
     capLine,
     'survivors: ' +
