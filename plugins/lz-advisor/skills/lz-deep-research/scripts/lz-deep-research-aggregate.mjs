@@ -718,6 +718,7 @@ export function aggregate(runDir) {
 // counts-only summary to stdout; exits 0 on success, 2 on contract violation (D-03).
 // The optional LZ_DR_* env override is intentionally NOT wired (D-12): the hardcoded CEILINGS
 // defaults are the enforced contract for this phase.
+/* node:coverage disable */
 if (process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.argv[1])) {
   const runDir = process.argv[2];
 
@@ -737,3 +738,4 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.a
     process.exit(2);
   }
 }
+/* node:coverage enable */
