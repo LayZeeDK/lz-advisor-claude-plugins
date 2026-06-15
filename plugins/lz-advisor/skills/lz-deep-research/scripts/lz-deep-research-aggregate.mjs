@@ -506,8 +506,14 @@ export function enforceCeilings(rankedClusters) {
 // a unanimous refutation (0 unrefuted / N refuted) downgrades to Low, surfaced, never removed.
 export function tally(cl, runDir, capsOut) {
   const votesDir = path.join(runDir, 'votes');
-  const clusterId = safeId(cl.id);
-  const memberId = cl.members && cl.members[0] ? safeId(String(cl.members[0].id)) : null;
+  // R1-1 defense-in-depth (D-01 belt-and-suspenders): thread the originating worker file into both
+  // safeId calls so NO safeId call anywhere can throw a .file-less ContractError. Neither is a live
+  // attack path (cl.id is 'cluster' + N -- never worker-authored; the member id is now read-time
+  // validated by the mergeClusters guard), but the annotation makes the .file discipline uniform.
+  // _file survives recheckClusters (:419 { ...m }, :429 { ...cl, members: survivingMembers }).
+  const memberFile = cl.members && cl.members[0] ? cl.members[0]._file : undefined;
+  const clusterId = safeId(cl.id, memberFile);
+  const memberId = cl.members && cl.members[0] ? safeId(String(cl.members[0].id), memberFile) : null;
   const seats = [];
   let readableSeats = 0;
 
