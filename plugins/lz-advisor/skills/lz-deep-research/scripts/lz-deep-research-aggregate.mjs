@@ -219,6 +219,16 @@ export function mergeClusters(runDir) {
     }
 
     for (const c of w.claims) {
+      // Fail closed on a missing/empty id (AGG-1): id is a required, load-bearing field. A missing id
+      // otherwise coerces to the literal string "undefined" in tally()'s member-id vote-file fallback
+      // (safeId(String(cl.members[0].id)) -> votes/undefined-0.json), cross-contaminating vote tallies
+      // across ALL id-less claims. The member-id fallback is in active use: the wrong-passage-downgraded
+      // and fabricated-quote-dropped committed fixtures name their vote files by member id (e.g.
+      // c1-0.json). Validate id FIRST (before text/quote) so the member is never used with a bad id.
+      if (typeof c.id !== 'string' || c.id.length === 0) {
+        throw new ContractError('claim missing non-empty id', path.join(claimsDir, f));
+      }
+
       // Fail closed on a missing text/quote (WR-01/WR-02): both are required, load-bearing fields of
       // the FROZEN survivor record (claim: cl.text) and the fidelity guard (normalize(quote)).
       // A missing text drops `claim` from survivors.json (JSON.stringify omits undefined props); a
@@ -308,6 +318,10 @@ export function quoteOutcome(member, excerptsById, allExcerpts) {
     return 'dropped';
   }
 
+  // Fail-hard on a malformed excerpt_id (AGG-Q1 / D-01): a path-traversal attempt in worker-authored
+  // data (e.g. '../../etc/passwd') makes safeId throw ContractError, ABORTING the entire run rather
+  // than silently skipping this member. This is intentional -- consistent with the ContractError
+  // discipline for all other required fields (id/text/quote/source). Do NOT switch to a fail-soft skip.
   const citedId = member.excerpt_id == null ? null : safeId(String(member.excerpt_id));
   const cited = citedId == null ? undefined : excerptsById.get(citedId);
 
