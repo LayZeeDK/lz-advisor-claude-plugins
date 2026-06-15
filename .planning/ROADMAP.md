@@ -66,6 +66,7 @@ Full phase details, success criteria, and decision logs are archived in [milesto
 
 - [x] **Phase 16: Deterministic off-model aggregator + validation fixture** - The zero-dependency Node `scripts/` helper that does all dedup/rank/vote-tally/quote-recheck off-model, hardened by a load-bearing validation fixture (completed 2026-06-15)
 - [x] **Phase 17: JSON schema + verification contract reference** - Frozen JSON shapes, tally rubric (confidence enum), quote-recheck contract, and the two-assurance distinction that every downstream component agrees on (completed 2026-06-15)
+- [ ] **Phase 17.1: Address Phase 16/17 review findings (INSERTED)** - Close all Important and Suggestion findings from the 5-round lz-review audit of Phases 16-17 (aggregator validation gap AGG-1, SYNTH_CAP test gap TEST-1, determinism test gap TEST-2, schema inaccuracies SCHEMA-1/2, and all Suggestion findings) before Phase 18 authoring begins
 - [ ] **Phase 18: Haiku prompt-engineering deep research + verify-voter + early gating eval** - Research-ground the Haiku prompt FIRST, author the Sonnet baseline + research-grounded Haiku verify-voter variants, run the pre-registered eval, and settle the voter default (raising to the user if Haiku is non-viable) -- all isolated from the orchestrator
 - [ ] **Phase 19: Search + extract worker agents** - The fetch/extract worker (immutable excerpt at fetch time) and the search worker, whose model tier is chosen from the Phase-18 Haiku research/eval outcome, each returning one-line receipts
 - [ ] **Phase 20: Orchestrator skill + headless scale confirmation** - The `lz-deep-research` skill that wires the full pipeline with the already-settled voter default, reuses the Opus advisor at two gates, wave-batches the fan-out (<=5 in-flight), and is empirically confirmed at real headless concurrency
@@ -98,6 +99,23 @@ Full phase details, success criteria, and decision logs are archived in [milesto
 **Plans**: 2 plans
 - [x] 17-01-PLAN.md -- Lockstep GA-1/D-02 aggregator correction: rewrite tally() to the Option I 5-tier enum (drop Rejected, un-fuse Low/Contested, Contested-on-split, downgrade-not-delete) + 5-label stdout line + four new per-tier fixture cases/assertions (PIPE-07)
 - [x] 17-02-PLAN.md -- Write references/lz-deep-research-schema.md freezing the corrected shapes (records, tally rubric, single enum, two assurances + worked example, named-ceilings + quote-recheck + D-12 anti-drift) + reconcile 16-01-SUMMARY (PIPE-07, VERIF-06)
+
+### Phase 17.1: Address Phase 16/17 review findings (INSERTED)
+
+**Goal**: Close all Important and Suggestion findings from the 5-round `/lz-advisor:lz-review` audit of Phases 16-17 (aggregator source, test suite, schema reference) before Phase 18 authoring begins. The two Important source findings (AGG-1: missing `claims[].id` validation; SCHEMA-2: doc-vs-code null-guard divergence) and the two Important test gaps (TEST-1: SYNTH_CAP unasserted; TEST-2: determinism test cannot detect sort removal) are hard blockers for downstream work. Full findings documented in `.planning/phase-17.1-review-findings.md`.
+**Depends on**: Phase 17 (the aggregator and schema it produced are the reviewed artifacts)
+**Requirements**: Review findings AGG-1 through AGG-7, TEST-1 through TEST-9, SCHEMA-1 through SCHEMA-4 (see `.planning/phase-17.1-review-findings.md`)
+**Success Criteria** (what must be TRUE):
+  1. `mergeClusters` rejects a claim with a missing or empty `id` via `ContractError('claim missing non-empty id', ...)`, matching the existing `text`/`quote`/`source` guards (AGG-1).
+  2. SC5-5 asserts both observable caps: `synth \d+->20` in summary, `r.survivors.length === 20`, `CEILINGS.SYNTH_CAP === 20` (TEST-1).
+  3. A new or extended SC-1 test verifies cross-file-order stability (not just intra-process idempotence) -- removing `listJson`'s `.sort()` would cause a test failure (TEST-2).
+  4. WR-04 test exists: `tmpRunDirWithWorker` with no claim `id` throws `/missing non-empty id/` (TEST-3, requires criterion 1).
+  5. The `verified` condition in the schema's quote-recheck table reads `cited != null && cited.includes(nq)` (SCHEMA-2).
+  6. The `claims[].id` schema row is updated with correct enforcement annotation (SCHEMA-1).
+  7. All Suggestion findings (AGG-2 through AGG-7, TEST-4 through TEST-9, SCHEMA-3, SCHEMA-4) addressed or explicitly deferred with rationale.
+  8. `node --test plugins/lz-advisor/skills/lz-deep-research/scripts/lz-deep-research-aggregate.test.mjs` passes green.
+**Plans**: TBD (3-4 plans: A aggregator code fixes, B test suite additions, C schema corrections, D observability Suggestion fixes)
+- [ ] TBD (run /gsd-plan-phase 17.1 to break down)
 
 ### Phase 18: Haiku prompt-engineering deep research + verify-voter + early gating eval
 **Goal**: The Haiku verify-voter prompt is engineered from a dedicated deep-research pass on Haiku prompt-engineering patterns (captured as a reference artifact) BEFORE any Haiku agent is authored; the Sonnet baseline verify-voter and the research-grounded Haiku verify-voter variant are then authored against the frozen vote schema; and the pre-registered gating eval (lock rule written first, false-uphold as the sole hard gate) runs standalone against the voter -- settling the Haiku-first flag, or raising the decision to the user if Haiku is non-viable. Runs isolated from the orchestrator, search, and extract workers, driven by the existing pilot harness over the Phase-16 tally + Phase-17 vote schema.
@@ -137,7 +155,7 @@ Full phase details, success criteria, and decision logs are archived in [milesto
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 16 -> 17 -> 18 -> 19 -> 20
+Phases execute in numeric order: 16 -> 17 -> 17.1 -> 18 -> 19 -> 20
 
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
@@ -146,6 +164,7 @@ Phases execute in numeric order: 16 -> 17 -> 18 -> 19 -> 20
 | 14-15 (v2.0.0, incl. 14.1, 14.2) | v2.0.0 | 4/4 | Complete | 2026-06-14 |
 | 16. Aggregator + fixture | v2.1.0 | 2/2 | Complete    | 2026-06-15 |
 | 17. Schema + contract | v2.1.0 | 2/2 | Complete    | 2026-06-15 |
+| 17.1. Address Phase 16/17 review findings (INSERTED) | v2.1.0 | 0/TBD | Not started | - |
 | 18. Haiku research + voter + early eval | v2.1.0 | 0/TBD | Not started | - |
 | 19. Search + extract workers | v2.1.0 | 0/TBD | Not started | - |
 | 20. Orchestrator + scale | v2.1.0 | 0/TBD | Not started | - |

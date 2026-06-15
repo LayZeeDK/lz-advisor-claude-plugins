@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v2.1.0
 milestone_name: lz-deep-research skill
-status: ready_to_plan
-stopped_at: Phase 17 complete (2/2) -- ready to discuss Phase 18
-last_updated: 2026-06-15T12:17:30.574Z
+status: planning
+stopped_at: Phase 17 Plan 01 complete (tally() corrected to the single D-01 confidence enum; 19-test fixture green via the FILE form)
+last_updated: "2026-06-15T12:57:10.399Z"
 last_activity: 2026-06-15
 progress:
-  total_phases: 5
+  total_phases: 6
   completed_phases: 2
   total_plans: 4
   completed_plans: 4
-  percent: 40
+  percent: 33
 ---
 
 # Project State
@@ -37,7 +37,7 @@ Items deferred across milestones (v1.0.1 close 2026-06-11; v2.0.0 additions tagg
 
 ## Current Position
 
-Phase: 18
+Phase: 17.1
 Plan: Not started
 Status: Ready to plan
 Last activity: 2026-06-15
@@ -211,6 +211,8 @@ Recent decisions affecting current work (v2.1.0):
 - **Milestone v1.0.1 roadmap created (2026-06-07):** 3 phases (11-13), continuing integer numbering from the v1.0 milestone's final Phase 10. Fixture baseline first, atomic grouped-grammar rewrite, empirical verification last.
 
 (v1.0 milestone roadmap-evolution history archived in `milestones/v1.0-ROADMAP.md`. Phase 14.1 / 14.2 were inserted after Phase 14 during the v2.0.0 build.)
+
+- Phase 17.1 inserted after Phase 17: Address Phase 16/17 review findings (URGENT)
 
 ## Session Continuity
 
