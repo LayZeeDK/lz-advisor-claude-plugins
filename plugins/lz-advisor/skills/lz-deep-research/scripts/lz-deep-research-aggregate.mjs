@@ -220,3 +220,334 @@ export function mergeClusters(runDir) {
 
   return clusters;
 }
+
+// ---------------------------------------------------------------------------
+// Excerpt store: read every excerpts/*.txt ONCE, pre-normalized (guidance 3)
+// ---------------------------------------------------------------------------
+//
+// Returns { byId, all }:
+//   byId: Map<excerpt_id, normalize(text)>   (cited-excerpt lookup)
+//   all:  string[] of normalized excerpt texts (the "some other excerpt" search space)
+// Reads with explicit 'utf8'; normalize() strips BOM + folds CRLF, so a CRLF-saved excerpt
+// still matches an LF-captured quote. excerpt_id is derived from the filename basename.
+export function loadExcerpts(runDir) {
+  const excerptsDir = path.join(runDir, 'excerpts');
+  const byId = new Map();
+  const all = [];
+
+  if (!fs.existsSync(excerptsDir)) {
+    return { byId, all };
+  }
+
+  const files = fs
+    .readdirSync(excerptsDir)
+    .filter((f) => f.endsWith('.txt'))
+    .sort();
+
+  for (const f of files) {
+    const id = safeId(f.slice(0, -'.txt'.length));
+    const normalized = normalize(readText(path.join(excerptsDir, f)));
+    byId.set(id, normalized);
+    all.push(normalized);
+  }
+
+  return { byId, all };
+}
+
+// ---------------------------------------------------------------------------
+// Three-way quote outcome (D-05) -- runs UPSTREAM of tally (D-06 / VERIF-04)
+// ---------------------------------------------------------------------------
+//
+// verified   : quote verbatim-present in its CITED excerpt (full quote-fidelity assurance)
+// downgraded : quote absent from cited excerpt but present in SOME OTHER stored excerpt
+//              (real text, wrong attribution -- KEPT, fidelity lowered, NOT dropped)
+// dropped    : quote absent from ALL stored excerpts (fabricated / drifted)
+//
+// This guards verbatim CONSISTENCY only. Claim-vs-quote ENTAILMENT (does the quote support the
+// claim?) is the voter's job (Phase 18) and is reported as a SEPARATE assurance frozen in Phase 17.
+export function quoteOutcome(member, excerptsById, allExcerpts) {
+  const nq = normalize(member.quote);
+
+  // An empty normalized quote cannot be verified against anything.
+  if (nq === '') {
+    return 'dropped';
+  }
+
+  const citedId = member.excerpt_id == null ? null : safeId(String(member.excerpt_id));
+  const cited = citedId == null ? undefined : excerptsById.get(citedId);
+
+  if (cited != null && cited.includes(nq)) {
+    return 'verified';
+  }
+
+  if (allExcerpts.some((ex) => ex.includes(nq))) {
+    return 'downgraded';
+  }
+
+  return 'dropped';
+}
+
+// Apply quoteOutcome per member, drop the 'dropped' members, and decide cluster survival +
+// cluster-level quote_fidelity. A cluster survives iff it has >= 1 verified-or-downgraded member;
+// fidelity is 'verified' unless ALL kept members are 'downgraded' is false -- i.e. fidelity is
+// 'downgraded' when no kept member is 'verified' (any verified member lifts the cluster).
+export function recheckClusters(clusters, excerpts) {
+  const kept = [];
+  const dropped = [];
+
+  for (const cl of clusters) {
+    const survivingMembers = [];
+    let hasVerified = false;
+
+    for (const m of cl.members) {
+      const outcome = quoteOutcome(m, excerpts.byId, excerpts.all);
+
+      if (outcome === 'dropped') {
+        continue;
+      }
+
+      if (outcome === 'verified') {
+        hasVerified = true;
+      }
+
+      survivingMembers.push({ ...m, quote_outcome: outcome });
+    }
+
+    if (survivingMembers.length === 0) {
+      dropped.push({ id: cl.id, claim: cl.text, reason: 'quote-not-in-any-excerpt' });
+      continue;
+    }
+
+    kept.push({
+      ...cl,
+      members: survivingMembers,
+      quote_fidelity: hasVerified ? 'verified' : 'downgraded',
+      sources: new Set(survivingMembers.map((m) => m.source)),
+    });
+  }
+
+  return { kept, dropped };
+}
+
+// ---------------------------------------------------------------------------
+// Ranking + ceiling enforcement (D-10 / D-11)
+// ---------------------------------------------------------------------------
+
+// Deterministic rank: corroboration (distinct-source count) DESC, then normalized-text lexical
+// ASC as a stable tiebreak so the same inputs always produce byte-identical output (AGG-01).
+export function rankClusters(clusters) {
+  return [...clusters].sort((a, b) => {
+    const ca = a.sources.size;
+    const cb = b.sources.size;
+
+    if (cb !== ca) {
+      return cb - ca;
+    }
+
+    const na = normalize(a.text);
+    const nb = normalize(b.text);
+
+    if (na < nb) {
+      return -1;
+    }
+
+    if (na > nb) {
+      return 1;
+    }
+
+    return 0;
+  });
+}
+
+// Cap ranked clusters to MAX_VERIFY_CLAIMS AFTER ranking; record the cap observably (NO silent
+// truncation, D-11). Returns { kept, caps } where caps.claims is set only when the cap fired.
+export function enforceCeilings(rankedClusters) {
+  const caps = {};
+  let kept = rankedClusters;
+
+  if (kept.length > CEILINGS.MAX_VERIFY_CLAIMS) {
+    caps.claims = kept.length + '->' + CEILINGS.MAX_VERIFY_CLAIMS;
+    kept = kept.slice(0, CEILINGS.MAX_VERIFY_CLAIMS);
+  }
+
+  return { kept, caps };
+}
+
+// ---------------------------------------------------------------------------
+// Vote tally (PRESERVE the spike rubric arithmetic; cap seats at VOTES_PER_CLAIM)
+// ---------------------------------------------------------------------------
+//
+// Read at most VOTES_PER_CLAIM seats per claim (seats beyond that are ignored deterministically
+// and counted as votes_ignored). Vote file is looked up by cluster id first, then the first
+// member's claim id (the spike's fallback). Missing seat -> 'insufficient'.
+//
+// Rubric (PRESERVED verbatim): refuted >= 2 -> Rejected; unrefuted === 3 -> High;
+// unrefuted === 2 -> Medium; zero readable seats -> Unsupported; otherwise -> Low/Contested.
+export function tally(cl, runDir, capsOut) {
+  const votesDir = path.join(runDir, 'votes');
+  const clusterId = safeId(cl.id);
+  const memberId = cl.members && cl.members[0] ? safeId(String(cl.members[0].id)) : null;
+  const seats = [];
+  let readableSeats = 0;
+
+  for (let s = 0; s < CEILINGS.VOTES_PER_CLAIM; s += 1) {
+    const fByCluster = path.join(votesDir, clusterId + '-' + s + '.json');
+    const fByMember = memberId == null ? null : path.join(votesDir, memberId + '-' + s + '.json');
+    let f = null;
+
+    if (fs.existsSync(fByCluster)) {
+      f = fByCluster;
+    } else if (fByMember != null && fs.existsSync(fByMember)) {
+      f = fByMember;
+    }
+
+    if (f == null) {
+      seats.push('insufficient');
+      continue;
+    }
+
+    const verdict = readJson(f).verdict;
+    seats.push(verdict == null ? 'insufficient' : verdict);
+    readableSeats += 1;
+  }
+
+  // Count (but do not read) extra seats beyond VOTES_PER_CLAIM so the ignore is observable (D-11).
+  if (capsOut) {
+    let extra = 0;
+
+    for (let s = CEILINGS.VOTES_PER_CLAIM; ; s += 1) {
+      const fByCluster = path.join(votesDir, clusterId + '-' + s + '.json');
+      const fByMember = memberId == null ? null : path.join(votesDir, memberId + '-' + s + '.json');
+
+      if (fs.existsSync(fByCluster) || (fByMember != null && fs.existsSync(fByMember))) {
+        extra += 1;
+      } else {
+        break;
+      }
+    }
+
+    if (extra > 0) {
+      capsOut.votes_ignored = (capsOut.votes_ignored || 0) + extra;
+    }
+  }
+
+  const refuted = seats.filter((v) => v === 'refuted').length;
+  const unrefuted = seats.filter((v) => v === 'unrefuted').length;
+
+  if (refuted >= 2) {
+    return 'Rejected';
+  }
+
+  if (unrefuted === 3) {
+    return 'High';
+  }
+
+  if (unrefuted === 2) {
+    return 'Medium';
+  }
+
+  if (readableSeats === 0) {
+    return 'Unsupported';
+  }
+
+  return 'Low/Contested';
+}
+
+// ---------------------------------------------------------------------------
+// Top-level pipeline (D-16): read -> merge -> recheck (upstream) -> rank -> cap -> tally -> emit
+// ---------------------------------------------------------------------------
+//
+// Returns { survivors, dropped, summary, caps }. The survivor record field set is LOAD-BEARING --
+// Phase 17 freezes it and Phase 18/20 consume it:
+//   { id, claim, sources: [...], corroboration_lower_bound, quote_fidelity, confidence }
+// The summary is a counts-only, deterministic, bounded string (never raw source text, D-03).
+export function aggregate(runDir) {
+  const clusters = mergeClusters(runDir);
+  const rawCount = clusters.length;
+
+  const excerpts = loadExcerpts(runDir);
+  const { kept: survived, dropped } = recheckClusters(clusters, excerpts);
+
+  // Quote-recheck counts: verified clusters (>= 1 verified member) vs downgraded-only clusters.
+  const verifiedCount = survived.filter((cl) => cl.quote_fidelity === 'verified').length;
+  const downgradedCount = survived.filter((cl) => cl.quote_fidelity === 'downgraded').length;
+  const droppedCount = dropped.length;
+
+  const ranked = rankClusters(survived);
+  const { kept: capped, caps } = enforceCeilings(ranked);
+
+  const survivorRecords = capped.map((cl) => ({
+    id: cl.id,
+    claim: cl.text,
+    sources: [...cl.sources].sort(),
+    corroboration_lower_bound: cl.sources.size,
+    quote_fidelity: cl.quote_fidelity,
+    confidence: tally(cl, runDir, caps),
+  }));
+
+  // SYNTH_CAP on the survivors output (observable, D-11).
+  let survivors = survivorRecords;
+
+  if (survivors.length > CEILINGS.SYNTH_CAP) {
+    caps.synth = survivors.length + '->' + CEILINGS.SYNTH_CAP;
+    survivors = survivors.slice(0, CEILINGS.SYNTH_CAP);
+  }
+
+  const merged = rawCount === 0 ? 0 : rawCount - (survived.length + dropped.length);
+  const byConfidence = (label) => survivors.filter((s) => s.confidence === label).length;
+
+  const capLine =
+    caps.claims || caps.synth || caps.votes_ignored
+      ? 'capped:' +
+        (caps.claims ? ' claims ' + caps.claims : '') +
+        (caps.synth ? ' synth ' + caps.synth : '') +
+        (caps.votes_ignored ? ' votes_ignored ' + caps.votes_ignored : '')
+      : 'capped: none';
+
+  const summary = [
+    'raw: ' + rawCount + ' -> clusters: ' + (survived.length + dropped.length) + ' (merged: ' + merged + ')',
+    'quote-recheck: verified ' + verifiedCount + ' | downgraded ' + downgradedCount + ' | dropped ' + droppedCount,
+    capLine,
+    'survivors: ' +
+      survivors.length +
+      ' (High ' +
+      byConfidence('High') +
+      ', Medium ' +
+      byConfidence('Medium') +
+      ', Low/Contested ' +
+      byConfidence('Low/Contested') +
+      ', Unsupported ' +
+      byConfidence('Unsupported') +
+      ')',
+  ].join('\n');
+
+  return { survivors, dropped, summary, caps };
+}
+
+// ---------------------------------------------------------------------------
+// Thin CLI (D-01) -- guarded so importing the module does NOT run the CLI (Pattern 1)
+// ---------------------------------------------------------------------------
+//
+// Single positional <run-dir>; writes survivors.json (2-space JSON) into it; prints the
+// counts-only summary to stdout; exits 0 on success, 2 on contract violation (D-03).
+// The optional LZ_DR_* env override is intentionally NOT wired (D-12): the hardcoded CEILINGS
+// defaults are the enforced contract for this phase.
+if (process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.argv[1])) {
+  const runDir = process.argv[2];
+
+  if (!runDir || !fs.existsSync(runDir) || !fs.statSync(runDir).isDirectory()) {
+    console.error('lz-deep-research-aggregate: missing or invalid <run-dir>');
+    process.exit(2);
+  }
+
+  try {
+    const result = aggregate(runDir);
+    fs.writeFileSync(path.join(runDir, 'survivors.json'), JSON.stringify(result.survivors, null, 2));
+    console.log(result.summary);
+    process.exit(0);
+  } catch (err) {
+    const where = err && err.file ? ' (' + err.file + ')' : '';
+    console.error('lz-deep-research-aggregate: ' + (err && err.message ? err.message : String(err)) + where);
+    process.exit(2);
+  }
+}
