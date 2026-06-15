@@ -550,6 +550,11 @@ export function tally(cl, runDir, capsOut) {
     }
 
     const verdict = rec.verdict;
+
+    if (verdict != null && verdict !== 'unrefuted' && verdict !== 'refuted') {
+      throw new ContractError('invalid verdict (expected "unrefuted" or "refuted"): ' + JSON.stringify(verdict), f);
+    }
+
     seats.push(verdict == null ? 'insufficient' : verdict);
     readableSeats += 1;
   }

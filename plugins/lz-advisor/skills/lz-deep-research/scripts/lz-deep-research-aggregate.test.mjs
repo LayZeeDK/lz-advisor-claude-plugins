@@ -768,3 +768,54 @@ test('R2-1 literal-null vote record fails closed with ContractError naming the f
     fs.rmSync(runDir, { recursive: true, force: true });
   }
 });
+
+// ---------------------------------------------------------------------------
+// H-1 verdict enum guard: non-null non-enum verdict strings must throw
+// ---------------------------------------------------------------------------
+
+test('H-1 wrong-case verdict "Refuted" (capital R) throws ContractError /invalid verdict/', () => {
+  // A vote file with verdict "Refuted" (capital R, wrong case) must cause tally() to throw
+  // ContractError matching /invalid verdict/. Before the H-1 guard, "Refuted" silently became
+  // an invalid seat that matched neither 'unrefuted' nor 'refuted', treating a refutation as
+  // abstention (incrementing readableSeats without counting toward any branch).
+  const runDir = tmpRunDirWithWorker({
+    worker: 'w1',
+    source: 's1',
+    claims: [{ id: 'c1', text: 'X reduces Y by 30%', quote: 'X reduces Y by 30%', excerpt_id: 'e1' }],
+  });
+  const excerptsDir = path.join(runDir, 'excerpts');
+  const votesDir = path.join(runDir, 'votes');
+  fs.mkdirSync(excerptsDir, { recursive: true });
+  fs.mkdirSync(votesDir, { recursive: true });
+  fs.writeFileSync(path.join(excerptsDir, 'e1.txt'), 'The study found that X reduces Y by 30% overall.', 'utf8');
+  fs.writeFileSync(path.join(votesDir, 'cluster0-0.json'), JSON.stringify({ verdict: 'Refuted' }), 'utf8');
+
+  try {
+    assert.throws(() => aggregate(runDir), /invalid verdict/);
+  } finally {
+    fs.rmSync(runDir, { recursive: true, force: true });
+  }
+});
+
+test('H-1 trailing-space verdict "refuted " throws ContractError /invalid verdict/', () => {
+  // A vote file with verdict "refuted " (trailing space) must also throw. A trailing space causes
+  // the seats.filter(v => v === 'refuted') to miss the match, silently treating the refutation
+  // as an abstention.
+  const runDir = tmpRunDirWithWorker({
+    worker: 'w1',
+    source: 's1',
+    claims: [{ id: 'c1', text: 'X reduces Y by 30%', quote: 'X reduces Y by 30%', excerpt_id: 'e1' }],
+  });
+  const excerptsDir = path.join(runDir, 'excerpts');
+  const votesDir = path.join(runDir, 'votes');
+  fs.mkdirSync(excerptsDir, { recursive: true });
+  fs.mkdirSync(votesDir, { recursive: true });
+  fs.writeFileSync(path.join(excerptsDir, 'e1.txt'), 'The study found that X reduces Y by 30% overall.', 'utf8');
+  fs.writeFileSync(path.join(votesDir, 'cluster0-0.json'), JSON.stringify({ verdict: 'refuted ' }), 'utf8');
+
+  try {
+    assert.throws(() => aggregate(runDir), /invalid verdict/);
+  } finally {
+    fs.rmSync(runDir, { recursive: true, force: true });
+  }
+});
