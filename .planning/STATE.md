@@ -5,7 +5,7 @@ milestone_name: lz-deep-research skill
 status: ready_to_plan
 stopped_at: Phase 17.2 complete (2/2) — ready to discuss Phase 18
 last_updated: 2026-06-15T20:09:30.959Z
-last_activity: 2026-06-15 - Completed quick task 260615-wwx: Add aggregate raw-claims ceiling in mergeClusters to close cross-file claims DoS residual (OQ-1)
+last_activity: 2026-06-15 - Completed quick task 260615-x72: Fix schema observability sentence: distinguish trim caps from fail-closed ceilings
 progress:
   total_phases: 7
   completed_phases: 3
@@ -206,6 +206,7 @@ Recent decisions affecting current work (v2.1.0):
 | 260613-u6l | Add CHANGELOG.md (v1.0.0 + v1.0.1) and create GitHub releases for v1.0.0 and v1.0.1 (renamed tag v1.0 -> v1.0.0) | 2026-06-13 | dc2e28d | - | [260613-u6l-add-changelog-md-v1-0-0-v1-0-1-and-creat](./quick/260613-u6l-add-changelog-md-v1-0-0-v1-0-1-and-creat/) |
 | 260615-wje | Fix security review findings: verdict enum validation, Windows device names, claims ceiling, schema source-to-filename note | 2026-06-15 | 7a5f5ba | - | [260615-wje-fix-security-review-findings-verdict-enu](./quick/260615-wje-fix-security-review-findings-verdict-enu/) |
 | 260615-wwx | Add aggregate raw-claims ceiling in mergeClusters to close cross-file claims DoS residual (OQ-1) | 2026-06-15 | c2c1a83 | - | [260615-wwx-add-aggregate-raw-claims-ceiling-in-merg](./quick/260615-wwx-add-aggregate-raw-claims-ceiling-in-merg/) |
+| 260615-x72 | Fix schema observability sentence: distinguish trim caps from fail-closed ceilings | 2026-06-15 | 02beccb | - | [260615-x72-fix-schema-observability-sentence-distin](./quick/260615-x72-fix-schema-observability-sentence-distin/) |
 
 ### Roadmap Evolution
 
