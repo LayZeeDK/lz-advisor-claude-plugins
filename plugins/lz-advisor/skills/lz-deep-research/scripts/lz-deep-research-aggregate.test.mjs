@@ -583,6 +583,17 @@ test('SC5-5 over-ceiling input capped observably + CEILINGS is the single frozen
   );
 });
 
+test('S-5/S-6 synth-only cap: 22 clusters trigger SYNTH_CAP but not MAX_VERIFY_CLAIMS', () => {
+  // 22 clusters: 22 > SYNTH_CAP(20) but 22 <= MAX_VERIFY_CLAIMS(24).
+  // Only the synth cap fires; the claims cap does not.
+  // Pins the synth-only capLine format: 'capped: synth N->20' with no 'claims' segment.
+  const r = aggregate(fx('synth-only-cap'));
+
+  assert.equal(r.survivors.length, 20, 'SYNTH_CAP trims 22 to 20');
+  assert.match(r.summary, /^capped: synth \d+->20$/m, 'synth-only capLine has no claims segment');
+  assert.ok(!r.summary.includes('claims '), 'MAX_VERIFY_CLAIMS cap must NOT fire for 22 clusters');
+});
+
 test('I-2 zero-claim baseline: aggregate over empty claims dir returns empty survivors and raw: 0 summary', () => {
   // listJson(claimsDir) returns [] for an absent directory; aggregate() must return a valid
   // zero-claim result. The unsupported-no-votes fixture has a claims file (one Unsupported claim)
