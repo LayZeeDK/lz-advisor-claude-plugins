@@ -18,7 +18,7 @@ Requirements for the v2.1.0 milestone. Each maps to exactly one roadmap phase.
 - [ ] **PIPE-04**: For each fetched source, the skill stores the fetched excerpt immutably at fetch time as the evidence artifact (the basis for later quote re-checking).
 - [ ] **PIPE-05**: The skill extracts falsifiable claims, each bound to a verbatim quote, a stored-excerpt id, and source metadata.
 - [ ] **PIPE-06**: The final report cites every reported claim inline to its source.
-- [ ] **PIPE-07**: Every reported claim carries a confidence level (High / Medium / Low / Contested / Unsupported).
+- [x] **PIPE-07**: Every reported claim carries a confidence level (High / Medium / Low / Contested / Unsupported).
 - [ ] **PIPE-08**: The skill flags cross-source contradictions, with Contested as a first-class verdict (not silently dropped or averaged away).
 - [ ] **PIPE-09**: The skill emits a structured written report as the deliverable.
 
@@ -29,7 +29,7 @@ Requirements for the v2.1.0 milestone. Each maps to exactly one roadmap phase.
 - [ ] **VERIF-03**: Corroboration is weighted by SOURCE INDEPENDENCE, not raw source count (N syndicated copies of one source count as one).
 - [x] **VERIF-04**: Each claim's verbatim quote is mechanically re-checked against its stored excerpt; quotes that fail the re-check are dropped UPSTREAM of all voting.
 - [ ] **VERIF-05**: Verification escalates to a stronger tier on the UNION of triggers -- any contested split, OR any load-bearing claim regardless of verdict, OR a random audit sample (~15-20%) of unanimous upholds.
-- [ ] **VERIF-06**: The report distinguishes "quote verified verbatim" from "claim supported by the quote" as two separate assurances.
+- [x] **VERIF-06**: The report distinguishes "quote verified verbatim" from "claim supported by the quote" as two separate assurances.
 
 ### Aggregation (AGG) -- deterministic, off-model
 
@@ -108,8 +108,8 @@ Which phase covers which requirement. Filled in during roadmap creation (2026-06
 | AGG-04 | Phase 16 | Complete |
 | AGG-06 | Phase 16 | Complete |
 | VERIF-04 | Phase 16 | Complete |
-| PIPE-07 | Phase 17 | Pending |
-| VERIF-06 | Phase 17 | Pending |
+| PIPE-07 | Phase 17 | Complete |
+| VERIF-06 | Phase 17 | Complete |
 | VERIF-01 | Phase 18 | Pending |
 | VERIF-02 | Phase 18 | Pending |
 | VERIF-03 | Phase 18 | Pending |
