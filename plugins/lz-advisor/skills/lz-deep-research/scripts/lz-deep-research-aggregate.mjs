@@ -450,6 +450,9 @@ export function recheckClusters(clusters, excerpts) {
 // Deterministic rank: corroboration (distinct-source count) DESC, then normalized-text lexical
 // ASC as a stable tiebreak so the same inputs always produce byte-identical output (AGG-01).
 export function rankClusters(clusters) {
+  // quote_fidelity is intentionally excluded from ranking: it is an output annotation (Assurance 1),
+  // not a priority signal. Clusters with equal corroboration rank purely by normalized text (lexical
+  // tiebreak) so the sort is deterministic regardless of fidelity.
   return [...clusters].sort((a, b) => {
     const ca = a.sources.size;
     const cb = b.sources.size;
@@ -555,6 +558,11 @@ export function tally(cl, runDir, capsOut) {
   if (capsOut) {
     let extra = 0;
 
+    // No upper bound: loop stops at the first missing seat file (contiguous-gap semantics, AGG-2).
+    // Non-contiguous extra seats (e.g. seat 3 exists but 4 is absent, 5 exists) are undercounted by
+    // design -- AGG-2 deferred to Phase 18. A maliciously-seeded contiguous run-dir could trigger
+    // many existsSync calls, but MAX_VERIFY_CLAIMS bounds the cluster count so per-cluster blowup
+    // is the only risk axis and is acceptable for the run-dir trust model.
     for (let s = CEILINGS.VOTES_PER_CLAIM; ; s += 1) {
       const fByCluster = path.join(votesDir, clusterId + '-' + s + '.json');
       const fByMember = memberId == null ? null : path.join(votesDir, memberId + '-' + s + '.json');
@@ -618,6 +626,9 @@ export function aggregate(runDir) {
   const ranked = rankClusters(survived);
   const { kept: capped, caps } = enforceCeilings(ranked);
 
+  // Intentionally runs tally on all MAX_VERIFY_CLAIMS-capped clusters before SYNTH_CAP slices the
+  // output. votes_ignored may include extra-seat counts from clusters that SYNTH_CAP later discards
+  // (clusters 21-24 in the MAX_VERIFY_CLAIMS=24 / SYNTH_CAP=20 gap). Documented scope caveat: AGG-4.
   const survivorRecords = capped.map((cl) => ({
     id: cl.id,
     claim: cl.text,
