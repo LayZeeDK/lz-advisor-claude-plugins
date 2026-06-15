@@ -424,8 +424,15 @@ export function enforceCeilings(rankedClusters) {
 // and counted as votes_ignored). Vote file is looked up by cluster id first, then the first
 // member's claim id (the spike's fallback). Missing seat -> 'insufficient'.
 //
-// Rubric (PRESERVED verbatim): refuted >= 2 -> Rejected; unrefuted === 3 -> High;
-// unrefuted === 2 -> Medium; zero readable seats -> Unsupported; otherwise -> Low/Contested.
+// Rubric (Option I, D-02 -- the single canonical confidence enum, evaluated in this branch order):
+//   readableSeats === 0             -> Unsupported
+//   unrefuted === 3                 -> High
+//   unrefuted >= 1 && refuted >= 1  -> Contested   // voter split: any explicit refutation alongside support
+//   unrefuted === 2                 -> Medium       // (refuted === 0 here, since the split case is caught above)
+//   otherwise                       -> Low          // thin support, OR refuted-without-support (downgrade-not-delete)
+// The split branch MUST precede the unrefuted === 2 Medium branch, or a 2-unrefuted/1-refuted tally
+// silently returns Medium and erases the dissent (D-03). The tally never deletes a claim (D-03b):
+// a unanimous refutation (0 unrefuted / N refuted) downgrades to Low, surfaced, never removed.
 export function tally(cl, runDir, capsOut) {
   const votesDir = path.join(runDir, 'votes');
   const clusterId = safeId(cl.id);
@@ -477,23 +484,23 @@ export function tally(cl, runDir, capsOut) {
   const refuted = seats.filter((v) => v === 'refuted').length;
   const unrefuted = seats.filter((v) => v === 'unrefuted').length;
 
-  if (refuted >= 2) {
-    return 'Rejected';
+  if (readableSeats === 0) {
+    return 'Unsupported';
   }
 
   if (unrefuted === 3) {
     return 'High';
   }
 
+  if (unrefuted >= 1 && refuted >= 1) {
+    return 'Contested'; // voter split: any explicit refutation alongside support
+  }
+
   if (unrefuted === 2) {
-    return 'Medium';
+    return 'Medium'; // refuted === 0 here (the split case is caught above)
   }
 
-  if (readableSeats === 0) {
-    return 'Unsupported';
-  }
-
-  return 'Low/Contested';
+  return 'Low'; // thin support, OR refuted-without-support (downgrade-not-delete)
 }
 
 // ---------------------------------------------------------------------------
@@ -563,8 +570,10 @@ export function aggregate(runDir) {
       byConfidence('High') +
       ', Medium ' +
       byConfidence('Medium') +
-      ', Low/Contested ' +
-      byConfidence('Low/Contested') +
+      ', Low ' +
+      byConfidence('Low') +
+      ', Contested ' +
+      byConfidence('Contested') +
       ', Unsupported ' +
       byConfidence('Unsupported') +
       ')',
