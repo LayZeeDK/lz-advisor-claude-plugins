@@ -583,6 +583,24 @@ test('SC5-5 over-ceiling input capped observably + CEILINGS is the single frozen
   );
 });
 
+test('I-2 zero-claim baseline: aggregate over empty claims dir returns empty survivors and raw: 0 summary', () => {
+  // listJson(claimsDir) returns [] for an absent directory; aggregate() must return a valid
+  // zero-claim result. The unsupported-no-votes fixture has a claims file (one Unsupported claim)
+  // and exercises a different path. This test covers the truly empty case.
+  const runDir = fs.mkdtempSync(path.join(os.tmpdir(), 'lz-dr-zeroclaim-'));
+
+  try {
+    const r = aggregate(runDir);
+
+    assert.equal(r.survivors.length, 0, 'no survivors from zero claims');
+    assert.equal(r.dropped.length, 0, 'nothing to drop from zero claims');
+    assert.match(r.summary, /^raw: 0 -> clusters: 0 \(merged: 0\)/m, 'summary reports raw: 0');
+    assert.ok(r.summary.includes('capped: none'), 'no caps on zero input');
+  } finally {
+    fs.rmSync(runDir, { recursive: true, force: true });
+  }
+});
+
 // ---------------------------------------------------------------------------
 // Hardening sub-assertions: CRLF/BOM normalization, determinism, zero-dep
 // ---------------------------------------------------------------------------
