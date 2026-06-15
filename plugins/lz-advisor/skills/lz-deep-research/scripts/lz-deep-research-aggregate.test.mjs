@@ -397,6 +397,44 @@ test('TEST-9 path-traversal via a malformed excerpt_id fails closed (aggregate t
   }
 });
 
+test('R1-1 path-traversal claim id rejected at read-time with .file naming the worker', () => {
+  // Sibling of TEST-9 (which path-traverses excerpt_id). KEY DIFFERENCE: assert err.file -- the
+  // read-time annotation -- not merely the throw. Pitfall-4 option (a): a path-traversal id on an
+  // OTHERWISE-VALID claim with NO excerpts dir. If the read-time safeId(c.id, ...) guard in
+  // mergeClusters were ABSENT, the claim would DROP at quote-recheck (its quote matches no excerpt)
+  // BEFORE reaching tally -- so aggregate would NOT throw at all. Only the read-time guard rejects
+  // the id here; this keeps the test a clean read-time discriminator independent of tally's
+  // (now .file-carrying) late safeId calls.
+  //
+  // MUTATION TO KILL: remove the read-time `safeId(c.id, path.join(claimsDir, f))` from
+  // mergeClusters -> with no excerpts the claim drops at quote-recheck and aggregate does NOT throw
+  // -> assert.throws FAILS.
+  const runDir = tmpRunDirWithWorker({
+    worker: 'w1',
+    source: 's1',
+    claims: [{ id: '../evil', text: 'X reduces Y by 30%', quote: 'X reduces Y by 30%', excerpt_id: 'e1' }],
+  });
+
+  try {
+    let caught;
+    assert.throws(
+      () => aggregate(runDir),
+      (err) => {
+        caught = err;
+
+        return /path traversal rejected/.test(err.message);
+      },
+    );
+    // The DISCRIMINATING assertions (kill the mutation): the abort carries the worker file, proving
+    // read-time rejection in mergeClusters (NOT a .file-less or dropped-silently late behavior).
+    assert.equal(caught.name, 'ContractError');
+    assert.equal(typeof caught.file, 'string');
+    assert.ok(caught.file.endsWith('w1.json'), 'ContractError.file must name the authoring worker');
+  } finally {
+    fs.rmSync(runDir, { recursive: true, force: true });
+  }
+});
+
 test('TEST-2 cross-file-order stability: listJson sorts the directory listing (host-independent, fails iff .sort() removed)', () => {
   // TEST-2 (Important) -- the AGG-01 determinism guarantee is that worker files are processed in a
   // fixed lexical order regardless of the filesystem's readdir order, which mergeClusters relies on
@@ -606,5 +644,56 @@ test('SC-2 zero-dependency contract: aggregator imports only node:/relative, no 
     }
 
     dir = parent;
+  }
+});
+
+test('R2-1 literal-null vote record fails closed with ContractError naming the file (not TypeError)', () => {
+  // A literal-null vote file (well-formed JSON `null`) parses cleanly to null; the old
+  // `readJson(f).verdict` then threw a raw TypeError (.name 'TypeError', .file undefined),
+  // bypassing the ContractError .file discipline. The R2-1 guard fails closed with a ContractError
+  // carrying the vote file. Build a surviving single claim (matching excerpt so it passes
+  // quote-recheck and reaches tally), then write votes/cluster0-0.json containing literal null. The
+  // cluster-id lookup (votes/cluster0-0.json) hits first (:507 region), so tally reads this seat.
+  //
+  // MUTATION TO KILL: revert tally to `const verdict = readJson(f).verdict;` -> `null.verdict`
+  // throws a TypeError (name 'TypeError', .file undefined) -> the `err.name === 'ContractError'`
+  // predicate is false -> assert.throws rejects the error -> test FAILS.
+  const runDir = fs.mkdtempSync(path.join(os.tmpdir(), 'lz-dr-nullvote-'));
+  const claimsDir = path.join(runDir, 'claims');
+  const excerptsDir = path.join(runDir, 'excerpts');
+  const votesDir = path.join(runDir, 'votes');
+  fs.mkdirSync(claimsDir, { recursive: true });
+  fs.mkdirSync(excerptsDir, { recursive: true });
+  fs.mkdirSync(votesDir, { recursive: true });
+
+  try {
+    fs.writeFileSync(
+      path.join(claimsDir, 'w1.json'),
+      JSON.stringify({
+        worker: 'w1',
+        source: 's1',
+        claims: [{ id: 'c1', text: 'X reduces Y by 30%', quote: 'X reduces Y by 30%', excerpt_id: 'e1' }],
+      }),
+      'utf8',
+    );
+    fs.writeFileSync(path.join(excerptsDir, 'e1.txt'), 'The study found that X reduces Y by 30% overall.', 'utf8');
+    // The seat the claim reads (cluster0-0): the JSON literal null -- parses cleanly, returns null.
+    fs.writeFileSync(path.join(votesDir, 'cluster0-0.json'), 'null', 'utf8');
+
+    let caught;
+    assert.throws(
+      () => aggregate(runDir),
+      (err) => {
+        caught = err;
+
+        return err.name === 'ContractError'; // NOT a raw TypeError
+      },
+    );
+    assert.equal(caught.name, 'ContractError', 'a null vote record must fail closed as ContractError');
+    assert.ok(/malformed vote record/.test(caught.message), 'message names the malformed-record cause');
+    assert.equal(typeof caught.file, 'string');
+    assert.ok(caught.file.endsWith('cluster0-0.json'), 'ContractError.file must name the offending vote file');
+  } finally {
+    fs.rmSync(runDir, { recursive: true, force: true });
   }
 });

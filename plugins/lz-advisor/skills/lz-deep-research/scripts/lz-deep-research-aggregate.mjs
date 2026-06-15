@@ -251,6 +251,14 @@ export function mergeClusters(runDir) {
         throw new ContractError('claim missing non-empty id', path.join(claimsDir, f));
       }
 
+      // R1-1 (mirrors the WR-02 excerpt_id precedent): reject a path-traversal claim id (e.g.
+      // "../evil") at READ time with the originating worker file, not LATE in tally() with a
+      // .file-less ContractError. safeId throws ContractError('unsafe id (path traversal rejected):
+      // ...', file); the return value is discarded (c.id is unchanged) -- this is a validating
+      // side-effect at the read boundary. The AGG-1 non-empty guard above is KEPT for its distinct
+      // 'claim missing non-empty id' message (safeId's empty-id message differs); both coexist.
+      safeId(c.id, path.join(claimsDir, f));
+
       // Fail closed on a missing text/quote (WR-01/WR-02): both are required, load-bearing fields of
       // the FROZEN survivor record (claim: cl.text) and the fidelity guard (normalize(quote)).
       // A missing text drops `claim` from survivors.json (JSON.stringify omits undefined props); a
@@ -498,8 +506,14 @@ export function enforceCeilings(rankedClusters) {
 // a unanimous refutation (0 unrefuted / N refuted) downgrades to Low, surfaced, never removed.
 export function tally(cl, runDir, capsOut) {
   const votesDir = path.join(runDir, 'votes');
-  const clusterId = safeId(cl.id);
-  const memberId = cl.members && cl.members[0] ? safeId(String(cl.members[0].id)) : null;
+  // R1-1 defense-in-depth (D-01 belt-and-suspenders): thread the originating worker file into both
+  // safeId calls so NO safeId call anywhere can throw a .file-less ContractError. Neither is a live
+  // attack path (cl.id is 'cluster' + N -- never worker-authored; the member id is now read-time
+  // validated by the mergeClusters guard), but the annotation makes the .file discipline uniform.
+  // _file survives recheckClusters (:419 { ...m }, :429 { ...cl, members: survivingMembers }).
+  const memberFile = cl.members && cl.members[0] ? cl.members[0]._file : undefined;
+  const clusterId = safeId(cl.id, memberFile);
+  const memberId = cl.members && cl.members[0] ? safeId(String(cl.members[0].id), memberFile) : null;
   const seats = [];
   let readableSeats = 0;
 
@@ -519,7 +533,20 @@ export function tally(cl, runDir, capsOut) {
       continue;
     }
 
-    const verdict = readJson(f).verdict;
+    // R2-1: a structurally-null / non-object vote RECORD is malformed worker output (there is no
+    // record) -- fail closed with a ContractError naming the vote file, restoring the .file
+    // discipline a raw `null.verdict` TypeError would bypass. This is categorically distinct from a
+    // well-formed record whose `verdict` FIELD is absent/null, which stays lenient -> 'insufficient'
+    // on the next line (the :523 leniency, PRESERVED). `typeof null === 'object'` is why the explicit
+    // `rec == null` term comes first. An array is `typeof 'object'` and reads `.verdict` as undefined
+    // -> the lenient path (no Array.isArray rejection -- that would be scope creep beyond D-02).
+    const rec = readJson(f);
+
+    if (rec == null || typeof rec !== 'object') {
+      throw new ContractError('malformed vote record (expected object): ' + JSON.stringify(rec), f);
+    }
+
+    const verdict = rec.verdict;
     seats.push(verdict == null ? 'insufficient' : verdict);
     readableSeats += 1;
   }
