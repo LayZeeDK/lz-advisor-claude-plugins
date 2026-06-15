@@ -3,8 +3,9 @@ gsd_state_version: 1.0
 milestone: v2.1.0
 milestone_name: lz-deep-research skill
 status: planning
-last_updated: "2026-06-15T00:00:00.000Z"
-last_activity: 2026-06-15
+stopped_at: Phase 16 context gathered
+last_updated: "2026-06-15T06:08:37.182Z"
+last_activity: 2026-06-15 -- Milestone v2.1.0 roadmap REVISED (gating eval moved early to Phase 18; EVAL-05 added)
 progress:
   total_phases: 5
   completed_phases: 0
@@ -197,9 +198,9 @@ Recent decisions affecting current work (v2.1.0):
 
 ## Session Continuity
 
-Last session: 2026-06-15 -- Milestone v2.1.0 roadmap revised (gating eval moved early to Phase 18; EVAL-05 added)
-Stopped at: ROADMAP.md v2.1.0 milestone group rewritten (Phases 16-20 detail, eval at Phase 18, search/extract at Phase 19, orchestrator at Phase 20); REQUIREMENTS.md traceability rewritten (32/32 mapped, 100% coverage); STATE.md updated. Archived v1.0 / v1.0.1 / v2.0.0 `<details>` groupings preserved intact. No build work started yet.
-Resume file: None
+Last session: 2026-06-15T06:08:37.175Z
+Stopped at: Phase 16 context gathered
+Resume file: .planning/phases/16-deterministic-off-model-aggregator-validation-fixture/16-CONTEXT.md
 Resume next: Plan Phase 16 (Deterministic off-model aggregator + validation fixture) with /gsd-plan-phase 16. Then schema (17), Haiku-research + voter + early eval (18), search/extract workers (19), orchestrator+scale (20).
 
 ## Operator Next Steps
