@@ -119,6 +119,16 @@ identical key everywhere it writes the source: in `claims[].source`, and as the
 `sources/<id>.json` `id`. This reference fixes the rule at the contract level;
 the extract worker implements the exact canonicalization (Phase 19).
 
+**Phase 19 filename-safety rule.** The raw canonical key MUST NOT be used verbatim as the
+`sources/<source-id>.json` basename because a canonical URL legitimately contains path
+separators in its URL path component (e.g. `https://example.org/a/study`). Phase 19 MUST
+encode the canonical key to a safe basename before writing `sources/<id>.json` -- for example,
+by percent-encoding (replacing `/` with `%2F`, `:` with `%3A`, etc.) or by computing a stable
+hash of the key (e.g. SHA-256 hex). The `id` field INSIDE the JSON file always carries the raw
+canonical key; only the filename uses the encoded form. This encoding is NOT required of the
+aggregator (which never reads `sources/`) but IS required of Phase 19 extract workers and Phase
+20 synthesis.
+
 ## The claim record (claims/<worker-id>.json)
 
 The PIPE-05 worker-input shape, read by `mergeClusters`. One file per worker; a

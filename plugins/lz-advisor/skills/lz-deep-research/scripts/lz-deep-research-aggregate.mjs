@@ -155,6 +155,10 @@ export function safeId(id, file) {
     throw new ContractError('unsafe id (path traversal rejected): ' + JSON.stringify(id), file);
   }
 
+  if (/^(con|prn|aux|nul|com[1-9]|lpt[1-9])(\.|$)/i.test(id)) {
+    throw new ContractError('unsafe id (Windows reserved device name): ' + JSON.stringify(id), file);
+  }
+
   return id;
 }
 
@@ -236,6 +240,15 @@ export function mergeClusters(runDir) {
     // silently UNDER-counting corroboration. Reject instead of coercing.
     if (typeof w.source !== 'string' || w.source.length === 0) {
       throw new ContractError('worker file missing non-empty source', path.join(claimsDir, f));
+    }
+
+    const CLAIMS_CEILING = CEILINGS.MAX_VERIFY_CLAIMS * CEILINGS.ANGLES;
+
+    if (w.claims.length > CLAIMS_CEILING) {
+      throw new ContractError(
+        'worker claims[] exceeds ceiling (' + w.claims.length + '>' + CLAIMS_CEILING + ')',
+        path.join(claimsDir, f),
+      );
     }
 
     for (const c of w.claims) {
@@ -550,6 +563,11 @@ export function tally(cl, runDir, capsOut) {
     }
 
     const verdict = rec.verdict;
+
+    if (verdict != null && verdict !== 'unrefuted' && verdict !== 'refuted') {
+      throw new ContractError('invalid verdict (expected "unrefuted" or "refuted"): ' + JSON.stringify(verdict), f);
+    }
+
     seats.push(verdict == null ? 'insufficient' : verdict);
     readableSeats += 1;
   }

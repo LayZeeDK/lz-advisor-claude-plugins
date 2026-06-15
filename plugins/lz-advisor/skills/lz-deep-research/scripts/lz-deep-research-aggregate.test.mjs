@@ -27,7 +27,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { aggregate, normalize, CEILINGS, listJson } from './lz-deep-research-aggregate.mjs';
+import { aggregate, normalize, CEILINGS, listJson, safeId } from './lz-deep-research-aggregate.mjs';
 
 // Resolve __fixtures__ test-file-relative (NEVER process.cwd() -- T-16-05 / Pitfall 3:
 // cwd drifts under GSD worktrees and headless `claude -p`).
@@ -764,6 +764,155 @@ test('R2-1 literal-null vote record fails closed with ContractError naming the f
     assert.ok(/malformed vote record/.test(caught.message), 'message names the malformed-record cause');
     assert.equal(typeof caught.file, 'string');
     assert.ok(caught.file.endsWith('cluster0-0.json'), 'ContractError.file must name the offending vote file');
+  } finally {
+    fs.rmSync(runDir, { recursive: true, force: true });
+  }
+});
+
+// ---------------------------------------------------------------------------
+// H-1 verdict enum guard: non-null non-enum verdict strings must throw
+// ---------------------------------------------------------------------------
+
+test('H-1 wrong-case verdict "Refuted" (capital R) throws ContractError /invalid verdict/', () => {
+  // A vote file with verdict "Refuted" (capital R, wrong case) must cause tally() to throw
+  // ContractError matching /invalid verdict/. Before the H-1 guard, "Refuted" silently became
+  // an invalid seat that matched neither 'unrefuted' nor 'refuted', treating a refutation as
+  // abstention (incrementing readableSeats without counting toward any branch).
+  const runDir = tmpRunDirWithWorker({
+    worker: 'w1',
+    source: 's1',
+    claims: [{ id: 'c1', text: 'X reduces Y by 30%', quote: 'X reduces Y by 30%', excerpt_id: 'e1' }],
+  });
+  const excerptsDir = path.join(runDir, 'excerpts');
+  const votesDir = path.join(runDir, 'votes');
+  fs.mkdirSync(excerptsDir, { recursive: true });
+  fs.mkdirSync(votesDir, { recursive: true });
+  fs.writeFileSync(path.join(excerptsDir, 'e1.txt'), 'The study found that X reduces Y by 30% overall.', 'utf8');
+  fs.writeFileSync(path.join(votesDir, 'cluster0-0.json'), JSON.stringify({ verdict: 'Refuted' }), 'utf8');
+
+  try {
+    assert.throws(() => aggregate(runDir), /invalid verdict/);
+  } finally {
+    fs.rmSync(runDir, { recursive: true, force: true });
+  }
+});
+
+test('H-1 trailing-space verdict "refuted " throws ContractError /invalid verdict/', () => {
+  // A vote file with verdict "refuted " (trailing space) must also throw. A trailing space causes
+  // the seats.filter(v => v === 'refuted') to miss the match, silently treating the refutation
+  // as an abstention.
+  const runDir = tmpRunDirWithWorker({
+    worker: 'w1',
+    source: 's1',
+    claims: [{ id: 'c1', text: 'X reduces Y by 30%', quote: 'X reduces Y by 30%', excerpt_id: 'e1' }],
+  });
+  const excerptsDir = path.join(runDir, 'excerpts');
+  const votesDir = path.join(runDir, 'votes');
+  fs.mkdirSync(excerptsDir, { recursive: true });
+  fs.mkdirSync(votesDir, { recursive: true });
+  fs.writeFileSync(path.join(excerptsDir, 'e1.txt'), 'The study found that X reduces Y by 30% overall.', 'utf8');
+  fs.writeFileSync(path.join(votesDir, 'cluster0-0.json'), JSON.stringify({ verdict: 'refuted ' }), 'utf8');
+
+  try {
+    assert.throws(() => aggregate(runDir), /invalid verdict/);
+  } finally {
+    fs.rmSync(runDir, { recursive: true, force: true });
+  }
+});
+
+// ---------------------------------------------------------------------------
+// L-1 Windows reserved device name guard in safeId()
+// ---------------------------------------------------------------------------
+
+test('L-1 safeId rejects Windows reserved device names (CON, NUL, COM1, LPT9, CON.json)', () => {
+  // Windows reserved device names (CON, PRN, AUX, NUL, COM1-9, LPT1-9) are not valid file
+  // basenames on Windows and must be rejected. The regex uses start-of-string + device name
+  // (case-insensitive) + (period or end-of-string) to match bare names and name+extension
+  // variants without false-positives on 'console', 'context', etc.
+  const reservedNames = ['CON', 'NUL', 'COM1', 'LPT9', 'CON.json'];
+
+  for (const name of reservedNames) {
+    assert.throws(
+      () => safeId(name, 'file.json'),
+      /unsafe id \(Windows reserved/,
+      'safeId must reject Windows reserved device name: ' + name,
+    );
+  }
+});
+
+test('L-1 safeId does NOT reject non-reserved names (context, c1, con2text, nul1)', () => {
+  // The device-name guard must not match partial strings (the (\.|$) anchor prevents it).
+  // 'console', 'context', 'c1', 'nul1' are not reserved names and must not throw.
+  const safeNames = ['context', 'c1', 'console', 'nul1'];
+
+  for (const name of safeNames) {
+    assert.doesNotThrow(
+      () => safeId(name, 'file.json'),
+      'safeId must NOT reject non-reserved name: ' + name,
+    );
+  }
+});
+
+// ---------------------------------------------------------------------------
+// L-2 per-worker claims ceiling guard before the O(n^2) merge loop
+// ---------------------------------------------------------------------------
+
+test('L-2 worker with 121 claims (> ceiling 120) throws ContractError /exceeds ceiling/', () => {
+  // CEILINGS.MAX_VERIFY_CLAIMS (24) * CEILINGS.ANGLES (5) = 120 is the per-worker ceiling.
+  // A worker with 121 claims must be rejected before reaching the O(n^2) merge loop.
+  // Each claim needs id, text, quote, excerpt_id to pass the field guards before reaching
+  // the ceiling check (the ceiling check fires BEFORE the per-claim field guards loop).
+  const claims = Array.from({ length: 121 }, (_, i) => ({
+    id: 'c' + i,
+    text: 'claim text ' + i,
+    quote: 'claim text ' + i,
+    excerpt_id: 'e' + i,
+  }));
+  const runDir = tmpRunDirWithWorker({ worker: 'w1', source: 's1', claims });
+
+  try {
+    assert.throws(() => aggregate(runDir), /exceeds ceiling/);
+  } finally {
+    fs.rmSync(runDir, { recursive: true, force: true });
+  }
+});
+
+test('L-2 boundary: worker with exactly 120 claims (= ceiling) does NOT throw ceiling error', () => {
+  // Exactly at the ceiling (120 = 24 * 5) is allowed. This guards the strict-greater-than
+  // boundary so a legitimate 120-claim worker is not accidentally rejected.
+  // Use a single shared excerpt so the quote-recheck can verify all claims.
+  const claims = Array.from({ length: 120 }, (_, i) => ({
+    id: 'c' + i,
+    text: 'unique claim text number ' + i,
+    quote: 'unique claim text number ' + i,
+    excerpt_id: 'e0',
+  }));
+  const runDir = tmpRunDirWithWorker({ worker: 'w1', source: 's1', claims });
+  const excerptsDir = path.join(runDir, 'excerpts');
+  fs.mkdirSync(excerptsDir, { recursive: true });
+  // One excerpt that contains all 120 quote texts (each is short and unique by index).
+  const excerptText = claims.map((c) => c.quote).join(' ');
+  fs.writeFileSync(path.join(excerptsDir, 'e0.txt'), excerptText, 'utf8');
+
+  try {
+    // Must not throw /exceeds ceiling/ -- any other behavior (ContractError for other reasons,
+    // or clean success) is acceptable; we only assert the ceiling guard does NOT fire.
+    let threw = false;
+    let threwMessage = '';
+
+    try {
+      aggregate(runDir);
+    } catch (err) {
+      threw = true;
+      threwMessage = err && err.message ? err.message : String(err);
+    }
+
+    if (threw) {
+      assert.ok(
+        !/exceeds ceiling/.test(threwMessage),
+        'aggregate must not throw "exceeds ceiling" for exactly 120 claims; threw: ' + threwMessage,
+      );
+    }
   } finally {
     fs.rmSync(runDir, { recursive: true, force: true });
   }
