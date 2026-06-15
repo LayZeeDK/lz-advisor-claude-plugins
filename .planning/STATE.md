@@ -4,8 +4,8 @@ milestone: v2.1.0
 milestone_name: lz-deep-research skill
 status: executing
 stopped_at: Phase 17.3 context gathered
-last_updated: "2026-06-15T22:41:54.435Z"
-last_activity: 2026-06-15 -- Phase 17.3 planning complete
+last_updated: "2026-06-15T22:43:52.656Z"
+last_activity: 2026-06-15 -- Phase 17.3 execution started
 progress:
   total_phases: 8
   completed_phases: 4
@@ -21,7 +21,7 @@ progress:
 See: .planning/PROJECT.md (updated 2026-06-15 -- milestone v2.1.0 started)
 
 **Core value:** Near-Opus intelligence at Sonnet cost, through strategic advisor consultation at high-leverage moments -- now extended from coding tasks to deep research
-**Current focus:** Phase 17.3 -- add GitHub Actions CI workflow for bundled plugin script tests (URGENT insert, runs before Phase 18)
+**Current focus:** Phase 17.3 — add-github-actions-workflow-for-script-tests
 
 ## Deferred Items
 
@@ -37,10 +37,10 @@ Items deferred across milestones (v1.0.1 close 2026-06-11; v2.0.0 additions tagg
 
 ## Current Position
 
-Phase: 18
-Plan: Not started
-Status: Ready to execute
-Last activity: 2026-06-15 -- Phase 17.3 planning complete
+Phase: 17.3 (add-github-actions-workflow-for-script-tests) — EXECUTING
+Plan: 1 of 1
+Status: Executing Phase 17.3
+Last activity: 2026-06-15 -- Phase 17.3 execution started
 
 ### Milestone v2.1.0 roadmap (REVISED 2026-06-15)
 

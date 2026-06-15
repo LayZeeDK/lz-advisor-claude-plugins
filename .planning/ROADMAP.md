@@ -111,10 +111,10 @@ Full phase details, success criteria, and decision logs are archived in [milesto
 
 **Requirements**: CI-01 (Node LTS pin), CI-02 (test job + glob discovery), CI-03 (fail-closed coverage gate), CI-04 (concurrency cancel), CI-05 (least-privilege permissions)
 **Depends on:** Phase 17
-**Plans:** 1 plan
+**Plans:** 1/1 plans complete
 
 Plans:
-- [ ] 17.3-01-PLAN.md -- Measure coverage on Node 24, add the node:coverage bootstrap pragma (D-03), then author .node-version (lts/krypton) + .github/workflows/ci.yml (SHA-pinned actions, glob test discovery, fail-closed coverage gate, concurrency, contents:read)
+- [x] 17.3-01-PLAN.md -- Measure coverage on Node 24, add the node:coverage bootstrap pragma (D-03), then author .node-version (lts/krypton) + .github/workflows/ci.yml (SHA-pinned actions, glob test discovery, fail-closed coverage gate, concurrency, contents:read)
 
 ### Phase 17.1: Address Phase 16/17 review findings (INSERTED)
 
