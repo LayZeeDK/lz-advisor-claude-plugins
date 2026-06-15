@@ -2,9 +2,9 @@
 gsd_state_version: 1.0
 milestone: v2.1.0
 milestone_name: lz-deep-research skill
-status: verifying
-stopped_at: Phase 17 Plan 02 complete (deep-research data contract frozen in references/lz-deep-research-schema.md; 16-01-SUMMARY reconciled; PIPE-07 + VERIF-06 closed); phase ready for verification
-last_updated: "2026-06-15T11:59:38.489Z"
+status: ready_to_plan
+stopped_at: Phase 17 complete (2/2) — ready to discuss Phase 18
+last_updated: 2026-06-15T12:17:30.574Z
 last_activity: 2026-06-15
 progress:
   total_phases: 5
@@ -21,7 +21,7 @@ progress:
 See: .planning/PROJECT.md (updated 2026-06-15 -- milestone v2.1.0 started)
 
 **Core value:** Near-Opus intelligence at Sonnet cost, through strategic advisor consultation at high-leverage moments -- now extended from coding tasks to deep research
-**Current focus:** Phase 17 -- json-schema-verification-contract-reference
+**Current focus:** Phase 18 — haiku prompt engineering deep research + verify voter + early gating eval
 
 ## Deferred Items
 
@@ -37,10 +37,10 @@ Items deferred across milestones (v1.0.1 close 2026-06-11; v2.0.0 additions tagg
 
 ## Current Position
 
-Phase: 17 (json-schema-verification-contract-reference) -- READY FOR VERIFICATION
-Plan: 2 of 2
-Status: Phase complete -- ready for verification (both plans executed; PIPE-07 + VERIF-06 closed at the contract level)
-Last activity: 2026-06-15 -- Phase 17 Plan 02 executed (froze the deep-research data contract in references/lz-deep-research-schema.md; reconciled 16-01-SUMMARY)
+Phase: 18
+Plan: Not started
+Status: Ready to plan
+Last activity: 2026-06-15
 
 ### Milestone v2.1.0 roadmap (REVISED 2026-06-15)
 
@@ -84,7 +84,7 @@ Advisor runtime-proven on Opus 4.8. Final phase: Phase 10 (documentation-hygiene
 
 **Velocity:**
 
-- Total plans completed: 121 (v1.0 milestone, all phases)
+- Total plans completed: 123 (v1.0 milestone, all phases)
 - Average duration: -
 - Total execution time: 0 hours
 
@@ -111,6 +111,7 @@ Advisor runtime-proven on Opus 4.8. Final phase: Phase 10 (documentation-hygiene
 | 14.1 | 1 | - | - |
 | 14.2 | 1 | - | - |
 | 16 | 2 | - | - |
+| 17 | 2 | - | - |
 
 **By Phase (v2.1.0 milestone):**
 

@@ -145,7 +145,7 @@ Phases execute in numeric order: 16 -> 17 -> 18 -> 19 -> 20
 | 11-13 (v1.0.1) | v1.0.1 | 13/13 | Complete | 2026-06-08 |
 | 14-15 (v2.0.0, incl. 14.1, 14.2) | v2.0.0 | 4/4 | Complete | 2026-06-14 |
 | 16. Aggregator + fixture | v2.1.0 | 2/2 | Complete    | 2026-06-15 |
-| 17. Schema + contract | v2.1.0 | 2/2 | Complete   | 2026-06-15 |
+| 17. Schema + contract | v2.1.0 | 2/2 | Complete    | 2026-06-15 |
 | 18. Haiku research + voter + early eval | v2.1.0 | 0/TBD | Not started | - |
 | 19. Search + extract workers | v2.1.0 | 0/TBD | Not started | - |
 | 20. Orchestrator + scale | v2.1.0 | 0/TBD | Not started | - |
