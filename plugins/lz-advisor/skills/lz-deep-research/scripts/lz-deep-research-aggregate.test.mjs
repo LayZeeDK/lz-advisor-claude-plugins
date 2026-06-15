@@ -877,6 +877,38 @@ test('L-2 worker with 121 claims (> ceiling 120) throws ContractError /exceeds c
   }
 });
 
+test('OQ-1 aggregate raw-claims ceiling: 4 workers x 100 claims (400 total > 360) throws ContractError', () => {
+  // The per-file ceiling (120) does not fire for 100 claims per file. Only the
+  // aggregate ceiling (MAX_FETCH * MAX_VERIFY_CLAIMS = 360) catches the total.
+  // This closes the split-worker bypass surfaced as Open Question 1 in the
+  // security re-review: a compromised actor splitting large claim sets across
+  // many small files evades per-file guards but not this aggregate guard.
+  const runDir = fs.mkdtempSync(path.join(os.tmpdir(), 'lz-dr-oq1-'));
+  const claimsDir = path.join(runDir, 'claims');
+  fs.mkdirSync(claimsDir, { recursive: true });
+
+  try {
+    // 4 worker files * 100 claims = 400 total, above the 360 aggregate ceiling.
+    for (let w = 0; w < 4; w += 1) {
+      const claims = Array.from({ length: 100 }, (_, i) => ({
+        id: 'w' + w + 'c' + i,
+        text: 'worker ' + w + ' claim ' + i,
+        quote: 'worker ' + w + ' claim ' + i,
+        excerpt_id: 'e' + i,
+      }));
+      fs.writeFileSync(
+        path.join(claimsDir, 'w' + w + '.json'),
+        JSON.stringify({ worker: 'w' + w, source: 's' + w, claims }),
+        'utf8',
+      );
+    }
+
+    assert.throws(() => aggregate(runDir), /exceed.*ceiling|total pre-merge/);
+  } finally {
+    fs.rmSync(runDir, { recursive: true, force: true });
+  }
+});
+
 test('L-2 boundary: worker with exactly 120 claims (= ceiling) does NOT throw ceiling error', () => {
   // Exactly at the ceiling (120 = 24 * 5) is allowed. This guards the strict-greater-than
   // boundary so a legitimate 120-claim worker is not accidentally rejected.
