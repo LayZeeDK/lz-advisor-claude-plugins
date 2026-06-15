@@ -95,6 +95,20 @@ test('SC5-4 near-duplicate pair from TWO sources merged (corroboration 2, confid
   assert.equal(r.survivors[0].confidence, 'High');
 });
 
+test('I-1 partial-drop: recheckClusters narrows 3-source cluster to corroboration 1 after 2 fabricated-quote drops', () => {
+  // Three workers (s1/s2/s3) all have identical claim text (Jaccard 1.0) -> merge at corroboration 3.
+  // w2 and w3 have fabricated quotes absent from all excerpts -> dropped at quote-recheck.
+  // Post-recheck: cluster0 has only s1's member (corroboration_lower_bound 1, not 3).
+  // Distinguishes the post-recheck sources Set from the merge-time corroboration count.
+  const r = aggregate(fx('partial-drop-corroboration-narrowed'));
+
+  assert.equal(r.survivors.length, 1, 'one cluster survives (the text merged; 2 members dropped)');
+  assert.equal(r.dropped.length, 0, 'cluster survives (w1 member is verified); no whole-cluster drop');
+  assert.equal(r.survivors[0].corroboration_lower_bound, 1, 'post-recheck sources: only s1 remains');
+  assert.deepEqual(r.survivors[0].sources, ['s1'], 's2 and s3 dropped because their only member had a fabricated quote');
+  assert.equal(r.survivors[0].confidence, 'High', '3 unrefuted votes on cluster0');
+});
+
 // ---------------------------------------------------------------------------
 // PIPE-07 per-tier confidence coverage (Option I rubric, D-01/D-02/D-03/D-03b).
 // Each tier (Medium / Low-thin / Low-refuted / Contested / Unsupported) is exercised by a
