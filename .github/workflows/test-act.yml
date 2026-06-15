@@ -44,19 +44,30 @@ jobs:
         run: |
           set -euo pipefail
           base="https://github.com/nektos/act/releases/download/v${ACT_VERSION}"
-          curl -fsSL -o act.tar.gz "${base}/act_Linux_x86_64.tar.gz"
+          # Download with the canonical asset name so `sha256sum -c` can locate it on disk
+          # (checksums.txt lists the file as act_Linux_x86_64.tar.gz).
+          curl -fsSL -o act_Linux_x86_64.tar.gz "${base}/act_Linux_x86_64.tar.gz"
           curl -fsSL -o checksums.txt "${base}/checksums.txt"
-          sha256sum --ignore-missing -c checksums.txt
-          tar -xzf act.tar.gz act
+          # Verify the EXACT downloaded asset line (WR-02): pin to the named artifact
+          # rather than relying on --ignore-missing's "some listed file matched" semantics.
+          grep ' act_Linux_x86_64.tar.gz$' checksums.txt | sha256sum -c -
+          tar -xzf act_Linux_x86_64.tar.gz act
           ./act --version
 
-      - name: act structure + dry-run + real run against ci.yml
+      - name: act structure + dry-run + real run against ci.yml (push + pull_request)
         env:
           GH_TOKEN_FOR_ACT: ${{ github.token }}
         run: |
           set -euo pipefail
           ./act --list -W .github/workflows/ci.yml
-          ./act -n push -j test -W .github/workflows/ci.yml -P "ubuntu-latest=${ACT_IMAGE}"
+          # ci.yml triggers on both push:main and pull_request:main; simulate BOTH for parity.
+          # The test job is event-agnostic, so both exercise the same steps -- this is literal
+          # trigger parity, not differing behavior.
+          ./act -n push         -j test -W .github/workflows/ci.yml -P "ubuntu-latest=${ACT_IMAGE}"
+          ./act -n pull_request -j test -W .github/workflows/ci.yml -P "ubuntu-latest=${ACT_IMAGE}"
           ./act push -j test -W .github/workflows/ci.yml \
+            -P "ubuntu-latest=${ACT_IMAGE}" \
+            -s GITHUB_TOKEN="${GH_TOKEN_FOR_ACT}"
+          ./act pull_request -j test -W .github/workflows/ci.yml \
             -P "ubuntu-latest=${ACT_IMAGE}" \
             -s GITHUB_TOKEN="${GH_TOKEN_FOR_ACT}"
