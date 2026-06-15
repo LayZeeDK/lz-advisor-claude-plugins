@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v2.1.0
 milestone_name: lz-deep-research skill
-status: executing
-stopped_at: Phase 16 context gathered
-last_updated: "2026-06-15T07:12:28.299Z"
+status: verifying
+stopped_at: Completed 16-01-PLAN.md (aggregator shipped)
+last_updated: "2026-06-15T07:27:59.927Z"
 last_activity: 2026-06-15
 progress:
   total_phases: 5
-  completed_phases: 0
+  completed_phases: 1
   total_plans: 2
-  completed_plans: 1
-  percent: 0
+  completed_plans: 2
+  percent: 20
 ---
 
 # Project State
@@ -39,8 +39,8 @@ Items deferred across milestones (v1.0.1 close 2026-06-11; v2.0.0 additions tagg
 
 Phase: 16 (deterministic-off-model-aggregator-validation-fixture) — EXECUTING
 Plan: 2 of 2
-Status: Plan 16-01 complete (aggregator shipped); Plan 16-02 (node:test fixture + __fixtures__) next
-Last activity: 2026-06-15 -- Plan 16-01 executed (aggregator pure functions + thin CLI)
+Status: Phase complete -- ready for verification
+Last activity: 2026-06-15
 
 ### Milestone v2.1.0 roadmap (REVISED 2026-06-15)
 
@@ -142,6 +142,7 @@ Advisor runtime-proven on Opus 4.8. Final phase: Phase 10 (documentation-hygiene
 | Phase 14.1 P01 | 13min | 6 tasks | 5 files |
 | Phase 14.2 P01 | 6min | 1 tasks | 5 files |
 | Phase 16 P01 | 24min | 2 tasks | 1 files |
+| Phase 16 P16-02 | 7min | 3 tasks | 98 files |
 
 ## Accumulated Context
 
@@ -165,6 +166,9 @@ Recent decisions affecting current work (v2.1.0):
 - [v2.1.0 / Phase 16 P01]: the aggregator ACTIVELY enforces MAX_VERIFY_CLAIMS(24)/VOTES_PER_CLAIM(3)/SYNTH_CAP(20) with observable caps (no silent truncation); CARRIES ANGLES(5)/MAX_FETCH(15) in the same frozen CEILINGS block as the shared contract the Phase-20 orchestrator enforces at wave dispatch. LZ_DR_* env override intentionally NOT wired (D-12): hardcoded CEILINGS defaults are the enforced contract this phase.
 
 (v1.0.1 + v2.0.0 decision history preserved in PROJECT.md Key Decisions and the milestone archives.)
+
+- [Phase ?]: [v2.1.0 / Phase 16 P02]: the aggregator is locked by a committed node:test validation fixture (lz-deep-research-aggregate.test.mjs) -- 9 named tests (5 SC-5 behaviors + CRLF/BOM/determinism/zero-dep hardening) over 6 committed immutable __fixtures__ run-dirs; phase gate is node --test FILE exits 0 (the dir form false-fails on this host); BOM/CRLF excerpt written at runtime so zero non-ASCII bytes committed.
+- [Phase ?]: [v2.1.0 / Phase 16 P02]: paraphrase-one-source fixture uses the genuinely-merging pair (Jaccard 1.0), NOT the RESEARCH-suggested Jaccard-0.5 pair, and the test asserts survivors.length===1 BEFORE corroboration_lower_bound===1 -- closing the vacuous-pass hole the plan-checker flagged.
 
 ### Pending Todos
 
@@ -201,7 +205,7 @@ Recent decisions affecting current work (v2.1.0):
 
 ## Session Continuity
 
-Last session: 2026-06-15T07:12:28.292Z
+Last session: 2026-06-15T07:27:37.413Z
 Stopped at: Completed 16-01-PLAN.md (aggregator shipped)
 Resume file: None
 Resume next: Execute Plan 16-02 (node:test fixture lz-deep-research-aggregate.test.mjs + committed __fixtures__/<case>/{claims,excerpts,votes}/ data; run via the explicit FILE form `node --test <file>`). Then schema (17), Haiku-research + voter + early eval (18), search/extract workers (19), orchestrator+scale (20).

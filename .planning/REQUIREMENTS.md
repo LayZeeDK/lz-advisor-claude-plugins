@@ -36,7 +36,7 @@ Requirements for the v2.1.0 milestone. Each maps to exactly one roadmap phase.
 - [x] **AGG-01**: All dedup / ranking / vote-tally / quote-re-check is performed off-model by a deterministic Node script in `skills/lz-deep-research/scripts/` (zero model tokens, reproducible, auditable).
 - [x] **AGG-02**: The aggregator runs with zero external dependencies (Node stdlib only) and is CRLF- and path-safe on Windows arm64 / Git Bash (explicit UTF-8 + LF normalization; `path.join`; no shell globbing).
 - [ ] **AGG-03**: Worker subagents write evidence to the run dir and return only a one-line receipt (under a char cap); the main session never holds raw source text or raw votes.
-- [ ] **AGG-04**: The aggregator is covered by a validation fixture asserting its load-bearing behaviors (fabricated quote dropped, real-but-wrong-passage downgraded, paraphrase pair not double-counted as independent, near-duplicate pair merged, named ceilings enforced).
+- [x] **AGG-04**: The aggregator is covered by a validation fixture asserting its load-bearing behaviors (fabricated quote dropped, real-but-wrong-passage downgraded, paraphrase pair not double-counted as independent, near-duplicate pair merged, named ceilings enforced).
 - [ ] **AGG-05**: The `.lz-research/<run-id>/` run dir (immutable worker files, stored excerpts, votes, survivors, report) is retained after the report as the audit trail.
 - [x] **AGG-06**: Named ceilings (sub-angles ~5, max-fetch 15, max-verify-claims ~24, votes-per-claim 3, synthesis cap ~20) are enforced in code, not left to model discretion.
 
@@ -105,7 +105,7 @@ Which phase covers which requirement. Filled in during roadmap creation (2026-06
 |-------------|-------|--------|
 | AGG-01 | Phase 16 | Complete |
 | AGG-02 | Phase 16 | Complete |
-| AGG-04 | Phase 16 | Pending |
+| AGG-04 | Phase 16 | Complete |
 | AGG-06 | Phase 16 | Complete |
 | VERIF-04 | Phase 16 | Complete |
 | PIPE-07 | Phase 17 | Pending |
