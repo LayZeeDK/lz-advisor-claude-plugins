@@ -2,9 +2,9 @@
 gsd_state_version: 1.0
 milestone: v2.1.0
 milestone_name: lz-deep-research skill
-status: ready_to_plan
-stopped_at: Phase 16 complete (2/2) — ready to discuss Phase 17
-last_updated: 2026-06-15T07:55:47.564Z
+status: planning
+stopped_at: "Phase 17 context gathered (GA-1 re-decided by cross-model consensus: single enum, Option I)"
+last_updated: "2026-06-15T10:26:14.891Z"
 last_activity: 2026-06-15
 progress:
   total_phases: 5
@@ -206,9 +206,9 @@ Recent decisions affecting current work (v2.1.0):
 
 ## Session Continuity
 
-Last session: 2026-06-15T07:27:37.413Z
-Stopped at: Completed 16-01-PLAN.md (aggregator shipped)
-Resume file: None
+Last session: 2026-06-15T10:26:14.884Z
+Stopped at: Phase 17 context gathered (GA-1 re-decided by cross-model consensus: single enum, Option I)
+Resume file: .planning/phases/17-json-schema-verification-contract-reference/17-CONTEXT.md
 Resume next: Execute Plan 16-02 (node:test fixture lz-deep-research-aggregate.test.mjs + committed __fixtures__/<case>/{claims,excerpts,votes}/ data; run via the explicit FILE form `node --test <file>`). Then schema (17), Haiku-research + voter + early eval (18), search/extract workers (19), orchestrator+scale (20).
 
 ## Operator Next Steps
