@@ -290,7 +290,7 @@ test('WR-03 worker file missing source fails closed (aggregate throws, no null i
   }
 });
 
-test('WR-04 claim missing id fails closed (aggregate throws)', () => {
+test('AGG-1/WR-04 claim missing id fails closed (aggregate throws)', () => {
   // TEST-3: a missing claims[].id otherwise coerced to the literal string "undefined" in tally()'s
   // member-id vote-file fallback (votes/undefined-0.json), cross-contaminating vote tallies across
   // ALL id-less claims. The AGG-1 guard (Plan 17.1-01) now fails closed instead. This test passes

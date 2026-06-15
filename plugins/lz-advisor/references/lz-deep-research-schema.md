@@ -144,7 +144,7 @@ The PIPE-05 worker-input shape, read by `mergeClusters`. One file per worker; a
 |-------|------|----------|-------|
 | `worker` | string | yes | The producing worker id. |
 | `source` | string | yes (fail-closed) | The canonical source key (D-08). `mergeClusters` rejects a missing or empty `source` (WR-03): a missing source would leak `null` into the frozen `sources[]` and silently under-count corroboration. |
-| `claims[].id` | string | yes (fail-closed) | Claim id; used as the first-member fallback for the vote-file lookup. `mergeClusters` rejects a missing or empty `id` (WR-04: `ContractError('claim missing non-empty id', ...)`). Without the guard a missing `id` coerces to the literal `"undefined"` in `tally()`'s member-id vote-file fallback (`votes/undefined-0.json`), cross-contaminating vote tallies across all id-less claims. (Note: the source labels this guard WR-04, which also names the unrelated normalized-substring caveat section below.) |
+| `claims[].id` | string | yes (fail-closed) | Claim id; used as the first-member fallback for the vote-file lookup. `mergeClusters` rejects a missing or empty `id` (AGG-1; test co-labeled WR-04 for the SC-4 acceptance anchor: `ContractError('claim missing non-empty id', ...)`). Without the guard a missing `id` coerces to the literal `"undefined"` in `tally()`'s member-id vote-file fallback (`votes/undefined-0.json`), cross-contaminating vote tallies across all id-less claims. |
 | `claims[].text` | string | yes (fail-closed) | The claim text; becomes the survivor `claim`. `mergeClusters` rejects a missing or empty `text` (WR-02). |
 | `claims[].quote` | string | yes (fail-closed) | The verbatim supporting quote; checked by the quote-recheck. `mergeClusters` rejects a missing or empty `quote` (WR-01). |
 | `claims[].excerpt_id` | string | optional | The cited excerpt's basename. If absent, the cited-excerpt check is skipped and the quote can only verify as `downgraded` via some other excerpt. |
@@ -248,7 +248,7 @@ For a member's normalized quote `nq = normalize(member.quote)`:
 This is the only path that removes a claim. The vote tally NEVER deletes a claim
 (see "downgrade-not-delete" in the tally rubric). Source: `recheckClusters`.
 
-### WR-04 caveat (normalized-substring is a lower-bound match)
+### QR-01 caveat (normalized-substring is a lower-bound match)
 
 The re-check is a normalized-SUBSTRING test (`.includes` on the space-joined
 token string), NOT a token-sequence or word-boundary test. A short numeric quote
