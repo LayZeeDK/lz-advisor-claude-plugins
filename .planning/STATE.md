@@ -3,7 +3,7 @@ gsd_state_version: 1.0
 milestone: v2.1.0
 milestone_name: lz-deep-research skill
 status: ready_to_plan
-stopped_at: Phase 17 complete (2/2) — ready to discuss Phase 18
+stopped_at: Phase 17 complete (2/2) -- ready to discuss Phase 18
 last_updated: 2026-06-15T12:17:30.574Z
 last_activity: 2026-06-15
 progress:
@@ -21,7 +21,7 @@ progress:
 See: .planning/PROJECT.md (updated 2026-06-15 -- milestone v2.1.0 started)
 
 **Core value:** Near-Opus intelligence at Sonnet cost, through strategic advisor consultation at high-leverage moments -- now extended from coding tasks to deep research
-**Current focus:** Phase 18 — haiku prompt engineering deep research + verify voter + early gating eval
+**Current focus:** Phase 18 -- haiku prompt engineering deep research + verify voter + early gating eval
 
 ## Deferred Items
 
