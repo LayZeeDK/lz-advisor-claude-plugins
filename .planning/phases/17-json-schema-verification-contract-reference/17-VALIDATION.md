@@ -7,7 +7,7 @@ wave_0_complete: false
 created: 2026-06-15
 ---
 
-# Phase 17 — Validation Strategy
+# Phase 17 -- Validation Strategy
 
 > Per-phase validation contract for feedback sampling during execution.
 > Source: 17-RESEARCH.md "Validation Architecture". The ONLY executable deliverable this phase touches is
@@ -43,36 +43,45 @@ on the directory form.
 
 ## Per-Task Verification Map
 
-> Task IDs are assigned by the planner. Rows are keyed by requirement + behavior; the planner maps each to a
-> concrete task ID and copies the automated command into the task's `<acceptance_criteria>`.
+> Rows keyed by requirement + behavior, mapped to the concrete plan tasks created by gsd-planner.
+> The tally rubric is implemented in 17-01-01; the per-tier ASSERTIONS that verify each branch are added in
+> 17-01-02 (the lockstep fixture task). Both tasks share the same FILE-form `node --test` verify.
 
 | Task ID | Plan | Wave | Requirement | Threat Ref | Secure Behavior | Test Type | Automated Command | File Exists | Status |
 |---------|------|------|-------------|------------|-----------------|-----------|-------------------|-------------|--------|
-| TBD | TBD | 0/1 | PIPE-07 | — | tally maps every readable tally to exactly one of {High,Medium,Low,Contested,Unsupported}; `High` branch | unit | `node --test .../lz-deep-research-aggregate.test.mjs` | ✅ (High covered today) | ⬜ pending |
-| TBD | TBD | 0/1 | PIPE-07 | — | `Medium` = 2 readable `unrefuted` seats + 1 missing | unit | same | ❌ W0 | ⬜ pending |
-| TBD | TBD | 0/1 | PIPE-07 | — | `Low` (thin) = 1 readable `unrefuted` seat + 2 missing | unit | same | ❌ W0 | ⬜ pending |
-| TBD | TBD | 0/1 | PIPE-07 / D-03b | — | downgrade-not-delete: 3/3 `refuted` -> `Low`, claim still present (NOT deleted) | unit | same | ❌ W0 | ⬜ pending |
-| TBD | TBD | 0/1 | PIPE-07 / D-03 | — | `Contested` on a per-claim voter split (>=1 `unrefuted` AND >=1 `refuted`); branch precedes `Medium` | unit | same | ❌ W0 | ⬜ pending |
-| TBD | TBD | 0/1 | PIPE-07 | — | `Unsupported` = 0 readable vote seats | unit | same | ❌ W0 | ⬜ pending |
-| TBD | TBD | 0/1 | D-02 | — | stdout by-confidence line names all 5 labels | unit | same (assert summary substring) | ❌ W0 | ⬜ pending |
-| TBD | TBD | — | VERIF-06 | — | reference defines `quote_fidelity` (frozen) and `claim_support` (new) as two SEPARATE fields + worked example where `verified` coexists with `unsupported` | doc-review (manual) | reviewer reads `references/lz-deep-research-schema.md` | N/A (doc) | ⬜ pending |
+| 17-01-01 | 17-01 | 1 | PIPE-07 | T-17-01 | tally maps every readable tally to exactly one of {High,Medium,Low,Contested,Unsupported}; `High`-regression branch | unit | `node --test .../lz-deep-research-aggregate.test.mjs` | yes (High covered today) | pending |
+| 17-01-02 | 17-01 | 1 | PIPE-07 | T-17-01 | `Medium` = 2 readable `unrefuted` seats + 1 missing | unit | same | no (W0) | pending |
+| 17-01-02 | 17-01 | 1 | PIPE-07 | T-17-01 | `Low` (thin) = 1 readable `unrefuted` seat + 2 missing | unit | same | no (W0) | pending |
+| 17-01-02 | 17-01 | 1 | PIPE-07 / D-03b | T-17-01 | downgrade-not-delete: 3/3 `refuted` -> `Low`, claim still present (NOT deleted) | unit | same | no (W0) | pending |
+| 17-01-02 | 17-01 | 1 | PIPE-07 / D-03 | T-17-01 | `Contested` on a per-claim voter split (>=1 `unrefuted` AND >=1 `refuted`); branch precedes `Medium` | unit | same | no (W0) | pending |
+| 17-01-02 | 17-01 | 1 | PIPE-07 | T-17-01 | `Unsupported` = 0 readable vote seats | unit | same | no (W0) | pending |
+| 17-01-02 | 17-01 | 1 | D-02 | T-17-01 | stdout by-confidence line names all 5 labels | unit | same (assert summary substring) | no (W0) | pending |
+| 17-02-01 | 17-02 | 2 | VERIF-06 | T-17-06 | reference defines `quote_fidelity` (frozen) and `claim_support` (new) as two SEPARATE fields + worked example where `verified` coexists with `unsupported` | doc-review (manual + grep) | `<human-check>` + `rg -U "quote_fidelity[\s\S]*verified[\s\S]*claim_support[\s\S]*unsupported"` on `references/lz-deep-research-schema.md` | N/A (doc) | pending |
 
-*Status: ⬜ pending · ✅ green · ❌ red · ⚠️ flaky*
+*Status: pending / green / red / flaky*
+
+> **Flag convention (why `nyquist_compliant`/`wave_0_complete` are `false` at plan-time):** per GSD convention
+> these flags flip POST-execution, not at planning. `validate-phase` sets `nyquist_compliant: true` only when
+> no gaps remain after the work is done (`validate-phase.md`), and `audit-milestone` treats a phase COMPLIANT
+> only when `nyquist_compliant: true` AND all tasks are green. Setting them `true` now would falsely assert
+> "all tasks green" before any execution. The plans DO satisfy the validation contract (every Wave 0 gap below
+> is covered by 17-01-02 with a concrete FILE-form `<automated>` command); the flags are flipped at verify-work.
 
 ---
 
 ## Wave 0 Requirements
 
-- [ ] `Medium`-tier fixture/assertion (2 readable `unrefuted` seats + 1 missing) — covers PIPE-07
-- [ ] `Low`-tier (thin) fixture/assertion (1 readable `unrefuted` seat + 2 missing) — covers PIPE-07
-- [ ] `Low`-tier (downgrade-not-delete, D-03b) fixture/assertion (3/3 `refuted`, claim present + `Low`) — covers PIPE-07 + D-03b
-- [ ] `Contested`-tier fixture/assertion (>=1 `unrefuted` AND >=1 `refuted`) — covers PIPE-07 + D-03
-- [ ] `Unsupported`-tier fixture/assertion (0 readable vote seats) — covers PIPE-07
-- [ ] stdout by-confidence 5-label assertion (a survivors set spanning multiple tiers) — covers D-02
+- [ ] `Medium`-tier fixture/assertion (2 readable `unrefuted` seats + 1 missing) -- covers PIPE-07
+- [ ] `Low`-tier (thin) fixture/assertion (1 readable `unrefuted` seat + 2 missing) -- covers PIPE-07
+- [ ] `Low`-tier (downgrade-not-delete, D-03b) fixture/assertion (3/3 `refuted`, claim present + `Low`) -- covers PIPE-07 + D-03b
+- [ ] `Contested`-tier fixture/assertion (>=1 `unrefuted` AND >=1 `refuted`) -- covers PIPE-07 + D-03
+- [ ] `Unsupported`-tier fixture/assertion (0 readable vote seats) -- covers PIPE-07
+- [ ] stdout by-confidence 5-label assertion (a survivors set spanning multiple tiers) -- covers D-02
 - [ ] Update the fixture header enum-documenting comment to `{High, Medium, Low, Contested, Unsupported}`
 
 *The framework + the committed-fixture pattern + the temp-run-dir helper already exist; no framework install.
-The gaps are net-new fixture data + assertions, not new infrastructure.*
+The gaps are net-new fixture data + assertions, not new infrastructure. All seven are owned by plan 17-01,
+task 17-01-02.*
 
 ---
 
@@ -80,8 +89,8 @@ The gaps are net-new fixture data + assertions, not new infrastructure.*
 
 | Behavior | Requirement | Why Manual | Test Instructions |
 |----------|-------------|------------|-------------------|
-| Reference defines the two assurances as two separate fields (`quote_fidelity` vs `claim_support`) with a worked example | VERIF-06 | `claim_support` is voter/synthesis-owned (Phase 18/20); the aggregator does NOT emit it this phase, so there is no runtime test here — the assurance is contract prose | Read `plugins/lz-advisor/references/lz-deep-research-schema.md`; confirm both fields exist, named distinctly, with explicit per-field owner and a worked example where `quote_fidelity: verified` coexists with `claim_support: unsupported` |
-| Reference freezes source/claim/vote/excerpt + survivor shapes verbatim from the (corrected) aggregator with cited line anchors | PIPE-07 / SC-1 | Verbatim-fidelity is a copy-vs-source review, not an executable assertion | Read the reference; spot-check ≥3 frozen shapes against the cited `lz-deep-research-aggregate.mjs` functions/anchors |
+| Reference defines the two assurances as two separate fields (`quote_fidelity` vs `claim_support`) with a worked example | VERIF-06 | `claim_support` is voter/synthesis-owned (Phase 18/20); the aggregator does NOT emit it this phase, so there is no runtime test here -- the assurance is contract prose | Read `plugins/lz-advisor/references/lz-deep-research-schema.md`; confirm both fields exist, named distinctly, with explicit per-field owner and a worked example where `quote_fidelity: verified` coexists with `claim_support: unsupported` |
+| Reference freezes source/claim/vote/excerpt + survivor shapes verbatim from the (corrected) aggregator with cited line anchors | PIPE-07 / SC-1 | Verbatim-fidelity is a copy-vs-source review, not an executable assertion | Read the reference; spot-check 3 or more frozen shapes against the cited `lz-deep-research-aggregate.mjs` functions/anchors |
 
 ---
 
@@ -92,6 +101,6 @@ The gaps are net-new fixture data + assertions, not new infrastructure.*
 - [ ] Wave 0 covers all MISSING references
 - [ ] No watch-mode flags
 - [ ] Feedback latency < 5s
-- [ ] `nyquist_compliant: true` set in frontmatter
+- [ ] `nyquist_compliant: true` set in frontmatter (flipped at verify-work, post-execution)
 
-**Approval:** pending
+**Approval:** pending (sign-off at verify-work, post-execution)
