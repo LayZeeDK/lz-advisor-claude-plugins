@@ -83,7 +83,7 @@ Full phase details, success criteria, and decision logs are archived in [milesto
   4. The named ceilings (sub-angles ~5, max-fetch 15, max-verify-claims ~24, votes-per-claim 3, synthesis cap ~20) are enforced in code, not left to model discretion (over-ceiling input is capped by the script).
   5. The committed validation fixture asserts each load-bearing behavior and passes: fabricated quote dropped, real-quote/wrong-passage downgraded, paraphrase pair NOT double-counted as independent, near-duplicate pair merged, ceilings enforced.
 **Plans**: 2 plans
-- [ ] 16-01-PLAN.md -- Aggregator: harden the spike into exported pure functions + thin CLI (three-way quote outcome D-05, distinct-source corroboration D-08/09, in-code ceilings D-10/11, CRLF/BOM/path-safe, zero-dep)
+- [x] 16-01-PLAN.md -- Aggregator: harden the spike into exported pure functions + thin CLI (three-way quote outcome D-05, distinct-source corroboration D-08/09, in-code ceilings D-10/11, CRLF/BOM/path-safe, zero-dep)
 - [ ] 16-02-PLAN.md -- Validation fixture: node:test + six committed __fixtures__ run-dirs asserting all 5 SC-5 behaviors (drop, downgrade, paraphrase-one-source, near-dup-merge, ceilings) + CRLF/BOM/determinism/zero-dep hardening
 
 ### Phase 17: JSON schema + verification contract reference
@@ -142,7 +142,7 @@ Phases execute in numeric order: 16 -> 17 -> 18 -> 19 -> 20
 | 1-10 (v1.0) | v1.0 MVP | 80/80 | Complete | 2026-06-01 |
 | 11-13 (v1.0.1) | v1.0.1 | 13/13 | Complete | 2026-06-08 |
 | 14-15 (v2.0.0, incl. 14.1, 14.2) | v2.0.0 | 4/4 | Complete | 2026-06-14 |
-| 16. Aggregator + fixture | v2.1.0 | 0/2 | Planned | - |
+| 16. Aggregator + fixture | v2.1.0 | 1/2 | In Progress|  |
 | 17. Schema + contract | v2.1.0 | 0/TBD | Not started | - |
 | 18. Haiku research + voter + early eval | v2.1.0 | 0/TBD | Not started | - |
 | 19. Search + extract workers | v2.1.0 | 0/TBD | Not started | - |

@@ -27,18 +27,18 @@ Requirements for the v2.1.0 milestone. Each maps to exactly one roadmap phase.
 - [ ] **VERIF-01**: Each claim selected for verification is judged by three ISOLATED skeptic voters (no shared context between voters), diversified by attack mode.
 - [ ] **VERIF-02**: Each open-book voter runs an explicit DISCONFIRMING search (searches the negation, not the claim's own terms) and records the disconfirming query it ran.
 - [ ] **VERIF-03**: Corroboration is weighted by SOURCE INDEPENDENCE, not raw source count (N syndicated copies of one source count as one).
-- [ ] **VERIF-04**: Each claim's verbatim quote is mechanically re-checked against its stored excerpt; quotes that fail the re-check are dropped UPSTREAM of all voting.
+- [x] **VERIF-04**: Each claim's verbatim quote is mechanically re-checked against its stored excerpt; quotes that fail the re-check are dropped UPSTREAM of all voting.
 - [ ] **VERIF-05**: Verification escalates to a stronger tier on the UNION of triggers -- any contested split, OR any load-bearing claim regardless of verdict, OR a random audit sample (~15-20%) of unanimous upholds.
 - [ ] **VERIF-06**: The report distinguishes "quote verified verbatim" from "claim supported by the quote" as two separate assurances.
 
 ### Aggregation (AGG) -- deterministic, off-model
 
-- [ ] **AGG-01**: All dedup / ranking / vote-tally / quote-re-check is performed off-model by a deterministic Node script in `skills/lz-deep-research/scripts/` (zero model tokens, reproducible, auditable).
-- [ ] **AGG-02**: The aggregator runs with zero external dependencies (Node stdlib only) and is CRLF- and path-safe on Windows arm64 / Git Bash (explicit UTF-8 + LF normalization; `path.join`; no shell globbing).
+- [x] **AGG-01**: All dedup / ranking / vote-tally / quote-re-check is performed off-model by a deterministic Node script in `skills/lz-deep-research/scripts/` (zero model tokens, reproducible, auditable).
+- [x] **AGG-02**: The aggregator runs with zero external dependencies (Node stdlib only) and is CRLF- and path-safe on Windows arm64 / Git Bash (explicit UTF-8 + LF normalization; `path.join`; no shell globbing).
 - [ ] **AGG-03**: Worker subagents write evidence to the run dir and return only a one-line receipt (under a char cap); the main session never holds raw source text or raw votes.
 - [ ] **AGG-04**: The aggregator is covered by a validation fixture asserting its load-bearing behaviors (fabricated quote dropped, real-but-wrong-passage downgraded, paraphrase pair not double-counted as independent, near-duplicate pair merged, named ceilings enforced).
 - [ ] **AGG-05**: The `.lz-research/<run-id>/` run dir (immutable worker files, stored excerpts, votes, survivors, report) is retained after the report as the audit trail.
-- [ ] **AGG-06**: Named ceilings (sub-angles ~5, max-fetch 15, max-verify-claims ~24, votes-per-claim 3, synthesis cap ~20) are enforced in code, not left to model discretion.
+- [x] **AGG-06**: Named ceilings (sub-angles ~5, max-fetch 15, max-verify-claims ~24, votes-per-claim 3, synthesis cap ~20) are enforced in code, not left to model discretion.
 
 ### Cost discipline (COST)
 
@@ -103,11 +103,11 @@ Which phase covers which requirement. Filled in during roadmap creation (2026-06
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| AGG-01 | Phase 16 | Pending |
-| AGG-02 | Phase 16 | Pending |
+| AGG-01 | Phase 16 | Complete |
+| AGG-02 | Phase 16 | Complete |
 | AGG-04 | Phase 16 | Pending |
-| AGG-06 | Phase 16 | Pending |
-| VERIF-04 | Phase 16 | Pending |
+| AGG-06 | Phase 16 | Complete |
+| VERIF-04 | Phase 16 | Complete |
 | PIPE-07 | Phase 17 | Pending |
 | VERIF-06 | Phase 17 | Pending |
 | VERIF-01 | Phase 18 | Pending |

@@ -4,13 +4,13 @@ milestone: v2.1.0
 milestone_name: lz-deep-research skill
 status: executing
 stopped_at: Phase 16 context gathered
-last_updated: "2026-06-15T06:58:20.334Z"
-last_activity: 2026-06-15 -- Phase 16 planning complete
+last_updated: "2026-06-15T07:12:28.299Z"
+last_activity: 2026-06-15
 progress:
   total_phases: 5
   completed_phases: 0
   total_plans: 2
-  completed_plans: 0
+  completed_plans: 1
   percent: 0
 ---
 
@@ -21,7 +21,7 @@ progress:
 See: .planning/PROJECT.md (updated 2026-06-15 -- milestone v2.1.0 started)
 
 **Core value:** Near-Opus intelligence at Sonnet cost, through strategic advisor consultation at high-leverage moments -- now extended from coding tasks to deep research
-**Current focus:** Milestone v2.1.0 (lz-deep-research skill) -- roadmap created + revised (Phases 16-20; gating eval moved early). Next: plan Phase 16 (deterministic off-model aggregator + validation fixture) with /gsd-plan-phase 16.
+**Current focus:** Phase 16 — deterministic-off-model-aggregator-validation-fixture
 
 ## Deferred Items
 
@@ -37,10 +37,10 @@ Items deferred across milestones (v1.0.1 close 2026-06-11; v2.0.0 additions tagg
 
 ## Current Position
 
-Phase: 16 (Deterministic off-model aggregator + validation fixture) -- not started
-Plan: -
-Status: Ready to execute
-Last activity: 2026-06-15 -- Phase 16 planning complete
+Phase: 16 (deterministic-off-model-aggregator-validation-fixture) — EXECUTING
+Plan: 2 of 2
+Status: Plan 16-01 complete (aggregator shipped); Plan 16-02 (node:test fixture + __fixtures__) next
+Last activity: 2026-06-15 -- Plan 16-01 executed (aggregator pure functions + thin CLI)
 
 ### Milestone v2.1.0 roadmap (REVISED 2026-06-15)
 
@@ -115,7 +115,7 @@ Advisor runtime-proven on Opus 4.8. Final phase: Phase 10 (documentation-hygiene
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| 16 (Aggregator + fixture) | TBD | - | - |
+| 16 (Aggregator + fixture) | 1/2 | - | - |
 | 17 (Schema + contract) | TBD | - | - |
 | 18 (Haiku research + voter + early eval) | TBD | - | - |
 | 19 (Search + extract workers) | TBD | - | - |
@@ -141,6 +141,7 @@ Advisor runtime-proven on Opus 4.8. Final phase: Phase 10 (documentation-hygiene
 | Phase 14 P01 | 9min | 3 tasks | 13 files |
 | Phase 14.1 P01 | 13min | 6 tasks | 5 files |
 | Phase 14.2 P01 | 6min | 1 tasks | 5 files |
+| Phase 16 P01 | 24min | 2 tasks | 1 files |
 
 ## Accumulated Context
 
@@ -160,6 +161,8 @@ Recent decisions affecting current work (v2.1.0):
 - [v2.1.0]: `.lz-research/<run-id>/` retained (gitignored) as the audit trail (AGG-05 / INTEG-02), not cleaned post-report.
 - [v2.1.0]: Release/publication (REL-01..03: 6-surface version sync, CHANGELOG/README, tag + GitHub Release) handled during `/gsd-complete-milestone` AFTER `/gsd-audit-milestone` passes -- NOT a build phase; not mapped to any phase.
 - [v2.1.0 / REVISED]: Build is dependency-ordered bottom-up (aggregator -> schema -> Haiku-research+voter+early-eval -> search/extract workers -> orchestrator+scale) -- each phase's output is the next phase's input contract; the schema is empirically grounded against the proven aggregator; the eval runs before the workers/orchestrator so the voter default is settled first; the skill comes last because full-scale headless concurrency can only be confirmed once real producers exist.
+- [v2.1.0 / Phase 16 P01]: survivor record shape FROZEN as `{id, claim, sources, corroboration_lower_bound, quote_fidelity, confidence}` (Phase 17 inherits verbatim, Phase 18/20 consume). confidence vocab = `High | Medium | Low/Contested | Rejected | Unsupported` (Unsupported added for zero-readable-seats); quote_fidelity = `verified | downgraded` (dropped members excluded before tally). stdout summary is a deterministic 4-line counts-only receipt; CLI exits 0 ok / 2 on contract violation. Full output contract recorded in 16-01-SUMMARY.md for Phase 17 to freeze.
+- [v2.1.0 / Phase 16 P01]: the aggregator ACTIVELY enforces MAX_VERIFY_CLAIMS(24)/VOTES_PER_CLAIM(3)/SYNTH_CAP(20) with observable caps (no silent truncation); CARRIES ANGLES(5)/MAX_FETCH(15) in the same frozen CEILINGS block as the shared contract the Phase-20 orchestrator enforces at wave dispatch. LZ_DR_* env override intentionally NOT wired (D-12): hardcoded CEILINGS defaults are the enforced contract this phase.
 
 (v1.0.1 + v2.0.0 decision history preserved in PROJECT.md Key Decisions and the milestone archives.)
 
@@ -198,11 +201,11 @@ Recent decisions affecting current work (v2.1.0):
 
 ## Session Continuity
 
-Last session: 2026-06-15T06:08:37.175Z
-Stopped at: Phase 16 context gathered
-Resume file: .planning/phases/16-deterministic-off-model-aggregator-validation-fixture/16-CONTEXT.md
-Resume next: Plan Phase 16 (Deterministic off-model aggregator + validation fixture) with /gsd-plan-phase 16. Then schema (17), Haiku-research + voter + early eval (18), search/extract workers (19), orchestrator+scale (20).
+Last session: 2026-06-15T07:12:28.292Z
+Stopped at: Completed 16-01-PLAN.md (aggregator shipped)
+Resume file: None
+Resume next: Execute Plan 16-02 (node:test fixture lz-deep-research-aggregate.test.mjs + committed __fixtures__/<case>/{claims,excerpts,votes}/ data; run via the explicit FILE form `node --test <file>`). Then schema (17), Haiku-research + voter + early eval (18), search/extract workers (19), orchestrator+scale (20).
 
 ## Operator Next Steps
 
-- Plan Phase 16 with /gsd-plan-phase 16 (the deterministic off-model aggregator + validation fixture -- the foundation contract everything downstream feeds).
+- Execute Plan 16-02 (the validation fixture asserting all five SC-5 behaviors against the shipped aggregator's frozen output contract -- recorded in 16-01-SUMMARY.md).
