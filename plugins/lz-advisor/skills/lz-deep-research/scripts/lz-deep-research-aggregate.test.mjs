@@ -27,7 +27,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { aggregate, normalize, CEILINGS, listJson } from './lz-deep-research-aggregate.mjs';
+import { aggregate, normalize, CEILINGS, listJson, safeId } from './lz-deep-research-aggregate.mjs';
 
 // Resolve __fixtures__ test-file-relative (NEVER process.cwd() -- T-16-05 / Pitfall 3:
 // cwd drifts under GSD worktrees and headless `claude -p`).
@@ -817,5 +817,38 @@ test('H-1 trailing-space verdict "refuted " throws ContractError /invalid verdic
     assert.throws(() => aggregate(runDir), /invalid verdict/);
   } finally {
     fs.rmSync(runDir, { recursive: true, force: true });
+  }
+});
+
+// ---------------------------------------------------------------------------
+// L-1 Windows reserved device name guard in safeId()
+// ---------------------------------------------------------------------------
+
+test('L-1 safeId rejects Windows reserved device names (CON, NUL, COM1, LPT9, CON.json)', () => {
+  // Windows reserved device names (CON, PRN, AUX, NUL, COM1-9, LPT1-9) are not valid file
+  // basenames on Windows and must be rejected. The regex uses start-of-string + device name
+  // (case-insensitive) + (period or end-of-string) to match bare names and name+extension
+  // variants without false-positives on 'console', 'context', etc.
+  const reservedNames = ['CON', 'NUL', 'COM1', 'LPT9', 'CON.json'];
+
+  for (const name of reservedNames) {
+    assert.throws(
+      () => safeId(name, 'file.json'),
+      /unsafe id \(Windows reserved/,
+      'safeId must reject Windows reserved device name: ' + name,
+    );
+  }
+});
+
+test('L-1 safeId does NOT reject non-reserved names (context, c1, con2text, nul1)', () => {
+  // The device-name guard must not match partial strings (the (\.|$) anchor prevents it).
+  // 'console', 'context', 'c1', 'nul1' are not reserved names and must not throw.
+  const safeNames = ['context', 'c1', 'console', 'nul1'];
+
+  for (const name of safeNames) {
+    assert.doesNotThrow(
+      () => safeId(name, 'file.json'),
+      'safeId must NOT reject non-reserved name: ' + name,
+    );
   }
 });

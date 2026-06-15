@@ -155,6 +155,10 @@ export function safeId(id, file) {
     throw new ContractError('unsafe id (path traversal rejected): ' + JSON.stringify(id), file);
   }
 
+  if (/^(con|prn|aux|nul|com[1-9]|lpt[1-9])(\.|$)/i.test(id)) {
+    throw new ContractError('unsafe id (Windows reserved device name): ' + JSON.stringify(id), file);
+  }
+
   return id;
 }
 
