@@ -293,6 +293,15 @@ export function mergeClusters(runDir) {
     }
   }
 
+  const TOTAL_RAW_CEILING = CEILINGS.MAX_FETCH * CEILINGS.MAX_VERIFY_CLAIMS;
+
+  if (raw.length > TOTAL_RAW_CEILING) {
+    throw new ContractError(
+      'total pre-merge claims exceed ceiling (' + raw.length + '>' + TOTAL_RAW_CEILING + ')',
+      claimsDir,
+    );
+  }
+
   const clusters = [];
 
   for (const c of raw) {

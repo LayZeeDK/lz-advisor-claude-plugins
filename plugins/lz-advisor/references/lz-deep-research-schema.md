@@ -471,7 +471,7 @@ Enforcement is split across two stages:
 | `VOTES_PER_CLAIM` | 3 | Aggregator (`tally`) | Vote seats read per claim; extra seats are ignored and counted into `caps.votes_ignored`. |
 | `SYNTH_CAP` | 20 | Aggregator (`aggregate`) | The `survivors` output array (the cap is recorded in `caps.synth`). |
 | `ANGLES` | 5 | Phase-20 orchestrator (at wave dispatch) | Number of decomposition angles / search waves. CARRIED by the aggregator, not enforced by it. |
-| `MAX_FETCH` | 15 | Phase-20 orchestrator (at wave dispatch) | Max distinct fetches per run. CARRIED by the aggregator, not enforced by it. |
+| `MAX_FETCH` | 15 | Aggregator (`mergeClusters`, aggregate raw-claims ceiling: `MAX_FETCH * MAX_VERIFY_CLAIMS` = 360); Phase-20 orchestrator (dispatch) | Max distinct fetches per run. NOW ALSO enforced by the aggregator as the aggregate raw-claims ceiling (`MAX_FETCH * MAX_VERIFY_CLAIMS` = 360 total pre-merge claims across all worker files). |
 
 Every cap fires observably: the aggregator records each fired cap in the `caps`
 object and surfaces it in the stdout summary's `capped:` line (no silent
