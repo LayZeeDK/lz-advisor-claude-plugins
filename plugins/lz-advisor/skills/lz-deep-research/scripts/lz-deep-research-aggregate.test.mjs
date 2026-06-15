@@ -97,3 +97,85 @@ test('SC5-5 over-ceiling input capped observably + CEILINGS is the single frozen
   assert.equal(Object.isFrozen(CEILINGS), true);
   assert.equal(CEILINGS.MAX_VERIFY_CLAIMS, 24);
 });
+
+// ---------------------------------------------------------------------------
+// Hardening sub-assertions: CRLF/BOM normalization, determinism, zero-dep
+// ---------------------------------------------------------------------------
+
+test('SC-2 normalize strips BOM, folds CRLF, folds number-word, drops percent', () => {
+  // A leading byte-order mark (generated at runtime, never a literal source byte) plus a trailing
+  // CRLF plus the number-word "Thirty" plus "percent" all normalize away to the bare token "30".
+  const input = String.fromCharCode(0xfeff) + 'Thirty percent\r\n';
+  assert.equal(normalize(input), '30');
+});
+
+test('SC-2 CRLF+BOM excerpt (written at runtime) still matches an LF quote (verified) -- Layer A+B on host', () => {
+  // Author the ONLY BOM/CRLF byte sequence of this phase HERE at runtime, so no non-ASCII byte is
+  // ever committed. The committed crlf-bom-safe run-dir holds only pure-ASCII claim/vote files;
+  // the excerpt is produced now via String.fromCharCode(0xFEFF) + CRLF newlines.
+  const excerptsDir = path.join(fx('crlf-bom-safe'), 'excerpts');
+  fs.mkdirSync(excerptsDir, { recursive: true });
+  const bomCrlfBody =
+    String.fromCharCode(0xfeff) +
+    'The study found that X reduces Y by 30% across all trials.\r\n';
+  fs.writeFileSync(path.join(excerptsDir, 'e1.txt'), bomCrlfBody, 'utf8');
+
+  const r = aggregate(fx('crlf-bom-safe'));
+
+  // The LF/ASCII quote still matches the BOM+CRLF excerpt -> the claim survives as 'verified',
+  // proving normalize()'s BOM strip + CRLF->LF fold (Layer A+B) on the actual host.
+  assert.equal(r.dropped.length, 0);
+  assert.equal(r.survivors.length, 1);
+  assert.equal(r.survivors[0].quote_fidelity, 'verified');
+});
+
+test('SC-1 aggregate is deterministic (same input -> deep-equal output)', () => {
+  // Reproducibility (AGG-01): two calls over the same committed run-dir produce identical output.
+  const a = aggregate(fx('near-duplicate-merged'));
+  const b = aggregate(fx('near-duplicate-merged'));
+  assert.deepEqual(a, b);
+});
+
+test('SC-2 zero-dependency contract: aggregator imports only node:/relative, no package.json in repo', () => {
+  // The aggregator source must import ONLY node: builtins or relative (./) modules -- no
+  // third-party dependency (AGG-02, T-16-06). Any non-node:/non-./ import is a constraint
+  // violation to reject.
+  const src = fs.readFileSync(path.join(HERE, 'lz-deep-research-aggregate.mjs'), 'utf8');
+  const importRe = /\bfrom\s+['"]([^'"]+)['"]/g;
+  let m;
+
+  while ((m = importRe.exec(src)) !== null) {
+    const spec = m[1];
+    assert.ok(
+      spec.startsWith('node:') || spec.startsWith('./') || spec.startsWith('../'),
+      'non-node:/non-relative import found in aggregator: ' + spec,
+    );
+  }
+
+  // No package.json anywhere from the scripts dir UP TO (and including) the repo root (zero-dep,
+  // no install surface). Walk up from HERE, checking each level for package.json, and STOP at the
+  // repo root (the dir containing .git) so a package.json outside this repo on the host cannot
+  // cause a false failure.
+  let dir = HERE;
+
+  for (;;) {
+    assert.equal(
+      fs.existsSync(path.join(dir, 'package.json')),
+      false,
+      'unexpected package.json at ' + dir + ' (zero-dependency contract)',
+    );
+
+    // Stop once we have checked the repo root.
+    if (fs.existsSync(path.join(dir, '.git'))) {
+      break;
+    }
+
+    const parent = path.dirname(dir);
+
+    if (parent === dir) {
+      break;
+    }
+
+    dir = parent;
+  }
+});
