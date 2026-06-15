@@ -4,7 +4,7 @@
 **Milestone:** v2.1.0 -- the `lz-deep-research` skill (decompose -> parallel search -> fetch -> extract -> adversarial-verify -> cited report)
 **Core Value:** Near-Opus intelligence at Sonnet cost, achieved through strategic advisor consultation at high-leverage moments rather than running Opus end-to-end -- now extended from coding tasks to deep research.
 
-> **Scope decisions (2026-06-15):** (1) Platform floor = Anthropic first-party API only; Bedrock/Vertex out of scope. (2) The pre-registered Haiku-first gating eval is IN scope for this milestone (Sonnet-default voters ship regardless; Haiku-first flips only if the eval clears). (3) The `.lz-research/<run-id>/` run dir is retained (gitignored) as the audit trail. (4) Release / publication (version sync, CHANGELOG/README, tag + GitHub Release) is handled during `/gsd-complete-milestone` AFTER `/gsd-audit-milestone` passes -- so audit findings can be resolved before publishing -- and is NOT a build phase. The aggregator is a skill-internal helper in `skills/lz-deep-research/scripts/`, NOT a top-level `bin/` (verified 2026-06-15).
+> **Scope decisions (2026-06-15):** (1) Platform floor = Anthropic first-party API only; Bedrock/Vertex out of scope. (2) The pre-registered Haiku gating eval is IN scope and runs EARLY (right after the schema, before the search/extract workers and the orchestrator), decoupled from the pipeline. A dedicated deep-research pass on Haiku prompt engineering precedes authoring ANY Haiku agent (the verify-voter Haiku variant AND the Haiku search worker), so the eval tests a fair, research-grounded Haiku prompt -- never `model: haiku` on a Sonnet prompt. Sonnet-default voters ship regardless; Haiku-first flips ON only if the research-grounded eval clears, and if it shows Haiku non-viable the decision is RAISED TO THE USER (not auto-resolved). (3) The `.lz-research/<run-id>/` run dir is retained (gitignored) as the audit trail. (4) Release / publication (version sync, CHANGELOG/README, tag + GitHub Release) is handled during `/gsd-complete-milestone` AFTER `/gsd-audit-milestone` passes -- so audit findings can be resolved before publishing -- and is NOT a build phase. The aggregator is a skill-internal helper in `skills/lz-deep-research/scripts/`, NOT a top-level `bin/` (verified 2026-06-15).
 
 ## v1 Requirements
 
@@ -51,8 +51,9 @@ Requirements for the v2.1.0 milestone. Each maps to exactly one roadmap phase.
 
 - [ ] **EVAL-01**: A pre-registered evaluation dataset of at least 60-100 labeled claims exists, stratified (~40% supported / ~60% bad, with about half the bad claims SUBTLE overreach), covering BOTH closed-book and open-book voting.
 - [ ] **EVAL-02**: The eval runs each claim k>=5 and reports Pass@1, Pass^k, and the false-uphold rate per stratum.
-- [ ] **EVAL-03**: The Haiku-first flag is flipped ON only if the eval shows ~0 open-book false-upholds on the SUBTLE subset AND escalation fraction keeps cost materially below all-Sonnet (kill if escalation exceeds ~40-50%); otherwise Sonnet-default stays the shipping default.
+- [ ] **EVAL-03**: The Haiku-first flag is flipped ON only if the research-grounded eval shows ~0 open-book false-upholds on the SUBTLE subset AND escalation fraction keeps cost materially below all-Sonnet (kill if escalation exceeds ~40-50%). If the eval shows Haiku non-viable, the resulting decision (drop the Haiku variant, retain it behind the OFF flag, or invest further) is RAISED TO THE USER rather than auto-resolved; Sonnet-default ships in the interim.
 - [ ] **EVAL-04**: The lock rule (the exact pass/kill thresholds and the false-uphold-as-sole-hard-gate decision) is written down BEFORE the eval runs, so the verdict cannot be rationalized post-hoc.
+- [ ] **EVAL-05**: The Haiku voter prompt under eval is engineered from a dedicated deep-research pass on Haiku prompt-engineering patterns and techniques (captured as a reference artifact), so the eval is a fair best-effort test of Haiku rather than a Sonnet prompt run on `model: haiku`. This research precedes authoring ANY Haiku agent (the verify-voter Haiku variant and the Haiku search worker). The research is grounded in CURRENT authoritative sources -- the Claude Code Guide / Claude Code Docs + web -- with every load-bearing technique verified; the local `lz-nx-ai-plugins` `MODEL-OPTIMIZATION-HAIKU.md` is a NON-AUTHORITATIVE starting point whose details are treated as potentially stale until verified.
 
 ### Integration (INTEG)
 
@@ -98,50 +99,53 @@ Explicitly excluded. Documented to prevent scope creep and to record the anti-fe
 
 ## Traceability
 
-Which phase covers which requirement. Phases filled in during roadmap creation.
+Which phase covers which requirement. Filled in during roadmap creation (2026-06-15) and revised the same day (gating eval moved early to Phase 18; EVAL-05 added). Every one of the 32 phased requirements maps to exactly one of Phases 16-20.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| PIPE-01 | TBD | Pending |
-| PIPE-02 | TBD | Pending |
-| PIPE-03 | TBD | Pending |
-| PIPE-04 | TBD | Pending |
-| PIPE-05 | TBD | Pending |
-| PIPE-06 | TBD | Pending |
-| PIPE-07 | TBD | Pending |
-| PIPE-08 | TBD | Pending |
-| PIPE-09 | TBD | Pending |
-| VERIF-01 | TBD | Pending |
-| VERIF-02 | TBD | Pending |
-| VERIF-03 | TBD | Pending |
-| VERIF-04 | TBD | Pending |
-| VERIF-05 | TBD | Pending |
-| VERIF-06 | TBD | Pending |
-| AGG-01 | TBD | Pending |
-| AGG-02 | TBD | Pending |
-| AGG-03 | TBD | Pending |
-| AGG-04 | TBD | Pending |
-| AGG-05 | TBD | Pending |
-| AGG-06 | TBD | Pending |
-| COST-01 | TBD | Pending |
-| COST-02 | TBD | Pending |
-| COST-03 | TBD | Pending |
-| COST-04 | TBD | Pending |
-| EVAL-01 | TBD | Pending |
-| EVAL-02 | TBD | Pending |
-| EVAL-03 | TBD | Pending |
-| EVAL-04 | TBD | Pending |
-| INTEG-01 | TBD | Pending |
-| INTEG-02 | TBD | Pending |
+| AGG-01 | Phase 16 | Pending |
+| AGG-02 | Phase 16 | Pending |
+| AGG-04 | Phase 16 | Pending |
+| AGG-06 | Phase 16 | Pending |
+| VERIF-04 | Phase 16 | Pending |
+| PIPE-07 | Phase 17 | Pending |
+| VERIF-06 | Phase 17 | Pending |
+| VERIF-01 | Phase 18 | Pending |
+| VERIF-02 | Phase 18 | Pending |
+| VERIF-03 | Phase 18 | Pending |
+| COST-02 | Phase 18 | Pending |
+| EVAL-01 | Phase 18 | Pending |
+| EVAL-02 | Phase 18 | Pending |
+| EVAL-03 | Phase 18 | Pending |
+| EVAL-04 | Phase 18 | Pending |
+| EVAL-05 | Phase 18 | Pending |
+| PIPE-03 | Phase 19 | Pending |
+| PIPE-04 | Phase 19 | Pending |
+| PIPE-05 | Phase 19 | Pending |
+| AGG-03 | Phase 19 | Pending |
+| PIPE-01 | Phase 20 | Pending |
+| PIPE-02 | Phase 20 | Pending |
+| PIPE-06 | Phase 20 | Pending |
+| PIPE-08 | Phase 20 | Pending |
+| PIPE-09 | Phase 20 | Pending |
+| VERIF-05 | Phase 20 | Pending |
+| AGG-05 | Phase 20 | Pending |
+| COST-01 | Phase 20 | Pending |
+| COST-03 | Phase 20 | Pending |
+| COST-04 | Phase 20 | Pending |
+| INTEG-01 | Phase 20 | Pending |
+| INTEG-02 | Phase 20 | Pending |
 
 Release requirements (REL-01..03) are handled during `/gsd-complete-milestone`, not mapped to build phases.
 
 **Coverage:**
-- v1 phased requirements: 31 total
-- Mapped to phases: 0 (roadmap pending)
-- Unmapped: 31 (filled by roadmapper)
+- v1 phased requirements: 32 total
+- Mapped to phases: 32 (100% -- no orphans, no duplicates)
+- Unmapped: 0
 - Release requirements (completion-gated, not phased): 3
+
+**Per-phase counts:** Phase 16 = 5 (AGG-01/02/04/06, VERIF-04); Phase 17 = 2 (PIPE-07, VERIF-06); Phase 18 = 9 (VERIF-01/02/03, COST-02, EVAL-01/02/03/04/05); Phase 19 = 4 (PIPE-03/04/05, AGG-03); Phase 20 = 12 (PIPE-01/02/06/08/09, VERIF-05, AGG-05, COST-01/03/04, INTEG-01/02). 5 + 2 + 9 + 4 + 12 = 32.
 
 ---
 *Requirements defined: 2026-06-15*
-*Last updated: 2026-06-15 after initial definition for milestone v2.1.0*
+*Last updated: 2026-06-15 -- traceability REVISED by roadmapper: gating eval moved EARLY (Phase 18, decoupled from the orchestrator), EVAL-05 (Haiku prompt-engineering research precedes any Haiku agent) added, EVAL-03 kill-path raised to the user. All 32 phased requirements mapped to Phases 16-20 (100% coverage). REL-01..03 left completion-gated.*
