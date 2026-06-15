@@ -142,7 +142,7 @@ The PIPE-05 worker-input shape, read by `mergeClusters`. One file per worker; a
 
 | Field | Type | Required | Notes |
 |-------|------|----------|-------|
-| `worker` | string | yes | The producing worker id. |
+| `worker` | string | informational (not enforced by aggregator) | The producing worker id. Not read by `mergeClusters`; included for human readability and Phase 19 traceability only. |
 | `source` | string | yes (fail-closed) | The canonical source key (D-08). `mergeClusters` rejects a missing or empty `source` (WR-03): a missing source would leak `null` into the frozen `sources[]` and silently under-count corroboration. |
 | `claims[].id` | string | yes (fail-closed) | Claim id; used as the first-member fallback for the vote-file lookup. `mergeClusters` rejects a missing or empty `id` (AGG-1; test co-labeled WR-04 for the SC-4 acceptance anchor: `ContractError('claim missing non-empty id', ...)`). Without the guard a missing `id` coerces to the literal `"undefined"` in `tally()`'s member-id vote-file fallback (`votes/undefined-0.json`), cross-contaminating vote tallies across all id-less claims. |
 | `claims[].text` | string | yes (fail-closed) | The claim text; becomes the survivor `claim`. `mergeClusters` rejects a missing or empty `text` (WR-02). |
@@ -398,14 +398,17 @@ The frozen field set, IN THIS ORDER:
 | `id` | string | `cluster<N>` | Aggregator (`mergeClusters`) | Cluster id by first-seen order. |
 | `claim` | string | -- | Aggregator | The cluster's representative claim text (first member's `text`). |
 | `sources` | string[] | canonical source keys, sorted ascending | Aggregator | Distinct source ids only; no raw excerpt text. |
-| `corroboration_lower_bound` | integer | `cluster.sources.size` | Aggregator | A distinct-source LOWER bound (see caveat). |
+| `corroboration_lower_bound` | integer | `cluster.sources.size` (POST-recheck) | Aggregator | A distinct-source LOWER bound (see caveat). Value is the post-`recheckClusters` distinct-source count: sources whose ONLY member was quote-dropped no longer appear in this Set. A 3-source merge-time cluster that loses 2 sources to fabricated-quote drops emits `corroboration_lower_bound: 1`. The schema's merge-time under-count (D-09) and this post-recheck narrowing are both intentional: only sources with at least one verifiable quote contribute to the count. |
 | `quote_fidelity` | string | `verified \| downgraded` | Aggregator | Assurance 1. |
 | `confidence` | string | `High \| Medium \| Low \| Contested \| Unsupported` | Aggregator (`tally`); synthesis may promote to `Contested` | Mandated on every survivor record (SC-3). |
 
 **Corroboration is a lower bound (caveat).** `corroboration_lower_bound` is the
-size of the distinct-source Set, never an exact independence count. Two
-paraphrases from ONE source count as 1, not 2 (the merge keeps the under-count
-bias, D-09). It is a floor on independent corroboration, not a precise measure.
+size of the distinct-source Set AFTER `recheckClusters`, never an exact independence count.
+Two under-counts apply: (1) the merge-time under-count: two paraphrases from ONE source count
+as 1, not 2 (D-09); (2) the post-recheck narrowing: if a source's only member is quote-dropped
+(fabricated or absent from all excerpts), that source no longer appears in the cluster's Set.
+Both are intentional -- only sources with at least one verifiable quote contribute. It is a
+floor on independent corroboration, not a precise measure.
 
 ## The report claim record (stage 2)
 
