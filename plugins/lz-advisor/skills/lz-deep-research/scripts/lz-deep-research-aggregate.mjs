@@ -178,18 +178,25 @@ function readJson(p) {
 
 // Sorted directory listing of *.json (Pitfall 1: readdirSync order is OS-dependent; sort for
 // reproducibility / AGG-01). Returns [] when the subdir is absent.
-function listJson(dir) {
+//
+// `readdir` is an INJECTABLE seam (default fs.readdirSync) so the .sort() determinism guarantee can
+// be tested HOST-INDEPENDENTLY (WR-01): some filesystems -- NTFS/ReFS on this host included -- return
+// readdirSync entries already in lexical order, which would mask a dropped .sort() from any black-box
+// test that relies on real on-disk read order. Injecting a deliberately UNSORTED listing lets TEST-2
+// prove that removing this .sort() changes the output on ANY host. Production callers omit the arg
+// and are byte-for-byte unaffected.
+export function listJson(dir, readdir = fs.readdirSync) {
   if (!fs.existsSync(dir)) {
     return [];
   }
 
-  // AGG-7: wrap the bare readdirSync so a permission/IO failure rethrows as a ContractError carrying
+  // AGG-7: wrap the bare readdir call so a permission/IO failure rethrows as a ContractError carrying
   // .file, consistent with readJson. The existsSync pre-check screens the common absent-dir case; this
   // try/catch screens permission/IO failures.
   let entries;
 
   try {
-    entries = fs.readdirSync(dir);
+    entries = readdir(dir);
   } catch (err) {
     throw new ContractError('cannot read dir: ' + err.message, dir);
   }
@@ -236,8 +243,10 @@ export function mergeClusters(runDir) {
       // otherwise coerces to the literal string "undefined" in tally()'s member-id vote-file fallback
       // (safeId(String(cl.members[0].id)) -> votes/undefined-0.json), cross-contaminating vote tallies
       // across ALL id-less claims. The member-id fallback is in active use: the wrong-passage-downgraded
-      // and fabricated-quote-dropped committed fixtures name their vote files by member id (e.g.
-      // c1-0.json). Validate id FIRST (before text/quote) so the member is never used with a bad id.
+      // committed fixture names its vote files by member id (c1-0.json) and reaches tally via that
+      // fallback (its claim survives as `downgraded`). (The fabricated-quote-dropped fixture's
+      // member-id vote files are never read -- its claim drops at the quote re-check, upstream of
+      // tally.) Validate id FIRST (before text/quote) so the member is never used with a bad id.
       if (typeof c.id !== 'string' || c.id.length === 0) {
         throw new ContractError('claim missing non-empty id', path.join(claimsDir, f));
       }
@@ -254,7 +263,12 @@ export function mergeClusters(runDir) {
         throw new ContractError('claim missing non-empty quote', path.join(claimsDir, f));
       }
 
-      raw.push({ ...c, source: w.source });
+      // _file carries the originating claims-file path so a downstream ContractError (e.g. a
+      // path-traversal excerpt_id rejected in quoteOutcome) can annotate WHICH worker authored the
+      // bad value (WR-02), matching the AGG-5/6/7 ".file on every contract abort" discipline. It is
+      // an internal field: the survivor record (aggregate()) is built explicitly and never spreads
+      // the member, so _file does not leak into survivors.json.
+      raw.push({ ...c, source: w.source, _file: path.join(claimsDir, f) });
     }
   }
 
@@ -354,7 +368,10 @@ export function quoteOutcome(member, excerptsById, allExcerpts) {
   // data (e.g. '../../etc/passwd') makes safeId throw ContractError, ABORTING the entire run rather
   // than silently skipping this member. This is intentional -- consistent with the ContractError
   // discipline for all other required fields (id/text/quote/source). Do NOT switch to a fail-soft skip.
-  const citedId = member.excerpt_id == null ? null : safeId(String(member.excerpt_id));
+  // WR-02: pass member._file (the originating claims-file path, stamped in mergeClusters) as safeId's
+  // file arg so the abort carries .file and the CLI's `(${err.file})` annotation names the worker that
+  // authored the malicious id -- the provenance matters most precisely on this security path.
+  const citedId = member.excerpt_id == null ? null : safeId(String(member.excerpt_id), member._file);
   const cited = citedId == null ? undefined : excerptsById.get(citedId);
 
   // WR-04 (accepted, frozen): the re-check is a normalized-SUBSTRING test (.includes on the
