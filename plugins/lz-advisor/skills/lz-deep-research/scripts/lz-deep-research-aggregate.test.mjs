@@ -567,6 +567,20 @@ test('SC5-5 over-ceiling input capped observably + CEILINGS is the single frozen
   // Single frozen source of truth for the named ceilings (D-10).
   assert.equal(Object.isFrozen(CEILINGS), true);
   assert.equal(CEILINGS.MAX_VERIFY_CLAIMS, 24);
+
+  // I-3: pin which clusters survive the caps (rank-order assertion, not just count).
+  // cluster0 has corroboration 3 (s01 + s-multi-a + s-multi-b, all merged at Jaccard 1.0) and
+  // ranks first. The next survivors are lexically-ordered singletons. Removing or reversing
+  // rankClusters would leave the count assertions green but fail these.
+  assert.equal(r.survivors[0].id, 'cluster0', 'cluster0 (corroboration 3) ranks first');
+  assert.equal(r.survivors[0].corroboration_lower_bound, 3, 'cluster0 has 3 verified sources');
+  // I-4: corroboration-DESC primary sort is active (cluster0 outranks all corroboration-1 singletons).
+  // A regression deleting the cb-ca branch in rankClusters would reorder survivors lexically,
+  // putting a singleton ahead of cluster0 and failing this assertion.
+  assert.ok(
+    r.survivors.slice(1).every((s) => s.corroboration_lower_bound < 3),
+    'all other survivors have lower corroboration than cluster0',
+  );
 });
 
 // ---------------------------------------------------------------------------
