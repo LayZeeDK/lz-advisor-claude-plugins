@@ -248,7 +248,7 @@ For a member's normalized quote `nq = normalize(member.quote)`:
 This is the only path that removes a claim. The vote tally NEVER deletes a claim
 (see "downgrade-not-delete" in the tally rubric). Source: `recheckClusters`.
 
-### WR-04 caveat (normalized-substring is a lower-bound match)
+### QR-01 caveat (normalized-substring is a lower-bound match)
 
 The re-check is a normalized-SUBSTRING test (`.includes` on the space-joined
 token string), NOT a token-sequence or word-boundary test. A short numeric quote

@@ -382,7 +382,7 @@ export function quoteOutcome(member, excerptsById, allExcerpts) {
   const citedId = member.excerpt_id == null ? null : safeId(String(member.excerpt_id), member._file);
   const cited = citedId == null ? undefined : excerptsById.get(citedId);
 
-  // WR-04 (accepted, frozen): the re-check is a normalized-SUBSTRING test (.includes on the
+  // QR-01 (accepted, frozen): the re-check is a normalized-SUBSTRING test (.includes on the
   // space-joined token string), NOT a token-sequence/boundary test. A short numeric quote can
   // therefore match inside a longer token -- e.g. normalize('30') is "present" in
   // normalize('the rate is 130 overall') because "...130 overall".includes("30") is true. This is
