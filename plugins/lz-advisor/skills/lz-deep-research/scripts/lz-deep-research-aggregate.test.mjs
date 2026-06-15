@@ -118,8 +118,11 @@ test('PIPE-07 Low tier (downgrade-not-delete, D-03b): 3/3 refuted -> Low AND cla
 });
 
 test('PIPE-07 Contested tier (D-03): >=1 unrefuted AND >=1 refuted -> confidence Contested', () => {
-  // A voter split (cluster0-0 unrefuted, cluster0-1 refuted) -> the split branch fires BEFORE
-  // the Medium branch, so the dissent is surfaced as Contested rather than silently Medium.
+  // Discriminating split: cluster0-0 + cluster0-2 unrefuted, cluster0-1 refuted (2 unrefuted, 1 refuted).
+  // Because unrefuted === 2 here, the Contested split branch MUST fire BEFORE the unrefuted === 2 Medium
+  // branch -- if the two branches were swapped this fixture would return Medium and erase the dissent
+  // (Pitfall 2). A 1-unrefuted/1-refuted fixture cannot catch that swap, so this case actively guards the
+  // ordering invariant, not merely that Contested is emitted on a split.
   const r = aggregate(fx('contested-split'));
   assert.equal(r.survivors.length, 1);
   assert.equal(r.survivors[0].confidence, 'Contested');
