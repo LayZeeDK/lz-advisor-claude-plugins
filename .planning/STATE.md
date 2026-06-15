@@ -2,14 +2,14 @@
 gsd_state_version: 1.0
 milestone: v2.1.0
 milestone_name: lz-deep-research skill
-status: planning
+status: executing
 stopped_at: Phase 16 context gathered
-last_updated: "2026-06-15T06:08:37.182Z"
-last_activity: 2026-06-15 -- Milestone v2.1.0 roadmap REVISED (gating eval moved early to Phase 18; EVAL-05 added)
+last_updated: "2026-06-15T06:58:20.334Z"
+last_activity: 2026-06-15 -- Phase 16 planning complete
 progress:
   total_phases: 5
   completed_phases: 0
-  total_plans: 0
+  total_plans: 2
   completed_plans: 0
   percent: 0
 ---
@@ -39,8 +39,8 @@ Items deferred across milestones (v1.0.1 close 2026-06-11; v2.0.0 additions tagg
 
 Phase: 16 (Deterministic off-model aggregator + validation fixture) -- not started
 Plan: -
-Status: Roadmap created + revised; ready to plan Phase 16
-Last activity: 2026-06-15 -- Milestone v2.1.0 roadmap REVISED (gating eval moved early to Phase 18; EVAL-05 added)
+Status: Ready to execute
+Last activity: 2026-06-15 -- Phase 16 planning complete
 
 ### Milestone v2.1.0 roadmap (REVISED 2026-06-15)
 
