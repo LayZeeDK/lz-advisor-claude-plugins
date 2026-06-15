@@ -265,12 +265,101 @@ test('WR-03 worker file missing source fails closed (aggregate throws, no null i
   assert.throws(() => aggregate(runDir), /missing non-empty source/);
 });
 
+test('WR-04 claim missing id fails closed (aggregate throws)', () => {
+  // TEST-3: a missing claims[].id otherwise coerced to the literal string "undefined" in tally()'s
+  // member-id vote-file fallback (votes/undefined-0.json), cross-contaminating vote tallies across
+  // ALL id-less claims. The AGG-1 guard (Plan 17.1-01) now fails closed instead. This test passes
+  // ONLY because that guard exists -- it is the regression lock for AGG-1.
+  const runDir = tmpRunDirWithWorker({
+    worker: 'w1',
+    source: 's1',
+    claims: [{ text: 'X reduces Y by 30%', quote: 'X reduces Y by 30%', excerpt_id: 'e1' }],
+  });
+
+  try {
+    assert.throws(() => aggregate(runDir), /missing non-empty id/);
+  } finally {
+    fs.rmSync(runDir, { recursive: true, force: true });
+  }
+});
+
+test('TEST-2 cross-file-order stability: survivors[0] is independent of claims-file read order (listJson sort)', () => {
+  // TEST-2 (Important): build a run-dir with TWO non-mergeable claims in worker files whose
+  // ALPHABETICAL order (a-worker.json, z-worker.json) differs from CREATION order (z first, a
+  // second). Each claim has disjoint token sets (jaccard < 0.6 -> never cluster together) and the
+  // SAME corroboration (1 distinct source each), so rankClusters' normalized-text lexical tiebreak
+  // decides survivor order. The a-worker claim normalizes to "alpha beats beta always" and the
+  // z-worker claim to "zeta tops omega daily" -- "alpha..." sorts lexically before "zeta...", so
+  // survivors[0] MUST be the a-worker claim. This is stable ONLY because listJson sorts the
+  // directory listing before processing; if listJson's .sort() were removed, readdirSync's raw OS
+  // order could surface z-worker first and (combined with any non-deterministic downstream order)
+  // would let the output drift. The load-bearing property: read order does not change the output.
+  const runDir = fs.mkdtempSync(path.join(os.tmpdir(), 'lz-dr-order-'));
+  const claimsDir = path.join(runDir, 'claims');
+  const excerptsDir = path.join(runDir, 'excerpts');
+  fs.mkdirSync(claimsDir, { recursive: true });
+  fs.mkdirSync(excerptsDir, { recursive: true });
+
+  try {
+    const aClaim = 'alpha beats beta always';
+    const zClaim = 'zeta tops omega daily';
+
+    // Write z-worker.json FIRST, a-worker.json SECOND -- creation order is the reverse of
+    // alphabetical order, so this discriminates listJson's sort from readdirSync's raw order.
+    fs.writeFileSync(
+      path.join(claimsDir, 'z-worker.json'),
+      JSON.stringify({
+        worker: 'wz',
+        source: 'sz',
+        claims: [{ id: 'cz', text: zClaim, quote: zClaim, excerpt_id: 'ez' }],
+      }),
+      'utf8',
+    );
+    fs.writeFileSync(
+      path.join(claimsDir, 'a-worker.json'),
+      JSON.stringify({
+        worker: 'wa',
+        source: 'sa',
+        claims: [{ id: 'ca', text: aClaim, quote: aClaim, excerpt_id: 'ea' }],
+      }),
+      'utf8',
+    );
+
+    // Matching excerpts so both claims survive the quote re-check (else they would be dropped).
+    fs.writeFileSync(path.join(excerptsDir, 'ea.txt'), 'The trial showed alpha beats beta always.', 'utf8');
+    fs.writeFileSync(path.join(excerptsDir, 'ez.txt'), 'The report says zeta tops omega daily.', 'utf8');
+
+    const r = aggregate(runDir);
+
+    // Both distinct claims survive as separate clusters (precondition: they did not merge).
+    assert.equal(r.survivors.length, 2, 'two disjoint claims must form two distinct clusters');
+
+    // Load-bearing: the alphabetically-first worker's claim is survivors[0] regardless of the
+    // z-before-a creation order on disk. listJson's .sort() normalizes the read order away.
+    assert.equal(r.survivors[0].claim, aClaim, 'survivors[0] must be the alphabetically-first worker claim');
+
+    // Strengthening cross-check: a second run over the SAME run-dir is byte-identical (AGG-01).
+    const r2 = aggregate(runDir);
+    assert.deepEqual(r, r2, 'aggregate must be deterministic over the same run-dir');
+  } finally {
+    fs.rmSync(runDir, { recursive: true, force: true });
+  }
+});
+
 test('SC5-5 over-ceiling input capped observably + CEILINGS is the single frozen source', () => {
   const r = aggregate(fx('ceilings-enforced'));
 
   // 31 distinct non-mergeable clusters -> MAX_VERIFY_CLAIMS cap fires observably (no silent
   // truncation, D-11): the summary carries `claims 31->24`.
   assert.match(r.summary, /claims \d+->24/);
+
+  // TEST-1 (Important): the SAME fixture ALSO trips SYNTH_CAP (24 ranked survivors -> 20 emitted).
+  // Without these three assertions SC5-5 was tautological against the SYNTH_CAP axis: removing the
+  // SYNTH_CAP drop logic would leave 24 survivors and the test still passes. These make a SYNTH_CAP
+  // regression FAIL the suite -- the synth marker would vanish and survivors.length would be 24.
+  assert.match(r.summary, /synth \d+->20/);
+  assert.equal(r.survivors.length, 20);
+  assert.equal(CEILINGS.SYNTH_CAP, 20);
 
   // Single frozen source of truth for the named ceilings (D-10).
   assert.equal(Object.isFrozen(CEILINGS), true);
