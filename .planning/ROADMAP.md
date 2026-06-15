@@ -109,12 +109,12 @@ Full phase details, success criteria, and decision logs are archived in [milesto
 - Configure a `concurrency` strategy on the workflow (group by ref/workflow with in-progress cancellation) so superseded runs on the same branch/PR are cancelled.
 - Configure least-privilege `permissions` for the workflow (default-minimal `contents: read`, granting only what each job needs).
 
-**Requirements**: TBD (run /gsd-plan-phase 17.3 to break down)
+**Requirements**: CI-01 (Node LTS pin), CI-02 (test job + glob discovery), CI-03 (fail-closed coverage gate), CI-04 (concurrency cancel), CI-05 (least-privilege permissions)
 **Depends on:** Phase 17
-**Plans:** 0 plans
+**Plans:** 1 plan
 
 Plans:
-- [ ] TBD (run /gsd-plan-phase 17.3 to break down)
+- [ ] 17.3-01-PLAN.md -- Measure coverage on Node 24, add the node:coverage bootstrap pragma (D-03), then author .node-version (lts/krypton) + .github/workflows/ci.yml (SHA-pinned actions, glob test discovery, fail-closed coverage gate, concurrency, contents:read)
 
 ### Phase 17.1: Address Phase 16/17 review findings (INSERTED)
 
