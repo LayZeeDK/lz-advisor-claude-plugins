@@ -5,136 +5,156 @@
 
 **Date:** 2026-06-15
 **Phase:** 17-json-schema-verification-contract-reference
-**Mode:** `--auto --analyze --chain` -- fully autonomous; no AskUserQuestion. Each gray area auto-resolved
-to the recommended option; the `--analyze` trade-off table is logged below for the audit trail.
+**Mode:** `--auto --analyze --chain` for GA-2..GA-5 (autonomous; recommended-option selection; trade-off
+tables retained). GA-1 was ESCALATED out of auto-mode after the user challenged the auto-resolved answer,
+and was re-decided by a repo-blind three-round cross-model consensus consult.
 **Areas discussed:** Confidence-enum reconciliation, Two-assurance field shape, Source-metadata record,
 Vote-record envelope, Schema file location + anti-drift discipline
 
 `[--auto] Selected all gray areas: Confidence-enum reconciliation, Two-assurance field shape, Source-metadata record, Vote-record envelope, Schema file location + anti-drift discipline.`
 
+(Selected option marked `[X]` below.)
+
 ---
 
-## Confidence-enum reconciliation (GA-1)
+## Confidence-enum reconciliation (GA-1) -- re-decided by cross-model consensus
 
-The aggregator's frozen `confidence` field emits `High | Medium | Low/Contested | Rejected | Unsupported`
-(Low and Contested COMBINED; `Rejected` present), but PIPE-07 / ROADMAP SC-2 mandate the report enum
-`High | Medium | Low | Contested | Unsupported` (Low and Contested SPLIT; no `Rejected`).
+The aggregator's `confidence` field emits `High | Medium | Low/Contested | Rejected | Unsupported`
+(Low and Contested COMBINED; `Rejected` present). PIPE-07 / ROADMAP SC-2 mandate
+`High | Medium | Low | Contested | Unsupported` (Low and Contested SEPARATE; no `Rejected`).
+
+### Auto-resolved answer (rejected by the user)
+
+The `--auto` pass initially selected a two-field model: keep the aggregator `confidence` label verbatim
+AND add a parallel `report_confidence` (PIPE-07 enum) with a frozen mapping table. The user rejected this:
+"We can't have drift between Phase 16 and Phase 17 vocabulary in code" -- two vocabularies for one concept
+IS the drift.
+
+### Provenance investigation (why the code diverged)
+
+- `Rejected` originated in the throwaway spike (`plans/_spike/aggregate-spike.mjs` `tally()`:
+  `refuted >= 2 -> 'Rejected'`); the spike also omitted `Unsupported`.
+- It entered the built aggregator ONLY via the Phase-16 plan instruction "PRESERVE the spike tally rubric
+  arithmetic verbatim" -- which OVERRODE Phase 16's own research (`16-RESEARCH.md` recommended
+  `High | Medium | Low/Contested | Unsupported`, no `Rejected`).
+- `Rejected` was NEVER deliberated (absent from 16-CONTEXT / 16-DISCUSSION-LOG; Phase 16 discuss was `--auto`).
+- The converged design (`SESSION-DESIGN.md:93`) has no `Rejected`; refuted = downgrade-not-delete.
+- Conclusion: an accidental, un-reviewed spike artifact, not a reasoned design choice -- earns no deference.
+
+### Cross-model consensus protocol (repo-blind; advisors decided, executor relayed/verified)
+
+Three independent model families consulted ONLY on curated facts (no repo/web access; could ask the executor
+to verify) -- the plugin's own advisor-strategy contract. The open sub-question: who assigns `Contested`?
+- **Option I:** the deterministic tally emits `Contested` on a per-claim voter split (>=1 unrefuted AND
+  >=1 refuted); synthesis may additionally promote cross-source contradictions to the same value.
+- **Option II:** the tally emits only `{High, Medium, Low, Unsupported}`; `Contested` is synthesis-only.
+
+| Round | Opus 4.8 | GPT-5.5 | Gemini 3.1 Pro |
+|-------|----------|---------|----------------|
+| 1 (neutral brief) | Option II (med) | Option I (high) | Option II (high) |
+| 2 (after verified facts) | Option I (changed) | Option I (held) | Option I (changed) |
+| 3 (Opus conditionals answered) | Option I (high) | -- | -- |
+
+**Verified facts that drove convergence (executor checked the source):**
+1. No synthesis / orchestrator / escalation / renderer code exists yet (all Phase 20); the deterministic
+   aggregator + its test are the only built components.
+2. The record carries NO raw vote counts today (only `confidence` et al.); Option II's "synthesis folds
+   the raw split" would require NEW scope (a raw-count field) that is not planned anywhere.
+3. `Contested` is NOT frozen as exclusively cross-source: `SESSION-DESIGN.md:93` assigns it at the
+   per-claim tally, and the escalation architecture keys on "ANY contested claim" (`:167`).
+4. The durable, human-readable `survivors.json` audit artifact is the ONLY place a reader sees the signal
+   pre-synthesis; under Option II a genuine voter split would be mislabeled `Low` there, erasing dissent.
 
 | Option | Description | Selected |
 |--------|-------------|----------|
-| A. Two-stage vocab + frozen mapping | Keep the frozen aggregator `confidence` (mechanical tally label) verbatim; add `report_confidence` (PIPE-07 enum) assigned at synthesis; freeze the tally-label -> report-level mapping. Auditable, touches no frozen code. | ✓ |
-| B. Re-split at schema level | Require the aggregator to emit the 5-tier enum directly (split Low/Contested, drop Rejected). | |
-| C. Use PIPE-07 enum only | Drop Rejected / Low-Contested from the contract; document only the report enum. | |
+| Option I | Tally emits `Contested` on a voter split; synthesis may add cross-source `Contested`. | [X] |
+| Option II | Tally emits 4 tiers; `Contested` assigned only at synthesis (needs a new raw-count field). | |
 
-`[auto] Confidence-enum reconciliation -- Q: "How does the frozen schema reconcile the aggregator's confidence labels with PIPE-07's report enum?" -> Selected: "A. Two-stage vocab + frozen mapping" (recommended default)`
-
-**Selected:** A. **Rationale:** Option B would force a change to the FROZEN, proven Phase-16 aggregator --
-violating "freeze the schema against proven behavior, not guess." Option C produces a contract that does not
-match what the aggregator actually emits, defeating SC-1 (shapes "consistent with what the aggregator reads
-and writes"). A honors both contracts, keeps the raw mechanical label for audit, and makes the two-stage
-relationship explicit. Mapping frozen as D-02: High->High, Medium->Medium, Unsupported->Unsupported,
-Low/Contested -> Contested (if cross-source contradiction) else Low, Rejected -> downgrade-not-delete
-(retain at Unsupported/Contested; drop only on explicit refutation per SC-2).
+**Unanimous outcome:** Option I, all three families, no remaining blocker. Captured as CONTEXT D-01..D-03c:
+one canonical enum `High | Medium | Low | Contested | Unsupported` identical in code and contract; the
+Phase-16 aggregator + fixture corrected in lockstep (drop `Rejected`, un-fuse, emit `Contested` on split);
+tally never deletes (only quote-recheck drops); `Low` absorbs actively-refuted; the raw-count field is
+deferred/optional.
 
 ---
 
 ## Two-assurance field shape (GA-2 / VERIF-06)
 
-VERIF-06 requires "quote verified verbatim" and "claim supported by the quote" as TWO SEPARATE assurances.
-The aggregator already emits `quote_fidelity` (assurance 1); the entailment assurance was deliberately
-scope-fenced out of Phase 16 (16-CONTEXT D-06) for Phase 17 to add.
-
 | Option | Description | Selected |
 |--------|-------------|----------|
-| A. Second separate field `claim_support` | Add a distinct field (`supported \| partial \| unsupported \| unassessed`), voter/synthesis-owned, orthogonal to the aggregator's mechanical `quote_fidelity`. | ✓ |
-| B. Overload `quote_fidelity` | Extend the existing field's enum to also encode entailment. | |
+| A. Second separate field `claim_support` | Distinct field (`supported \| partial \| unsupported \| unassessed`), voter/synthesis-owned, orthogonal to the mechanical `quote_fidelity`. | [X] |
+| B. Overload `quote_fidelity` | Extend the existing field to also encode entailment. | |
 
-`[auto] Two-assurance field shape -- Q: "How is the second assurance (entailment) structurally represented?" -> Selected: "A. Second separate field claim_support" (recommended default)`
+`[auto] Two-assurance field shape -> Selected: "A" (recommended default)`
 
-**Selected:** A. **Rationale:** Option B conflates the two assurances -- exactly what VERIF-06 exists to
-prevent. A keeps them orthogonal (a claim can be `quote_fidelity: verified` yet `claim_support: unsupported`)
-with an explicit per-field owner: `quote_fidelity` is mechanical/aggregator-owned, `claim_support` is a
-judgment owned by the voter/synthesis. Field name + enum are frozen now; the value is populated downstream.
+**Selected:** A. **Rationale:** B conflates the two assurances -- exactly what VERIF-06 prevents. A keeps them
+orthogonal (a claim can be `quote_fidelity: verified` yet `claim_support: unsupported`), each with an explicit
+owner. Field name + enum frozen now; value populated downstream (D-04/D-05).
 
 ---
 
 ## Record-stage model + source-metadata record (GA-2 cont. / GA-3 / SC-1)
 
-SC-1 requires a "source" record among source/claim/vote/excerpt; PIPE-06 needs source metadata (URL/title)
-to cite every claim inline. The aggregator only sees `source` as a string id and does not carry URL/title.
-
 | Option | Description | Selected |
 |--------|-------------|----------|
-| A. Dedicated `sources/<id>.json` record | `{ id, url, title, fetched_at, ... }` keyed by the canonical source id used in claims/survivors; aggregator does not read it; synthesis joins it for citation. Report claim record = survivor record + claim_support + report_confidence + citation. | ✓ |
+| A. Dedicated `sources/<id>.json` record | `{ id, url, title, fetched_at, ... }` keyed by canonical source id; aggregator does not read it; synthesis joins it for citation. Report claim record = survivor record + claim_support + citation (confidence stays the single enum). | [X] |
 | B. Inline source metadata into every claims file | Carry url/title on each claim. | |
 | C. Treat excerpt file as source identity | No separate source record; reuse excerpt_id. | |
 
-`[auto] Source-metadata record -- Q: "Where does source metadata (url/title) live so PIPE-06 can cite inline?" -> Selected: "A. Dedicated sources/<id>.json record" (recommended default)`
+`[auto] Source-metadata record -> Selected: "A" (recommended default)`
 
-**Selected:** A. **Rationale:** B duplicates metadata across workers (drift, bloat) and makes the aggregator
-carry data it never uses. C is wrong -- one source yields multiple excerpts, and SC-1 lists source AND excerpt
-as separate records. A mirrors the immutable per-file run-dir convention, gives PIPE-06 a structured citation
-join, and gives VERIF-03 source-independence a stable canonical-URL key (D-08). The two record STAGES
-(aggregator survivor record, frozen; report claim record, superset assembled at synthesis) keep the frozen
-aggregator untouched while satisfying SC-3 + SC-4 (D-06).
+**Selected:** A. **Rationale:** B duplicates metadata (drift, bloat) and makes the aggregator carry data it
+never uses. C is wrong -- one source yields multiple excerpts, and SC-1 lists source AND excerpt separately. A
+mirrors the immutable per-file run-dir convention, gives PIPE-06 a structured citation join, and gives VERIF-03
+a stable canonical-URL key (D-07/D-08). Two record STAGES keep the corrected aggregator the single source of
+truth while satisfying SC-3 + SC-4 (D-06). (No `report_confidence` -- superseded by the GA-1 single-enum outcome.)
 
 ---
 
 ## Vote-record envelope (GA-4 / SC-1 "vote" record)
 
-The aggregator's `tally()` reads only `{ verdict: unrefuted | refuted }`. Phase 18 voters must ALSO record
-the disconfirming query (VERIF-02) and attack mode (VERIF-01). Freeze just the consumed subset, or the full
-voter-authored superset now?
-
 | Option | Description | Selected |
 |--------|-------------|----------|
-| A. Frozen core + reserved additive envelope | Freeze `verdict` (+ seat/lookup/cap semantics) HARD as the aggregator-consumed contract; FORWARD-DECLARE `attack_mode` / `disconfirming_query` / source-independence as a reserved, additive-only envelope whose semantics Phase 18 fills. | ✓ |
+| A. Frozen core + reserved additive envelope | Freeze `verdict` (+ seat/lookup/cap semantics) HARD; forward-declare `attack_mode` / `disconfirming_query` / source-independence as a reserved, additive-only envelope Phase 18 fills. | [X] |
 | B. Freeze `{verdict}` only | Defer all companion fields to Phase 18. | |
 
-`[auto] Vote-record envelope -- Q: "Does the frozen vote schema include the voter-authored companion fields or only the aggregator-consumed verdict?" -> Selected: "A. Frozen core + reserved additive envelope" (recommended default)`
+`[auto] Vote-record envelope -> Selected: "A" (recommended default)`
 
-**Selected:** A. **Rationale:** The phase goal is explicitly "every downstream component agrees on identical
-shapes BEFORE any agent is authored." B re-opens the frozen schema in Phase 18 (churn). A freezes the
-load-bearing `verdict` consumption contract hard (`unrefuted | refuted`; missing seat -> insufficient; 0-indexed
-seats capped at VOTES_PER_CLAIM=3 by file naming; cluster-id-then-member-id lookup) while forward-declaring
-the voter fields as additive-only -- so Phase 18 fills semantics without changing the consumed shape (D-09/D-10).
+**Selected:** A. **Rationale:** The phase goal is "every downstream component agrees on identical shapes BEFORE
+any agent is authored." B re-opens the frozen schema in Phase 18 (churn). A freezes the load-bearing `verdict`
+consumption contract hard while forward-declaring voter fields as additive-only (D-09/D-10).
 
 ---
 
 ## Schema file location + anti-drift discipline (GA-5)
 
-SC names `references/lz-deep-research-schema.md`; the repo's references live at `plugins/lz-advisor/references/`.
-The doc must not drift from the executable aggregator over time.
-
 | Option | Description | Selected |
 |--------|-------------|----------|
-| A. `plugins/lz-advisor/references/lz-deep-research-schema.md` + freeze-verbatim-from-code, lockstep-update rule | Co-locate with the four existing references; declare the aggregator source AUTHORITATIVE; copy shapes verbatim citing exact functions; require lockstep code+doc updates for any future shape change. | ✓ |
+| A. `references/lz-deep-research-schema.md` + freeze-verbatim-from-code, lockstep-update rule | Co-locate with the four existing references; aggregator source AUTHORITATIVE; copy shapes verbatim; lockstep code+doc updates. | [X] |
 | B. Re-derive shapes in prose at the repo root | Author a fresh schema description independent of the code. | |
 
-`[auto] Schema file location + anti-drift -- Q: "Where does the reference live and how does it stay consistent with the aggregator?" -> Selected: "A. references/ + freeze-verbatim + lockstep rule" (recommended default)`
+`[auto] Schema file location + anti-drift -> Selected: "A" (recommended default)`
 
-**Selected:** A. **Rationale:** B risks immediate drift and re-derivation error (the exact hazard the
-"freeze against proven behavior" principle guards against). A places the file with the existing references
-(matching house style, satisfying the SC `references/` prefix), pins the aggregator source as ground truth,
-and bakes in the project's lockstep-sync discipline. The doc also copies `CEILINGS` verbatim (named-ceilings
-contract) and the three-way quote-recheck contract incl. the WR-04 lower-bound caveat (D-11/D-12).
+**Selected:** A. **Rationale:** B risks immediate drift and re-derivation error. A places the file with the
+existing references (house style, SC `references/` prefix), pins the aggregator source as ground truth, and
+bakes in the lockstep-sync discipline (D-11/D-12).
 
 ---
 
 ## Claude's Discretion
 
-- Exact section ordering, heading structure, and prose phrasing of the reference doc.
-- JSON rendering style (fenced ```json blocks + field tables vs annotated examples) -- as long as every field's
-  name, type, allowed values, owner, and stage is unambiguous.
-- Forward-looking source-record fields beyond `{ id, url, title }` (e.g. `fetched_at`, `publisher`).
-- The name of `claim_support`'s not-yet-judged state (`unassessed` vs `pending` vs `null`) -- semantics fixed.
+- Section ordering / heading structure / prose phrasing of the reference doc.
+- JSON rendering style (fenced blocks + field tables vs annotated examples).
+- Forward-looking source-record fields beyond `{ id, url, title }`.
+- The name of `claim_support`'s not-yet-judged state (`unassessed` vs `pending` vs `null`).
+- Internal variable naming in the aggregator `tally()` rewrite (provided the rubric + labels match D-01/D-02).
 
 ## Deferred Ideas
 
-- Machine-enforced formal JSON Schema (`$schema` + ajv) -- OUT (zero-dep; aggregator fail-closed parsing is the
-  runtime enforcement).
+- Raw vote-count field on the record -- optional Phase-20 addition (D-03c).
+- Machine-enforced formal JSON Schema (`$schema` + ajv) -- OUT (zero-dep).
 - Semantic / paraphrase dedup beyond number-word variance (AGGX-01) -- v2-deferred.
 - Voter prompt-level field SEMANTICS (attack_mode / disconfirming_query / source-independence) -- Phase 18.
-- The synthesis populator for `report_confidence` / `claim_support` / inline citations -- Phase 20.
+- The synthesis populator for `claim_support` + inline citations + cross-source `Contested` promotion -- Phase 20.
 - **Reviewed todo, NOT folded:** Research RTK command suitability for skills and agents (score 0.6, keyword-only
   match; unrelated to a schema contract) -- stays in the backlog, same disposition as Phase 16.
