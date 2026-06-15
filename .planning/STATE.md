@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v2.1.0
 milestone_name: lz-deep-research skill
 status: planning
-stopped_at: Phase 17 Plan 01 complete (tally() corrected to the single D-01 confidence enum; 19-test fixture green via the FILE form)
-last_updated: "2026-06-15T12:57:10.399Z"
+stopped_at: Phase 17.1 context gathered
+last_updated: "2026-06-15T13:07:52.629Z"
 last_activity: 2026-06-15
 progress:
   total_phases: 6
@@ -216,9 +216,9 @@ Recent decisions affecting current work (v2.1.0):
 
 ## Session Continuity
 
-Last session: 2026-06-15T11:59:06.349Z
-Stopped at: Phase 17 Plan 01 complete (tally() corrected to the single D-01 confidence enum; 19-test fixture green via the FILE form)
-Resume file: None
+Last session: 2026-06-15T13:07:52.622Z
+Stopped at: Phase 17.1 context gathered
+Resume file: .planning/phases/17.1-address-phase-16-17-review-findings/17.1-CONTEXT.md
 Resume next: Execute Plan 17-02 (write references/lz-deep-research-schema.md freezing the CORRECTED aggregator shapes verbatim -- records, the Option I tally rubric, the single 5-tier enum, the two assurances + worked example, named-ceilings + quote-recheck + the D-12 anti-drift rule; reconcile 16-01-SUMMARY). The freeze-from-corrected-code prerequisite (Pitfall 1) is now satisfied: 17-01 dropped Rejected / un-fused Low/Contested. Then Haiku-research + voter + early eval (18), search/extract workers (19), orchestrator+scale (20).
 
 ## Operator Next Steps
