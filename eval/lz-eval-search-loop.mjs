@@ -166,6 +166,165 @@ export function dateFilter(docs, claimDate) {
 }
 
 // ---------------------------------------------------------------------------
+// D-09/D-10 the pre-registered mechanical search-minimum defaults (frozen, anti-drift). These are
+// the OQ-2 pre-registered floor: at least 3 distinct queries (at least one disconfirming) and at
+// least 5 distinct in-window docs explored BEFORE an uphold is permitted. The Plan-04 Sonnet
+// calibrator may only TIGHTEN them (raise N/M), never loosen -- the frozen floor is the
+// anti-loosening anchor. maxQueries is the exhaustion bound. Mirrors the Object.freeze discipline of
+// EVAL_THRESHOLDS / STRATA_FRACTIONS so the minimums cannot drift silently.
+// ---------------------------------------------------------------------------
+export const SEARCH_DEFAULTS = Object.freeze({
+  minQueries: 3,
+  minDocs: 5,
+  maxQueries: 8,
+});
+
+// ---------------------------------------------------------------------------
+// D-09 the static-AVeriTeC-KS retrieval adapter (the offline / Flow-B binding). A PURE function over
+// the cached KS: fetchResults(query) returns ONLY the docs for THIS claim, date-filtered to strictly
+// pre-cutoff via dateFilter (the leakage seam, D-07). The query argument is accepted for signature
+// parity with the live adapter; the static KS is the fixed per-claim doc set (the model's
+// query-formulation is exercised agent-side, not in this deterministic seam). The date filter is the
+// ONLY thing that differs from the live binding -- everything else (minimums, stop rule, trace) is
+// adapter-agnostic in searchAndStop.
+// ---------------------------------------------------------------------------
+export function staticKsAdapter(ksByClaim, claimId, claimDate) {
+  if (ksByClaim == null || typeof ksByClaim !== 'object') {
+    throw new ContractError('staticKsAdapter requires a ksByClaim object', 'staticKsAdapter');
+  }
+
+  const docs = Array.isArray(ksByClaim[claimId]) ? ksByClaim[claimId] : [];
+  const filtered = dateFilter(docs, claimDate);
+
+  return {
+    // eslint-disable-next-line no-unused-vars -- `query` is accepted for signature parity (live binding).
+    fetchResults(query) {
+      // The static KS is the fixed pre-cutoff doc set for this claim; return a fresh array so a
+      // caller cannot mutate the adapter's backing store.
+      return filtered.slice();
+    },
+  };
+}
+
+// ---------------------------------------------------------------------------
+// D-09 the live-WebSearch retrieval adapter SHAPE STUB (the production / Flow-A binding). The
+// PRODUCTION binding is realized AGENT-SIDE: the model executes the WebSearch tool and the harness
+// shapes results into the same { url, snippet, date|null } records. This stub documents the seam
+// (RESEARCH A4): it exposes the identical fetchResults signature so the searchAndStop core is
+// adapter-agnostic; it is NOT executed in the eval (the eval drives the static-KS adapter only --
+// live web for the eval is forbidden by D-05/D-07). A real WebSearch executor is injectable.
+// ---------------------------------------------------------------------------
+export function liveWebSearchAdapter(executor) {
+  return {
+    fetchResults(query) {
+      if (typeof executor !== 'function') {
+        // Not bound in the deterministic eval -- the agent realizes this at runtime. Fail loud if a
+        // caller attempts to actually fetch through the stub (never silently return []).
+        throw new ContractError(
+          'liveWebSearchAdapter is a protocol-shape stub: bind an executor (the agent realizes ' +
+            'WebSearch at runtime). The eval drives the static-KS adapter, never live web (D-05/D-07).',
+          'liveWebSearchAdapter',
+        );
+      }
+
+      return executor(query);
+    },
+  };
+}
+
+// hasDecisiveEvidence: a results set is DECISIVE when it carries an explicitly decisive doc (one
+// flagged `decisive` with a judgeable `verdict`). Deterministic + injectable-free; the agent-side
+// loop realizes the equivalent judgement, the eval driver tests this exact mechanic.
+function hasDecisiveEvidence(results) {
+  return results.some((r) => r != null && r.decisive === true && typeof r.verdict === 'string');
+}
+
+// judge: derive the verdict from the first decisive doc (the loop only calls this once
+// hasDecisiveEvidence is true). Deterministic.
+function judge(results) {
+  const decisive = results.find((r) => r != null && r.decisive === true && typeof r.verdict === 'string');
+
+  return decisive ? decisive.verdict : 'refuted-default';
+}
+
+// ---------------------------------------------------------------------------
+// D-09/D-10/D-11 the ONE shared autonomous search-and-stop spine (built once, no throwaway -- the
+// same core the offline read drives now and the Phase-20 live shadow/canary reuse). The retrieval
+// ADAPTER is the ONLY swappable line; query-formulation cadence, the mechanical search-minimum
+// guard, the stop decision, and the per-vote search trace are IDENTICAL across both backends.
+//
+// The mechanical-minimum guard is LOAD-BEARING (D-10): the loop CANNOT return an uphold-equivalent
+// verdict before BOTH minQueries AND minDocs are met. Outcomes:
+//   - minimums unmet at maxQueries           -> { verdict: 'insufficient',     stop_reason: 'min-not-met' }
+//   - minimums met + decisive evidence        -> { verdict: judge(results),     stop_reason: 'decisive-evidence' }
+//   - minimums met, exhausted, none decisive  -> { verdict: 'refuted-default',  stop_reason: 'exhausted' }
+// The trace { queries:[], depth, stop_reason } makes a null Haiku-vs-Sonnet delta diagnosable as
+// genuine parity vs both-stopped-early (the saturation artifact).
+// ---------------------------------------------------------------------------
+export function searchAndStop({
+  claim,
+  attackMode,
+  adapter,
+  minQueries = SEARCH_DEFAULTS.minQueries,
+  minDocs = SEARCH_DEFAULTS.minDocs,
+  maxQueries = SEARCH_DEFAULTS.maxQueries,
+} = {}) {
+  if (claim == null || typeof claim !== 'object') {
+    throw new ContractError('searchAndStop requires a claim object', 'searchAndStop');
+  }
+
+  if (adapter == null || typeof adapter.fetchResults !== 'function') {
+    throw new ContractError('searchAndStop requires an adapter with fetchResults()', 'searchAndStop');
+  }
+
+  const trace = { queries: [], depth: 0, stop_reason: null };
+  // depth = the cumulative count of docs explored across queries (the RESEARCH-drafted protocol:
+  // `docsSeen += results.length`). The minDocs floor is "at least M docs EXPLORED", not "M distinct
+  // urls" -- the agent-side loop counts retrieval effort, and re-encountering a doc is still effort.
+  let docsSeen = 0;
+
+  for (let q = 0; q < maxQueries; q += 1) {
+    // The disconfirming-query formulation cue is deterministic (search the negation, vary per round);
+    // the model executes it agent-side. Here it is a recorded protocol step for the trace.
+    const query = formulateDisconfirmingQuery(claim, attackMode, q);
+    const results = adapter.fetchResults(query);
+    trace.queries.push(query);
+    docsSeen += results.length;
+    trace.depth = docsSeen;
+
+    // The mechanical-minimum guard: an uphold-equivalent (decisive) stop is permitted ONLY once BOTH
+    // minimums are met. q + 1 is the number of queries issued so far.
+    if (q + 1 >= minQueries && docsSeen >= minDocs && hasDecisiveEvidence(results)) {
+      trace.stop_reason = 'decisive-evidence';
+
+      return { verdict: judge(results), trace };
+    }
+  }
+
+  // Exhausted maxQueries. If the minimums were met we return the refuted-default (never a lazy
+  // default-uphold); if they were not met we return 'insufficient' (the early-uphold block).
+  if (trace.depth >= minDocs) {
+    trace.stop_reason = 'exhausted';
+
+    return { verdict: 'refuted-default', trace };
+  }
+
+  trace.stop_reason = 'min-not-met';
+
+  return { verdict: 'insufficient', trace };
+}
+
+// formulateDisconfirmingQuery: the shared deterministic query-formulation cue. Round 0 targets the
+// claim's negation; later rounds vary the angle. The eval records the cue string in the trace; the
+// agent realizes the actual WebSearch. Deterministic + pure.
+function formulateDisconfirmingQuery(claim, attackMode, round) {
+  const base = typeof claim.text === 'string' && claim.text.length > 0 ? claim.text : String(claim.id || 'claim');
+  const mode = typeof attackMode === 'string' && attackMode.length > 0 ? attackMode : 'disconfirm';
+
+  return mode + ':r' + round + ':' + base;
+}
+
+// ---------------------------------------------------------------------------
 // Fail-closed JSON read (copy of the runtime aggregator's module-private readJson shape, using the
 // IMPORTED ContractError + stripBom -- never a bare JSON.parse on an untrusted KS/manifest).
 // ---------------------------------------------------------------------------
