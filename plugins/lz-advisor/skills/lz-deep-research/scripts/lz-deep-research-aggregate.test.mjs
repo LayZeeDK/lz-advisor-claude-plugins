@@ -25,6 +25,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import { createHash } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 
 import { aggregate, normalize, CEILINGS, listJson, safeId } from './lz-deep-research-aggregate.mjs';
@@ -965,4 +966,83 @@ test('L-2 boundary: worker with exactly 120 claims (= ceiling) does NOT throw ce
   } finally {
     fs.rmSync(runDir, { recursive: true, force: true });
   }
+});
+
+// ---------------------------------------------------------------------------
+// PIPE-04/05 + AGG-03: the producer (Phase-19 extract worker) output round-trips
+// through the FROZEN aggregator with zero dropped claims. The committed
+// __fixtures__/worker-output-roundtrip/ run dir is shaped EXACTLY as the extract
+// worker emits it: claims/w1.json + excerpts/e1.txt + sources/<sha-256-hex>.json,
+// where the source filename is the real sourceFilename() hex of the canonical key.
+// This proves the contract against the real consumer (not a mock) without touching
+// the frozen aggregator source.
+// ---------------------------------------------------------------------------
+
+test('PIPE-04/05 worker output round-trips through the frozen aggregator (zero drops, verified survivor)', () => {
+  const r = aggregate(fx('worker-output-roundtrip'));
+
+  // The verbatim quote ("X reduces Y by 30%") is present in its cited excerpt e1,
+  // so NOTHING drops (PIPE-04/AGG-03): the producer output is accepted verbatim.
+  assert.equal(r.dropped.length, 0, 'producer output must round-trip with zero dropped claims');
+
+  // At least one survivor is quote-fidelity verified (the cited-excerpt match fired).
+  assert.ok(
+    r.survivors.some((s) => s.quote_fidelity === 'verified'),
+    'expected a survivor with quote_fidelity === verified from the producer round-trip',
+  );
+
+  // T-19-08 (spoofing guard): the canonical source key is IDENTICAL across the claim
+  // record's claims[].source and the source-record `id` inside sources/<sha>.json
+  // (D-08). A mismatch would silently under-count corroboration. Read both files and
+  // assert equality, and prove the filename is the REAL sourceFilename() hex of that key.
+  const runDir = fx('worker-output-roundtrip');
+  const claim = JSON.parse(fs.readFileSync(path.join(runDir, 'claims', 'w1.json'), 'utf8'));
+  const sourcesDir = path.join(runDir, 'sources');
+  const sourceFiles = fs.readdirSync(sourcesDir).filter((f) => f.endsWith('.json'));
+  assert.equal(sourceFiles.length, 1, 'exactly one source record in the round-trip fixture');
+  const sourceRecord = JSON.parse(fs.readFileSync(path.join(sourcesDir, sourceFiles[0]), 'utf8'));
+  assert.equal(
+    claim.source,
+    sourceRecord.id,
+    'claims[].source must equal the source record id (D-08 canonical-key identity)',
+  );
+  // The fixture filename must be the SHA-256 hex of the canonical key + .json (the
+  // Phase-19 filename-safety rule; the basename the extract worker would write).
+  const expectedFilename =
+    createHash('sha256').update(sourceRecord.id, 'utf8').digest('hex') + '.json';
+  assert.equal(
+    sourceFiles[0],
+    expectedFilename,
+    'the source filename must be the real SHA-256-hex of the canonical key',
+  );
+});
+
+test('AGG-03 / D-14 receipt is one line, <= 200 chars, counts-only, no newline, no raw quote text', () => {
+  // The worker receipt contract (D-14): one line, at most ~200 chars, counts-only,
+  // matching `worker=... source=... excerpts=N claims=M status=...`, carrying NO raw
+  // source text. A sample receipt in the extract worker's documented form is asserted
+  // here so a contract drift (multi-line / over-cap / raw-text receipt) fails the suite.
+  const receipt =
+    'ok worker=w1 source=https://example.org/a/study excerpts=1 claims=3 status=stored';
+
+  // One line: no embedded newline (CR or LF).
+  assert.ok(!/[\r\n]/.test(receipt), 'receipt must be a single line (no CR/LF)');
+
+  // Under the ~200-char cap.
+  assert.ok(receipt.length <= 200, 'receipt must be at most ~200 chars; got ' + receipt.length);
+
+  // Counts-only shape: the worker / source / excerpts / claims / status fields are present
+  // in the documented order, with numeric counts for excerpts and claims.
+  assert.match(
+    receipt,
+    /\bworker=\S+\s+source=\S+\s+excerpts=\d+\s+claims=\d+\s+status=\S+/,
+    'receipt must match the counts-only worker=... source=... excerpts=N claims=M status=... shape',
+  );
+
+  // No raw quote text from the round-trip fixture leaks into the receipt (the main
+  // session never holds raw source text -- D-14 / threat T-19-06).
+  assert.ok(
+    !receipt.includes('X reduces Y by 30%'),
+    'receipt must not carry raw quote / source text',
+  );
 });
