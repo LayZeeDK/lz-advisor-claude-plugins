@@ -320,9 +320,10 @@ export function cacheSlug(repo) {
   return safeId(slug, repo);
 }
 
-export function fetchDataset(repo, { revision, include, gated, cacheDir, runner = spawnSync } = {}) {
+export function fetchDataset(repo, { revision, include, gated, repoType = 'dataset', cacheDir, runner = spawnSync } = {}) {
   // Pre-flight the gated-token presence BEFORE shelling out, so a missing token surfaces the
   // actionable HF_TOKEN error rather than a raw `hf` 401 (Pitfall 2). Never retried as transient.
+  // The `gated` flag flows through unchanged: chenxwh/AVeriTeC is gated:false -> token-free.
   preflightToken(repo, { gated });
 
   if (typeof revision !== 'string' || revision.length === 0) {
@@ -331,7 +332,10 @@ export function fetchDataset(repo, { revision, include, gated, cacheDir, runner 
 
   const slug = cacheSlug(repo);
   const localDir = path.join(cacheDir || path.join(fileURLToPath(new URL('.', import.meta.url)), '.cache'), slug);
-  const args = ['download', repo, '--repo-type', 'dataset', '--revision', revision, '--local-dir', localDir];
+  // D-12: per-source `--repo-type` (NOT a blanket flip -- Pitfall 6). WiCE stays the default
+  // repoType:'dataset' (a real dataset repo); chenxwh/AVeriTeC passes repoType:'model' (an ungated
+  // `model` repo). A blanket --repo-type model flip would 404 WiCE.
+  const args = ['download', repo, '--repo-type', repoType, '--revision', revision, '--local-dir', localDir];
 
   if (typeof include === 'string' && include.length > 0) {
     args.push('--include', include);

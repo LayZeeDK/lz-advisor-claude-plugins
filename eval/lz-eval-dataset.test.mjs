@@ -50,6 +50,7 @@ import {
   preflightToken,
   loadManifest,
   stratify,
+  fetchDataset,
   STRATA_FRACTIONS,
 } from './lz-eval-dataset.mjs';
 
@@ -352,5 +353,100 @@ test('D-04 DRIFT GATE is DISCRIMINATING: a tampered vendored buffer fails the sh
     () => verifySha256(tampered, sf.sha256, sf.file),
     (err) => err.name === 'ContractError' && /checksum mismatch/i.test(err.message),
     'a tampered vendored record must fail the drift gate (sha256 mismatch)',
+  );
+});
+
+// ---------------------------------------------------------------------------
+// D-12 (loader fix -- per-source parameterization, NOT a blanket flip): fetchDataset must thread a
+// per-source `repoType` (default 'dataset') and emit it as the `--repo-type` arg, so AVeriTeC fetches
+// as a 'model' repo while WiCE stays 'dataset'. A capturing `runner` (the existing injectable seam)
+// records the argv WITHOUT shelling out. The assertions are DISCRIMINATING (assert.notEqual style):
+// they prove the per-source value actually FLIPS, never that fetchDataset emits a constant.
+// ---------------------------------------------------------------------------
+
+// A capturing runner: records the argv passed to `hf` and returns a clean exit (status 0) so
+// fetchDataset completes without touching the network. The download dir is never created.
+function captureRunner() {
+  const calls = [];
+  const runner = (cmd, args) => {
+    calls.push({ cmd, args });
+
+    return { status: 0, stdout: '', stderr: '' };
+  };
+
+  return { runner, calls };
+}
+
+// Pull the value following a flag out of an argv array (e.g. flagValue(args, '--repo-type')).
+function flagValue(args, flag) {
+  const i = args.indexOf(flag);
+
+  return i >= 0 && i + 1 < args.length ? args[i + 1] : undefined;
+}
+
+test('D-12 fetchDataset emits --repo-type model for an AVeriTeC-shaped (model+ungated) call', () => {
+  const { runner, calls } = captureRunner();
+  // chenxwh/AVeriTeC is an UNGATED `model` repo (D-12): repoType:'model', gated:false -> token-free.
+  fetchDataset('chenxwh/AVeriTeC', {
+    revision: 'a'.repeat(40),
+    repoType: 'model',
+    gated: false,
+    runner,
+  });
+
+  assert.equal(calls.length, 1, 'fetchDataset shelled out exactly once');
+  assert.equal(flagValue(calls[0].args, '--repo-type'), 'model', 'AVeriTeC fetches as --repo-type model');
+  assert.equal(calls[0].args[0], 'download', 'hf download invocation');
+  assert.ok(calls[0].args.includes('chenxwh/AVeriTeC'), 'the repo is the AVeriTeC repo');
+});
+
+test('D-12 fetchDataset emits --repo-type dataset for a WiCE-shaped (dataset+ungated) call', () => {
+  const { runner, calls } = captureRunner();
+  // jon-tow/wice stays a real `dataset` repo (Pitfall 6: a blanket --repo-type model flip would 404).
+  fetchDataset('jon-tow/wice', {
+    revision: 'b'.repeat(40),
+    repoType: 'dataset',
+    gated: false,
+    runner,
+  });
+
+  assert.equal(flagValue(calls[0].args, '--repo-type'), 'dataset', 'WiCE fetches as --repo-type dataset');
+});
+
+test('D-12 fetchDataset DISCRIMINATES: the --repo-type flips per source (model vs dataset)', () => {
+  // The load-bearing anti-blanket-flip assertion: the SAME function emits DIFFERENT --repo-type
+  // values for the two sources. A blanket flip (or a hardcode) would make these equal.
+  const avt = captureRunner();
+  fetchDataset('chenxwh/AVeriTeC', { revision: 'a'.repeat(40), repoType: 'model', gated: false, runner: avt.runner });
+  const wice = captureRunner();
+  fetchDataset('jon-tow/wice', { revision: 'b'.repeat(40), repoType: 'dataset', gated: false, runner: wice.runner });
+
+  const avtType = flagValue(avt.calls[0].args, '--repo-type');
+  const wiceType = flagValue(wice.calls[0].args, '--repo-type');
+  assert.notEqual(avtType, wiceType, 'the per-source --repo-type values must DIFFER (not a blanket flip)');
+  assert.equal(avtType, 'model');
+  assert.equal(wiceType, 'dataset');
+});
+
+test('D-12 fetchDataset defaults repoType to dataset when omitted (back-compat)', () => {
+  const { runner, calls } = captureRunner();
+  // No repoType passed -> the default is 'dataset' (existing WiCE callers are byte-unaffected).
+  fetchDataset('jon-tow/wice', { revision: 'c'.repeat(40), gated: false, runner });
+
+  assert.equal(flagValue(calls[0].args, '--repo-type'), 'dataset', 'omitted repoType defaults to dataset');
+});
+
+test('D-12 fetchDataset does NOT throw for an ungated repo with no token (preflightToken returns null)', () => {
+  const { runner } = captureRunner();
+  // An ungated source with no token must clear the pre-flight (no HF_TOKEN required) and proceed.
+  assert.doesNotThrow(
+    () =>
+      fetchDataset('chenxwh/AVeriTeC', {
+        revision: 'a'.repeat(40),
+        repoType: 'model',
+        gated: false,
+        runner,
+      }),
+    'an ungated AVeriTeC fetch needs no token (gated:false -> preflightToken returns null)',
   );
 });
