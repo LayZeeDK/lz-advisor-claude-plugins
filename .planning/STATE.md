@@ -3,9 +3,9 @@ gsd_state_version: 1.0
 milestone: v2.1.0
 milestone_name: lz-deep-research skill
 status: executing
-stopped_at: Phase 19 context gathered (scope locked via ROADMAP amendment; advisor consensus on design points)
-last_updated: "2026-06-16T19:09:01.888Z"
-last_activity: 2026-06-16 -- Phase 19 execution started
+stopped_at: Phase 19 review-gate tooling design-resolved + hardened + committed (c66590a); paused BEFORE Step 1 (run the hardened gate on the real Phase-19 eval modules)
+last_updated: "2026-06-16T23:20:32.018Z"
+last_activity: 2026-06-16 -- review-gate design resolved via cross-family consensus, implemented (Opus-high synth + diff + manifest) + dogfood-verified + committed c66590a; paused to run the gate next session
 progress:
   total_phases: 8
   completed_phases: 6
@@ -37,10 +37,10 @@ Items deferred across milestones (v1.0.1 close 2026-06-11; v2.0.0 additions tagg
 
 ## Current Position
 
-Phase: 19 (search-extract-worker-agents) — EXECUTING
-Plan: 1 of 4
-Status: Executing Phase 19
-Last activity: 2026-06-16 -- Phase 19 execution started
+Phase: 19 (search-extract-worker-agents) — PAUSED post-execution (review-gate tooling ready)
+Plan: 4 of 4 executed + merged + green; phase NOT complete
+Status: Review-gate tooling design-resolved + hardened + committed (c66590a); paused BEFORE running the gate on the real Phase-19 modules (Step 1)
+Last activity: 2026-06-16 -- review-gate design resolved + implemented + dogfood-verified (c66590a); review/verify arc remaining
 
 ### Milestone v2.1.0 roadmap (REVISED 2026-06-15)
 
@@ -237,11 +237,14 @@ Recent decisions affecting current work (v2.1.0):
 
 ## Session Continuity
 
-Last session: 2026-06-16T17:49:52.527Z
-Stopped at: Phase 19 context gathered (scope locked via ROADMAP amendment; advisor consensus on design points)
-Resume file: .planning/phases/19-search-extract-worker-agents/19-CONTEXT.md
-Resume next: Execute Plan 18-05 (the LAST Phase-18 plan): author the two verify-voter agents -- `research-verify-voter-sonnet.md` (ship default) + `research-verify-voter-haiku.md` (research-grounded from the EVAL-05 reference, behind the OFF flag) -- against the FROZEN vote schema, then run the staged, credit-aware live gating eval (SUBTLE-first, k>=5, reliable=15 on PASS) that settles-or-raises the Haiku-first flag (EVAL-03). The full eval infrastructure is now ready: the gate engine `eval/lz-eval-aggregate.mjs` + pre-registered `eval/lz-eval-lock-rule.md` (18-03) and the dataset loader `eval/lz-eval-dataset.mjs` + committed manifest + vendored WiCE (18-04). The eval-tree CI gate (all three .test.mjs) is now fully green end-to-end.
+Last session: 2026-06-16T23:20:32.018Z
+Stopped at: Phase 19 review-gate TOOLING is now design-complete, hardened, and committed (c66590a on feat/deep-research). This session resolved the review-gate design via a neutral cross-family consensus (Opus Agent + Copilot GPT-5.5 + Gemini-3.1-pro-preview, 2 rounds) -> scoped-option-1 + synth stage on Opus-high + a deterministic severity-drop `diff` guard + a data-flow grouping manifest (the PARKED lz-review-fidelity decision is RESOLVED: keep Design-B; addon-A "bypass" DROPPED in favor of the lighter `diff`; addon-B manifest KEPT). Implemented, dogfood-reviewed (the gate reviewing its own changes), fixed the real findings, validated end-to-end (138 eval tests green; the diff extracts 5/4 high-severity findings from the real dogfood roundLogs with 0 dropped). PAUSED before Step 1 (running the gate on the REAL Phase-19 modules).
+Resume file: .planning/HANDOFF.json (authoritative) + .planning/phases/19-search-extract-worker-agents/.continue-here.md
+Resume next: STEP 1 -- run the HARDENED review-gate Workflow (`eval/lz-review-gate.workflow.mjs`, now Opus-high synth) on the REAL Phase-19 eval modules, PACED per-plan from 19-01. Group by the coupling chains in `eval/lz-review-gate-manifest.json` and call `assertManifestCoverage(args.groups, manifest)` BEFORE dispatch; after each group run `severityDropDiff(report.roundLogs, report.report)` from `eval/lz-review-gate-check.mjs` and re-run synth-only on any `dropDetected`. CRITICAL: triage every finding against the REAL source (the reviewer reasons from packaged excerpts and can misdescribe code). Merge per-group reports into 19-REVIEW.md.
 
 ## Operator Next Steps
 
-- Execute Plan 18-05 (the final Phase-18 plan): the two voter agents + the staged live gating eval (EVAL-03 settle-or-raise). All deterministic eval infrastructure (gate engine, lock rule, dataset loader, manifest, vendored WiCE, drift gate) is committed and green. The live arms (AVeriTeC open-book / LLM-AggreFact stress) need an `HF_TOKEN` + accepted dataset terms at eval time; the WiCE closed-book SUBTLE gate (the sole hard gate) runs token-free.
+1. STEP 1 -- per-plan review gate (PACED) using the HARDENED gate (c66590a): run `eval/lz-review-gate.workflow.mjs` on the real Phase-19 eval modules, grouped by the coupling chains in `eval/lz-review-gate-manifest.json` (`assertManifestCoverage` before dispatch); start at 19-01; after each group run the `severityDropDiff` guard and re-run synth-only on any dropped Critical/Important; triage findings vs real source; merge into 19-REVIEW.md.
+2. `gsd-code-review 19` (cheap one-pass) -> GSD fixer (`/gsd:code-review 19 --fix`). Probe-known bugs to confirm fixed: canonicalizeUrl trailing-slash strip on the SERIALIZED url (corrupts dedup keys); case-sensitive tracking-param denylist; searchAndStop `{minQueries:0,minDocs:0}` floor bypass; date regex with no value-range check.
+3. 19-04 Task-2: the offline Haiku-vs-Sonnet gating read (BLOCKING human-verify checkpoint; settle-or-raise) -- AFTER the fixer corrects the eval modules the read consumes. Sonnet-default ships regardless.
+4. verify_phase_goal (gsd-verifier) -> secure-phase -> validate-phase -> extract-learnings -> phase.complete.
