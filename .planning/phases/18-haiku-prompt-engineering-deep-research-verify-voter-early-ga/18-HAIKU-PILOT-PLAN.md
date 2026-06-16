@@ -70,19 +70,32 @@ Abandon Haiku if EITHER fires (pre-register before the run; severity-weighted):
   the safe Tier-1 model (per claim-class first). Every audited claim + every Sonnet dissent becomes a
   labeled example fed back into the trap set, so the gate can re-fire on accumulating real data.
 
-## The one sequencing divergence
+## Sequencing -- CONSENSUS (unanimous, round 2: fresh Opus + GPT-5.5 + Gemini)
 
-- Gemini: build the ACTUAL production autonomous-search loop and deploy Haiku OPERATIONALLY now, with
-  100% Sonnet-audit on its unanimous upholds during the pilot (the harness IS the production loop;
-  avoids a synthetic harness that might re-saturate).
-- GPT-5.5 + Opus: build a small OFFLINE discriminating harness on the autonomous-search axis FIRST
-  (zero production risk, cheapest first read), gate operational rollout on it, then shadow -> canary ->
-  Tier-1. Opus reconciles Gemini's saturation worry via the difficulty-calibration + the
-  "inconclusive-offline -> defer-to-shadow" fallback.
+**SYNTHESIS: build the autonomous-search loop ONCE; run its first decisive read OFFLINE on a curated
+known-gold trap set; THEN point the SAME loop at live traffic in shadow -> canary -> Tier-1.**
+Offline-gold is the CALIBRATION step; operational is the VALIDATION step -- in that order.
 
-Shared end-state regardless: staged shadow -> canary -> Tier-1, one shared trap set + one tolerance
-number, the unanimity blind spot plugged by elevated/targeted audit + mixed-tier seating, gated by the
-pre-registered statistical rejection criterion + a pre-committed rollback.
+Why offline-gold FIRST (the decisive argument all three landed on): known gold is the ONLY instrument
+that observes the CORRELATED-FAILURE quadrant -- the case where BOTH Haiku and Sonnet fail to find the
+disconfirming evidence and default to a pass. That is exactly the feared failure, and Sonnet-as-auditor
+is structurally blind to it (it measures only Haiku-vs-Sonnet DISAGREEMENT, identically zero on a
+unanimous correlated false-uphold). Known gold also yields ABSOLUTE false-uphold rates, which the
+pre-registered Clopper-Pearson clear-rejection gate and the audit-budget sizing both require (they need
+true error rates, not disagreement rates). Gemini's operational-first "100% audit = safe" was conceded
+to be safe for SHIPPED outcomes but to concede the MEASUREMENT question (you'd run Sonnet on full
+volume -> no Haiku cost saving to evaluate, and still blind to correlated failure).
+
+Re-saturation risk: dissolved (not merely mitigated) -- the offline harness uses the SAME autonomous
+search-and-stop mechanics over the raw KS (difficulty lives in search/stop, not in reading a supplied
+answer), and the difficulty-calibration gate (Sonnet must be below ceiling, else the stratum is void /
+defer-to-shadow) detects-and-gates the only residual (a constructor making "buried" evidence trivially
+findable). No throwaway: the same loop serves both the offline read and the live shadow/canary.
+
+Shared end-state: staged shadow -> canary -> Tier-1, one loop + one trap set + one tolerance number;
+the unanimity blind spot plugged by elevated/targeted audit + mixed-tier (Sonnet) seating + mechanical
+search minimums; gated by the pre-registered statistical rejection criterion + a pre-committed rollback;
+audited cases + Sonnet dissents feed back into the trap set so the gate can re-fire on live data.
 
 ## Roadmap implication
 
