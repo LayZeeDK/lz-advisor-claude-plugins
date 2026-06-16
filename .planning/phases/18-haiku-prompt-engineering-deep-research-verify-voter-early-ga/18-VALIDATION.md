@@ -48,7 +48,16 @@ created: 2026-06-16
 
 | Task ID | Plan | Wave | Requirement | Threat Ref | Secure Behavior | Test Type | Automated Command | File Exists | Status |
 |---------|------|------|-------------|------------|-----------------|-----------|-------------------|-------------|--------|
-| TBD (planner fills) | TBD | TBD | EVAL-* / VERIF-* / COST-02 / D-11 | TBD | TBD | unit / harness | `node --test <file>.test.mjs` | TBD | pending |
+| 18-01-01 | 01 | 1 | EVAL-05 | T-18-01 | every technique carries a CITED source tag; no unsourced claim shipped | doc-assert | `node -e` ASCII + CITED + stale-pattern check on `lz-haiku-prompt-engineering.md` | NO -- doc (no .test.mjs) | pending |
+| 18-02-01 | 02 | 1 | EVAL-04, D-11 | T-18-DEPLEAK | no `package.json`/`node_modules` + no eval import under the plugin tree | unit | `node --test plugins/lz-advisor/skills/lz-deep-research/scripts/lz-deep-research-aggregate.test.mjs && node --test eval/lz-eval-packaging-boundary.test.mjs` | EXISTS (edit) + NO -- W0 | pending |
+| 18-02-02 | 02 | 1 | EVAL-04 | T-18-LOCKDRIFT | exact `jstat@1.9.6` pin; `node_modules` + cache gitignored | unit | `node -e` `eval/package.json` + `.gitignore` checks | NO -- W0 | pending |
+| 18-02-03 | 02 | 1 | COST-02 | T-18-SC | first `npm install` human-verified (exact pin, MIT LICENSE, no install scripts, anchors) | manual (checkpoint:human-verify) | `cd eval && npm install --save-exact jstat@1.9.6` + anchor + LICENSE check | N/A (live) | pending |
+| 18-03-01 | 03 | 2 | EVAL-02, EVAL-04, COST-02 | T-18-MATHTRUST / T-18-PARSE | CI library-wired (anchors pinned); false-uphold counter + DELTA discriminating | unit (tdd) | `node --test eval/lz-eval-aggregate.test.mjs` | NO -- W0 | pending |
+| 18-04-01 | 04 | 2 | EVAL-01 | T-18-DATATAMPER / T-18-TOKENLEAK | sha256 fail-closed; gated-401 actionable; remap discriminating | unit (tdd) | `node --test eval/lz-eval-dataset.test.mjs` | NO -- W0 | pending |
+| 18-04-02 | 04 | 2 | EVAL-01 | T-18-LICENSE | only WiCE vendored w/ NOTICE; no encumbered (AVeriTeC/LLM-AggreFact) text committed | unit | `node -e` NOTICE attribution + ASCII check | NO -- W0 | pending |
+| 18-05-01 | 05 | 3 | VERIF-01, VERIF-02, VERIF-03, COST-02, EVAL-05 | T-18-DEPLEAK3 | voters zero-dep (no eval/ import); Haiku plain phrasing (no CRITICAL/MUST/NEVER, no budget_tokens) | unit | `node -e` agent frontmatter + frozen-vote-contract + zero-dep checks | NO -- W0 | pending |
+| 18-05-02 | 05 | 3 | EVAL-02, EVAL-03 | T-18-LEAK2 / T-18-POSTHOC | revised-KS-only retrieval + date cutoff; lock rule pre-committed, unedited | manual (checkpoint:human-action) | staged `claude -p --permission-mode auto` eval -> `node eval/lz-eval-aggregate.mjs` | N/A (live, credit-bound) | pending |
+| 18-05-03 | 05 | 3 | EVAL-03 | T-18-POSTHOC | flag flips ON only per the pre-registered lock-rule verdict; else raise-to-user | manual (checkpoint:decision) | mechanical lock-rule verdict from 18-05-02 | N/A (decision) | pending |
 
 *Status: pending / green / red / flaky. The planner populates this map from the PLAN.md task list.
 Deterministic-testable surface (per RESEARCH.md Validation Architecture):*
