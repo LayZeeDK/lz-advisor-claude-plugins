@@ -134,6 +134,14 @@ None that block the plan goal. The `liveWebSearchAdapter` (Plan 19-01) is a docu
 - The trap recipe + classifier + validity gate + GATING leakage probe are ready for Plan 04 (the Sonnet-as-calibrator step + the offline read). The lock rule is pre-registered (zero-votes window) so any Plan-04 vote is governed by a genuine pre-registration.
 - Plan 04 must build the full N=60-100 trap set (handle single-digit-day claim_dates), run the D-06 Sonnet-below-ceiling saturation pre-condition per stratum, and produce PASS / FAIL-RAISE / VOID (settle-OR-raise).
 
+## Self-Check: PASSED
+
+- Created files exist: eval/lz-eval-traps.mjs, eval/lz-eval-traps.test.mjs, 19-03-SUMMARY.md (all FOUND)
+- Modified files exist: lz-eval-manifest.json, lz-eval-dataset.test.mjs, lz-eval-lock-rule.md, lz-eval-aggregate.test.mjs (all FOUND)
+- Commits exist: 55a06a8, 22c1ba2, 181c557, 3fe65af (all FOUND)
+- Full eval suite green: 87 tests (traps 14, dataset 24, aggregate 20, search-loop, packaging-boundary), plugin-tree aggregator 39
+- OQ-1 real-seed probe CLEAN (exit 0); no NC text committed; all committed bytes ASCII
+
 ---
 *Phase: 19-search-extract-worker-agents*
 *Completed: 2026-06-16*
