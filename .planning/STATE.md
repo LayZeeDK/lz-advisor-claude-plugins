@@ -2,10 +2,10 @@
 gsd_state_version: 1.0
 milestone: v2.1.0
 milestone_name: lz-deep-research skill
-status: executing
-stopped_at: Phase 18 COMPLETE (verified passed 2026-06-16). EVAL-03 achieved via RAISE -- the standalone synthesized-overreach gate VOIDed via saturation; owner chose to PURSUE Haiku-first via a staged autonomous-search pilot (Sonnet-default ships, Haiku OFF behind the flag). Definitive eval relocated to Phase 19 (offline known-gold harness on the search loop) + Phase 20 (operational shadow/canary + audit guardrails). Ready for Phase 19. See 18-HAIKU-PILOT.md + 18-VERIFICATION.md.
-last_updated: "2026-06-16T14:30:00.000Z"
-last_activity: 2026-06-16 -- Phase 18 CLOSED (verifier: passed). All 5 plans complete; EVAL-03 settle-or-raise achieved via RAISE -> owner PURSUES Haiku-first via a staged pilot (the synthesized-overreach gate VOIDed via saturation: Haiku 0/30 == Sonnet 0/30, plus query-formulation parity 1.70/1.70). Built deliverables stand (EVAL-05 reference; eval install surface + aggregator + dataset loader; both verify-voter agents -- Sonnet ship-default, Haiku OFF). EVAL-01/02/04 re-mapped to Phase 19; the staged autonomous-search pilot (offline known-gold -> shadow/canary) + the pre-registered Clopper-Pearson clear-rejection gate + the unanimity-blind-spot guardrails carry into Phase 19/20 (18-HAIKU-PILOT.md). Next: Phase 19.
+status: paused
+stopped_at: Phase 19 context gathered (scope locked via ROADMAP amendment; advisor consensus on design points)
+last_updated: "2026-06-16T17:49:52.535Z"
+last_activity: "2026-06-16 -- Plan 18-04 complete (eval/lz-eval-dataset.mjs: hf-CLI fetch into gitignored eval/.cache/ + node:crypto sha256 fail-closed + D-02d WiCE label remap to the frozen unrefuted|refuted enum (partially_supported=subtle) + actionable gated-401 HF_TOKEN pre-flight (no retry) + EVAL-01 stratify; committed eval/__fixtures__/lz-eval-manifest.json with 70 stratified examples (30 unrefuted ~43% / 40 refuted / 17 subtle), WiCE rows vendored + per-file sha256 + revision 54f7976b..., AVeriTeC/LLM-AggreFact/ExpertQA fetch-only IDs+labels+revision only; vendored eval/__fixtures__/wice-vendored/ 60 real WiCE subclaim records (ASCII-escaped) + NOTICE (ODC-BY/MIT); offline manifest/vendor drift gate fails closed at Wave 2; 15-test FILE-form gate exits 0; eval-tree 32 tests green)"
 progress:
   total_phases: 8
   completed_phases: 6
@@ -237,9 +237,9 @@ Recent decisions affecting current work (v2.1.0):
 
 ## Session Continuity
 
-Last session: 2026-06-16T10:18:16.000Z
-Stopped at: Phase 18 Plan 04 complete (zero-hand-authoring dataset loader + committed derived manifest + vendored WiCE + offline drift gate)
-Resume file: .planning/phases/18-haiku-prompt-engineering-deep-research-verify-voter-early-ga/18-04-SUMMARY.md
+Last session: 2026-06-16T17:49:52.527Z
+Stopped at: Phase 19 context gathered (scope locked via ROADMAP amendment; advisor consensus on design points)
+Resume file: .planning/phases/19-search-extract-worker-agents/19-CONTEXT.md
 Resume next: Execute Plan 18-05 (the LAST Phase-18 plan): author the two verify-voter agents -- `research-verify-voter-sonnet.md` (ship default) + `research-verify-voter-haiku.md` (research-grounded from the EVAL-05 reference, behind the OFF flag) -- against the FROZEN vote schema, then run the staged, credit-aware live gating eval (SUBTLE-first, k>=5, reliable=15 on PASS) that settles-or-raises the Haiku-first flag (EVAL-03). The full eval infrastructure is now ready: the gate engine `eval/lz-eval-aggregate.mjs` + pre-registered `eval/lz-eval-lock-rule.md` (18-03) and the dataset loader `eval/lz-eval-dataset.mjs` + committed manifest + vendored WiCE (18-04). The eval-tree CI gate (all three .test.mjs) is now fully green end-to-end.
 
 ## Operator Next Steps
