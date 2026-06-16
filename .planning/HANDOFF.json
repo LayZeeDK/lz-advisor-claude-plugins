@@ -1,0 +1,42 @@
+{
+  "version": "1.0",
+  "timestamp": "2026-06-16T21:24:16.534Z",
+  "phase": "19",
+  "phase_name": "search-extract-worker-agents",
+  "phase_dir": ".planning/phases/19-search-extract-worker-agents",
+  "plan": 4,
+  "task": null,
+  "total_tasks": null,
+  "status": "paused",
+  "stage": "post-execution: all 4 plans merged + green; pending enhanced review gate -> fixer -> 19-04 gating read -> verification",
+  "completed_tasks": [
+    {"id": 1, "name": "19-01 deterministic search-loop spine (searchAndStop, adapters, dateFilter, canonicalizeUrl, sourceFilename, D-12 loader fix)", "status": "done", "commit": "2cce374"},
+    {"id": 2, "name": "19-02 search + extract worker agents + round-trip fixture (41/41)", "status": "done", "commit": "842e1ae"},
+    {"id": 3, "name": "19-03 offline trap set + OQ-1 leakage probe + re-registered lock rule (OQ-1 passed, manifest locked)", "status": "done", "commit": "d335a22"},
+    {"id": 4, "name": "19-04 Task 1 resumable offline-read decision driver + test (17/17)", "status": "done", "commit": "b0f7dfc"},
+    {"id": 5, "name": "Enhanced review-gate tooling (Design-B multi-round resumable workflow + function-wrap harness, 16/16) + 2 self-reviews + churn fix + resumability proven", "status": "done", "commit": "efc1be9"}
+  ],
+  "remaining_tasks": [
+    {"id": 6, "name": "Run the per-plan Phase-19 review gate, STARTING WITH plan 19-01's changes (eval/lz-eval-search-loop.mjs+test, eval/lz-eval-dataset.mjs D-12); then 19-02, 19-03, 19-04; merge per-group reports into 19-REVIEW.md", "status": "not_started"},
+    {"id": 7, "name": "gsd-code-review 19 (cheap one-pass) + feed merged findings to the GSD fixer (/gsd:code-review 19 --fix)", "status": "not_started"},
+    {"id": 8, "name": "19-04 Task-2 offline Haiku-vs-Sonnet gating read (blocking human-verify checkpoint; settle-or-raise)", "status": "not_started"},
+    {"id": 9, "name": "verify_phase_goal (gsd-verifier) + secure-phase + validate-phase + extract-learnings + phase.complete", "status": "not_started"}
+  ],
+  "blockers": [
+    {"description": "Org MONTHLY spend cap was hit then reset this session; the per-plan review gate is token-heavy (~200-400k tokens/group, Opus-high reviewers)", "type": "external", "workaround": "Pace one plan at a time; the workflow is resumable (Layer-1 journal + Layer-2 on-disk per-group reports)"}
+  ],
+  "human_actions_pending": [
+    {"action": "Interpret the 19-04 offline gating-read outcome (PASS / FAIL-RAISE / VOID) and respond to the checkpoint", "context": "19-04 Task 2 is a blocking human-verify checkpoint; Sonnet-default ships regardless, the read only decides whether Haiku-first clears for Phase-20 shadow", "blocking": true}
+  ],
+  "decisions": [
+    {"decision": "Review gate = Design B (a Workflow of sibling agents: Sonnet executor + real Opus lz-advisor:reviewer via agentType), NOT the literal lz-review skill", "rationale": "Workflow scripts are import-sealed and cannot nest the skill's Opus reviewer reliably; sibling-agent stages need no nesting", "phase": "19"},
+    {"decision": "Run the review gate ONE WAVE/PLAN AT A TIME (sequential per-plan Workflow invocations), file-sized groups", "rationale": "User directive; multi-file mega-groups do not converge (dogfood); enables pacing + resume between plans", "phase": "19"},
+    {"decision": "Per-agent effort: executor medium / reviewer high / synth medium (reviewer NOT xhigh)", "rationale": "xhigh provokes extra tool uses that burn the reviewer's maxTurns 3 -> empty output", "phase": "19"},
+    {"decision": "Two-layer resumability; orchestrator derives doneSlugs from a progressDir disk scan", "rationale": "Workflow has no FS access to self-scan/verify the synth write; the disk scan is the persistence verification (C-3/I-6)", "phase": "19"},
+    {"decision": "19-04 gating read DEFERRED until after the review gate + fixer", "rationale": "The fixer corrects the canonicalizeUrl/searchAndStop bugs in the modules the read consumes, so the read runs on corrected code", "phase": "19"},
+    {"decision": "lz-review-fidelity options (restore Class-2 verify_request hook, native missed-surfaces loop driver, verbatim grammar) PARKED for user decision", "rationale": "My Design-B diverges from the real lz-review on iteration model + Class-2 verification + verbatim output; user has not yet chosen #1/#2/#3", "phase": "19"}
+  ],
+  "uncommitted_files": [".claude/settings.json (M -- pre-existing from session start, unrelated to Phase 19; do not bundle into phase commits)"],
+  "next_action": "Run the validated Design-B workflow (Workflow scriptPath=eval/lz-review-gate.workflow.mjs) on plan 19-01's groups ONLY: args.groups = [{name:'19-01 search-loop', files:['eval/lz-eval-search-loop.mjs','eval/lz-eval-search-loop.test.mjs']}, {name:'19-01 dataset D-12', files:['eval/lz-eval-dataset.mjs']}], progressDir gitignored (e.g. eval/.cache/review-gate-19-01), maxRounds 4, doneSlugs derived from a progressDir scan. Then merge mergedReport into 19-REVIEW.md.",
+  "context_notes": "Phase 19 code is fully executed + merged + green (145 tests across eval+plugin suite). The whole session's deep work was hardening the review-gate TOOLING (now done: tested + twice self-reviewed + resumability proven both layers + churn fix). CRITICAL methodological constraint discovered this session: the review-gate reviewer works from the executor's PACKAGED EXCERPTS (it does NOT re-read), so it can misdescribe the actual code (it claimed `missed` defaults to 'none' when it defaults to ''; cited `MISSED_SURFACES`/`sentinel.*` when the code uses `MISSED-SURFACES`/`parsed.*`). ALWAYS triage review findings against the actual source before applying; dismiss misreads with reasoning. The user wants the review gate PACED, starting with 19-01."
+}
