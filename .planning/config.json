@@ -63,5 +63,6 @@
   "quick_branch_template": null,
   "features": {
     "global_learnings": true
-  }
+  },
+  "context_window": 1000000
 }
