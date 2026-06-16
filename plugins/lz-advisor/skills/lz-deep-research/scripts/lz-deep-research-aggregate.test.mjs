@@ -674,7 +674,7 @@ test('SC-1 aggregate is deterministic (same input -> deep-equal output)', () => 
   assert.deepEqual(a, b);
 });
 
-test('SC-2 zero-dependency contract: aggregator imports only node:/relative, no package.json in repo', () => {
+test('SC-2 zero-dependency contract: aggregator imports only node:/relative, no install surface under the plugin tree', () => {
   // The aggregator source must import ONLY node: builtins or relative (./) modules -- no
   // third-party dependency (AGG-02, T-16-06). Any non-node:/non-./ import is a constraint
   // violation to reject.
@@ -690,32 +690,49 @@ test('SC-2 zero-dependency contract: aggregator imports only node:/relative, no 
     );
   }
 
-  // No package.json anywhere from the scripts dir UP TO (and including) the repo root (zero-dep,
-  // no install surface). Walk up from HERE, checking each level for package.json, and STOP at the
-  // repo root (the dir containing .git) so a package.json outside this repo on the host cannot
-  // cause a false failure.
-  let dir = HERE;
+  // RE-SCOPED (Phase 18, Pitfall 1): the DISTRIBUTED plugin tree (plugins/lz-advisor/) must carry
+  // NO install surface -- no package.json and no node_modules anywhere under it. The repo as a whole
+  // DOES now have an install surface (the repo-level eval/ dev tooling), so the old repo-root walk is
+  // gone: this asserts the zero-dep contract ONLY for the marketplace package (D-11). Resolve the
+  // plugin root file-relative (NEVER process.cwd()): HERE is
+  // plugins/lz-advisor/skills/lz-deep-research/scripts; the plugin root is three levels up
+  // (scripts -> lz-deep-research -> skills -> lz-advisor).
+  const pluginRoot = path.resolve(HERE, '..', '..', '..');
+  assert.ok(
+    pluginRoot.endsWith(path.join('plugins', 'lz-advisor')),
+    'plugin-root resolution drifted: ' + pluginRoot,
+  );
 
-  for (;;) {
-    assert.equal(
-      fs.existsSync(path.join(dir, 'package.json')),
-      false,
-      'unexpected package.json at ' + dir + ' (zero-dependency contract)',
-    );
+  let inspected = 0;
 
-    // Stop once we have checked the repo root.
-    if (fs.existsSync(path.join(dir, '.git'))) {
-      break;
+  const walk = (dir) => {
+    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+      const full = path.join(dir, entry.name);
+
+      assert.notEqual(
+        entry.name,
+        'package.json',
+        'unexpected package.json under the plugin tree at ' + full + ' (D-11 zero-dependency contract)',
+      );
+      assert.notEqual(
+        entry.name,
+        'node_modules',
+        'unexpected node_modules under the plugin tree at ' + full + ' (D-11 zero-dependency contract)',
+      );
+
+      if (entry.isDirectory()) {
+        walk(full);
+      } else {
+        inspected += 1;
+      }
     }
+  };
 
-    const parent = path.dirname(dir);
+  walk(pluginRoot);
 
-    if (parent === dir) {
-      break;
-    }
-
-    dir = parent;
-  }
+  // Non-vacuous: the scan must have actually walked the plugin tree (this test file itself lives
+  // under it, so >=1 file is guaranteed; a zero count means the walk silently no-op'd).
+  assert.ok(inspected >= 1, 'plugin-tree scan inspected no files (vacuous walk)');
 });
 
 test('R2-1 literal-null vote record fails closed with ContractError naming the file (not TypeError)', () => {
