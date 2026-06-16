@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v2.1.0
 milestone_name: lz-deep-research skill
 status: planning
-stopped_at: Phase 17.3 context gathered
-last_updated: "2026-06-16T00:15:58.961Z"
+stopped_at: Phase 18 context gathered
+last_updated: "2026-06-16T01:15:48.312Z"
 last_activity: 2026-06-16
 progress:
   total_phases: 8
-  completed_phases: 4
-  total_plans: 10
+  completed_phases: 5
+  total_plans: 11
   completed_plans: 11
-  percent: 50
+  percent: 63
 ---
 
 # Project State
@@ -224,9 +224,9 @@ Recent decisions affecting current work (v2.1.0):
 
 ## Session Continuity
 
-Last session: 2026-06-15T22:12:24.983Z
-Stopped at: Phase 17.3 context gathered
-Resume file: .planning/phases/17.3-add-github-actions-workflow-for-script-tests/17.3-CONTEXT.md
+Last session: 2026-06-16T01:15:48.299Z
+Stopped at: Phase 18 context gathered
+Resume file: .planning/phases/18-haiku-prompt-engineering-deep-research-verify-voter-early-ga/18-CONTEXT.md
 Resume next: Execute Plan 17-02 (write references/lz-deep-research-schema.md freezing the CORRECTED aggregator shapes verbatim -- records, the Option I tally rubric, the single 5-tier enum, the two assurances + worked example, named-ceilings + quote-recheck + the D-12 anti-drift rule; reconcile 16-01-SUMMARY). The freeze-from-corrected-code prerequisite (Pitfall 1) is now satisfied: 17-01 dropped Rejected / un-fused Low/Contested. Then Haiku-research + voter + early eval (18), search/extract workers (19), orchestrator+scale (20).
 
 ## Operator Next Steps
