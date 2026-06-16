@@ -176,7 +176,11 @@ Plans:
   3. The extract worker extracts falsifiable claims, each bound to a verbatim quote, a stored-excerpt id, and source metadata, conforming to the frozen Phase-17 schema.
   4. Each worker writes its evidence to the run dir and returns only a one-line receipt under a char cap, so the main session never holds raw source text.
   5. (AMENDED 2026-06-16) The autonomous-search loop hosts the OFFLINE known-gold Haiku-vs-Sonnet gating pilot (relocated EVAL-01/02/04): the voter issues + executes its own disconfirming searches with the date cutoff enforced, over a curated trap set calibrated so Sonnet is below ceiling; the pre-registered Clopper-Pearson clear-rejection gate either clears Haiku (-> Phase-20 operational shadow/canary) or fires (-> Sonnet-default remains). See `18-HAIKU-PILOT.md`.
-**Plans**: TBD
+**Plans**: 4 plans (3 waves)
+- [ ] 19-01-PLAN.md -- Deterministic spine: the shared search-and-stop core + retrieval adapters + dateFilter/parseAvtDate + canonicalizeUrl/sourceFilename (D-09/D-13) + the surgical D-12 loader fix [Wave 1]
+- [ ] 19-02-PLAN.md -- The two worker agents (search [WebSearch,Write]; extract Sonnet [WebFetch,Write]) + the worker-output round-trip fixture against the frozen aggregator (PIPE-03/04/05, AGG-03) [Wave 2]
+- [ ] 19-03-PLAN.md -- Trap construction (buried/evidence-absent/date-sensitive over AVeriTeC seeds) + manifest/drift-gate extension + the re-registered pooled-n CP(1,N) lock rule (EVAL-01/04) [Wave 2]
+- [ ] 19-04-PLAN.md -- The offline known-gold gating read: Sonnet-as-calibrator -> Haiku-vs-Sonnet delta -> PASS/FAIL-RAISE/VOID settle-OR-raise (EVAL-01/02/04) [Wave 3]
 
 ### Phase 20: Orchestrator skill + headless scale confirmation
 **Goal**: The `lz-deep-research` skill wires the full pipeline (scope-clarify -> decompose -> dispatch worker waves -> run the aggregator -> consult the Opus advisor at exactly two gates -> assemble the cited report) using the ALREADY-SETTLED voter default from Phase 18, is discoverable as `lz-advisor:lz-deep-research`, wave-batches the fan-out at <=5 in-flight, retains the gitignored run dir as the audit trail, and is empirically confirmed working as a packaged skill at real headless concurrency.
