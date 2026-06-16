@@ -177,7 +177,7 @@ Plans:
   4. Each worker writes its evidence to the run dir and returns only a one-line receipt under a char cap, so the main session never holds raw source text.
   5. (AMENDED 2026-06-16) The autonomous-search loop hosts the OFFLINE known-gold Haiku-vs-Sonnet gating pilot (relocated EVAL-01/02/04): the voter issues + executes its own disconfirming searches with the date cutoff enforced, over a curated trap set calibrated so Sonnet is below ceiling; the pre-registered Clopper-Pearson clear-rejection gate either clears Haiku (-> Phase-20 operational shadow/canary) or fires (-> Sonnet-default remains). See `18-HAIKU-PILOT.md`.
 **Plans**: 4 plans (3 waves)
-- [ ] 19-01-PLAN.md -- Deterministic spine: the shared search-and-stop core + retrieval adapters + dateFilter/parseAvtDate + canonicalizeUrl/sourceFilename (D-09/D-13) + the surgical D-12 loader fix [Wave 1]
+- [x] 19-01-PLAN.md -- Deterministic spine: the shared search-and-stop core + retrieval adapters + dateFilter/parseAvtDate + canonicalizeUrl/sourceFilename (D-09/D-13) + the surgical D-12 loader fix [Wave 1]
 - [ ] 19-02-PLAN.md -- The two worker agents (search [WebSearch,Write]; extract Sonnet [WebFetch,Write]) + the worker-output round-trip fixture against the frozen aggregator (PIPE-03/04/05, AGG-03) [Wave 2]
 - [ ] 19-03-PLAN.md -- Trap construction (buried/evidence-absent/date-sensitive over AVeriTeC seeds) + manifest/drift-gate extension + the re-registered pooled-n CP(1,N) lock rule (EVAL-01/04) [Wave 2]
 - [ ] 19-04-PLAN.md -- The offline known-gold gating read: Sonnet-as-calibrator -> Haiku-vs-Sonnet delta -> PASS/FAIL-RAISE/VOID settle-OR-raise (EVAL-01/02/04) [Wave 3]
@@ -209,7 +209,7 @@ Phases execute in numeric order: 16 -> 17 -> 17.1 -> 18 -> 19 -> 20
 | 17. Schema + contract | v2.1.0 | 2/2 | Complete    | 2026-06-15 |
 | 17.1. Address Phase 16/17 review findings (INSERTED) | v2.1.0 | 3/3 | Complete    | 2026-06-15 |
 | 18. Haiku research + voter + early eval | v2.1.0 | 5/5 | Complete    | 2026-06-16 |
-| 19. Search + extract workers | v2.1.0 | 0/TBD | Not started | - |
+| 19. Search + extract workers | v2.1.0 | 1/4 | In Progress|  |
 | 20. Orchestrator + scale | v2.1.0 | 0/TBD | Not started | - |
 
 v1.0 + v1.0.1 + v2.0.0 shipped (plugin 2.0.0). **Active milestone: v2.1.0 (lz-deep-research skill)** -- Phases 16-20, roadmap revised 2026-06-15 (gating eval moved EARLY to Phase 18; EVAL-05 added -- Haiku prompt-engineering research must precede authoring any Haiku agent; the search worker's model tier follows the Phase-18 outcome). Release/publication (REL-01..03) is handled during `/gsd-complete-milestone` after `/gsd-audit-milestone` passes, not as a build phase. See `.planning/MILESTONES.md` for shipped-milestone summaries and `milestones/` for full detail.

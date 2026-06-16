@@ -4,8 +4,8 @@ milestone: v2.1.0
 milestone_name: lz-deep-research skill
 status: executing
 stopped_at: Phase 19 context gathered (scope locked via ROADMAP amendment; advisor consensus on design points)
-last_updated: "2026-06-16T19:03:01.756Z"
-last_activity: 2026-06-16 -- Phase 19 planning complete
+last_updated: "2026-06-16T19:09:01.888Z"
+last_activity: 2026-06-16 -- Phase 19 execution started
 progress:
   total_phases: 8
   completed_phases: 6
@@ -21,7 +21,7 @@ progress:
 See: .planning/PROJECT.md (updated 2026-06-15 -- milestone v2.1.0 started)
 
 **Core value:** Near-Opus intelligence at Sonnet cost, through strategic advisor consultation at high-leverage moments -- now extended from coding tasks to deep research
-**Current focus:** Phase 19 -- Search + extract worker agents (+ the relocated offline Haiku-vs-Sonnet gating pilot, EVAL-01/02/04)
+**Current focus:** Phase 19 — search-extract-worker-agents
 
 ## Deferred Items
 
@@ -37,10 +37,10 @@ Items deferred across milestones (v1.0.1 close 2026-06-11; v2.0.0 additions tagg
 
 ## Current Position
 
-Phase: 18 COMPLETE (verifier: passed, 2026-06-16) -> advancing to Phase 19
-Plan: 5 of 5 complete
-Status: Ready to execute
-Last activity: 2026-06-16 -- Phase 19 planning complete
+Phase: 19 (search-extract-worker-agents) — EXECUTING
+Plan: 1 of 4
+Status: Executing Phase 19
+Last activity: 2026-06-16 -- Phase 19 execution started
 
 ### Milestone v2.1.0 roadmap (REVISED 2026-06-15)
 
