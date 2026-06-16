@@ -11,11 +11,16 @@ export const meta = {
 // pipeline() are injected globals and the runtime has no filesystem/Node API). It lives in the
 // repo-level eval/ dev tree and never ships.
 //
-// The function block between the LZ-REVIEW-GATE-SHARED markers is a BYTE-FOR-BYTE inlined copy of the
-// canonical block in eval/lz-review-gate-lib.mjs (the workflow runtime cannot import that module).
-// eval/lz-review-gate.workflow.test.mjs extracts the marker-delimited block from BOTH files and
-// asserts they match, so this inlined copy can never silently drift from the unit-tested canonical
-// source. Do NOT edit the block here -- edit lz-review-gate-lib.mjs and re-sync.
+// The function block between the LZ-REVIEW-GATE-SHARED markers is the SINGLE SOURCE of the review-gate
+// control logic, inlined here because workflow scripts cannot load modules at all: BOTH static import
+// (rejected as "import call expects one or two arguments" -- the body is parsed as a function, not a
+// module) AND dynamic import() (rejected as "import() is not available in workflow scripts") are
+// blocked by the runtime (verified empirically 2026-06-16). It is unit-tested DIRECTLY from this file
+// by eval/lz-review-gate.workflow.harness.test.mjs, which mirrors the runtime's own execution model
+// (de-export meta, wrap the body in an async function, inject MOCK globals) to run the real
+// orchestration, and slices this marker-delimited block to exercise the real helper functions. No lib
+// copy and no anti-drift proxy are needed -- the test runs the actual source. The markers are the
+// slice point for the helper test.
 
 // === LZ-REVIEW-GATE-SHARED-START (inlined copy; canonical source is lz-review-gate-lib.mjs) ===
 
@@ -23,16 +28,19 @@ export const meta = {
 // Returns { verdict, missed, requests }:
 //   verdict: 'CONVERGED' | 'MORE-NEEDED' | 'UNKNOWN' (UNKNOWN when no ROUND-VERDICT line is present)
 //   missed:  the MISSED-SURFACES value (trimmed; '' if absent)
-//   requests: the NEXT-ROUND-PACKAGING-REQUESTS value to end-of-text (trimmed; '' if absent)
+//   requests: the NEXT-ROUND-PACKAGING-REQUESTS value (single line, trimmed; '' if absent)
 // Lenient by design: reviewer output is free text, so a malformed/absent sentinel yields UNKNOWN
 // rather than throwing (the workflow treats UNKNOWN as not-converged, bounded by MAX_ROUNDS).
+// All three captures are single-line so they are ORDER-INDEPENDENT: an out-of-order reviewer message
+// (requests not last) cannot let the requests capture swallow the MISSED-SURFACES / ROUND-VERDICT
+// lines that follow it (dogfood finding I-1).
 function parseReviewerSentinel(text) {
   const s = typeof text === 'string' ? text : '';
   const vMatch = s.match(/ROUND-VERDICT:\s*(CONVERGED|MORE-NEEDED)/i);
   const verdict = vMatch ? vMatch[1].toUpperCase() : 'UNKNOWN';
-  const mMatch = s.match(/MISSED-SURFACES:\s*([^\n\r]*)/i);
+  const mMatch = s.match(/MISSED-SURFACES:[ \t]*([^\n\r]*)/i);
   const missed = mMatch ? mMatch[1].trim() : '';
-  const rMatch = s.match(/NEXT-ROUND-PACKAGING-REQUESTS:\s*([\s\S]*)$/i);
+  const rMatch = s.match(/NEXT-ROUND-PACKAGING-REQUESTS:[ \t]*([^\n\r]*)/i);
   const requests = rMatch ? rMatch[1].trim() : '';
   return { verdict, missed, requests };
 }
@@ -44,19 +52,24 @@ function missedIsNone(missed) {
 }
 
 // isConverged(parsed): the loop terminator for a group of changes -- keep consulting until NO missed
-// surfaces remain. Converged iff the reviewer declared CONVERGED OR the MISSED-SURFACES value is
-// "none". "No missed surfaces" wins even if the verdict line is mislabeled/missing (faithful to the
-// requirement); UNKNOWN with a non-none missed value is NOT converged.
+// surfaces remain. POLICY (dogfood finding I-2): "no missed surfaces" is AUTHORITATIVE. When the
+// reviewer provides a MISSED-SURFACES value it DECIDES -- converged iff it is "none", even if the
+// ROUND-VERDICT line disagrees (a CONVERGED verdict alongside a real missed list does NOT converge;
+// a MORE-NEEDED verdict with missed=none DOES). The ROUND-VERDICT is only a fallback when the
+// reviewer omitted the MISSED-SURFACES line entirely. UNKNOWN with a real missed list is NOT
+// converged.
 function isConverged(parsed) {
   if (!parsed || typeof parsed !== 'object') {
     return false;
   }
 
-  if (parsed.verdict === 'CONVERGED') {
-    return true;
+  const missed = typeof parsed.missed === 'string' ? parsed.missed.trim() : '';
+
+  if (missed.length > 0) {
+    return missedIsNone(missed);
   }
 
-  return missedIsNone(parsed.missed);
+  return parsed.verdict === 'CONVERGED';
 }
 
 // nextRequests(parsed, fallback): what the executor must package next round. Prefer the reviewer's
