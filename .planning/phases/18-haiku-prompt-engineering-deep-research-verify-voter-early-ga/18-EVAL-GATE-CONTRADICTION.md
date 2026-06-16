@@ -94,7 +94,15 @@ D-05 (the model would retrieve the WiCE source / published verdict).
 
 ## Recommendation carried into discuss-phase
 
-Option (d): amend the sole hard gate to the SUBTLE **closed-book** WiCE false-uphold DELTA and retain
+**SUPERSEDED (2026-06-16) by the locked 3-family consensus in `18-GATE-RECONCILIATION-CONSULTS.md`.**
+The closed-book Option (d) below was the single-advisor first pass; 3 consultation rounds (Opus +
+GPT-5.5 + Gemini) + a user NC-license ratification converged UNANIMOUSLY on a different resolution:
+GATE = programmatically synthesized subtle OPEN-BOOK traps (Path B) over AVeriTeC-Supported seeds vs
+the dated KS, with pooled-n statistics and a derived `CP(1,N)` ceiling. See that doc for the locked
+decision + the verbatim re-registered lock rule. The original Option (d) text is retained below for
+provenance only.
+
+Option (d) [SUPERSEDED]: amend the sole hard gate to the SUBTLE **closed-book** WiCE false-uphold DELTA and retain
 the AVeriTeC open-book rows as the leakage / parametric-memorization cross-check that D-05 always
 specified. It is the only option that is both satisfiable today and high-confidence, and it honors
 the spirit of every locked decision; the only thing bent is the literal "open-book" word in D-07,

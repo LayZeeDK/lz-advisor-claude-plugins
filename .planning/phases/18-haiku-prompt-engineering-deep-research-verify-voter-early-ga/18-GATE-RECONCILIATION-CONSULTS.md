@@ -93,12 +93,97 @@ In priority order (mostly zero-credit / deterministic; these largely DECIDE Path
 6. **WiCE subtle quality audit** (overreach type, is `refuted` fair vs merely `not proven`),
    **overreach-mechanism balance**, **near-duplicate/independence check**.
 
-## Recommendation carried into the discuss-phase
+## Recommendation carried into the discuss-phase (Round 1 -- superseded by the locked consensus below)
 
 All three agree on the DIRECTION (build a real open-book subtle gate; do not amend to closed-book).
 The Path A vs Path B choice should be DECIDED BY analyses #1-#3, then locked in the formal
-re-deliberation: run the zero-credit analyses first; if the AVeriTeC Conflicting class is large
-enough at super-majority agreement, prefer Path A (license-clean, minimum change, no synthesis); if
-not (too small/noisy), take Path B pending the CC-BY-NC derivative ruling, seeding from AVeriTeC
-Supported claims. Keep WiCE-subtle as the closed-book control either way. Re-register the lock rule
-(stratum, construction rules, CP-`n`, what PASS buys) with thresholds frozen, before any vote.
+re-deliberation. [Rounds 2-3 resolved this -- see below.]
+
+---
+
+# LOCKED 3-FAMILY CONSENSUS (Rounds 2-3, unanimous ACCEPT)
+
+Process: 3 consultation rounds, executor-driven. R1 split (Opus=Path A; GPT-5.5+Gemini=Path B). R2
+crossed over (Opus->B on the agreement-filter-selects-the-easy-tail argument; GPT-5.5+Gemini->A on
+the CC-BY-NC license). The USER then RATIFIED the NonCommercial posture (gitignored dev-only). R3:
+all three ACCEPT the hybrid below. ~35 Copilot AI Credits spent across rounds.
+
+## The decision
+
+- **GATE = Path B**: a programmatically synthesized subtle-overreach stratum -- dense-evidence
+  AVeriTeC "Supported" claims each mutated by EXACTLY ONE overreach step (scope / causation /
+  magnitude / certainty) to `expected_verdict: refuted`, voted OPEN-BOOK against the AVeriTeC
+  revised-2.0 KS with a per-claim publication-date cutoff. Clean gold-by-construction; controllable N.
+- **LICENSE (user-ratified)**: mutating AVeriTeC (CC-BY-NC) claims is accepted PROVIDED the
+  derivatives live only in the gitignored `eval/.cache` (never committed/distributed) and the
+  committed manifest carries only uids + remapped labels + the mutation RECIPE/seed (method, not NC
+  text); local dev-only eval = non-commercial internal research. AVeriTeC-Supported = sanctioned
+  PRIMARY seed; ExpertQA (MIT) = optional zero-NC alternative (served open-book vs the AVeriTeC KS as
+  a generic distractor store).
+- **GENERATOR HYGIENE (Opus refinement)**: synthesize the trap mutations with a model OUTSIDE the
+  voter families where feasible (at minimum a different model than the Haiku voter), to avoid an
+  asymmetric shared-blind-spot artifact biasing the Haiku-MINUS-Sonnet DELTA; accept a trap only if it
+  flips a deliberately-weak reference verifier (D-03) as the family-neutral difficulty anchor.
+- **CROSS-CHECK ARM (optional, non-blocking)**: a small super-majority-filtered native AVeriTeC
+  Conflicting set, run for ecological validity (synthetic traps not OOD/artificial). Kept if feasibility
+  gate (iv) sizes it (>=~10), reported as a qualitative concordance signal, NEVER producing PASS/FAIL;
+  dropped silently with a one-line note if the high-agreement count is near zero.
+- **GATE STATISTICS**: `n` = POOLED claim-trials (subtle_claims x trials), NOT per-claim. Hard gate =
+  ZERO pooled excess Haiku-MINUS-Sonnet false-upholds. Ceiling = `clopperPearsonUpper(1, N_pooled)`
+  registered as a FORMULA evaluated at the REALIZED pooled n (~0.05 at N=60-100); the legacy 0.25
+  scalar is RETIRED as mathematically incorrect for any n>19. Reliability (`>=15` trials/claim) stays
+  a SEPARATE gate. Tightening 0.25 -> ~0.05 is a legitimate, DERIVED, STRICTER pre-vote fix.
+- **PASS BUYS**: a legitimate Haiku-first flip-ON (COST-02) -- because the gate now measures the
+  production open-book silent-false-uphold mechanism directly -- conditioned on the mandatory
+  escalation triggers (contested + load-bearing + ~15-20% audit of Haiku-unanimous upholds) staying
+  wired. FAIL on any gate -> RAISE TO USER (EVAL-03); Sonnet-default ships in the interim.
+
+## Feasibility gates BEFORE any reliable=15 spend (in order)
+
+1. **10-claim trap-synthesis validity probe**: accept a trap only if it is a genuine one-step
+   overreach a competent judge calls `refuted` AND it flips a deliberately-weak reference verifier;
+   need `>=7/10` to proceed with Path B. (This is the A-vs-B settling measurement from R2; B viable.)
+2. **Closed-book saturation check** on the synthesized traps: if BOTH Haiku and Sonnet are
+   false-uphold-free at k=3 closed-book, the stratum is NON-DISCRIMINATING and a zero-excess DELTA is
+   VOID -- regenerate harder mutations (or tighten the weak-verifier bar) before proceeding.
+3. **Sonnet `--validate` oracle ~100%** on a known-answer seed.
+4. **Native Conflicting count at super-majority agreement** -- sizes the optional cross-check arm.
+
+All require the AVeriTeC fetch (HF token + accepted terms + more of the revised KS than the current
+single-zip bound -- the operator's KS-scope point), into the gitignored cache.
+
+## Re-registered lock rule (verbatim, hand to discuss-phase)
+
+> The sole hard gate is the SUBTLE OPEN-BOOK Haiku-MINUS-Sonnet false-uphold DELTA, measured on a
+> programmatically synthesized subtle-overreach stratum: dense-evidence AVeriTeC "Supported" claims
+> each mutated by exactly one overreach step (scope / causation / magnitude / certainty) to
+> `expected_verdict: refuted`, voted OPEN-BOOK against the AVeriTeC revised-2.0 knowledge store with a
+> per-claim publication-date cutoff (voter sees only KS docs dated before the claim's annotated date;
+> never live web). A false-uphold is the deterministic event `expected_verdict === 'refuted' &&
+> verdict === 'unrefuted'`, counted off-model over gold. The binomial n is POOLED over all subtle
+> open-book trials (n = subtle_claims x trials), NOT a single claim's trials. The interval is the
+> Clopper-Pearson exact-binomial UPPER bound on the pooled Haiku-MINUS-Sonnet excess via the pinned
+> jstat (`jStat.beta.inv`), never hand-rolled, never Wald/bootstrap. The PASS ceiling is registered as
+> a FORMULA, not a frozen scalar: `DELTA_UPPER_MAX = clopperPearsonUpper(1, N_pooled, ALPHA)`
+> evaluated at the REALIZED pooled n -- so ZERO pooled excess PASSES and the FIRST pooled excess FAILS
+> (~0.05 at N=60-100; the legacy 0.25 scalar is RETIRED as incorrect for any n>19). PASS requires ALL
+> THREE: (1) pooled subtle open-book DELTA upper bound <= the derived ceiling (sole hard gate); (2)
+> `escalationFraction < 0.50` (unchanged cost gate); (3) `reliableTrials >= 15` PER CLAIM (separate
+> reliability gate). PASS BUYS flipping the OFF-by-default Haiku-first flag ON (COST-02), conditioned
+> on the mandatory escalation triggers staying wired. FAIL on any gate -> RAISE TO USER (EVAL-03);
+> Sonnet-default ships in the interim. SATURATION PRE-CONDITION (blocking): before any reliable=15
+> spend, run the closed-book saturation check; if both models are false-uphold-free at k=3 closed-book,
+> the stratum is NON-DISCRIMINATING and a zero-excess DELTA is VOID -- regenerate harder mutations
+> first. Trap mutations are generated by a model outside the voter families where feasible and accepted
+> only if they flip a deliberately-weak reference verifier (D-03). All numeric gates except the derived
+> ceiling are frozen; the ceiling is a deterministic function of the realized pooled n, recorded in the
+> run artifact. Legitimate only because zero votes are cast; re-registered before the first model call.
+
+## What a replan touches
+
+- 18-03: lock-rule prose (above) + aggregator gate semantics (pooled-n DELTA + the `CP(1,N)` formula
+  ceiling; rename `subtleOpenBookDeltaUpper` honestly; retire the 0.25 scalar).
+- 18-04: manifest/loader -- add the synthesized subtle-open stratum (AVeriTeC-Supported seeds +
+  one-step mutation recipe), the AVeriTeC fetch (more KS), the optional native Conflicting cross-check
+  set + agreement filter, ExpertQA-MIT option. Mutated text stays gitignored.
+- 18-05: the staged eval RUN (the resumable Workflow harness over nested voter subagents).
