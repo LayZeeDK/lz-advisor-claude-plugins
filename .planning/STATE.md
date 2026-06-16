@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v2.1.0
 milestone_name: lz-deep-research skill
-status: executing
-stopped_at: Phase 17.3 context gathered
-last_updated: "2026-06-15T22:43:52.656Z"
+status: ready_to_plan
+stopped_at: Phase 17.3 complete (2/2) — ready to discuss Phase 18
+last_updated: 2026-06-16T00:00:13.347Z
 last_activity: 2026-06-15 -- Phase 17.3 execution started
 progress:
   total_phases: 8
   completed_phases: 4
   total_plans: 10
-  completed_plans: 9
+  completed_plans: 11
   percent: 50
 ---
 
@@ -21,7 +21,7 @@ progress:
 See: .planning/PROJECT.md (updated 2026-06-15 -- milestone v2.1.0 started)
 
 **Core value:** Near-Opus intelligence at Sonnet cost, through strategic advisor consultation at high-leverage moments -- now extended from coding tasks to deep research
-**Current focus:** Phase 17.3 — add-github-actions-workflow-for-script-tests
+**Current focus:** Phase 18 — haiku prompt engineering deep research + verify voter + early gating eval
 
 ## Deferred Items
 
@@ -37,10 +37,10 @@ Items deferred across milestones (v1.0.1 close 2026-06-11; v2.0.0 additions tagg
 
 ## Current Position
 
-Phase: 17.3 (add-github-actions-workflow-for-script-tests) — EXECUTING
-Plan: 1 of 1
-Status: Executing Phase 17.3
-Last activity: 2026-06-15 -- Phase 17.3 execution started
+Phase: 18
+Plan: Not started
+Status: Ready to plan
+Last activity: 2026-06-16
 
 ### Milestone v2.1.0 roadmap (REVISED 2026-06-15)
 
@@ -84,7 +84,7 @@ Advisor runtime-proven on Opus 4.8. Final phase: Phase 10 (documentation-hygiene
 
 **Velocity:**
 
-- Total plans completed: 128 (v1.0 milestone, all phases)
+- Total plans completed: 130 (v1.0 milestone, all phases)
 - Average duration: -
 - Total execution time: 0 hours
 
@@ -114,6 +114,7 @@ Advisor runtime-proven on Opus 4.8. Final phase: Phase 10 (documentation-hygiene
 | 17 | 2 | - | - |
 | 17.1 | 3 | - | - |
 | 17.2 | 2 | - | - |
+| 17.3 | 2 | - | - |
 
 **By Phase (v2.1.0 milestone):**
 
