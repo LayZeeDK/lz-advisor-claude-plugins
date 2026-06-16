@@ -179,6 +179,41 @@ single-zip bound -- the operator's KS-scope point), into the gitignored cache.
 > ceiling are frozen; the ceiling is a deterministic function of the realized pooled n, recorded in the
 > run artifact. Legitimate only because zero votes are cast; re-registered before the first model call.
 
+## FEASIBILITY PILOT RESULTS (2026-06-16) -- the consensus assumption was empirically FALSIFIED
+
+Before re-registering/replanning, two cheap pilots tested Path B's premise on 10 Gemini-synthesized
+one-step-overreach traps over real AVeriTeC-Supported claims (generator outside the voter families).
+Both loader bugs surfaced and were noted: chenxwh/AVeriTeC is a MODEL repo (loader hardcodes
+--repo-type dataset) and is UNGATED (loader assumes gated).
+
+- **Probe #1 (trap validity, clean gold evidence):** Opus judged 10/10 traps GENUINE one-step
+  overreaches, gold=refuted, subtle -> Path B synthesis WORKS. BUT a Haiku verifier handed the clean
+  gold evidence caught 10/10 (0 fooled). Lesson: clean-evidence overreach detection is easy for Haiku;
+  the signal cannot live in reasoning-on-clean-evidence.
+- **Probe #2 (corrected open-book pilot, noisy top-30 retrieval, Haiku vs Sonnet, 3 attack-mode seats,
+  60 votes):** SATURATION. Haiku 0/30 false-upholds, Sonnet 0/30, DELTA=0. Both tiers caught every
+  trap even under noisy retrieval (distractors, syndicated dupes).
+
+**Implication (decisive):** the Path B consensus assumption -- that synthesized subtle overreaches
+would fool the cheap voter in open-book -- is FALSIFIED for this trap type. The reasoning axis shows
+Haiku == Sonnet (full parity, zero deficit). Per the consensus's own SATURATION pre-condition,
+both-models-ace => the stratum is NON-DISCRIMINATING => a zero-excess result is VOID, not a PASS.
+
+**The only untested axis is RETRIEVAL ORCHESTRATION** (the voter issuing its OWN disconfirming
+searches over the raw KS and possibly retrieving poorly) -- the pilots handed the voters the
+retrieval, so they did not test whether Haiku searches worse than Sonnet. Testing it requires
+building the search-loop harness (expensive).
+
+Caveats (bias toward catching, i.e. conservative against finding saturation): pilot used top-30 of
+the baseline retrieval (no voter-issued search); per-sentence date cutoff (D-05) not enforced. The
+0/60 magnitude across BOTH tiers is nonetheless a clear saturation signal for this trap type.
+
+**Where this lands:** an EVAL-03 raise-to-user state, reached cheaply with strong data -- the gate
+VOIDs via saturation, so it cannot positively clear Haiku; Sonnet-default ships regardless. The open
+choice (recommended to the user + a final 3-family consult): accept Sonnet-default + Haiku-first OFF
+on the parity evidence, OR invest in the heavier orchestration harness to attempt a positive Haiku
+clearance (low expected payoff given universal parity + the cost-asymmetry that favors Sonnet-default).
+
 ## What a replan touches
 
 - 18-03: lock-rule prose (above) + aggregator gate semantics (pooled-n DELTA + the `CP(1,N)` formula
