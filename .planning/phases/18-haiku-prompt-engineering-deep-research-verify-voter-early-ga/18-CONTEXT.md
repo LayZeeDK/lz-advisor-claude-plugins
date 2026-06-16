@@ -63,6 +63,13 @@ rule; the staged, credit-aware eval run.
   ONLY for qualitative VERIF checks (attack-mode diversity present, `disconfirming_query` recorded,
   source-independence applied), one ISOLATED judge per dimension with an "Unknown" out. skillgrade is NOT
   a dependency (Docker + TS + multi-agent vs the zero-dep constraint); its PATTERNS are mirrored.
+- **D-01b (owner clarification, 2026-06-16):** "zero external dependencies" governs the DISTRIBUTED
+  PLUGIN RUNTIME -- the research skill + Phase 19/20 workers + the Phase-16 runtime aggregator + the
+  shipped voter agents -- which use no npm packages and no external CLIs. The EVAL scripts (`lz-eval-*`)
+  are dev/design infrastructure and MAY use the globally-installed `hf` CLI (dataset fetch via
+  `hf download` -- handles auth, LFS, `--include` selective fetch, `--revision` pinning, repo-type) and
+  the `claude` CLI (the headless run driver), as accepted eval-time TOOL dependencies. They still carry
+  no npm/package deps (node built-ins only), and we still re-verify sha256 after download for integrity.
 
 ### Dataset selection -- EXISTING human-labeled corpora, no hand-authoring (D-02)
 - **D-02:** The SUBTLE-OVERREACH stratum -- the stratum the whole gate hinges on -- uses **WiCE**
