@@ -625,21 +625,28 @@ This keeps the fetched LLM-AggreFact / AVeriTeC text local-only (D-04 license co
 
 **Note:** No `[ASSUMED]` claim is load-bearing for the GATE itself. The gate is deterministic (verdict-vs-gold-label + Clopper-Pearson), and the gold labels are human-annotated WiCE (verified enum). The assumptions above affect prompt QUALITY and operational mechanics, which the eval surfaces empirically rather than relying on.
 
-## Open Questions
+## Open Questions (RESOLVED)
+
+> All three are Claude's-Discretion / eval-time-enumeration items per CONTEXT D-07; each carries an
+> adopted recommendation the plans implement (Q1 -> Plan 18-03/18-05 A4 placeholder; Q2 -> Plan 18-02
+> per-tier Clopper-Pearson; Q3 -> Plan 18-03 raw JSONL). None is a blocking design fork.
 
 1. **Exact AVeriTeC revised-KS file layout + per-claim date field name.**
    - What we know: the revised KS was released 2024-11-15 for FEVER-2024; per-claim date cutoff is the documented mechanic (ClaimCheck).
    - What's unclear: the precise file paths and the claim-date field name inside the gated repo (could not enumerate without HF_TOKEN this session).
    - Recommendation: enumerate at eval time once authenticated (`paths-info` API with the token), pin sha256 into the manifest then; treat the open-book arm as the part that requires the token.
+   - **RESOLVED:** adopted -- Plan 18-03 documents a placeholder sha256 for the gated KS (A4) and Plan 18-05 only fetches the gated open-book arm when HF_TOKEN is present; the WiCE closed-book SUBTLE gate is unaffected.
 
 2. **DELTA interval combination method (Clopper-Pearson per-tier vs paired Beta-Bernoulli on the difference).**
    - What we know: D-07 leaves the estimator to Claude's Discretion; the per-tier primitive is verified.
    - What's unclear: whether to report (Haiku-upper minus Sonnet-lower) as the conservative DELTA bound or a Bayesian Beta-Bernoulli on the paired difference.
    - Recommendation: implement the per-tier Clopper-Pearson primitive first (verified, simplest), add a Beta-Bernoulli option behind the same interface if the planner wants the paired treatment; both are valid per D-07.
+   - **RESOLVED:** adopted -- Plan 18-02 implements the per-tier Clopper-Pearson upper bound; Beta-Bernoulli is optional behind the same interface.
 
 3. **Whether to read WiCE via raw JSONL on `main` or the parquet-converted config.**
    - What we know: raw JSONL files exist on `main` (verified) and need no parquet reader (zero-dep friendly); the parquet config exists at `refs/convert/parquet`.
    - Recommendation: read the raw JSONL (`data/subclaim_dev.jsonl` etc.) -- zero-dep, no parquet decoder needed. Pin the `main` sha `54f7976b...`.
+   - **RESOLVED:** adopted -- Plan 18-03 reads the raw JSONL on `main` (zero-dep) and pins the `main` sha.
 
 ## Sources
 
