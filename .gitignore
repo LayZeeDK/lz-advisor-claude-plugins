@@ -8,5 +8,10 @@
 # Eval pipeline outputs (regenerated on re-run)
 evals/**/outputs/
 
+# Eval dataset cache (fetched at eval time; license-compliant local-only; never committed)
+/eval/.cache/
+# Eval dev dependencies (pinned in eval/package-lock.json; restored via `cd eval && npm install`; never shipped)
+/eval/node_modules/
+
 # Transient /lz-plan side-effect output (plan files written to cwd by skill)
 /plans/
