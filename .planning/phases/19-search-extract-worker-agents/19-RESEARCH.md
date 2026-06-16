@@ -488,22 +488,64 @@ export function fetchDataset(repo, { revision, include, gated, repoType = 'datas
 
 **Note:** A1 is the highest-leverage open question -- it determines whether the dev-split seeds are leakage-clean enough for a fair offline read. It is flagged for planner/discuss-phase confirmation, not silently assumed.
 
-## Open Questions
+## Open Questions (RESOLVED)
 
-1. **Which AVeriTeC KS do the trap seeds draw from -- dev (original KS, present in cache) or the revised test-set KS (2024-11-15, leakage-clean)?**
-   - What we know: D-07 names the "revised-2.0 KS"; the 2024-11-15 upstream fix was applied to the TEST set; the cache holds the dev split (original KS).
-   - What's unclear: whether the dev KS is leakage-clean enough (after date-filter + fact-check-article exclusion) or whether the manifest must seed from the revised test set.
-   - Recommendation: PLANNER confirms during planning; default to dev seeds WITH the date filter + explicit exclusion of `fact_checking_article`/`cached_original_claim_url` URLs, and verify on a 10-claim probe that no post-cutoff verdict leaks. Escalate to discuss-phase if the dev KS proves leaky.
+> All three are resolved consistently with the FROZEN D-07 (AVeriTeC revised-2.0 KS is the sole
+> retrieval source + per-claim date cutoff). OQ-1 is the load-bearing one (Assumption A1); its
+> disposition is enforced as a GATING leakage probe that BLOCKS the manifest lock in Plan 03 (a real
+> task, not prose), with an explicit ESCALATE-TO-USER path if the probe finds the KS leaky.
 
-2. **What is the exact mechanical search-minimum (N queries / M docs) before an uphold is permitted?**
-   - What we know: the minimums force past lazy-stopping (18-HAIKU-PILOT.md); the per-vote trace records depth + stop reason.
-   - What's unclear: the concrete N/M values that are demanding enough to discriminate without being unsatisfiable on the static KS.
-   - Recommendation: calibrate N/M during the Sonnet-as-calibrator step (the same step that hardens difficulty); lock them in the re-registered lock rule before any vote. Treat as a contract anchor (planner-finalizable, like D-13/14/15).
+1. **OQ-1 (load-bearing, A1) -- Which AVeriTeC KS do the trap seeds draw from, and is it leakage-clean?**
+   - What we know: D-07 names the "revised-2.0 KS"; the 2024-11-15 upstream fix removed the post-claim
+     `fact_checking_article` leakage vector; the cache currently holds the dev split's `top_100` KS.
+   - **RESOLVED (adopt the recommended disposition; consistent with FROZEN D-07):** Use AVeriTeC dev
+     claims as SEEDS, retrieve over the revised-2.0 KS through the static-KS adapter with the per-claim
+     `dateFilter` ENFORCED (fail-closed: undated + `>= claim_date` docs dropped), AND screen out
+     `fact_checking_article` / `cached_original_claim_url` URLs from any KS the recipe touches. This is
+     NOT assumed clean -- it is CONFIRMED by a **GATING leakage probe** that BLOCKS the manifest lock:
+     a ~10-claim screen (run before/at construction) asserting that, after the date filter + URL
+     exclusion, NO retrieved KS doc carries the post-cutoff published verdict (no `fact_checking_article`
+     URL survives in-window; no cached-original-claim URL appears; no doc dated `>= claim_date` survives).
+     - **Gate placement:** the probe is a real Plan-03 task step (Task 1 writes the screen into
+       `lz-eval-traps.mjs`; its `.test.mjs` proves the screen discriminates), and the Plan-03 manifest
+       lock (Task 2) DEPENDS on the probe passing -- the manifest's open-book AVeriTeC rows are not
+       finalized until the screen is green on the seed set.
+     - **ESCALATE-TO-USER (do NOT silently proceed on a leaky KS):** if the probe finds the dev KS leaky
+       after the date filter + URL exclusion (any post-cutoff verdict survives), STOP and RAISE to the
+       user -- prefer the revised TEST-set KS seeds, or defer the offline read -- rather than locking a
+       leaky manifest. A leaky KS makes the offline read easier than production and invalidates the gate.
+     - **Why this settles A1 from the frozen inputs:** D-07 already fixes the retrieval source (revised
+       KS) and the date cutoff; the only residual uncertainty was empirical leakage-cleanliness, and the
+       gating probe converts that uncertainty into a pass/fail blocker with an escalation path -- so the
+       question is resolvable, not rubber-stamped. (Confidence: HIGH on the mechanism; the realized
+       cleanliness is decided empirically by the probe at construction time.)
 
-3. **Does the AVeriTeC `top_100` KS for a given claim contain a genuine in-corpus disconfirmer for the buried/date-sensitive strata, or only the gold sentence + distractors?**
-   - What we know: the dev KS `top_100` is heavily syndicated with many off-topic distractors (verified by direct read).
-   - What's unclear: per-claim, whether a buried-but-present disconfirmer exists to make the buried stratum solvable-by-Sonnet (discriminating) vs absent (which would make it an evidence-absent trap instead).
-   - Recommendation: the trap-construction script classifies each candidate seed by whether the KS contains a decisive disconfirmer (-> buried) or not (-> evidence-absent); the Sonnet-calibrator step validates the classification empirically.
+2. **OQ-2 -- What is the exact mechanical search-minimum (N queries / M docs) before an uphold is permitted?**
+   - What we know: the minimums force past lazy-stopping (18-HAIKU-PILOT.md); the per-vote trace records
+     depth + stop reason; the values must be demanding enough to discriminate yet satisfiable on the
+     static KS.
+   - **RESOLVED (pin concrete starting minimums in the pre-registered lock rule; calibrator may only
+     TIGHTEN):** Pin a concrete starting floor in the re-registered EVAL-04 lock rule (Plan 03, Task 3),
+     in the zero-votes window, BEFORE any vote: **`minQueries = 3` distinct queries** (at least one a
+     disconfirming/negation query) and **`minDocs = 5` distinct in-window KS docs explored** before an
+     uphold is permitted. These are the pre-registered minimums of record. The Plan-04 Sonnet-calibrator
+     step may **only TIGHTEN them (raise N/M)** if a stratum saturates; it may **NEVER LOOSEN them**
+     (lowering N/M to fit an observed result is forbidden result-shopping). Any tightening is recorded in
+     the run artifact with its rationale; the pre-registered `3/5` floor is the anti-loosening anchor.
+     This keeps the pre-registration genuine: the minimums are fixed before votes, the calibrator is a
+     one-way ratchet upward only.
+
+3. **OQ-3 -- Does the `top_100` KS hold a genuine in-corpus disconfirmer (buried) or only the gold + distractors (evidence-absent)?**
+   - What we know: the dev KS `top_100` is heavily syndicated with many off-topic distractors (verified by
+     direct read); per-seed it is unknown a priori whether a pre-cutoff in-corpus disconfirmer exists.
+   - **RESOLVED (mechanical classification at construction, empirically validated by the calibrator):**
+     The Plan-03 trap-construction script (`lz-eval-traps.mjs`, Task 1) classifies each candidate seed
+     MECHANICALLY: a seed whose `top_100`, after the date filter + URL exclusion, CONTAINS a decisive
+     pre-cutoff in-corpus disconfirmer ranked deep behind distractors -> **buried**; a seed with NO
+     in-corpus disconfirmer -> **evidence-absent**. The `lz-eval-traps.test.mjs` proves the classifier
+     discriminates (a seed with a pre-cutoff disconfirmer -> buried; one without -> evidence-absent). The
+     Plan-04 Sonnet-as-calibrator step then VALIDATES the classification empirically (a buried stratum
+     Sonnet can solve below ceiling is genuinely buried; one Sonnet cannot is re-classified or hardened).
 
 ## Environment Availability
 
@@ -646,10 +688,10 @@ export function fetchDataset(repo, { revision, include, gated, repoType = 'datas
 | Trap methodology | HIGH | AVeriTeC/WiCE primary sources + saturation/CI literature + the empirical Phase-18 falsification. |
 | Pitfalls | HIGH | The re-saturation + leakage + pooled-n + host-quirk + license pitfalls are all evidenced. |
 
-### Open Questions (for planner / discuss-phase)
-- A1/OQ-1: dev (cached, original KS) vs revised test-set KS for the seeds -- determines leakage cleanliness; PLANNER MUST confirm before locking the manifest.
-- OQ-2: the concrete mechanical search-minimum (N queries / M docs) -- calibrate during the Sonnet-as-calibrator step, lock in the re-registered rule.
-- OQ-3: per-seed, whether the KS holds an in-corpus disconfirmer (buried) or not (evidence-absent) -- the construction script classifies, the calibrator validates.
+### Open Questions (RESOLVED -- see the "## Open Questions (RESOLVED)" section)
+- A1/OQ-1: RESOLVED. Dev seeds over the revised-2.0 KS with the date filter ENFORCED + `fact_checking_article`/`cached_original_claim_url` URL exclusion; cleanliness CONFIRMED by a GATING ~10-claim leakage probe that BLOCKS the Plan-03 manifest lock, with an ESCALATE-TO-USER path if the KS proves leaky (never silently proceed).
+- OQ-2: RESOLVED. Concrete starting minimums PINNED in the re-registered lock rule (`minQueries = 3`, `minDocs = 5`) BEFORE any vote; the Plan-04 Sonnet-calibrator may only TIGHTEN (raise), never loosen them.
+- OQ-3: RESOLVED. The Plan-03 construction script classifies each seed mechanically (in-corpus pre-cutoff disconfirmer -> buried; none -> evidence-absent); the calibrator validates the classification empirically.
 
 ### Ready for Planning
 Research complete. The planner can finalize D-12/13/14/15 values, lock the trap-construction rules + mechanical minimums into the re-registered EVAL-04 lock rule (zero-votes window), and structure waves around: (Wave 0) deterministic driver functions + tests; (Wave 1) the two worker agents + the D-12 loader fix; (Wave 2) trap construction + saturation calibration; (Wave 3) the offline read settle-OR-raise.
