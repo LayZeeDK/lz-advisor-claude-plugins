@@ -110,14 +110,14 @@ Which phase covers which requirement. Filled in during roadmap creation (2026-06
 | VERIF-04 | Phase 16 | Complete |
 | PIPE-07 | Phase 17 | Complete |
 | VERIF-06 | Phase 17 | Complete |
-| VERIF-01 | Phase 18 | Pending |
-| VERIF-02 | Phase 18 | Pending |
-| VERIF-03 | Phase 18 | Pending |
-| COST-02 | Phase 18 | Pending |
-| EVAL-01 | Phase 18 | Pending |
-| EVAL-02 | Phase 18 | Pending |
-| EVAL-03 | Phase 18 | Pending |
-| EVAL-04 | Phase 18 | Pending |
+| VERIF-01 | Phase 18 | Complete |
+| VERIF-02 | Phase 18 | Complete |
+| VERIF-03 | Phase 18 | Complete |
+| COST-02 | Phase 18 | Complete |
+| EVAL-01 | Phase 19 | Pending |
+| EVAL-02 | Phase 19 | Pending |
+| EVAL-03 | Phase 18 | Complete |
+| EVAL-04 | Phase 19 | Pending |
 | EVAL-05 | Phase 18 | Complete |
 | PIPE-03 | Phase 19 | Pending |
 | PIPE-04 | Phase 19 | Pending |
@@ -144,8 +144,9 @@ Release requirements (REL-01..03) are handled during `/gsd-complete-milestone`, 
 - Unmapped: 0
 - Release requirements (completion-gated, not phased): 3
 
-**Per-phase counts:** Phase 16 = 5 (AGG-01/02/04/06, VERIF-04); Phase 17 = 2 (PIPE-07, VERIF-06); Phase 18 = 9 (VERIF-01/02/03, COST-02, EVAL-01/02/03/04/05); Phase 19 = 4 (PIPE-03/04/05, AGG-03); Phase 20 = 12 (PIPE-01/02/06/08/09, VERIF-05, AGG-05, COST-01/03/04, INTEG-01/02). 5 + 2 + 9 + 4 + 12 = 32.
+**Per-phase counts:** Phase 16 = 5 (AGG-01/02/04/06, VERIF-04); Phase 17 = 2 (PIPE-07, VERIF-06); Phase 18 = 6 (VERIF-01/02/03, COST-02, EVAL-03/05); Phase 19 = 7 (PIPE-03/04/05, AGG-03, EVAL-01/02/04); Phase 20 = 12 (PIPE-01/02/06/08/09, VERIF-05, AGG-05, COST-01/03/04, INTEG-01/02). 5 + 2 + 6 + 7 + 12 = 32. (REVISED 2026-06-16: EVAL-01/02/04 re-mapped Phase 18 -> 19 -- the definitive gating eval relocated to the Phase-19 staged autonomous-search pilot after the standalone synthesized-overreach gate VOIDed via saturation; the Phase-18 eval machinery is built and reused.)
 
 ---
 *Requirements defined: 2026-06-15*
 *Last updated: 2026-06-15 -- traceability REVISED by roadmapper: gating eval moved EARLY (Phase 18, decoupled from the orchestrator), EVAL-05 (Haiku prompt-engineering research precedes any Haiku agent) added, EVAL-03 kill-path raised to the user. All 32 phased requirements mapped to Phases 16-20 (100% coverage). REL-01..03 left completion-gated.*
+*Updated 2026-06-16 -- Phase 18 COMPLETE (verified): VERIF-01/02/03, COST-02, EVAL-03, EVAL-05 met. EVAL-03 achieved via RAISE (the standalone synthesized-overreach gate VOIDed via saturation; owner decided to PURSUE Haiku-first via a staged autonomous-search pilot; Sonnet-default ships, Haiku OFF). EVAL-01/02/04 re-mapped to Phase 19 (the definitive eval relocated to the staged pilot). Count: Phase 18 6, Phase 19 7; 32 total unchanged.*

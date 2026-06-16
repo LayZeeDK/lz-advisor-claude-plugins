@@ -149,7 +149,7 @@ Plans:
 ### Phase 18: Haiku prompt-engineering deep research + verify-voter + early gating eval
 **Goal**: The Haiku verify-voter prompt is engineered from a dedicated deep-research pass on Haiku prompt-engineering patterns (captured as a reference artifact) BEFORE any Haiku agent is authored; the Sonnet baseline verify-voter and the research-grounded Haiku verify-voter variant are then authored against the frozen vote schema; and the pre-registered gating eval (lock rule written first, false-uphold as the sole hard gate) runs standalone against the voter -- settling the Haiku-first flag, or raising the decision to the user if Haiku is non-viable. Runs isolated from the orchestrator, search, and extract workers, driven by the existing pilot harness over the Phase-16 tally + Phase-17 vote schema.
 **Depends on**: Phase 16 (the aggregator tally) and Phase 17 (the frozen vote schema); decoupled from the pipeline -- proven standalone by the existing pilot harness, which needs only a voter prompt + a labeled dataset (no orchestrator/search/extract)
-**Requirements**: VERIF-01, VERIF-02, VERIF-03, COST-02, EVAL-01, EVAL-02, EVAL-03, EVAL-04, EVAL-05
+**Requirements**: VERIF-01, VERIF-02, VERIF-03, COST-02, EVAL-03, EVAL-05 (EVAL-01/02/04 re-mapped to Phase 19 -- the definitive gating eval relocated to the staged pilot)
 **Success Criteria** (what must be TRUE):
   1. A Haiku prompt-engineering reference artifact exists, grounded in a dedicated deep-research pass over CURRENT authoritative sources (the Claude Code Guide / Claude Code Docs + web), with every load-bearing technique verified; `lz-nx-ai-plugins` `MODEL-OPTIMIZATION-HAIKU.md` is treated only as a NON-AUTHORITATIVE starting point whose details are potentially stale until verified. The Haiku verify-voter prompt under eval is demonstrably derived from the verified research -- not a Sonnet prompt run on `model: haiku` (EVAL-05). This research precedes authoring ANY Haiku agent.
   2. The verify-voter exists in a Sonnet baseline variant (the ship default) and a research-grounded Haiku variant, each casting one isolated skeptic vote with no shared context between voters, diversified by attack mode; the voter runs an explicit DISCONFIRMING search (records the disconfirming query it ran) and weights corroboration by SOURCE INDEPENDENCE (N syndicated copies of one source count as one).
@@ -161,17 +161,21 @@ Plans:
 - [x] 18-02-PLAN.md -- eval/ install surface (eval/package.json + committed lockfile pinning jstat@1.9.6, gitignore) + SC-2 re-scope + D-11 packaging-boundary test + human-verify gate on the first npm install [Wave 1]
 - [x] 18-03-PLAN.md -- Deterministic eval aggregator + pre-registered lock rule: Pass@1/Pass^k + per-stratum false-uphold + Haiku-minus-Sonnet DELTA + library-computed (jstat) Clopper-Pearson upper bound + mechanical lock-rule check [Wave 2] (completed 2026-06-16)
 - [x] 18-04-PLAN.md -- Zero-hand-authoring dataset loader + committed derived manifest + vendored-WiCE NOTICE (hf-CLI fetch, sha256 fail-closed, gated-401 actionable, D-02d label remap, license-compliant) [Wave 2] (completed 2026-06-16)
-- [ ] 18-05-PLAN.md -- Sonnet baseline + research-grounded Haiku verify-voter agents (isolated attack-mode vote, disconfirming search, source-independence) + the staged gating eval run that settles-or-raises the Haiku-first flag (EVAL-03) [Wave 3]
+- [x] 18-05-PLAN.md -- Sonnet baseline + research-grounded Haiku verify-voter agents (isolated attack-mode vote, disconfirming search, source-independence) + the staged gating eval run that settles-or-raises the Haiku-first flag (EVAL-03) [Wave 3] (completed 2026-06-16)
+
+**Phase 18 outcome (2026-06-16, VERIFIED passed):** settle-or-raise achieved via RAISE. Shipped deliverables stand: the EVAL-05 Haiku prompt-engineering reference; the eval install surface + deterministic aggregator + dataset loader; and both verify-voter agents (Sonnet ship-default, Haiku OFF behind the flag). The standalone synthesized-overreach gating eval VOIDed via saturation (Haiku 0/30 == Sonnet 0/30 -> non-discriminating), so per EVAL-03 the decision was RAISED to the owner, who chose to PURSUE Haiku-first. The definitive Haiku-vs-Sonnet test is the staged autonomous-search pilot (`18-HAIKU-PILOT.md`), carried into Phase 19 (offline known-gold harness on the search loop -- relocated EVAL-01/02/04) + Phase 20 (operational shadow/canary + audit guardrails). See `18-EVAL-GATE-CONTRADICTION.md`, `18-GATE-RECONCILIATION-CONSULTS.md`, `18-VERIFICATION.md`.
 
 ### Phase 19: Search + extract worker agents
 **Goal**: The fetch/extract worker (Sonnet, stores each fetched excerpt immutably at fetch time and extracts falsifiable claims) and the search worker are authored against the frozen schema, each least-privilege, each writing immutable evidence to the run dir and returning only a one-line receipt -- with the search worker's model tier (Haiku vs Sonnet) chosen FROM the Phase-18 Haiku research/eval outcome, honoring the "deep research before any Haiku agent" constraint.
-**Depends on**: Phase 18 (the Haiku-prompt research + eval outcome dictates the search worker's model tier -- this is why search/extract are authored AFTER the Haiku research, not before) and Phase 17 (the frozen schema)
-**Requirements**: PIPE-03, PIPE-04, PIPE-05, AGG-03
+**Depends on**: Phase 18 (the Haiku-prompt research + the eval DISPOSITION -- pursue-Haiku-first-via-pilot -- which makes the search worker's tier a pilot outcome, not a pre-settled value) and Phase 17 (the frozen schema)
+**AMENDED (2026-06-16):** the Phase-18 standalone gate voided via saturation; the Haiku-vs-Sonnet decision is PURSUED via a staged pilot. Phase 19 therefore ALSO builds the autonomous-search loop and its OFFLINE known-gold harness -- the first decisive read of the false-uphold gate (relocated EVAL-01/02/04): curated buried/absent/date-sensitive traps, Sonnet-below-ceiling difficulty calibration, a pre-registered Clopper-Pearson clear-rejection gate (`18-HAIKU-PILOT.md`). Also fix the 18-04 loader bugs (chenxwh/AVeriTeC is an ungated `model` repo; loader hardcodes `--repo-type dataset` + assumes gated).
+**Requirements**: PIPE-03, PIPE-04, PIPE-05, AGG-03, EVAL-01, EVAL-02, EVAL-04
 **Success Criteria** (what must be TRUE):
   1. A search worker (model tier chosen from the Phase-18 outcome, `[WebSearch, Write]`) returns source candidates for a sub-angle, and one such worker can be dispatched per sub-angle for the fan-out.
   2. An extract worker (Sonnet, `[WebFetch, Write]`) stores each fetched source excerpt immutably at fetch time as the evidence artifact (the basis for the Phase-16 quote re-check).
   3. The extract worker extracts falsifiable claims, each bound to a verbatim quote, a stored-excerpt id, and source metadata, conforming to the frozen Phase-17 schema.
   4. Each worker writes its evidence to the run dir and returns only a one-line receipt under a char cap, so the main session never holds raw source text.
+  5. (AMENDED 2026-06-16) The autonomous-search loop hosts the OFFLINE known-gold Haiku-vs-Sonnet gating pilot (relocated EVAL-01/02/04): the voter issues + executes its own disconfirming searches with the date cutoff enforced, over a curated trap set calibrated so Sonnet is below ceiling; the pre-registered Clopper-Pearson clear-rejection gate either clears Haiku (-> Phase-20 operational shadow/canary) or fires (-> Sonnet-default remains). See `18-HAIKU-PILOT.md`.
 **Plans**: TBD
 
 ### Phase 20: Orchestrator skill + headless scale confirmation
@@ -184,6 +188,7 @@ Plans:
   3. The Opus `advisor` is consulted read-only at exactly two gates (ranking cut-line; final synthesis/calibration) over bounded curated JSON only, and the subagent fan-out is wave-batched at no more than five in-flight per wave.
   4. The skill targets the Anthropic first-party API as its platform floor (no Bedrock/Vertex degradation paths), is discoverable as `lz-advisor:lz-deep-research` (bare `/lz-deep-research`, de-shadowing the built-in `/deep-research`), and `.lz-research/` is gitignored.
   5. The `.lz-research/<run-id>/` run dir (immutable worker files, stored excerpts, votes, survivors, report) is retained after the report as the audit trail, and a packaged-skill headless run at real concurrency leaves the host stable with wave-batched (non-linear-serial) spawns.
+  6. (AMENDED 2026-06-16) If the Phase-19 offline gate cleared Haiku, the Haiku-first Tier-1 voter is rolled out via the staged pilot (shadow -> canary -> Tier-1) with the unanimity-blind-spot guardrails -- elevated/targeted audit of unanimous upholds, a Sonnet mixed-tier seat, mechanical search minimums -- and a pre-committed rollback; otherwise Sonnet-default remains. The escalation net (contested + load-bearing + audit) must surface the correlated unanimous false-uphold. See `18-HAIKU-PILOT.md`.
 **Plans**: TBD
 
 ## Progress
@@ -199,7 +204,7 @@ Phases execute in numeric order: 16 -> 17 -> 17.1 -> 18 -> 19 -> 20
 | 16. Aggregator + fixture | v2.1.0 | 2/2 | Complete    | 2026-06-15 |
 | 17. Schema + contract | v2.1.0 | 2/2 | Complete    | 2026-06-15 |
 | 17.1. Address Phase 16/17 review findings (INSERTED) | v2.1.0 | 3/3 | Complete    | 2026-06-15 |
-| 18. Haiku research + voter + early eval | v2.1.0 | 2/5 | In Progress|  |
+| 18. Haiku research + voter + early eval | v2.1.0 | 5/5 | Complete    | 2026-06-16 |
 | 19. Search + extract workers | v2.1.0 | 0/TBD | Not started | - |
 | 20. Orchestrator + scale | v2.1.0 | 0/TBD | Not started | - |
 
