@@ -1,0 +1,54 @@
+{
+  "label": "partially_supported",
+  "supporting_sentences": [
+    [
+      21
+    ],
+    [
+      20,
+      21
+    ]
+  ],
+  "claim": "It is the site of the creation of the first standardized futures contracts at the Chicago Board of Trade.",
+  "evidence": [
+    "(meta data) TITLE: Economy",
+    "(meta data) PUBLISHER: https://www.facebook.com/WorldBusinessChicago",
+    "# World Business Chicago",
+    "# Strong, Diversified Economy",
+    "Chicago's industry mix most closely matches the nation's, with no single industry employing more than 12% of the workforce",
+    "Photo:",
+    "\"View Up the Chicago River\" by Lord is Good",
+    "Chicago has one of the world's largest and most diversified economies, with more than four million employees and generating an annual gross regional product (GRP) of over $609 billion.",
+    "The city is an efficient economic powerhouse, home to more than 400 major corporate headquarters, including 36 in the Fortune 500.",
+    "Among the most diverse economies in the nation, Chicago is a key player in every sector from risk management innovation to manufacturing to information technology to health services",
+    "####",
+    "#### Most Diversified Economy in the U.S.",
+    "Source: Moody's Analytics (2017), WBC (2018)",
+    "## Top Metro for New & Expanding Companies",
+    "Site Selection magazine has recognized the Chicago area as having more new or expanded corporate facilities than any other for four years in a row: 2013, 2014, 2015 and 2016",
+    "Photo:",
+    "\"Atop of Chicago\" by Brian Koprowski",
+    "#1",
+    "Metro for corporate investment in the U.S.",
+    "#### Trading Post",
+    "The most distinctive aspect of Chicago's financial services community is also among its oldest.",
+    "The city's derivatives exchange community, which started with commodity futures trading at the Chicago Board of Trade in 1848, established the city as a global financial center.",
+    "To this day, even though the trading of derivatives is conducted on an ever-expanding international scale, Chicago arguably remains the geographic center of global derivatives trading \u2013 in terms of markets, scale and talent.",
+    "Chicago accounts for one fifth (20%) of the world's global derivatives trading market; 2X New York (10%) and matching all European exchanges combined (20%)",
+    "Chicago-based exchanges generated 4.9 billion in annual global derivatives trading volume with a notional value of more than one quadrillion in 2017",
+    "Chicago-based Options Clearing Corporation clears all US options contracts \u2013 4.3 billion in 2017 (the third highest volume on record)",
+    "Chicago futures and options exchanges collectively dominate exchange-based derivatives trading, with more than half of exchange-based derivatives trading in North America",
+    "#### $609.2B Economy Rivals Nations",
+    "Source: World Bank (2016), Moody's (2016)",
+    "#### Find out more",
+    "Chicago's Business Climate",
+    "#### Related News",
+    "[wp_rss_multi_importer category=\"8\u2033]"
+  ],
+  "meta": {
+    "id": "dev00004-0",
+    "claim_title": "Chicago",
+    "claim_section": "Abstract.",
+    "claim_context": "Chicago (/\u0283\u026a\u02c8k\u0251\u02d0\u0261o\u028a/ (listen), locally also /\u0283\u026a\u02c8k\u0254\u02d0\u0261o\u028a/), officially the City of Chicago, is the most populous city in Illinois, as well as the third most populous city in the United States. With an estimated population of 2,705,994 (2018), it is the most populous city in the Midwest. Chicago is the principal city of the Chicago metropolitan area, often referred to as Chicagoland, and the county seat of Cook County, the second most populous county in the United States. The metropolitan area, at nearly 10 million people, is the third-largest in the United States. \n Located on the shores of freshwater Lake Michigan, Chicago was incorporated as a city in 1837 near a portage between the Great Lakes and the Mississippi River watershed and grew rapidly in the mid-19th century. After the Great Chicago Fire of 1871, which destroyed several square miles and left more than 100,000 homeless, the city made a concerted effort to rebuild. The construction boom accelerated population growth throughout the following decades, and by 1900 Chicago was the fifth largest city in the world. Chicago made noted contributions to urban planning and zoning standards, including new construction styles (including the Chicago School of architecture), the development of the City Beautiful Movement, and the steel-framed skyscraper. Chicago is an international hub for finance, culture, commerce, industry, technology, telecommunications, and transportation. "
+  }
+}

@@ -276,4 +276,81 @@ test('EVAL-01 stratify is DISCRIMINATING: a supported-only pool cannot satisfy t
   );
 });
 
-// The manifest/vendor DRIFT-GATE test cases (Task 2) are appended below this line.
+// ---------------------------------------------------------------------------
+// D-04 (drift fails closed at Wave 2 -- Task 2): the manifest's WiCE uid set is COVERED by the
+// vendored records under eval/__fixtures__/wice-vendored/ and each vendored file's recomputed
+// sha256 MATCHES its manifest entry. Any miss or mismatch fails the test (ContractError). The
+// coverage assertion is discriminating (matched count >= 1 AND equals the manifest WiCE uid count
+// -- a vacuous empty scan cannot pass). This is the gate that makes manifest/vendor drift fail at
+// Wave 2, not at the costly live eval run.
+// ---------------------------------------------------------------------------
+
+const WICE_DIR = path.join(HERE, '__fixtures__', 'wice-vendored');
+const WICE_RECORDS = path.join(WICE_DIR, 'records');
+
+test('D-04 manifest/vendor DRIFT GATE: every manifest WiCE uid is vendored AND its sha256 matches', () => {
+  const m = loadManifest(MANIFEST);
+
+  // The WiCE source row carries the per-vendored-file sha256.
+  const wiceSource = m.sources.find((s) => s.id === 'wice');
+  assert.ok(wiceSource, 'manifest has a WiCE source entry');
+  assert.equal(wiceSource.vendored, true, 'WiCE is marked vendored');
+
+  const manifestWiceUids = m.examples.filter((e) => e.source === 'wice').map((e) => e.uid);
+  assert.ok(manifestWiceUids.length >= 1, 'there is at least one WiCE example (non-vacuous)');
+
+  // (a) COVERAGE: every manifest WiCE uid has a matching vendored record under records/.
+  let matched = 0;
+
+  for (const uid of manifestWiceUids) {
+    const recPath = path.join(WICE_RECORDS, uid + '.json');
+    assert.ok(fs.existsSync(recPath), 'manifest WiCE uid is vendored: ' + uid);
+    matched += 1;
+  }
+
+  assert.equal(
+    matched,
+    manifestWiceUids.length,
+    'matched-uid count must equal the manifest WiCE uid count (no vacuous empty-set pass)',
+  );
+
+  // (b) sha256 MATCH: recompute sha256 over each vendored file (raw committed bytes) and assert it
+  // equals the manifest's recorded sha256 for that file. verifySha256 fails closed on mismatch.
+  for (const sf of wiceSource.files) {
+    const recPath = path.join(WICE_DIR, sf.file);
+    assert.ok(fs.existsSync(recPath), 'manifest source file is vendored: ' + sf.file);
+    const buf = fs.readFileSync(recPath);
+    // verifySha256 throws ContractError /checksum mismatch/ on any divergence.
+    const got = verifySha256(buf, sf.sha256, sf.file);
+    assert.equal(got, sf.sha256, 'recomputed sha256 matches the manifest for ' + sf.file);
+  }
+
+  // The vendored uid set must equal the manifest source-file set (no orphan vendored records and
+  // none missing).
+  const vendoredUids = fs
+    .readdirSync(WICE_RECORDS)
+    .filter((f) => f.endsWith('.json'))
+    .map((f) => f.slice(0, -'.json'.length))
+    .sort();
+  const manifestUidSet = [...manifestWiceUids].sort();
+  assert.deepEqual(vendoredUids, manifestUidSet, 'no orphan vendored records and none missing');
+});
+
+test('D-04 DRIFT GATE is DISCRIMINATING: a tampered vendored buffer fails the sha256 check', () => {
+  // Prove the drift gate would FIRE on a real regression: a single flipped byte in a vendored
+  // record yields a different sha256, and verifySha256 throws. (We do NOT mutate the committed
+  // tree; we tamper an in-memory copy of a real vendored file against its manifest sha.)
+  const m = loadManifest(MANIFEST);
+  const wiceSource = m.sources.find((s) => s.id === 'wice');
+  const sf = wiceSource.files[0];
+  const recPath = path.join(WICE_DIR, sf.file);
+  const buf = fs.readFileSync(recPath);
+  const tampered = Buffer.from(buf);
+  tampered[0] = tampered[0] === 0x7b ? 0x20 : 0x7b; // flip the leading byte
+
+  assert.throws(
+    () => verifySha256(tampered, sf.sha256, sf.file),
+    (err) => err.name === 'ContractError' && /checksum mismatch/i.test(err.message),
+    'a tampered vendored record must fail the drift gate (sha256 mismatch)',
+  );
+});

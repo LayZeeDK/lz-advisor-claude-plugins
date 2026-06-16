@@ -1,0 +1,47 @@
+NOTICE -- Vendored WiCE corpus subset
+=====================================
+
+This directory (eval/__fixtures__/wice-vendored/) contains a vendored subset of the
+WiCE (Entailment in the Wild) dataset. WiCE is the ONLY corpus this repository
+commits, because it is the only eval corpus whose license permits redistribution
+(per phase decision D-04). AVeriTeC (CC-BY-NC-4.0) and LLM-AggreFact (CC-BY-ND-4.0)
+are NOT vendored anywhere under eval/ -- they are fetch-only, and the committed
+manifest carries only their example IDs, remapped labels, pinned revision, and
+sha256 checksums (never the raw corpus text).
+
+Source
+------
+- Dataset:  WiCE (jon-tow/wice on HuggingFace -- the authoritative copy)
+- Upstream: https://huggingface.co/datasets/jon-tow/wice
+- Code:     https://github.com/ryokamoi/wice
+- Pinned revision (HuggingFace main commit):
+  54f7976b8ce4fe0a9bfd35a4dd30af9d5b45d8a6
+- Split vendored from: data/subclaim_dev.jsonl (a deterministic stratified subset)
+
+License
+-------
+- WiCE annotations: ODC-BY (Open Data Commons Attribution License)
+- WiCE code:        MIT License
+
+Do NOT trust the tasksource/wice mirror's license field (it mislabels the license);
+the authoritative jon-tow/wice is ODC-BY (annotations) / MIT (code).
+
+Citation
+--------
+Ryo Kamoi, Tanya Goyal, Juan Diego Rodriguez, and Greg Durrett.
+"WiCE: Real-World Entailment for Claims in Wikipedia."
+Proceedings of the 2023 Conference on Empirical Methods in Natural Language
+Processing (EMNLP 2023). ACL Anthology 2023.emnlp-main.470 / arXiv 2303.01432.
+
+Vendoring notes
+---------------
+- Each vendored record under records/ is a single WiCE subclaim record stored
+  VERBATIM as JSON (label, claim, evidence, supporting_sentences, meta), with every
+  non-ASCII code point escaped to its \uXXXX JSON escape so the committed file is
+  strictly ASCII (project convention) while JSON.parse reads back the identical
+  record.
+- The basename of each record file is the WiCE meta.id (e.g. dev00004-1.json).
+- The committed derived manifest (eval/__fixtures__/lz-eval-manifest.json) records,
+  in its WiCE sources[] entry, the per-vendored-file sha256. The offline drift gate
+  (eval/lz-eval-dataset.test.mjs) recomputes those sha256 values and asserts coverage
+  and equality, so the manifest and the vendored records can never silently diverge.
