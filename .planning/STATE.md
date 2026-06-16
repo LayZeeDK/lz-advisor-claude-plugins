@@ -3,9 +3,9 @@ gsd_state_version: 1.0
 milestone: v2.1.0
 milestone_name: lz-deep-research skill
 status: executing
-stopped_at: Phase 18 Plan 04 complete (zero-hand-authoring dataset loader + committed derived manifest + vendored WiCE + drift gate)
-last_updated: "2026-06-16T10:18:16.000Z"
-last_activity: 2026-06-16 -- Phase 18 Plan 04 complete (eval/lz-eval-dataset.mjs: hf-CLI fetch + sha256 fail-closed + D-02d label remap + gated-401 actionable + EVAL-01 stratify; committed eval/__fixtures__/lz-eval-manifest.json 70 examples; vendored eval/__fixtures__/wice-vendored/ 60 WiCE records + NOTICE; offline manifest/vendor drift gate; 15-test FILE-form gate green)
+stopped_at: Phase 18 PAUSED at Plan 05 Task 2 -- locked-decision contradiction discovered (SUBTLE open-book hard gate is unsatisfiable; D-02 subtle=WiCE=closed-book vs D-05/D-07 gate=subtle+open-book; 0 matching rows). Zero votes cast. Formally re-opening via /gsd-discuss-phase + targeted replan. See 18-EVAL-GATE-CONTRADICTION.md.
+last_updated: "2026-06-16T13:10:00.000Z"
+last_activity: 2026-06-16 -- Phase 18 Plans 01-04 complete + Plan 05 Task 1 committed (both verify-voter agents, 459b4fd). BLOCKED at Plan 05 Task 2 (live gating eval): the pre-registered lock rule's sole hard gate (SUBTLE open-book Haiku-minus-Sonnet false-uphold DELTA) has ZERO matching examples in the committed manifest (all 17 subtle are closed-book WiCE; the 6 open-book are non-subtle AVeriTeC). clopperPearsonUpper(0,0)=1 -> auto FAIL-RAISE. Root cause = contradiction among locked decisions D-02/D-02c/D-05/D-07 (subtle and open-book disjoint by construction); more AVeriTeC KS does NOT close it (D-02c/D-03 forbid AVeriTeC as a subtle source). User chose to formally RE-OPEN via discuss-phase/replan rather than an inline lock-rule amendment. Out-of-family + Opus advisor consults in progress. Finding: 18-EVAL-GATE-CONTRADICTION.md.
 progress:
   total_phases: 8
   completed_phases: 5
@@ -37,9 +37,9 @@ Items deferred across milestones (v1.0.1 close 2026-06-11; v2.0.0 additions tagg
 
 ## Current Position
 
-Phase: 18 (haiku-prompt-engineering-deep-research-verify-voter-early-ga) -- EXECUTING
-Plan: 5 of 5
-Status: Plan 04 complete (zero-hand-authoring dataset loader + committed derived manifest + vendored WiCE + offline drift gate); ready to execute Plan 05
+Phase: 18 (haiku-prompt-engineering-deep-research-verify-voter-early-ga) -- PAUSED (re-opening for re-deliberation)
+Plan: 5 of 5 (Plan 05 Task 1 done; Tasks 2/3 BLOCKED)
+Status: BLOCKED at Plan 05 Task 2 by a locked-decision contradiction. The pre-registered lock rule's sole hard gate (SUBTLE open-book false-uphold DELTA, D-07) has ZERO matching data: D-02 makes the subtle spine WiCE (closed-book) while D-05 confines open-book retrieval to AVeriTeC's KS, and D-02c excludes AVeriTeC's subtle-adjacent class -- so subtle and open-book are disjoint by construction (0 of 70 manifest rows are both). Verified: clopperPearsonUpper(0,0)=1 -> auto FAIL-RAISE. Zero votes cast, so a pre-registration amendment is still legitimate; user chose to formally RE-OPEN via /gsd-discuss-phase + targeted replan (of 18-03 lock rule + 18-05 gate semantics; 18-04 manifest only if the AVeriTeC-subtle option is taken). Recommended resolution carried in the finding (Option d: closed-book SUBTLE hard gate + AVeriTeC open-book as the leakage cross-check). Harness decided: dynamic Workflow over nested voter subagents (NOT claude -p), resumable via filesystem vote persistence, MC/DC-tested + agent-reviewed -- none built yet (paused). Full evidence + options + intent: 18-EVAL-GATE-CONTRADICTION.md. Out-of-family (Copilot) + Opus advisor consults in progress before re-deliberation.
 Last activity: 2026-06-16 -- Plan 18-04 complete (eval/lz-eval-dataset.mjs: hf-CLI fetch into gitignored eval/.cache/ + node:crypto sha256 fail-closed + D-02d WiCE label remap to the frozen unrefuted|refuted enum (partially_supported=subtle) + actionable gated-401 HF_TOKEN pre-flight (no retry) + EVAL-01 stratify; committed eval/__fixtures__/lz-eval-manifest.json with 70 stratified examples (30 unrefuted ~43% / 40 refuted / 17 subtle), WiCE rows vendored + per-file sha256 + revision 54f7976b..., AVeriTeC/LLM-AggreFact/ExpertQA fetch-only IDs+labels+revision only; vendored eval/__fixtures__/wice-vendored/ 60 real WiCE subclaim records (ASCII-escaped) + NOTICE (ODC-BY/MIT); offline manifest/vendor drift gate fails closed at Wave 2; 15-test FILE-form gate exits 0; eval-tree 32 tests green)
 
 ### Milestone v2.1.0 roadmap (REVISED 2026-06-15)
