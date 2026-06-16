@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v2.1.0
 milestone_name: lz-deep-research skill
 status: executing
-stopped_at: Phase 18 Plan 03 complete (deterministic off-model eval aggregator + pre-registered lock rule)
-last_updated: "2026-06-16T12:05:00.000Z"
-last_activity: 2026-06-16 -- Phase 18 Plan 03 complete (eval/lz-eval-aggregate.mjs: library-wired Clopper-Pearson/Pass@k + per-stratum false-uphold + Haiku-minus-Sonnet DELTA + mechanical lock-rule verdict; pre-registered eval/lz-eval-lock-rule.md; discriminating agg-cases fixtures; 15-test FILE-form gate green)
+stopped_at: Phase 18 Plan 04 complete (zero-hand-authoring dataset loader + committed derived manifest + vendored WiCE + drift gate)
+last_updated: "2026-06-16T10:18:16.000Z"
+last_activity: 2026-06-16 -- Phase 18 Plan 04 complete (eval/lz-eval-dataset.mjs: hf-CLI fetch + sha256 fail-closed + D-02d label remap + gated-401 actionable + EVAL-01 stratify; committed eval/__fixtures__/lz-eval-manifest.json 70 examples; vendored eval/__fixtures__/wice-vendored/ 60 WiCE records + NOTICE; offline manifest/vendor drift gate; 15-test FILE-form gate green)
 progress:
   total_phases: 8
   completed_phases: 5
   total_plans: 16
-  completed_plans: 14
-  percent: 88
+  completed_plans: 15
+  percent: 94
 ---
 
 # Project State
@@ -38,9 +38,9 @@ Items deferred across milestones (v1.0.1 close 2026-06-11; v2.0.0 additions tagg
 ## Current Position
 
 Phase: 18 (haiku-prompt-engineering-deep-research-verify-voter-early-ga) -- EXECUTING
-Plan: 4 of 5
-Status: Plan 03 complete (deterministic off-model eval aggregator + pre-registered lock rule); ready to execute Plan 04
-Last activity: 2026-06-16 -- Plan 18-03 complete (eval/lz-eval-aggregate.mjs: Pass@1/Pass^k via jStat.combination + per-stratum false-uphold (verdict-vs-gold, off-model) + Haiku-minus-Sonnet DELTA + Clopper-Pearson/Wilson via jstat + mechanical lockRuleVerdict; frozen EVAL_THRESHOLDS; pre-registered eval/lz-eval-lock-rule.md matching byte-for-byte; discriminating agg-cases fixtures; 15-test FILE-form gate exits 0)
+Plan: 5 of 5
+Status: Plan 04 complete (zero-hand-authoring dataset loader + committed derived manifest + vendored WiCE + offline drift gate); ready to execute Plan 05
+Last activity: 2026-06-16 -- Plan 18-04 complete (eval/lz-eval-dataset.mjs: hf-CLI fetch into gitignored eval/.cache/ + node:crypto sha256 fail-closed + D-02d WiCE label remap to the frozen unrefuted|refuted enum (partially_supported=subtle) + actionable gated-401 HF_TOKEN pre-flight (no retry) + EVAL-01 stratify; committed eval/__fixtures__/lz-eval-manifest.json with 70 stratified examples (30 unrefuted ~43% / 40 refuted / 17 subtle), WiCE rows vendored + per-file sha256 + revision 54f7976b..., AVeriTeC/LLM-AggreFact/ExpertQA fetch-only IDs+labels+revision only; vendored eval/__fixtures__/wice-vendored/ 60 real WiCE subclaim records (ASCII-escaped) + NOTICE (ODC-BY/MIT); offline manifest/vendor drift gate fails closed at Wave 2; 15-test FILE-form gate exits 0; eval-tree 32 tests green)
 
 ### Milestone v2.1.0 roadmap (REVISED 2026-06-15)
 
@@ -122,7 +122,7 @@ Advisor runtime-proven on Opus 4.8. Final phase: Phase 10 (documentation-hygiene
 |-------|-------|-------|----------|
 | 16 (Aggregator + fixture) | 1/2 | - | - |
 | 17 (Schema + contract) | TBD | - | - |
-| 18 (Haiku research + voter + early eval) | 3/5 | 32min | 11min |
+| 18 (Haiku research + voter + early eval) | 4/5 | 45min | 11min |
 | 19 (Search + extract workers) | TBD | - | - |
 | 20 (Orchestrator + scale) | TBD | - | - |
 
@@ -153,6 +153,7 @@ Advisor runtime-proven on Opus 4.8. Final phase: Phase 10 (documentation-hygiene
 | Phase 18 P01 | 7min | 1 tasks | 1 files |
 | Phase 18 P02 | 7min | 4 tasks | 7 files |
 | Phase 18 P03 | 18min | 1 tasks | 16 files |
+| Phase 18 P04 | ~13min | 2 tasks | 64 files |
 
 ## Accumulated Context
 
@@ -189,6 +190,8 @@ Recent decisions affecting current work (v2.1.0):
 - [Phase 18 P02]: [v2.1.0 / Phase 18 P02]: D-11 packaging boundary enforced from BOTH sides -- the Phase-16 SC-2 zero-dependency test RE-SCOPED in place (in-scope edit, Pitfall 1) from a repo-root package.json walk to a recursive plugin-tree-only assertion (no package.json/node_modules under plugins/lz-advisor/; import-spec assertion kept verbatim; non-vacuous inspected-count guard; plugin root resolved file-relative three levels up from scripts/), plus a NEW eval-side `eval/lz-eval-packaging-boundary.test.mjs` (stdlib-only, no jstat) asserting (1) no install surface under the plugin tree and (2) no plugin-tree .mjs imports any eval/ script (one-directional eval->runtime boundary). Both pass via the explicit FILE-form node:test gate.
 - [Phase 18 P03]: [v2.1.0 / Phase 18 P03]: the SOLE HARD GATE engine landed -- `eval/lz-eval-aggregate.mjs` (dev-only eval tree, NEVER shipped) exports `clopperPearsonUpper`/`wilsonUpper`/`passAtK`/`passHatK`/`EVAL_THRESHOLDS`/`countFalseUpholds`/`delta`/`lockRuleVerdict`. ALL CI/Pass@k math is library-computed via the pinned jstat (jStat.beta.inv / jStat.normal.inv / jStat.combination) -- NO hand-rolled logGamma/incbeta/betaInv/comb (D-07). The false-uphold counter is deterministic off-model verdict-vs-gold (D-01); the gated quantity is the Haiku-MINUS-Sonnet DELTA excess on the shared SUBTLE pool (D-06), never Haiku absolute. Cross-tree one-directional import (eval -> runtime) of ContractError/stripBom/safeId/listJson (readJson copied module-private). `EVAL_THRESHOLDS` frozen: ALPHA 0.05, RELIABLE_TRIALS 15, MIN_K 5, escalation kill band 0.40-0.50 (kill enforced at the 0.50 high edge), DELTA_UPPER_MAX 0.25 (separates CP(0,15)~=0.218 PASS from CP(1,15)~=0.319 FAIL), strata fractions 0.40/0.60/0.50. `eval/lz-eval-lock-rule.md` is the pre-registered EVAL-04 lock rule whose thresholds match the frozen object byte-for-byte (verified programmatically). 15-test fixture green via the FILE-form gate; the false-uphold present/absent siblings + the Haiku-2/Sonnet-1 DELTA fixture are mutation-verified discriminating. EVAL-02/EVAL-04/COST-02 satisfied at the DETERMINISTIC-ENGINE level -- they stay Pending in traceability until the Plan 18-05 live eval validates them end-to-end (do not orphan the live-eval close).
 - [Phase 18 P03]: [v2.1.0 / Phase 18 P03 / DEVIATION]: one Rule-1 auto-fix -- the Pattern-2 reference Pass@k wrapper `1 - jStat.combination(n-c,k)/jStat.combination(n,k)` returns NaN whenever n-c<k (jstat's combination is undefined for n<k; e.g. combination(0,5) is NaN), poisoning Pass@1 when all trials are correct. Fixed by an internal `comb(a,k)` that applies the documented combinatorial identity C(a,k)=0 for a<k BEFORE delegating to jStat.combination (the standard HumanEval Pass@k formulation). NOT hand-rolling: every real combination value still comes from the library; only the degenerate a<k identity (a fact) is applied -- D-07 preserved.
+- [Phase 18 P04]: [v2.1.0 / Phase 18 P04]: the zero-hand-authoring dataset loader landed -- `eval/lz-eval-dataset.mjs` (dev-only eval tree, NEVER shipped) exports `remapLabel`/`verifySha256`/`resolveHfToken`/`preflightToken`/`loadManifest`/`stratify`/`fetchDataset` + `STRATA_FRACTIONS`/`WICE_REVISION`. WiCE labels remap to the FROZEN verdict enum (D-02d): supported->unrefuted; partially_supported->refuted AND tagged the `subtle` substratum (the false-uphold trap); not_supported->refuted; unknown label fails closed (ContractError). sha256 verify is fail-closed (/checksum mismatch/ naming the file; rejects a non-64-hex expected). Gated-401 pre-flight (Pitfall 2): a gated repo with no token throws an actionable HF_TOKEN/`hf auth login` error naming the dataset and NEVER retries; WiCE is ungated so the closed-book SUBTLE gate runs token-free; token resolution mirrors huggingface_hub (env HF_TOKEN -> HF_TOKEN_PATH -> HF_HOME/token). `stratify` hits ~40% supported / ~60% bad / ~half-bad-subtle and fails closed if a stratum is unsatisfiable (no degenerate sample). `fetchDataset` shells to `hf download --revision <pinned-sha> --include <glob> --local-dir eval/.cache/<safeId-slug>` (network only at eval time, 18-05). Cross-tree one-directional import (eval -> runtime) of ContractError/stripBom/safeId; readJson copied module-private (no bare JSON.parse on untrusted data).
+- [Phase 18 P04]: [v2.1.0 / Phase 18 P04]: committed derived manifest `eval/__fixtures__/lz-eval-manifest.json` -- 70 stratified examples (30 unrefuted ~42.9% / 40 refuted; 17 subtle = half the WiCE bad). WiCE rows vendored at revision 54f7976b... with per-vendored-file sha256 in sources[]; AVeriTeC (open-book) + LLM-AggreFact (stress) + ExpertQA (secondary seed) are FETCH-ONLY: vendored:false, PENDING revision (enumerated once authenticated at eval time, A4), empty files[], example rows carry ONLY uid/source/source_label/stratum/book/expected_verdict (NO corpus text -- D-04 CC-BY-NC/CC-BY-ND compliance). Vendored `eval/__fixtures__/wice-vendored/`: 60 real WiCE subclaim_dev records (the ONLY commit-safe corpus, ODC-BY/MIT) kept verbatim but with non-ASCII escaped to \\uXXXX so the committed files are strictly ASCII and JSON.parse to the identical record; basename = WiCE meta.id; + a NOTICE (jon-tow/wice + EMNLP 2023 Kamoi et al. + ryokamoi/wice + the pinned revision; states AVeriTeC/LLM-AggreFact are fetch-only, never vendored). OFFLINE manifest/vendor DRIFT GATE in the test: coverage (every manifest WiCE uid is vendored; matched count == uid count; no orphans) + sha256 match (recomputed per file, fail-closed) + a discriminating tampered-buffer case -- so drift fails at Wave 2, not the costly live run. 15-test FILE-form gate green (no network, no HF_TOKEN); eval-tree 32 tests green; plugin-tree runtime aggregator 39 green (cross-tree boundary intact). EVAL-01 satisfied at the loader/manifest level (stays Pending in traceability until the 18-05 live eval validates it end-to-end). No deviations.
 - [Phase 18 P02]: [v2.1.0 / Phase 18 P02]: BOTH CI workflows backstop the three eval-tree tests on every push/PR -- ci.yml gained an eval-tree gate as steps IN THE EXISTING `test` job (ci.yml kept to exactly ONE job so test-act's `act -j test` mirrors the whole gate with no act-command change): `cd eval && (npm ci || npm install)` then `node --test eval/lz-eval-{aggregate,dataset,packaging-boundary}.test.mjs` by EXPLICIT file path WITHOUT any `--test-coverage-*` flags (the plugin-tree 97/89/100 coverage step kept verbatim, scoped to the plugin tree only). test-act.yml's push + pull_request `paths:` both extended to watch the eval tree (eval/**/*.test.mjs, eval/*.mjs, eval/package.json, eval/package-lock.json); ACT_VERSION/ACT_IMAGE + .actrc pin unchanged. The aggregate/dataset tests are authored in 18-03/18-04 -- the CI step references all three by path now (intentional forward reference per the plan). COST-02 + EVAL-04 unblocked at the infrastructure level. No deviations (one pre-commit self-corrected SC-2 level miscount; one Task-4-verify job-count false positive against the plan's over-broad regex that also matches `on:` keys -- single-job invariant satisfied).
 
 ### Pending Todos
@@ -234,11 +237,11 @@ Recent decisions affecting current work (v2.1.0):
 
 ## Session Continuity
 
-Last session: 2026-06-16T12:05:00.000Z
-Stopped at: Phase 18 Plan 03 complete (deterministic off-model eval aggregator + pre-registered lock rule)
-Resume file: .planning/phases/18-haiku-prompt-engineering-deep-research-verify-voter-early-ga/18-03-SUMMARY.md
-Resume next: Execute Plan 18-04 (zero-hand-authoring dataset loader + committed derived manifest + vendored-WiCE NOTICE: hf-CLI fetch, sha256 fail-closed, gated-401 actionable, D-02d label remap, license-compliant). This authors the THIRD eval-tree test (`eval/lz-eval-dataset.test.mjs`) the CI step already references by path, so the eval-tree CI gate goes fully green end-to-end once 18-04 lands. The gate engine is ready: `eval/lz-eval-aggregate.mjs` (library-wired Clopper-Pearson/Pass@k + per-stratum false-uphold + Haiku-minus-Sonnet DELTA + mechanical lockRuleVerdict) and the pre-registered `eval/lz-eval-lock-rule.md` are committed; the loader feeds the gold labels + stratified manifest the 18-05 live eval consumes. Then 18-05 (Sonnet + Haiku voter agents + the staged live gating eval that settles-or-raises the Haiku-first flag, EVAL-03).
+Last session: 2026-06-16T10:18:16.000Z
+Stopped at: Phase 18 Plan 04 complete (zero-hand-authoring dataset loader + committed derived manifest + vendored WiCE + offline drift gate)
+Resume file: .planning/phases/18-haiku-prompt-engineering-deep-research-verify-voter-early-ga/18-04-SUMMARY.md
+Resume next: Execute Plan 18-05 (the LAST Phase-18 plan): author the two verify-voter agents -- `research-verify-voter-sonnet.md` (ship default) + `research-verify-voter-haiku.md` (research-grounded from the EVAL-05 reference, behind the OFF flag) -- against the FROZEN vote schema, then run the staged, credit-aware live gating eval (SUBTLE-first, k>=5, reliable=15 on PASS) that settles-or-raises the Haiku-first flag (EVAL-03). The full eval infrastructure is now ready: the gate engine `eval/lz-eval-aggregate.mjs` + pre-registered `eval/lz-eval-lock-rule.md` (18-03) and the dataset loader `eval/lz-eval-dataset.mjs` + committed manifest + vendored WiCE (18-04). The eval-tree CI gate (all three .test.mjs) is now fully green end-to-end.
 
 ## Operator Next Steps
 
-- Execute Plan 18-04 (zero-hand-authoring dataset loader + committed derived manifest + vendored-WiCE NOTICE), which authors the third eval-tree test (`eval/lz-eval-dataset.test.mjs`) the CI step already references; once it lands the eval-tree CI gate is fully green end-to-end. The gate engine (18-03) is committed and ready for the 18-05 live eval.
+- Execute Plan 18-05 (the final Phase-18 plan): the two voter agents + the staged live gating eval (EVAL-03 settle-or-raise). All deterministic eval infrastructure (gate engine, lock rule, dataset loader, manifest, vendored WiCE, drift gate) is committed and green. The live arms (AVeriTeC open-book / LLM-AggreFact stress) need an `HF_TOKEN` + accepted dataset terms at eval time; the WiCE closed-book SUBTLE gate (the sole hard gate) runs token-free.

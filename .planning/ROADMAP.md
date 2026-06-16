@@ -160,7 +160,7 @@ Plans:
 - [x] 18-01-PLAN.md -- EVAL-05 Haiku prompt-engineering reference artifact (deliverable 1; precedes any Haiku agent) [Wave 1]
 - [x] 18-02-PLAN.md -- eval/ install surface (eval/package.json + committed lockfile pinning jstat@1.9.6, gitignore) + SC-2 re-scope + D-11 packaging-boundary test + human-verify gate on the first npm install [Wave 1]
 - [x] 18-03-PLAN.md -- Deterministic eval aggregator + pre-registered lock rule: Pass@1/Pass^k + per-stratum false-uphold + Haiku-minus-Sonnet DELTA + library-computed (jstat) Clopper-Pearson upper bound + mechanical lock-rule check [Wave 2] (completed 2026-06-16)
-- [ ] 18-04-PLAN.md -- Zero-hand-authoring dataset loader + committed derived manifest + vendored-WiCE NOTICE (hf-CLI fetch, sha256 fail-closed, gated-401 actionable, D-02d label remap, license-compliant) [Wave 2]
+- [x] 18-04-PLAN.md -- Zero-hand-authoring dataset loader + committed derived manifest + vendored-WiCE NOTICE (hf-CLI fetch, sha256 fail-closed, gated-401 actionable, D-02d label remap, license-compliant) [Wave 2] (completed 2026-06-16)
 - [ ] 18-05-PLAN.md -- Sonnet baseline + research-grounded Haiku verify-voter agents (isolated attack-mode vote, disconfirming search, source-independence) + the staged gating eval run that settles-or-raises the Haiku-first flag (EVAL-03) [Wave 3]
 
 ### Phase 19: Search + extract worker agents
