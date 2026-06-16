@@ -156,7 +156,12 @@ Plans:
   3. The lock rule -- the exact pass/kill thresholds AND the false-uphold-as-sole-hard-gate decision -- is written down BEFORE the eval runs, over a pre-registered dataset of at least 60-100 labeled claims, stratified (~40% supported / ~60% bad, about half the bad SUBTLE), covering both closed-book and open-book voting.
   4. The eval runs each claim k>=5 and reports Pass@1, Pass^k, and the per-stratum false-uphold rate.
   5. The Haiku-first flag exists, defaults OFF, and flips ON only if the research-grounded eval clears (~0 open-book false-upholds on the SUBTLE subset AND escalation kept materially below all-Sonnet, kill if escalation exceeds ~40-50%); if the eval shows Haiku non-viable, the decision is RAISED TO THE USER rather than auto-resolved, and Sonnet-default ships in the interim.
-**Plans**: TBD
+**Plans**: 5 plans (3 waves)
+- [ ] 18-01-PLAN.md -- EVAL-05 Haiku prompt-engineering reference artifact (deliverable 1; precedes any Haiku agent) [Wave 1]
+- [ ] 18-02-PLAN.md -- Deterministic eval aggregator + fixture: Pass@1/Pass^k, per-stratum false-uphold, Clopper-Pearson upper bound, Haiku-minus-Sonnet DELTA, mechanical lock-rule check [Wave 1]
+- [ ] 18-03-PLAN.md -- Zero-dep dataset loader + committed DERIVED MANIFEST + vendored-WiCE NOTICE + .gitignore cache (sha256 fail-closed, gated-401 actionable, D-02d label remap) [Wave 1]
+- [ ] 18-04-PLAN.md -- Sonnet baseline + research-grounded Haiku verify-voter agents (isolated attack-mode vote, disconfirming search, source-independence) + the pre-registered lock-rule reference [Wave 2]
+- [ ] 18-05-PLAN.md -- Staged gating eval run: --validate oracle, SUBTLE first k>=5 temp-0, reliable=15 on PASS, settle-or-raise the Haiku-first flag (EVAL-03) [Wave 3]
 
 ### Phase 19: Search + extract worker agents
 **Goal**: The fetch/extract worker (Sonnet, stores each fetched excerpt immutably at fetch time and extracts falsifiable claims) and the search worker are authored against the frozen schema, each least-privilege, each writing immutable evidence to the run dir and returning only a one-line receipt -- with the search worker's model tier (Haiku vs Sonnet) chosen FROM the Phase-18 Haiku research/eval outcome, honoring the "deep research before any Haiku agent" constraint.
@@ -194,7 +199,7 @@ Phases execute in numeric order: 16 -> 17 -> 17.1 -> 18 -> 19 -> 20
 | 16. Aggregator + fixture | v2.1.0 | 2/2 | Complete    | 2026-06-15 |
 | 17. Schema + contract | v2.1.0 | 2/2 | Complete    | 2026-06-15 |
 | 17.1. Address Phase 16/17 review findings (INSERTED) | v2.1.0 | 3/3 | Complete    | 2026-06-15 |
-| 18. Haiku research + voter + early eval | v2.1.0 | 0/TBD | Not started | - |
+| 18. Haiku research + voter + early eval | v2.1.0 | 0/5 | Planned | - |
 | 19. Search + extract workers | v2.1.0 | 0/TBD | Not started | - |
 | 20. Orchestrator + scale | v2.1.0 | 0/TBD | Not started | - |
 
