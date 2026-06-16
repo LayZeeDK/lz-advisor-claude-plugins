@@ -9,6 +9,10 @@ on:
       - .github/workflows/ci.yml
       - .github/workflows/test-act.yml
       - .node-version
+      - eval/**/*.test.mjs
+      - eval/*.mjs
+      - eval/package.json
+      - eval/package-lock.json
       - plugins/lz-advisor/skills/**/*.test.mjs
       - plugins/lz-advisor/skills/**/scripts/*.mjs
   pull_request:
@@ -18,6 +22,10 @@ on:
       - .github/workflows/ci.yml
       - .github/workflows/test-act.yml
       - .node-version
+      - eval/**/*.test.mjs
+      - eval/*.mjs
+      - eval/package.json
+      - eval/package-lock.json
       - plugins/lz-advisor/skills/**/*.test.mjs
       - plugins/lz-advisor/skills/**/scripts/*.mjs
 

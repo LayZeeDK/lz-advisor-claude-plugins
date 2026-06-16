@@ -27,3 +27,17 @@ jobs:
           --test-coverage-branches=89
           --test-coverage-functions=100
           "plugins/lz-advisor/skills/**/*.test.mjs"
+      # Eval-tree gate (Plan 18-02): the repo-level eval/ dev tooling has its own pinned
+      # devDependency (jstat). Restore it from the committed lockfile, then run the three
+      # eval-tree tests by EXPLICIT file path -- WITHOUT the plugin-tree --test-coverage-*
+      # thresholds (those are calibrated to the plugin tree and would false-fail the eval
+      # scripts). These steps live in the SAME `test` job so test-act's `act -j test` keeps
+      # simulating the whole gate with no act-command change.
+      - name: Restore eval/ dev dependencies (jstat)
+        run: cd eval && (npm ci || npm install)
+      - name: Run eval-tree tests (explicit file form, no coverage thresholds)
+        run: >-
+          node --test
+          eval/lz-eval-aggregate.test.mjs
+          eval/lz-eval-dataset.test.mjs
+          eval/lz-eval-packaging-boundary.test.mjs
