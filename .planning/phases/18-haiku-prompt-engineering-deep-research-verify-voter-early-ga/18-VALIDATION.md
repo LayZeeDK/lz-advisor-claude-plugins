@@ -1,10 +1,11 @@
 ---
 phase: 18
 slug: haiku-prompt-engineering-deep-research-verify-voter-early-ga
-status: draft
-nyquist_compliant: false
-wave_0_complete: false
+status: validated
+nyquist_compliant: true
+wave_0_complete: true
 created: 2026-06-16
+validated: 2026-06-16
 ---
 
 # Phase 18 - Validation Strategy
@@ -48,16 +49,16 @@ created: 2026-06-16
 
 | Task ID | Plan | Wave | Requirement | Threat Ref | Secure Behavior | Test Type | Automated Command | File Exists | Status |
 |---------|------|------|-------------|------------|-----------------|-----------|-------------------|-------------|--------|
-| 18-01-01 | 01 | 1 | EVAL-05 | T-18-01 | every technique carries a CITED source tag; no unsourced claim shipped | doc-assert | `node -e` ASCII + CITED + stale-pattern check on `lz-haiku-prompt-engineering.md` | NO -- doc (no .test.mjs) | pending |
-| 18-02-01 | 02 | 1 | EVAL-04, D-11 | T-18-DEPLEAK | no `package.json`/`node_modules` + no eval import under the plugin tree | unit | `node --test plugins/lz-advisor/skills/lz-deep-research/scripts/lz-deep-research-aggregate.test.mjs && node --test eval/lz-eval-packaging-boundary.test.mjs` | EXISTS (edit) + NO -- W0 | pending |
-| 18-02-02 | 02 | 1 | EVAL-04 | T-18-LOCKDRIFT | exact `jstat@1.9.6` pin; `node_modules` + cache gitignored | unit | `node -e` `eval/package.json` + `.gitignore` checks | NO -- W0 | pending |
-| 18-02-03 | 02 | 1 | COST-02 | T-18-SC | first `npm install` human-verified (exact pin, MIT LICENSE, no install scripts, anchors) | manual (checkpoint:human-verify) | `cd eval && npm install --save-exact jstat@1.9.6` + anchor + LICENSE check | N/A (live) | pending |
-| 18-03-01 | 03 | 2 | EVAL-02, EVAL-04, COST-02 | T-18-MATHTRUST / T-18-PARSE | CI library-wired (anchors pinned); false-uphold counter + DELTA discriminating | unit (tdd) | `node --test eval/lz-eval-aggregate.test.mjs` | NO -- W0 | pending |
-| 18-04-01 | 04 | 2 | EVAL-01 | T-18-DATATAMPER / T-18-TOKENLEAK | sha256 fail-closed; gated-401 actionable; remap discriminating | unit (tdd) | `node --test eval/lz-eval-dataset.test.mjs` | NO -- W0 | pending |
-| 18-04-02 | 04 | 2 | EVAL-01 | T-18-LICENSE | only WiCE vendored w/ NOTICE; no encumbered (AVeriTeC/LLM-AggreFact) text committed | unit | `node -e` NOTICE attribution + ASCII check | NO -- W0 | pending |
-| 18-05-01 | 05 | 3 | VERIF-01, VERIF-02, VERIF-03, COST-02, EVAL-05 | T-18-DEPLEAK3 | voters zero-dep (no eval/ import); Haiku plain phrasing (no CRITICAL/MUST/NEVER, no budget_tokens) | unit | `node -e` agent frontmatter + frozen-vote-contract + zero-dep checks | NO -- W0 | pending |
-| 18-05-02 | 05 | 3 | EVAL-02, EVAL-03 | T-18-LEAK2 / T-18-POSTHOC | revised-KS-only retrieval + date cutoff; lock rule pre-committed, unedited | manual (checkpoint:human-action) | staged `claude -p --permission-mode auto` eval -> `node eval/lz-eval-aggregate.mjs` | N/A (live, credit-bound) | pending |
-| 18-05-03 | 05 | 3 | EVAL-03 | T-18-POSTHOC | flag flips ON only per the pre-registered lock-rule verdict; else raise-to-user | manual (checkpoint:decision) | mechanical lock-rule verdict from 18-05-02 | N/A (decision) | pending |
+| 18-01-01 | 01 | 1 | EVAL-05 | T-18-01 | every technique carries a CITED source tag; no unsourced claim shipped | doc-assert | `node -e` ASCII + CITED + stale-pattern check on `lz-haiku-prompt-engineering.md` | doc (asserted inline: 14 CITED, ASCII, stale-only-in-doc) | green |
+| 18-02-01 | 02 | 1 | EVAL-04, D-11 | T-18-DEPLEAK | no `package.json`/`node_modules` + no eval import under the plugin tree | unit | `node --test plugins/lz-advisor/skills/lz-deep-research/scripts/lz-deep-research-aggregate.test.mjs && node --test eval/lz-eval-packaging-boundary.test.mjs` | EXISTS (both: 39 + 2 green) | green |
+| 18-02-02 | 02 | 1 | EVAL-04 | T-18-LOCKDRIFT | exact `jstat@1.9.6` pin; `node_modules` + cache gitignored | unit | `node -e` `eval/package.json` + `.gitignore` checks | inline (pin 1.9.6 + .cache/node_modules gitignored) | green |
+| 18-02-03 | 02 | 1 | COST-02 | T-18-SC | first `npm install` human-verified (exact pin, MIT LICENSE, no install scripts, anchors) | manual (checkpoint:human-verify) | `cd eval && npm install --save-exact jstat@1.9.6` + anchor + LICENSE check | N/A (live) | manual (done -- node_modules/jstat restored; lockfile committed) |
+| 18-03-01 | 03 | 2 | EVAL-02, EVAL-04, COST-02 | T-18-MATHTRUST / T-18-PARSE | CI library-wired (anchors pinned); false-uphold counter + DELTA discriminating | unit (tdd) | `node --test eval/lz-eval-aggregate.test.mjs` | EXISTS (15 green) | green |
+| 18-04-01 | 04 | 2 | EVAL-01 | T-18-DATATAMPER / T-18-TOKENLEAK | sha256 fail-closed; gated-401 actionable; remap discriminating | unit (tdd) | `node --test eval/lz-eval-dataset.test.mjs` | EXISTS (15 green) | green |
+| 18-04-02 | 04 | 2 | EVAL-01 | T-18-LICENSE | only WiCE vendored w/ NOTICE; no encumbered (AVeriTeC/LLM-AggreFact) text committed | unit | `node -e` NOTICE attribution + ASCII check | inline (NOTICE: ODC-BY/MIT; AVeriTeC/LLM-AggreFact not vendored; ASCII) | green |
+| 18-05-01 | 05 | 3 | VERIF-01, VERIF-02, VERIF-03, COST-02, EVAL-05 | T-18-DEPLEAK3 | voters zero-dep (no eval/ import); Haiku plain phrasing (no CRITICAL/MUST/NEVER, no budget_tokens) | unit | `node -e` agent frontmatter + frozen-vote-contract + zero-dep checks | inline + boundary test (frozen contract present; no live budget_tokens/prefill; zero-dep) | green |
+| 18-05-02 | 05 | 3 | EVAL-02, EVAL-03 | T-18-LEAK2 / T-18-POSTHOC | revised-KS-only retrieval + date cutoff; lock rule pre-committed, unedited | manual (checkpoint:human-action) | staged `claude -p --permission-mode auto` eval -> `node eval/lz-eval-aggregate.mjs` | N/A (live, credit-bound) | manual/live (EVAL-03 raise exercised; definitive k>=5 run relocated to Phase 19) |
+| 18-05-03 | 05 | 3 | EVAL-03 | T-18-POSTHOC | flag flips ON only per the pre-registered lock-rule verdict; else raise-to-user | manual (checkpoint:decision) | mechanical lock-rule verdict from 18-05-02 | N/A (decision) | manual (owner settled: PURSUE Haiku-first via staged pilot) |
 
 *Status: pending / green / red / flaky. The planner populates this map from the PLAN.md task list.
 Deterministic-testable surface (per RESEARCH.md Validation Architecture):*
@@ -72,13 +73,13 @@ Deterministic-testable surface (per RESEARCH.md Validation Architecture):*
 
 ## Wave 0 Requirements
 
-- [ ] `eval/package.json` + `eval/package-lock.json` (pinned `jstat@1.9.6`) + `.gitignore` entries for `eval/node_modules/` + the eval cache -- the eval-tree install surface
-- [ ] `eval/lz-eval-aggregate.test.mjs` -- Pass@1/Pass^k, false-uphold, Haiku-minus-Sonnet DELTA, library-wired Clopper-Pearson/Wilson anchors, mechanical lock-rule check (EVAL-02/04, D-06/D-07)
-- [ ] `eval/lz-eval-dataset.test.mjs` -- label remap, checksum fail-closed, gated-401 actionable error path (EVAL-01, D-04)
-- [ ] `eval/lz-eval-packaging-boundary.test.mjs` -- D-11 boundary (no deps under the plugin tree; no eval import from shipped runtime)
-- [ ] EDIT `plugins/lz-advisor/skills/lz-deep-research/scripts/lz-deep-research-aggregate.test.mjs` -- RE-SCOPE the SC-2 test from a repo-root walk to a plugin-tree assertion (in-scope Phase-16-test edit)
-- [ ] `eval/__fixtures__/` eval fixtures (offline JSONL samples + vote dirs + the known-answer CI anchors)
-- [ ] Framework install: `cd eval && npm install` (restores `jstat` from the committed lockfile); plugin tree needs none (`node:test` bundled)
+- [x] `eval/package.json` + `eval/package-lock.json` (pinned `jstat@1.9.6`) + `.gitignore` entries for `eval/node_modules/` + the eval cache -- the eval-tree install surface
+- [x] `eval/lz-eval-aggregate.test.mjs` -- Pass@1/Pass^k, false-uphold, Haiku-minus-Sonnet DELTA, library-wired Clopper-Pearson/Wilson anchors, mechanical lock-rule check (EVAL-02/04, D-06/D-07) -- 15/15 green
+- [x] `eval/lz-eval-dataset.test.mjs` -- label remap, checksum fail-closed, gated-401 actionable error path (EVAL-01, D-04) -- 15/15 green
+- [x] `eval/lz-eval-packaging-boundary.test.mjs` -- D-11 boundary (no deps under the plugin tree; no eval import from shipped runtime) -- 2/2 green
+- [x] EDIT `plugins/lz-advisor/skills/lz-deep-research/scripts/lz-deep-research-aggregate.test.mjs` -- RE-SCOPE the SC-2 test from a repo-root walk to a plugin-tree assertion (in-scope Phase-16-test edit) -- 39/39 green (re-scoped SC-2 included)
+- [x] `eval/__fixtures__/` eval fixtures (offline JSONL samples + vote dirs + the known-answer CI anchors)
+- [x] Framework install: `cd eval && npm install` (restores `jstat` from the committed lockfile); plugin tree needs none (`node:test` bundled) -- `eval/node_modules/jstat` restored
 
 *node:test is built in -- no framework install needed for the plugin-tree test; the eval-tree tests need `jstat` restored via `npm install` under `eval/`.*
 
@@ -111,11 +112,38 @@ pre-registered lock rule, not a node:test.*
 
 ## Validation Sign-Off
 
-- [ ] All tasks have `<automated>` verify or Wave 0 dependencies
-- [ ] Sampling continuity: no 3 consecutive tasks without automated verify
-- [ ] Wave 0 covers all MISSING references (incl. the `eval/` install surface + the re-scoped SC-2 edit)
-- [ ] No watch-mode flags
-- [ ] Feedback latency < 15s
-- [ ] `nyquist_compliant: true` set in frontmatter (flips post-execution via /gsd:validate-phase)
+- [x] All tasks have `<automated>` verify or Wave 0 dependencies (7 automated, 3 legitimately manual-only)
+- [x] Sampling continuity: no 3 consecutive tasks without automated verify (max run of manual is 2: 18-05-02/18-05-03, preceded by automated 18-05-01)
+- [x] Wave 0 covers all MISSING references (incl. the `eval/` install surface + the re-scoped SC-2 edit) -- all created and green
+- [x] No watch-mode flags
+- [x] Feedback latency < 15s (deterministic suite runs ~0.5s wall)
+- [x] `nyquist_compliant: true` set in frontmatter (flipped post-execution via /gsd:validate-phase)
 
-**Approval:** pending
+**Approval:** validated 2026-06-16 -- 71/71 deterministic tests green; 3 manual-only rows genuinely exercised and documented above
+
+---
+
+## Validation Audit 2026-06-16
+
+State A audit (existing VALIDATION.md). All four committed `.test.mjs` files re-run by explicit
+file path (host `node --test <dir>` exit-1 quirk avoided): runtime aggregator 39/39, eval-aggregate
+15/15, eval-dataset 15/15, packaging-boundary 2/2 -- **71/71 green, 0 fail**. The four inline
+`node -e`/doc-assert rows (18-01-01, 18-02-02, 18-04-02, 18-05-01) were re-confirmed against the
+committed artifacts (14 CITED tags + ASCII + stale-only-in-doc; `jstat@1.9.6` exact pin +
+`.cache`/`node_modules` gitignored; NOTICE ODC-BY/MIT with AVeriTeC/LLM-AggreFact not vendored;
+frozen vote contract present with no live `budget_tokens`/prefill + zero-dep). No new tests were
+generated -- the plan's "Deterministic-testable surface" designates exactly the four committed
+tests; the doc-asserts are inline guards by design and all pass. The three manual rows are
+inherently non-automatable and were genuinely exercised: 18-02-03 (first `npm install`
+human-verified; lockfile committed), 18-05-02 (live gating eval -> EVAL-03 raise; definitive k>=5
+run relocated to Phase 19), 18-05-03 (owner settled the flag: PURSUE Haiku-first via the staged
+pilot).
+
+| Metric | Count |
+|--------|-------|
+| Gaps found (MISSING automated coverage) | 0 |
+| Resolved (tests generated) | 0 |
+| Escalated to manual-only | 0 (the 3 manual rows were manual-only by plan design, not escalated) |
+| Automated-covered rows | 7 |
+| Manual-only / live rows | 3 |
+| Deterministic tests green | 71 / 71 |
