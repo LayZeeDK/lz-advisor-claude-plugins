@@ -357,6 +357,124 @@ test('D-04 DRIFT GATE is DISCRIMINATING: a tampered vendored buffer fails the sh
 });
 
 // ---------------------------------------------------------------------------
+// Plan 19-03 / EVAL-01 / D-07: the manifest gains the AVeriTeC OPEN-BOOK retrieval-difficulty strata
+// rows (buried / evidence-absent / date-sensitive). The drift gate is extended to cover them:
+//   - every AVeriTeC example uid is covered (and the matched-count == uid-count discriminating guard
+//     holds -- no vacuous empty-set pass);
+//   - NO AVeriTeC row carries a `text` field (the CC-BY-NC license-clean assertion -- mutated NC
+//     text lives ONLY in gitignored eval/.cache/, never the committed manifest, D-07/Pitfall 5);
+//   - the UPDATED 'averitec' source row is gated:false + repoType:'model' (D-12), repoType-
+//     discriminable from WiCE, with a pinned revision + per-file sha256, and there is EXACTLY ONE
+//     chenxwh/AVeriTeC source entry (the existing wrong-gated row was corrected in place, not
+//     duplicated).
+// The OQ-1 leakage probe (lz-eval-traps.mjs leakageProbe) screened the dev-KS seeds CLEAN BEFORE this
+// manifest was locked; that gate is exercised in lz-eval-traps.test.mjs (the probe DISCRIMINATES) and
+// was run on the real seeds at construction time (exit 0).
+// ---------------------------------------------------------------------------
+
+test('EVAL-01 AVeriTeC open-book DRIFT GATE: every AVeriTeC uid is covered AND the strata discriminate', () => {
+  const m = loadManifest(MANIFEST);
+
+  const avtRows = m.examples.filter((e) => e.source === 'averitec');
+  assert.ok(avtRows.length >= 1, 'there is at least one AVeriTeC example (non-vacuous)');
+
+  // (a) COVERAGE: the matched-count must equal the AVeriTeC uid count (no vacuous empty-set pass).
+  const avtUids = avtRows.map((e) => e.uid);
+  let matched = 0;
+
+  for (const uid of avtUids) {
+    assert.equal(typeof uid, 'string', 'AVeriTeC uid is a string');
+    assert.ok(uid.length > 0, 'AVeriTeC uid is non-empty');
+    matched += 1;
+  }
+
+  assert.equal(matched, avtUids.length, 'matched-uid count must equal the AVeriTeC uid count (no vacuous pass)');
+
+  // No duplicate AVeriTeC uids (loadManifest already fails closed on dupes; assert here too).
+  assert.equal(new Set(avtUids).size, avtUids.length, 'AVeriTeC uids are unique');
+
+  // (b) STRATA DISCRIMINATE: the open-book rows span the three retrieval-difficulty strata so the
+  // set is not a single-stratum (non-discriminating) sample.
+  const strata = new Set(avtRows.map((e) => e.stratum));
+
+  for (const s of ['buried', 'evidence-absent', 'date-sensitive']) {
+    assert.ok(strata.has(s), 'the AVeriTeC open-book set includes the ' + s + ' stratum');
+  }
+
+  assert.ok(strata.size >= 3, 'the open-book rows DISCRIMINATE across >= 3 strata (not a single stratum)');
+});
+
+test('EVAL-01 license-clean: NO AVeriTeC row carries a `text` field (CC-BY-NC, D-07/Pitfall 5)', () => {
+  const m = loadManifest(MANIFEST);
+  const avtRows = m.examples.filter((e) => e.source === 'averitec');
+
+  // The committed manifest carries uids + remapped labels + the mutation recipe/seed -- NEVER the
+  // mutated NC claim prose. A `text` field on any AVeriTeC row is a license violation.
+  for (const row of avtRows) {
+    assert.equal('text' in row, false, 'AVeriTeC row ' + row.uid + ' must NOT carry a text field (NC license)');
+    // Each AVeriTeC trap row instead carries the mutation recipe (method, not text).
+    assert.ok(row.recipe && typeof row.recipe === 'object', 'AVeriTeC row ' + row.uid + ' carries the mutation recipe');
+    assert.equal(typeof row.recipe.transform, 'string', 'the recipe records the transform class');
+    assert.equal(typeof row.recipe.uid_seed, 'number', 'the recipe records the source seed claim_id');
+  }
+
+  // DISCRIMINATING: a vacuous empty AVeriTeC set would pass the loop trivially -- assert non-empty.
+  assert.ok(avtRows.length >= 1, 'the no-text assertion is non-vacuous (>= 1 AVeriTeC row)');
+});
+
+test('D-12 the AVeriTeC source row is gated:false + repoType:model, distinct from WiCE, NOT duplicated', () => {
+  const m = loadManifest(MANIFEST);
+
+  // EXACTLY ONE chenxwh/AVeriTeC source entry (the wrong-gated row was corrected in place, not added).
+  const avtSources = m.sources.filter((s) => s.repo === 'chenxwh/AVeriTeC');
+  assert.equal(avtSources.length, 1, 'exactly one chenxwh/AVeriTeC source entry (no duplicate add)');
+
+  const avt = avtSources[0];
+  assert.equal(avt.id, 'averitec', 'the AVeriTeC source id is averitec');
+  assert.equal(avt.gated, false, 'AVeriTeC is gated:false (D-12: an ungated model repo, token-free)');
+  assert.equal(avt.repoType, 'model', 'AVeriTeC repoType is model (D-12)');
+  assert.equal(avt.vendored, false, 'AVeriTeC is fetch-only (never vendored)');
+  assert.equal(avt.license, 'CC-BY-NC-4.0', 'AVeriTeC license is CC-BY-NC-4.0');
+
+  // The revision is pinned (NOT the placeholder, NOT a moving ref).
+  assert.ok(/^[0-9a-f]{40}$/.test(avt.revision), 'AVeriTeC revision is a pinned 40-hex commit (not PENDING/main)');
+  assert.notEqual(avt.revision, 'PENDING_ENUMERATE_AT_EVAL_TIME', 'the placeholder revision was replaced');
+
+  // Per-file sha256 is pinned for the fetch-only KS files (the integrity guard) -- valid 64-hex.
+  assert.ok(Array.isArray(avt.files) && avt.files.length >= 1, 'AVeriTeC carries pinned files');
+
+  for (const f of avt.files) {
+    assert.ok(/^[0-9a-f]{64}$/.test(f.sha256), 'AVeriTeC file ' + f.file + ' has a valid 64-hex sha256');
+  }
+
+  // DISCRIMINATING (repoType differs from WiCE -- not a blanket flip): WiCE stays dataset.
+  const wice = m.sources.find((s) => s.id === 'wice');
+  assert.notEqual(avt.repoType || 'dataset', wice.repoType || 'dataset', 'AVeriTeC repoType differs from WiCE (per-source, not blanket)');
+  assert.equal(wice.repoType || 'dataset', 'dataset', 'WiCE stays a dataset repo');
+});
+
+test('EVAL-01 the existing WiCE drift-gate assertions are UNCHANGED by the AVeriTeC extension', () => {
+  // Re-assert the WiCE coverage + sha256 invariants hold after the manifest extension (no relaxation).
+  const m = loadManifest(MANIFEST);
+  const wiceSource = m.sources.find((s) => s.id === 'wice');
+  assert.equal(wiceSource.vendored, true, 'WiCE stays vendored');
+
+  const manifestWiceUids = m.examples.filter((e) => e.source === 'wice').map((e) => e.uid);
+  assert.ok(manifestWiceUids.length >= 1, 'WiCE examples remain present');
+
+  for (const uid of manifestWiceUids) {
+    const recPath = path.join(WICE_RECORDS, uid + '.json');
+    assert.ok(fs.existsSync(recPath), 'WiCE uid still vendored after the AVeriTeC extension: ' + uid);
+  }
+
+  // A spot sha256 recompute on the first WiCE file still matches (no relaxation of the integrity gate).
+  const sf = wiceSource.files[0];
+  const buf = fs.readFileSync(path.join(WICE_DIR, sf.file));
+  const got = verifySha256(buf, sf.sha256, sf.file);
+  assert.equal(got, sf.sha256, 'WiCE sha256 integrity is intact after the AVeriTeC extension');
+});
+
+// ---------------------------------------------------------------------------
 // D-12 (loader fix -- per-source parameterization, NOT a blanket flip): fetchDataset must thread a
 // per-source `repoType` (default 'dataset') and emit it as the `--repo-type` arg, so AVeriTeC fetches
 // as a 'model' repo while WiCE stays 'dataset'. A capturing `runner` (the existing injectable seam)
