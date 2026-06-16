@@ -1,0 +1,870 @@
+{
+  "schema_version": 1,
+  "description": "Derived, pre-registered, stratified eval dataset manifest (EVAL-01). WiCE rows are vendored under wice-vendored/ (ODC-BY/MIT, the only commit-safe corpus). AVeriTeC (CC-BY-NC) and LLM-AggreFact (CC-BY-ND) are FETCH-ONLY: this manifest carries only their IDs + remapped labels + pinned revision + sha256, never the raw corpus text (D-04 license compliance). The remap target is the FROZEN verdict enum unrefuted|refuted.",
+  "strata": {
+    "supported": {
+      "expected_verdict": "unrefuted",
+      "note": "WiCE supported (the unrefuted control arm)."
+    },
+    "subtle": {
+      "expected_verdict": "refuted",
+      "note": "WiCE partially_supported -- the SUBTLE-overreach spine; the false-uphold trap (D-02)."
+    },
+    "not-supported": {
+      "expected_verdict": "refuted",
+      "note": "WiCE not_supported (the easy-flip bad arm)."
+    },
+    "open-book": {
+      "expected_verdict": "varies",
+      "note": "AVeriTeC open-book + leakage-test arm; revised KS post-2024-11-15, per-claim date cutoff (D-05). Conflicting/Cherry-picking EXCLUDED from the hard gate."
+    },
+    "stress": {
+      "expected_verdict": "varies",
+      "note": "LLM-AggreFact held-out verbatim stress set (D-02b)."
+    }
+  },
+  "sources": [
+    {
+      "id": "wice",
+      "repo": "jon-tow/wice",
+      "revision": "54f7976b8ce4fe0a9bfd35a4dd30af9d5b45d8a6",
+      "license": "ODC-BY (annotations) / MIT (code)",
+      "vendored": true,
+      "gated": false,
+      "files": [
+        {
+          "file": "records/dev00004-1.json",
+          "sha256": "47e96debdad9c5af365e046654f33b77af4949278c26db8b6ddf066a5ef732be"
+        },
+        {
+          "file": "records/dev00016-0.json",
+          "sha256": "7ede42856d6da22c05dcece98a8f03337c55e3115a41b087dfeecf0ce4400697"
+        },
+        {
+          "file": "records/dev00016-1.json",
+          "sha256": "0b26f4c444d486747abd29b922680396aca6a876643c5bd5e3ba802dcc58235c"
+        },
+        {
+          "file": "records/dev00018-0.json",
+          "sha256": "0cd8eedcc2e0aad2f048cae1fba9f1487f541e681827f8b0400513d405bd1c23"
+        },
+        {
+          "file": "records/dev00018-1.json",
+          "sha256": "fcbdbeda76ddb9c4f8644404b540d9dec420f4cf7d781209c2e4e343268d8ef4"
+        },
+        {
+          "file": "records/dev00025-1.json",
+          "sha256": "639f68fd7963464674982e9e7b40686fd673d0b3dc89b03c45fb9f6f40bfd88f"
+        },
+        {
+          "file": "records/dev00028-0.json",
+          "sha256": "674be0dc076a9250b11759f2efea8722d26b7eca2ccef895a11b7880c6cf3d50"
+        },
+        {
+          "file": "records/dev00028-1.json",
+          "sha256": "22d45c695501bfa6bbcc3d1c8c22ce94b4cd991217e4a5bc918cc4e1e6da5ec7"
+        },
+        {
+          "file": "records/dev00108-0.json",
+          "sha256": "7274639717416d0d67567d3fac724b2c7125334c70341041c553d3d50c2826ca"
+        },
+        {
+          "file": "records/dev00108-2.json",
+          "sha256": "eda46e48d324c5095363706910fd2dd546325314b1af6846ce9a066a70f773b2"
+        },
+        {
+          "file": "records/dev00116-0.json",
+          "sha256": "7366cd0f16aabf233e407d3b92a8e875693f8de44f535f01ca6a94b62193eaa8"
+        },
+        {
+          "file": "records/dev00116-1.json",
+          "sha256": "754983afb94ad6ff9be210808e081c2c400ff0c7f7a7590d3c1d0ef575a54c73"
+        },
+        {
+          "file": "records/dev00116-2.json",
+          "sha256": "b6f8927dd3956528b156611d982f6ad3f96b7577b6033b99bffe1b9e22ea380f"
+        },
+        {
+          "file": "records/dev00126-2.json",
+          "sha256": "6e3acfdf463cc822022104f8b4d5fd8459be28476453ea368344c5b92aab23f3"
+        },
+        {
+          "file": "records/dev00137-0.json",
+          "sha256": "da8d892173eea1d5df8903c153da3e6e469cb36912e500ec3127427babd4a2b3"
+        },
+        {
+          "file": "records/dev00137-1.json",
+          "sha256": "256e235f1dc2956c20e04ba48157c3250a23ecda429875b238be8000356844a1"
+        },
+        {
+          "file": "records/dev00156-0.json",
+          "sha256": "93364203720e6862d70b8940199ced924ec95fe74dca0f871610e3e254c4e7d4"
+        },
+        {
+          "file": "records/dev00164-0.json",
+          "sha256": "152b589633cca3cd0446ee52842904f3bba80b46ccb7f228dccd1761d150260c"
+        },
+        {
+          "file": "records/dev00164-1.json",
+          "sha256": "e0489be3e6a29c62ea90575864f77d589b24d1037f7b84d6de791cc778e05b97"
+        },
+        {
+          "file": "records/dev00164-2.json",
+          "sha256": "9d255286793f27ef06e94c4f74b32e625430413b2d7b1e341ed8df51767cf05f"
+        },
+        {
+          "file": "records/dev00217-2.json",
+          "sha256": "0ccb40c87d4a1a1694f4fb7681028605c0144e8d0578d52e464f7d2a55697dc3"
+        },
+        {
+          "file": "records/dev00219-0.json",
+          "sha256": "f4f164ee6e4ef6ded86cad96732fd82ee4bcc1533a0ca3bc00e34d334441b36c"
+        },
+        {
+          "file": "records/dev00224-0.json",
+          "sha256": "ea46098a1c02f9631de48a0c7bbe91fc06e84abc043d6b3ff05e080ea6d1f731"
+        },
+        {
+          "file": "records/dev00224-1.json",
+          "sha256": "ead0bfb9d8081b49e1e93fb48263a32f193fe053a36cb02bc5edd7b7c2662a65"
+        },
+        {
+          "file": "records/dev00279-1.json",
+          "sha256": "dc19b1ef8ea5b4a5866a7c86325f1d299d7790b8cf461b03652729e8e2bbfd93"
+        },
+        {
+          "file": "records/dev00279-2.json",
+          "sha256": "491d43fa4594771b7c131ec0ffdc9b19a58e28795a3e7e31cf4dc413b40b5db6"
+        },
+        {
+          "file": "records/dev00004-0.json",
+          "sha256": "df5d4c15d3c3578b804a207c17eaf8c9f18816128d0018f388b4dfae92a1093b"
+        },
+        {
+          "file": "records/dev00004-2.json",
+          "sha256": "4aea77660ccb04b854e6f4f01298624a5de27af30b750cd589c1de1ef3c981f1"
+        },
+        {
+          "file": "records/dev00016-2.json",
+          "sha256": "57e9a66f53c77f859e44052b00f2f47b2fb3e591775971e7d46cd26493efbcb9"
+        },
+        {
+          "file": "records/dev00025-0.json",
+          "sha256": "39b86b853bd155a6d16c5b6c144e99b40445044a34b336f1cdbd4cb1329bb732"
+        },
+        {
+          "file": "records/dev00030-1.json",
+          "sha256": "2ef86b666179053381881979766bbfcccadbe88f22fc3aa461b233d374fedf21"
+        },
+        {
+          "file": "records/dev00217-0.json",
+          "sha256": "b1b30062ba8283790708835fdb05f170363f396ae15e4a7df3dae476f1fdebaf"
+        },
+        {
+          "file": "records/dev00217-1.json",
+          "sha256": "3eeea7ea926bd3426d937df693bfec8279e510e29b128cd23843fb840fe8958c"
+        },
+        {
+          "file": "records/dev00219-1.json",
+          "sha256": "fb12949798fd2ea6323e0264bb451cb7440df9990cab6ebc56f5aa5c115d5ec6"
+        },
+        {
+          "file": "records/dev00315-1.json",
+          "sha256": "d9f59076df7867b9fe5a27eb43c27581bb0dbbef1d7f94abc173bec58dec9405"
+        },
+        {
+          "file": "records/dev00316-0.json",
+          "sha256": "d3916ef4c9acf094262cf3edb884fb964d5637729c7c09c8b3417564a1c0cb76"
+        },
+        {
+          "file": "records/dev00316-2.json",
+          "sha256": "0bef454cc7eb849699858cf476fef0ef16958f029d90e732a799f194d659174a"
+        },
+        {
+          "file": "records/dev00330-1.json",
+          "sha256": "e88f0e1f467a95702681f74a41a3b84e3544c886d0373d581bf1eb5788018c6f"
+        },
+        {
+          "file": "records/dev00388-1.json",
+          "sha256": "97f1338e92dc02c84c38890696e425091a32f141ba99d223d9e05c8e6157c1a3"
+        },
+        {
+          "file": "records/dev00418-1.json",
+          "sha256": "c7803510b3ada302d92f456d6ae4195adfb10da17b5e84b4af5fc8dd0bbb7de6"
+        },
+        {
+          "file": "records/dev00429-0.json",
+          "sha256": "f60c9654243518a809752c08683b6af24ab9d0e707f2b5faf84d1375db33963e"
+        },
+        {
+          "file": "records/dev00520-0.json",
+          "sha256": "0bbd59ad99e41cca2b55a7c7b74a94d71be6e4800312ca3c66e2b45563dbca15"
+        },
+        {
+          "file": "records/dev00572-0.json",
+          "sha256": "f60c5f0035b585837647118172091312003ac303998a8cb403eebeb7abe16b90"
+        },
+        {
+          "file": "records/dev00003-0.json",
+          "sha256": "c5cacd091c5792618e97ce508e5a10d3a11cf27b8a6456048ad0cd876c4b316b"
+        },
+        {
+          "file": "records/dev00003-1.json",
+          "sha256": "02ecfc346da4625ad44ba30700eb6db1ac72c5a4bb0479255b610693849f2e2f"
+        },
+        {
+          "file": "records/dev00003-2.json",
+          "sha256": "f8a9cff4db6ea74a849d96090d0bc55051a8178ea24ec12c66be3635778f1925"
+        },
+        {
+          "file": "records/dev00005-0.json",
+          "sha256": "06751e9e4bdf1ba61a523b40ac8fc98a2b6089076eb85522775f8489327e1d4d"
+        },
+        {
+          "file": "records/dev00005-1.json",
+          "sha256": "3e285ddd3569393f88b9349fa08bc416cf78d4ebc69e31269bf32d95a00c9aca"
+        },
+        {
+          "file": "records/dev00030-0.json",
+          "sha256": "daa47ef3e001662b96d8461bd5a5d4826db3b9bbb5e1114f4c7f7ad338843aa8"
+        },
+        {
+          "file": "records/dev00068-0.json",
+          "sha256": "7a0f4dc5b2c4e7df50772f1d986c78d8a645dedae741f13946a159330071f77c"
+        },
+        {
+          "file": "records/dev00068-1.json",
+          "sha256": "4bf6a020174cfa51c5bf2156ddf8ae9cd3177eb7ce7ca98d196336d40a32890f"
+        },
+        {
+          "file": "records/dev00068-2.json",
+          "sha256": "c81bfb3889f13afd64974192176f1627c3214234cc9005ea06712a6d90b6d138"
+        },
+        {
+          "file": "records/dev00108-1.json",
+          "sha256": "6052cd49757623e9118ae2a7b4f8ae00bd3e4907ac0d8f1ac0d797e092775c5b"
+        },
+        {
+          "file": "records/dev00126-0.json",
+          "sha256": "6cd6927d5a3a0e7269a699af1fd1acd3019479feb338783a24a9ffffe532664d"
+        },
+        {
+          "file": "records/dev00126-1.json",
+          "sha256": "3e4c1163ae4baf761896aa8651b900f2b92d9857bec4b11e728af2879befdbad"
+        },
+        {
+          "file": "records/dev00131-0.json",
+          "sha256": "43d89cc2f86ae7fcd2f1cec5dc7610cc2b2ff0a01c76e5237f916598726d768b"
+        },
+        {
+          "file": "records/dev00131-1.json",
+          "sha256": "7c82e49cb29de2b67d6d3f5bed986f4a8434f35825dbffc709766c4da58f9c68"
+        },
+        {
+          "file": "records/dev00156-1.json",
+          "sha256": "bd479213472655a3fa5928d97293d35fb23072a3848cb6bca501c0658bcabc15"
+        },
+        {
+          "file": "records/dev00219-2.json",
+          "sha256": "bc4d153acd9c8f3f27c3dff916715259f02c2997d683550a9cff76b6b3779277"
+        },
+        {
+          "file": "records/dev00236-0.json",
+          "sha256": "cc32d71d363f9b0a135938cb353912be7b12d45926087bda0cd1de31d11c7f26"
+        }
+      ]
+    },
+    {
+      "id": "averitec",
+      "repo": "chenxwh/AVeriTeC",
+      "revision": "PENDING_ENUMERATE_AT_EVAL_TIME",
+      "license": "CC-BY-NC-4.0",
+      "vendored": false,
+      "gated": true,
+      "note": "FETCH-ONLY. Revised knowledge store (post-2024-11-15) is the SOLE open-book retrieval source (D-05); KS is NEVER vendored. Revision + per-file sha256 enumerated once authenticated at eval time (A4).",
+      "files": []
+    },
+    {
+      "id": "llm-aggrefact",
+      "repo": "lytang/LLM-AggreFact",
+      "revision": "PENDING_ENUMERATE_AT_EVAL_TIME",
+      "license": "CC-BY-ND-4.0",
+      "vendored": false,
+      "gated": true,
+      "note": "FETCH-ONLY, used VERBATIM only (No-Derivatives). De-duplicate its embedded WiCE subset. Revision + per-file sha256 enumerated at eval time.",
+      "files": []
+    },
+    {
+      "id": "expertqa",
+      "repo": "cmalaviya/expertqa",
+      "revision": "PENDING_ENUMERATE_AT_EVAL_TIME",
+      "license": "MIT",
+      "vendored": false,
+      "gated": false,
+      "note": "SECONDARY trap-augmentation seed only (D-02c/D-03); not a turnkey stratum.",
+      "files": []
+    }
+  ],
+  "examples": [
+    {
+      "uid": "dev00004-1",
+      "source": "wice",
+      "source_label": "supported",
+      "stratum": "supported",
+      "book": "closed",
+      "expected_verdict": "unrefuted"
+    },
+    {
+      "uid": "dev00016-0",
+      "source": "wice",
+      "source_label": "supported",
+      "stratum": "supported",
+      "book": "closed",
+      "expected_verdict": "unrefuted"
+    },
+    {
+      "uid": "dev00016-1",
+      "source": "wice",
+      "source_label": "supported",
+      "stratum": "supported",
+      "book": "closed",
+      "expected_verdict": "unrefuted"
+    },
+    {
+      "uid": "dev00018-0",
+      "source": "wice",
+      "source_label": "supported",
+      "stratum": "supported",
+      "book": "closed",
+      "expected_verdict": "unrefuted"
+    },
+    {
+      "uid": "dev00018-1",
+      "source": "wice",
+      "source_label": "supported",
+      "stratum": "supported",
+      "book": "closed",
+      "expected_verdict": "unrefuted"
+    },
+    {
+      "uid": "dev00025-1",
+      "source": "wice",
+      "source_label": "supported",
+      "stratum": "supported",
+      "book": "closed",
+      "expected_verdict": "unrefuted"
+    },
+    {
+      "uid": "dev00028-0",
+      "source": "wice",
+      "source_label": "supported",
+      "stratum": "supported",
+      "book": "closed",
+      "expected_verdict": "unrefuted"
+    },
+    {
+      "uid": "dev00028-1",
+      "source": "wice",
+      "source_label": "supported",
+      "stratum": "supported",
+      "book": "closed",
+      "expected_verdict": "unrefuted"
+    },
+    {
+      "uid": "dev00108-0",
+      "source": "wice",
+      "source_label": "supported",
+      "stratum": "supported",
+      "book": "closed",
+      "expected_verdict": "unrefuted"
+    },
+    {
+      "uid": "dev00108-2",
+      "source": "wice",
+      "source_label": "supported",
+      "stratum": "supported",
+      "book": "closed",
+      "expected_verdict": "unrefuted"
+    },
+    {
+      "uid": "dev00116-0",
+      "source": "wice",
+      "source_label": "supported",
+      "stratum": "supported",
+      "book": "closed",
+      "expected_verdict": "unrefuted"
+    },
+    {
+      "uid": "dev00116-1",
+      "source": "wice",
+      "source_label": "supported",
+      "stratum": "supported",
+      "book": "closed",
+      "expected_verdict": "unrefuted"
+    },
+    {
+      "uid": "dev00116-2",
+      "source": "wice",
+      "source_label": "supported",
+      "stratum": "supported",
+      "book": "closed",
+      "expected_verdict": "unrefuted"
+    },
+    {
+      "uid": "dev00126-2",
+      "source": "wice",
+      "source_label": "supported",
+      "stratum": "supported",
+      "book": "closed",
+      "expected_verdict": "unrefuted"
+    },
+    {
+      "uid": "dev00137-0",
+      "source": "wice",
+      "source_label": "supported",
+      "stratum": "supported",
+      "book": "closed",
+      "expected_verdict": "unrefuted"
+    },
+    {
+      "uid": "dev00137-1",
+      "source": "wice",
+      "source_label": "supported",
+      "stratum": "supported",
+      "book": "closed",
+      "expected_verdict": "unrefuted"
+    },
+    {
+      "uid": "dev00156-0",
+      "source": "wice",
+      "source_label": "supported",
+      "stratum": "supported",
+      "book": "closed",
+      "expected_verdict": "unrefuted"
+    },
+    {
+      "uid": "dev00164-0",
+      "source": "wice",
+      "source_label": "supported",
+      "stratum": "supported",
+      "book": "closed",
+      "expected_verdict": "unrefuted"
+    },
+    {
+      "uid": "dev00164-1",
+      "source": "wice",
+      "source_label": "supported",
+      "stratum": "supported",
+      "book": "closed",
+      "expected_verdict": "unrefuted"
+    },
+    {
+      "uid": "dev00164-2",
+      "source": "wice",
+      "source_label": "supported",
+      "stratum": "supported",
+      "book": "closed",
+      "expected_verdict": "unrefuted"
+    },
+    {
+      "uid": "dev00217-2",
+      "source": "wice",
+      "source_label": "supported",
+      "stratum": "supported",
+      "book": "closed",
+      "expected_verdict": "unrefuted"
+    },
+    {
+      "uid": "dev00219-0",
+      "source": "wice",
+      "source_label": "supported",
+      "stratum": "supported",
+      "book": "closed",
+      "expected_verdict": "unrefuted"
+    },
+    {
+      "uid": "dev00224-0",
+      "source": "wice",
+      "source_label": "supported",
+      "stratum": "supported",
+      "book": "closed",
+      "expected_verdict": "unrefuted"
+    },
+    {
+      "uid": "dev00224-1",
+      "source": "wice",
+      "source_label": "supported",
+      "stratum": "supported",
+      "book": "closed",
+      "expected_verdict": "unrefuted"
+    },
+    {
+      "uid": "dev00279-1",
+      "source": "wice",
+      "source_label": "supported",
+      "stratum": "supported",
+      "book": "closed",
+      "expected_verdict": "unrefuted"
+    },
+    {
+      "uid": "dev00279-2",
+      "source": "wice",
+      "source_label": "supported",
+      "stratum": "supported",
+      "book": "closed",
+      "expected_verdict": "unrefuted"
+    },
+    {
+      "uid": "dev00004-0",
+      "source": "wice",
+      "source_label": "partially_supported",
+      "stratum": "subtle",
+      "book": "closed",
+      "expected_verdict": "refuted"
+    },
+    {
+      "uid": "dev00004-2",
+      "source": "wice",
+      "source_label": "partially_supported",
+      "stratum": "subtle",
+      "book": "closed",
+      "expected_verdict": "refuted"
+    },
+    {
+      "uid": "dev00016-2",
+      "source": "wice",
+      "source_label": "partially_supported",
+      "stratum": "subtle",
+      "book": "closed",
+      "expected_verdict": "refuted"
+    },
+    {
+      "uid": "dev00025-0",
+      "source": "wice",
+      "source_label": "partially_supported",
+      "stratum": "subtle",
+      "book": "closed",
+      "expected_verdict": "refuted"
+    },
+    {
+      "uid": "dev00030-1",
+      "source": "wice",
+      "source_label": "partially_supported",
+      "stratum": "subtle",
+      "book": "closed",
+      "expected_verdict": "refuted"
+    },
+    {
+      "uid": "dev00217-0",
+      "source": "wice",
+      "source_label": "partially_supported",
+      "stratum": "subtle",
+      "book": "closed",
+      "expected_verdict": "refuted"
+    },
+    {
+      "uid": "dev00217-1",
+      "source": "wice",
+      "source_label": "partially_supported",
+      "stratum": "subtle",
+      "book": "closed",
+      "expected_verdict": "refuted"
+    },
+    {
+      "uid": "dev00219-1",
+      "source": "wice",
+      "source_label": "partially_supported",
+      "stratum": "subtle",
+      "book": "closed",
+      "expected_verdict": "refuted"
+    },
+    {
+      "uid": "dev00315-1",
+      "source": "wice",
+      "source_label": "partially_supported",
+      "stratum": "subtle",
+      "book": "closed",
+      "expected_verdict": "refuted"
+    },
+    {
+      "uid": "dev00316-0",
+      "source": "wice",
+      "source_label": "partially_supported",
+      "stratum": "subtle",
+      "book": "closed",
+      "expected_verdict": "refuted"
+    },
+    {
+      "uid": "dev00316-2",
+      "source": "wice",
+      "source_label": "partially_supported",
+      "stratum": "subtle",
+      "book": "closed",
+      "expected_verdict": "refuted"
+    },
+    {
+      "uid": "dev00330-1",
+      "source": "wice",
+      "source_label": "partially_supported",
+      "stratum": "subtle",
+      "book": "closed",
+      "expected_verdict": "refuted"
+    },
+    {
+      "uid": "dev00388-1",
+      "source": "wice",
+      "source_label": "partially_supported",
+      "stratum": "subtle",
+      "book": "closed",
+      "expected_verdict": "refuted"
+    },
+    {
+      "uid": "dev00418-1",
+      "source": "wice",
+      "source_label": "partially_supported",
+      "stratum": "subtle",
+      "book": "closed",
+      "expected_verdict": "refuted"
+    },
+    {
+      "uid": "dev00429-0",
+      "source": "wice",
+      "source_label": "partially_supported",
+      "stratum": "subtle",
+      "book": "closed",
+      "expected_verdict": "refuted"
+    },
+    {
+      "uid": "dev00520-0",
+      "source": "wice",
+      "source_label": "partially_supported",
+      "stratum": "subtle",
+      "book": "closed",
+      "expected_verdict": "refuted"
+    },
+    {
+      "uid": "dev00572-0",
+      "source": "wice",
+      "source_label": "partially_supported",
+      "stratum": "subtle",
+      "book": "closed",
+      "expected_verdict": "refuted"
+    },
+    {
+      "uid": "dev00003-0",
+      "source": "wice",
+      "source_label": "not_supported",
+      "stratum": "not-supported",
+      "book": "closed",
+      "expected_verdict": "refuted"
+    },
+    {
+      "uid": "dev00003-1",
+      "source": "wice",
+      "source_label": "not_supported",
+      "stratum": "not-supported",
+      "book": "closed",
+      "expected_verdict": "refuted"
+    },
+    {
+      "uid": "dev00003-2",
+      "source": "wice",
+      "source_label": "not_supported",
+      "stratum": "not-supported",
+      "book": "closed",
+      "expected_verdict": "refuted"
+    },
+    {
+      "uid": "dev00005-0",
+      "source": "wice",
+      "source_label": "not_supported",
+      "stratum": "not-supported",
+      "book": "closed",
+      "expected_verdict": "refuted"
+    },
+    {
+      "uid": "dev00005-1",
+      "source": "wice",
+      "source_label": "not_supported",
+      "stratum": "not-supported",
+      "book": "closed",
+      "expected_verdict": "refuted"
+    },
+    {
+      "uid": "dev00030-0",
+      "source": "wice",
+      "source_label": "not_supported",
+      "stratum": "not-supported",
+      "book": "closed",
+      "expected_verdict": "refuted"
+    },
+    {
+      "uid": "dev00068-0",
+      "source": "wice",
+      "source_label": "not_supported",
+      "stratum": "not-supported",
+      "book": "closed",
+      "expected_verdict": "refuted"
+    },
+    {
+      "uid": "dev00068-1",
+      "source": "wice",
+      "source_label": "not_supported",
+      "stratum": "not-supported",
+      "book": "closed",
+      "expected_verdict": "refuted"
+    },
+    {
+      "uid": "dev00068-2",
+      "source": "wice",
+      "source_label": "not_supported",
+      "stratum": "not-supported",
+      "book": "closed",
+      "expected_verdict": "refuted"
+    },
+    {
+      "uid": "dev00108-1",
+      "source": "wice",
+      "source_label": "not_supported",
+      "stratum": "not-supported",
+      "book": "closed",
+      "expected_verdict": "refuted"
+    },
+    {
+      "uid": "dev00126-0",
+      "source": "wice",
+      "source_label": "not_supported",
+      "stratum": "not-supported",
+      "book": "closed",
+      "expected_verdict": "refuted"
+    },
+    {
+      "uid": "dev00126-1",
+      "source": "wice",
+      "source_label": "not_supported",
+      "stratum": "not-supported",
+      "book": "closed",
+      "expected_verdict": "refuted"
+    },
+    {
+      "uid": "dev00131-0",
+      "source": "wice",
+      "source_label": "not_supported",
+      "stratum": "not-supported",
+      "book": "closed",
+      "expected_verdict": "refuted"
+    },
+    {
+      "uid": "dev00131-1",
+      "source": "wice",
+      "source_label": "not_supported",
+      "stratum": "not-supported",
+      "book": "closed",
+      "expected_verdict": "refuted"
+    },
+    {
+      "uid": "dev00156-1",
+      "source": "wice",
+      "source_label": "not_supported",
+      "stratum": "not-supported",
+      "book": "closed",
+      "expected_verdict": "refuted"
+    },
+    {
+      "uid": "dev00219-2",
+      "source": "wice",
+      "source_label": "not_supported",
+      "stratum": "not-supported",
+      "book": "closed",
+      "expected_verdict": "refuted"
+    },
+    {
+      "uid": "dev00236-0",
+      "source": "wice",
+      "source_label": "not_supported",
+      "stratum": "not-supported",
+      "book": "closed",
+      "expected_verdict": "refuted"
+    },
+    {
+      "uid": "averitec-dev-0000",
+      "source": "averitec",
+      "source_label": "Supported",
+      "stratum": "open-book",
+      "book": "open",
+      "expected_verdict": "unrefuted"
+    },
+    {
+      "uid": "averitec-dev-0001",
+      "source": "averitec",
+      "source_label": "Supported",
+      "stratum": "open-book",
+      "book": "open",
+      "expected_verdict": "unrefuted"
+    },
+    {
+      "uid": "averitec-dev-0002",
+      "source": "averitec",
+      "source_label": "Refuted",
+      "stratum": "open-book",
+      "book": "open",
+      "expected_verdict": "refuted"
+    },
+    {
+      "uid": "averitec-dev-0003",
+      "source": "averitec",
+      "source_label": "Refuted",
+      "stratum": "open-book",
+      "book": "open",
+      "expected_verdict": "refuted"
+    },
+    {
+      "uid": "averitec-dev-0004",
+      "source": "averitec",
+      "source_label": "Refuted",
+      "stratum": "open-book",
+      "book": "open",
+      "expected_verdict": "refuted"
+    },
+    {
+      "uid": "averitec-dev-0005",
+      "source": "averitec",
+      "source_label": "Refuted",
+      "stratum": "open-book",
+      "book": "open",
+      "expected_verdict": "refuted"
+    },
+    {
+      "uid": "llm-aggrefact-test-0000",
+      "source": "llm-aggrefact",
+      "source_label": "1",
+      "stratum": "stress",
+      "book": "closed",
+      "expected_verdict": "unrefuted"
+    },
+    {
+      "uid": "llm-aggrefact-test-0001",
+      "source": "llm-aggrefact",
+      "source_label": "1",
+      "stratum": "stress",
+      "book": "closed",
+      "expected_verdict": "unrefuted"
+    },
+    {
+      "uid": "llm-aggrefact-test-0002",
+      "source": "llm-aggrefact",
+      "source_label": "0",
+      "stratum": "stress",
+      "book": "closed",
+      "expected_verdict": "refuted"
+    },
+    {
+      "uid": "llm-aggrefact-test-0003",
+      "source": "llm-aggrefact",
+      "source_label": "0",
+      "stratum": "stress",
+      "book": "closed",
+      "expected_verdict": "refuted"
+    }
+  ]
+}
