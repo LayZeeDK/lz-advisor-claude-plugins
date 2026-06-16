@@ -22,7 +22,7 @@ export const meta = {
 // copy and no anti-drift proxy are needed -- the test runs the actual source. The markers are the
 // slice point for the helper test.
 
-// === LZ-REVIEW-GATE-SHARED-START (inlined copy; canonical source is lz-review-gate-lib.mjs) ===
+// === LZ-REVIEW-GATE-SHARED-START (canonical source; the workflow is self-contained -- tested via the harness slice) ===
 
 // parseReviewerSentinel(text): extract the reviewer's trailing coverage sentinel.
 // Returns { verdict, missed, requests }:
@@ -52,14 +52,20 @@ function missedIsNone(missed) {
 }
 
 // isConverged(parsed): the loop terminator for a group of changes -- keep consulting until NO missed
-// surfaces remain. POLICY (dogfood finding I-2): "no missed surfaces" is AUTHORITATIVE. When the
-// reviewer provides a MISSED-SURFACES value it DECIDES -- converged iff it is "none", even if the
-// ROUND-VERDICT line disagrees (a CONVERGED verdict alongside a real missed list does NOT converge;
-// a MORE-NEEDED verdict with missed=none DOES). The ROUND-VERDICT is only a fallback when the
-// reviewer omitted the MISSED-SURFACES line entirely. UNKNOWN with a real missed list is NOT
-// converged.
+// surfaces remain. Two layered policies:
+//   (C-1, dogfood) A RECOGNIZED verdict line must be present. A parse failure or truncated reviewer
+//   output (verdict UNKNOWN -- e.g. maxTurns exhaustion) NEVER converges; it loops (bounded by
+//   MAX_ROUNDS) rather than silently false-approving. Convergence requires CONVERGED or MORE-NEEDED.
+//   (I-2) Within a recognized verdict, "no missed surfaces" is AUTHORITATIVE: when a MISSED-SURFACES
+//   value is present it DECIDES -- converged iff it is "none", even if the verdict disagrees (a
+//   CONVERGED verdict alongside a real missed list does NOT converge; MORE-NEEDED with missed=none
+//   DOES). The verdict is only the fallback when the reviewer omitted the MISSED-SURFACES line.
 function isConverged(parsed) {
   if (!parsed || typeof parsed !== 'object') {
+    return false;
+  }
+
+  if (parsed.verdict !== 'CONVERGED' && parsed.verdict !== 'MORE-NEEDED') {
     return false;
   }
 
@@ -211,12 +217,20 @@ Also return the consolidated report as your plain-text message. End with: COVERA
 // ---------------------------------------------------------------------------
 // Orchestration: per-group multi-round executor<->reviewer loop, fanned out over remaining groups.
 // args = { groups: [{name, files?, hint?}], doneSlugs?: [...], maxRounds?: 4, progressDir?: string }
+//
+// Layer-2 resume contract (dogfood C-3 / I-6 / Q-1): this workflow has NO filesystem access, so it
+// can neither self-scan `progressDir` nor verify that the synth agent actually wrote a group's report.
+// The ORCHESTRATOR owns that: on resume it MUST scan `progressDir` for the per-group `<slug>.md` files
+// the synth wrote and pass their slugs as `doneSlugs`. Deriving doneSlugs from the ACTUAL on-disk
+// files (not from a prior in-memory `completed` list) is also what verifies persistence -- a group
+// whose synth silently skipped the write is simply absent from disk, so it is NOT in doneSlugs and is
+// re-reviewed. `doneSlugs` here is caller-supplied only.
 // ---------------------------------------------------------------------------
 
 const A = typeof args === 'object' && args ? args : {};
 const GROUPS = Array.isArray(A.groups) ? A.groups : [];
 const DONE = Array.isArray(A.doneSlugs) ? A.doneSlugs : [];
-const MAX_ROUNDS = typeof A.maxRounds === 'number' && A.maxRounds > 0 ? A.maxRounds : 4;
+const MAX_ROUNDS = typeof A.maxRounds === 'number' && A.maxRounds > 0 ? Math.min(Math.floor(A.maxRounds), 8) : 4;
 const PROGRESS_DIR = typeof A.progressDir === 'string' && A.progressDir.length > 0 ? A.progressDir : 'eval/.cache/review-gate';
 
 if (GROUPS.length === 0) {
@@ -231,64 +245,86 @@ const results = await pipeline(
   remaining,
   async (group) => {
     const name = groupName(group);
-    let lastRequests = 'INITIAL ROUND.';
-    let priorCoverage = '';
-    const roundLogs = [];
-    let converged = false;
 
-    for (let round = 1; round <= MAX_ROUNDS && !converged; round++) {
-      const packaged = await agent(
-        executorPrompt(group, round, MAX_ROUNDS, lastRequests, priorCoverage),
-        { model: 'sonnet', effort: 'medium', phase: 'Review', label: `exec ${name} r${round}` },
-      );
-      const reviewed = await agent(
-        reviewerPrompt(group, round, packaged),
-        { agentType: 'lz-advisor:reviewer', effort: 'high', phase: 'Review', label: `review ${name} r${round}` },
+    // I-1: an agent() that THROWS (vs returns null) drops THIS group to null + logs, instead of
+    // relying solely on pipeline()'s implicit throw->null. A dropped group stays NOT done for resume.
+    try {
+      let lastRequests = 'INITIAL ROUND.';
+      let priorCoverage = '';
+      const roundLogs = [];
+      let converged = false;
+
+      for (let round = 1; round <= MAX_ROUNDS && !converged; round++) {
+        const packaged = await agent(
+          executorPrompt(group, round, MAX_ROUNDS, lastRequests, priorCoverage),
+          { model: 'sonnet', effort: 'medium', phase: 'Review', label: `exec ${name} r${round}` },
+        );
+
+        // I-2: do not spend an Opus reviewer call on a null/blank executor output -- bail first.
+        if (hasNullStage([packaged])) {
+          log(`Group ${name}: null executor output at round ${round} (quota/abort) -- NOT done`);
+          return null;
+        }
+
+        const reviewed = await agent(
+          reviewerPrompt(group, round, packaged),
+          { agentType: 'lz-advisor:reviewer', effort: 'high', phase: 'Review', label: `review ${name} r${round}` },
+        );
+
+        if (hasNullStage([reviewed])) {
+          log(`Group ${name}: null reviewer output at round ${round} (quota/abort) -- NOT done`);
+          return null;
+        }
+
+        const parsed = parseReviewerSentinel(reviewed);
+        roundLogs.push({ round, verdict: parsed.verdict, missed: parsed.missed, reviewed });
+
+        if (isConverged(parsed)) {
+          converged = true;
+        } else {
+          lastRequests = nextRequests(parsed, 'Cover any remaining surfaces of this group not yet examined.');
+          // I-5: keep the EARLIEST (broadest, round-1) coverage notes -- truncate the TAIL with a
+          // marker rather than dropping round 1 (the old `.slice(-2000)` dropped the most valuable end).
+          const note = `${priorCoverage}\nRound ${round} covered: ${String(packaged).slice(0, 250)}`;
+          priorCoverage = note.length > 2000 ? `${note.slice(0, 2000)}\n[...prior-coverage truncated...]` : note;
+        }
+      }
+
+      // I-8: surface MAX_ROUNDS exhaustion explicitly so operators can see which group burned budget.
+      if (!converged) {
+        log(`Group ${name}: exhausted MAX_ROUNDS=${MAX_ROUNDS} without convergence (coverage INCOMPLETE)`);
+      }
+
+      const synth = await agent(
+        synthPrompt(group, roundLogs, converged, PROGRESS_DIR),
+        { model: 'sonnet', effort: 'medium', phase: 'Synthesize', label: `synth ${name}` },
       );
 
-      if (hasNullStage([packaged, reviewed])) {
-        log(`Group ${name}: null stage at round ${round} (quota/abort) -- leaving group NOT done for resume`);
+      if (hasNullStage([synth])) {
+        log(`Group ${name}: null synth (quota/abort) -- leaving group NOT done for resume`);
         return null;
       }
 
-      const parsed = parseReviewerSentinel(reviewed);
-      roundLogs.push({ round, verdict: parsed.verdict, missed: parsed.missed, reviewed });
-
-      if (isConverged(parsed)) {
-        converged = true;
-      } else {
-        lastRequests = nextRequests(parsed, 'Cover any remaining surfaces of this group not yet examined.');
-        priorCoverage = (`${priorCoverage}\nRound ${round} covered: ${String(packaged).slice(0, 250)}`).slice(-2000);
-      }
-    }
-
-    const synth = await agent(
-      synthPrompt(group, roundLogs, converged, PROGRESS_DIR),
-      { model: 'sonnet', effort: 'medium', phase: 'Synthesize', label: `synth ${name}` },
-    );
-
-    if (hasNullStage([synth])) {
-      log(`Group ${name}: null synth (quota/abort) -- leaving group NOT done for resume`);
+      return { group: name, slug: groupSlug(name), converged, rounds: roundLogs.length, report: synth };
+    } catch (e) {
+      log(`Group ${name}: error -- ${String((e && e.message) || e)}; leaving group NOT done for resume`);
       return null;
     }
-
-    return { group: name, slug: groupSlug(name), converged, rounds: roundLogs.length, report: synth };
   },
 );
 
 const done = results.filter(Boolean);
 log(`Review gate done: ${done.length}/${remaining.length} groups completed this run (${done.filter((r) => r.converged).length} converged)`);
 
-// Deterministic cross-group consolidation: concatenate the per-group reports under a group heading
-// and drop exact-duplicate finding lines. The orchestrator uses this to seed the merged NN-REVIEW.md
-// (semantic dedup + the fix decisions are the downstream human/fixer step).
-const mergedLines = dedupeFindingLines(
-  done.flatMap((r) => [
-    `## ${r.group} (coverage ${r.converged ? 'COMPLETE' : 'INCOMPLETE'}, ${r.rounds} round(s))`,
-    ...String(r.report).split(/\r?\n/),
-    '',
-  ]),
-);
+// Deterministic cross-group consolidation: concatenate the per-group reports under a group heading.
+// Dedup is applied WITHIN each group's report ONLY -- never across groups (dogfood C-2): a global
+// dedup would drop a later group's severity headers (### Critical etc.) because an earlier group
+// already emitted them, collapsing/misattributing the later group's findings.
+const mergedLines = done.flatMap((r) => [
+  `## ${r.group} (coverage ${r.converged ? 'COMPLETE' : 'INCOMPLETE'}, ${r.rounds} round(s))`,
+  ...dedupeFindingLines(String(r.report).split(/\r?\n/)),
+  '',
+]);
 
 return {
   groups: GROUPS.length,

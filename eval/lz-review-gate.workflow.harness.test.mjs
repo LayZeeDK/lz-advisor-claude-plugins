@@ -180,6 +180,49 @@ test('orchestration: empty groups returns early without spawning agents', async 
   assert.equal(called, false);
 });
 
+test('orchestration: I-2 reviewer is NOT spawned when the executor output is null', async () => {
+  let reviewerCalled = false;
+  const agent = async (_prompt, opts) => {
+    if (opts.label.startsWith('exec')) {
+      return null;
+    }
+
+    if (opts.label.startsWith('review')) {
+      reviewerCalled = true;
+      return 'x';
+    }
+
+    return 'x';
+  };
+  const result = await runWorkflow(agent, { groups: [{ name: 'g1' }], maxRounds: 3, progressDir: 'tmp' });
+  assert.equal(reviewerCalled, false);
+  assert.equal(result.completed.length, 0);
+});
+
+test('orchestration: C-2 within-group dedup preserves each group severity headers in mergedReport', async () => {
+  const agent = async (_prompt, opts) => {
+    if (opts.label.startsWith('review')) {
+      return 'MISSED-SURFACES: none\nROUND-VERDICT: CONVERGED';
+    }
+
+    if (opts.label.startsWith('synth')) {
+      return '### Critical\nfinding here\n### Important\n(none)';
+    }
+
+    return 'packaged';
+  };
+  const result = await runWorkflow(agent, {
+    groups: [{ name: 'g1' }, { name: 'g2' }],
+    maxRounds: 2,
+    progressDir: 'tmp',
+  });
+  assert.equal(result.completed.length, 2);
+  // both groups carry an identical synth report; '### Critical' must survive ONCE PER GROUP (2x),
+  // not be collapsed to 1 by a cross-group dedup (C-2 regression guard).
+  const criticalCount = result.mergedReport.split('\n').filter((l) => l.trim() === '### Critical').length;
+  assert.equal(criticalCount, 2);
+});
+
 // ===========================================================================
 // Control helpers, executed DIRECTLY from the real workflow source.
 // ===========================================================================
@@ -218,9 +261,12 @@ test('isConverged: I-2 no-missed-surfaces is authoritative over the verdict', ()
   assert.equal(H.isConverged({ verdict: 'MORE-NEEDED', missed: '' }), false);
 });
 
-test('isConverged: I-3 UNKNOWN with a real missed list is NOT converged', () => {
+test('isConverged: C-1 UNKNOWN verdict never converges (even missed=none); I-3', () => {
   assert.equal(H.isConverged({ verdict: 'UNKNOWN', missed: 'surface-X' }), false);
   assert.equal(H.isConverged({ verdict: 'UNKNOWN', missed: '' }), false);
+  // C-1: a truncated/parse-failed reviewer output (UNKNOWN) must NOT false-converge even if a stray
+  // "none" was captured -- convergence requires a recognized verdict line.
+  assert.equal(H.isConverged({ verdict: 'UNKNOWN', missed: 'none' }), false);
   assert.equal(H.isConverged(null), false);
 });
 
