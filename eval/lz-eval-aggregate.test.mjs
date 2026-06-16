@@ -280,3 +280,89 @@ test('determinism: countFalseUpholds is reproducible over the same committed fix
   const b = countFalseUpholds(path.join(aggCase('delta-two-tier'), 'haiku'), gold);
   assert.equal(a, b, 'same input -> same count');
 });
+
+// ---------------------------------------------------------------------------
+// Plan 19-03 / EVAL-04 anti-drift: the re-registered lock-rule PROSE (eval/lz-eval-lock-rule.md)
+// must match the frozen EVAL_THRESHOLDS byte-for-byte AND its recorded pooled-n CP(1,N) ceiling
+// table must equal clopperPearsonUpper(1, N) at the locked N. The code is authoritative; this test
+// fails the gate if the prose drifts from EVAL_THRESHOLDS or mis-records the formula ceiling.
+// ---------------------------------------------------------------------------
+
+const LOCK_RULE = path.join(HERE, 'lz-eval-lock-rule.md');
+
+test('EVAL-04 anti-drift: lock-rule prose gate-thresholds match EVAL_THRESHOLDS byte-for-byte', () => {
+  const prose = fs.readFileSync(LOCK_RULE, 'utf8');
+
+  // Each frozen gate-threshold number must appear verbatim in the prose threshold table. The
+  // assertion is DISCRIMINATING: it pins the EXACT value, so a doc that drifts (e.g. ALPHA 0.10)
+  // would fail. We build the expected strings from EVAL_THRESHOLDS so the test follows the code.
+  const checks = [
+    ['`ALPHA` | ' + EVAL_THRESHOLDS.ALPHA + ' ', 'ALPHA'],
+    ['`RELIABLE_TRIALS` | ' + EVAL_THRESHOLDS.RELIABLE_TRIALS + ' ', 'RELIABLE_TRIALS'],
+    ['`MIN_K` | ' + EVAL_THRESHOLDS.MIN_K + ' ', 'MIN_K'],
+    // The escalation band edges are written with two decimals in the prose (0.40 / 0.50).
+    ['`ESCALATION_KILL_LOW` | ' + EVAL_THRESHOLDS.ESCALATION_KILL_LOW.toFixed(2) + ' ', 'ESCALATION_KILL_LOW'],
+    ['`ESCALATION_KILL_HIGH` | ' + EVAL_THRESHOLDS.ESCALATION_KILL_HIGH.toFixed(2) + ' ', 'ESCALATION_KILL_HIGH'],
+    ['`DELTA_UPPER_MAX` | ' + EVAL_THRESHOLDS.DELTA_UPPER_MAX + ' ', 'DELTA_UPPER_MAX'],
+    ['`STRATA.SUPPORTED_FRACTION` | ' + EVAL_THRESHOLDS.STRATA.SUPPORTED_FRACTION.toFixed(2) + ' ', 'SUPPORTED_FRACTION'],
+    ['`STRATA.BAD_FRACTION` | ' + EVAL_THRESHOLDS.STRATA.BAD_FRACTION.toFixed(2) + ' ', 'BAD_FRACTION'],
+    ['`STRATA.SUBTLE_FRACTION_OF_BAD` | ' + EVAL_THRESHOLDS.STRATA.SUBTLE_FRACTION_OF_BAD.toFixed(2) + ' ', 'SUBTLE_FRACTION_OF_BAD'],
+  ];
+
+  for (const [needle, name] of checks) {
+    assert.ok(prose.includes(needle), 'lock-rule prose must carry the frozen ' + name + ' value: "' + needle.trim() + '"');
+  }
+});
+
+test('EVAL-04 anti-drift is DISCRIMINATING: a wrong threshold value is NOT present in the prose', () => {
+  // Prove the byte-for-byte match is not vacuous: a deliberately-wrong ALPHA string (0.10) must NOT
+  // appear in the threshold table row for ALPHA. If the prose ever drifted to 0.10 this would flip.
+  const prose = fs.readFileSync(LOCK_RULE, 'utf8');
+  assert.ok(prose.includes('`ALPHA` | ' + EVAL_THRESHOLDS.ALPHA + ' '), 'the correct ALPHA is present');
+  assert.ok(!prose.includes('`ALPHA` | 0.10 '), 'a drifted ALPHA (0.10) must NOT be present (discriminating)');
+});
+
+test('EVAL-04 anti-drift: the recorded CP(1,N) pooled-ceiling table matches clopperPearsonUpper(1,N)', () => {
+  const prose = fs.readFileSync(LOCK_RULE, 'utf8');
+
+  // The re-registered rule records the pooled-n CP(1,N) ceiling at N=60/80/100 as ~4-decimal labels.
+  // Recompute each from the engine and assert the prose carries the matching ~0.0xxx value -- the
+  // doc mirrors the formula byte-for-byte (the code wins). The assertion is DISCRIMINATING: a
+  // mis-recorded ceiling (e.g. claiming ~0.05 at N=60) would fail.
+  for (const N of [60, 80, 100]) {
+    const ceiling = clopperPearsonUpper(1, N, EVAL_THRESHOLDS.ALPHA);
+    const recorded = '~' + ceiling.toFixed(4); // e.g. 0.08939... -> "~0.0894"
+    assert.ok(
+      prose.includes(recorded),
+      'lock-rule prose must record CP(1,' + N + ',0.05) as ' + recorded + ' (got engine ' + ceiling.toFixed(4) + ')',
+    );
+  }
+});
+
+test('EVAL-04 the re-registration documents the zero-votes window + VOID outcome + pinned minimums', () => {
+  const prose = fs.readFileSync(LOCK_RULE, 'utf8');
+
+  // The pre-registration must explicitly state the zero-votes timing (EVAL-04 integrity).
+  assert.ok(/zero-votes window/i.test(prose), 'the re-registration states the zero-votes window timing');
+
+  // VOID is the third outcome (D-06 saturation pre-condition).
+  assert.ok(/\bVOID\b/.test(prose), 'the rule names the VOID outcome (D-06)');
+  assert.ok(/saturation pre-condition/i.test(prose), 'the rule documents the saturation pre-condition');
+
+  // The mechanical minimums are PINNED (OQ-2), and the calibrator may only tighten, never loosen.
+  assert.ok(/minQueries\s*=\s*3/i.test(prose), 'minQueries = 3 is pinned');
+  assert.ok(/minDocs\s*=\s*5/i.test(prose), 'minDocs = 5 is pinned');
+  assert.ok(/tighten/i.test(prose) && /never\s+loosen/i.test(prose), 'the calibrator-tighten-only ratchet is stated');
+
+  // The minimums are search-loop params, NOT EVAL_THRESHOLDS keys (the note that prevents asserting
+  // them against the engine struct).
+  assert.ok(/NOT\s+`?EVAL_THRESHOLDS`?\s+keys/i.test(prose), 'the prose states the minimums are NOT EVAL_THRESHOLDS keys');
+});
+
+test('EVAL-04 the lock rule is strictly ASCII (committed bytes, CLAUDE.md)', () => {
+  const buf = fs.readFileSync(LOCK_RULE);
+
+  for (let i = 0; i < buf.length; i += 1) {
+    assert.ok(buf[i] <= 0x7f, 'lock-rule byte at offset ' + i + ' must be ASCII (<= 0x7F), got 0x' + buf[i].toString(16));
+  }
+});

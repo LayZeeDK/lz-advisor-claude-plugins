@@ -16,7 +16,19 @@
     },
     "open-book": {
       "expected_verdict": "varies",
-      "note": "AVeriTeC open-book + leakage-test arm; revised KS post-2024-11-15, per-claim date cutoff (D-05). Conflicting/Cherry-picking EXCLUDED from the hard gate."
+      "note": "AVeriTeC open-book + leakage-test arm; revised KS post-2024-11-15, per-claim date cutoff (D-05). Conflicting/Cherry-picking EXCLUDED from the hard gate. Split into three RETRIEVAL-DIFFICULTY strata (buried / evidence-absent / date-sensitive) so the offline read stresses retrieval orchestration, NOT claim subtlety (19-RESEARCH.md lines 319-360)."
+    },
+    "buried": {
+      "expected_verdict": "refuted",
+      "note": "AVeriTeC open-book: a decisive pre-cutoff in-corpus disconfirmer exists but sits DEEP behind topically-similar distractors. Targets the premature-stop failure (the voter stops at the obvious top hits and never reaches the buried disconfirmer)."
+    },
+    "evidence-absent": {
+      "expected_verdict": "refuted",
+      "note": "AVeriTeC open-book: a one-step-overreach mutation of a Supported seed whose refutation is NOT in the KS (no in-corpus disconfirmer). Targets the no-counter-evidence-found -> default-uphold failure (the voter must return refuted/insufficient on ABSENCE)."
+    },
+    "date-sensitive": {
+      "expected_verdict": "refuted",
+      "note": "AVeriTeC open-book: the decisive disconfirmer is date-gated (post-cutoff docs EXCLUDED by the per-claim cutoff, or a pre-cutoff disconfirmer easy to miss). The axis the prior pilots NEVER tested (the cutoff was not enforced)."
     },
     "stress": {
       "expected_verdict": "varies",
@@ -277,12 +289,22 @@
     {
       "id": "averitec",
       "repo": "chenxwh/AVeriTeC",
-      "revision": "PENDING_ENUMERATE_AT_EVAL_TIME",
+      "repoType": "model",
+      "revision": "2ca9dee23a2a6fa64c5bd918e0cd28ed0aa09031",
       "license": "CC-BY-NC-4.0",
       "vendored": false,
-      "gated": true,
-      "note": "FETCH-ONLY. Revised knowledge store (post-2024-11-15) is the SOLE open-book retrieval source (D-05); KS is NEVER vendored. Revision + per-file sha256 enumerated once authenticated at eval time (A4).",
-      "files": []
+      "gated": false,
+      "note": "FETCH-ONLY (CC-BY-NC: mutated trap text is dev-only/gitignored in eval/.cache/, NEVER committed -- this manifest carries only uids + remapped labels + the mutation recipe/seed + pinned revision + per-file sha256, D-07/Pitfall 5). chenxwh/AVeriTeC is an UNGATED `model` repo (D-12: gated:false, repoType:model, token-free). Revision + per-file sha256 pinned from the cached revision under eval/.cache/chenxwh__AVeriTeC (Plan 19-03). The OQ-1 leakage probe (lz-eval-traps.mjs leakageProbe) screened the 10 dev-KS seeds CLEAN (date filter + fact_checking_article/cached_original_claim_url exclusion) BEFORE this manifest was locked.",
+      "files": [
+        {
+          "file": "data/dev.json",
+          "sha256": "499793726b4a5406780928a3d9dedc48d6dd53de778f22437d129cacdb08e300"
+        },
+        {
+          "file": "data_store/dev_top_k_sentences.json",
+          "sha256": "a1e949f8f8c928811e180f4ba239bb7be3749c462e493f7d39d01f9f5a9bf785"
+        }
+      ]
     },
     {
       "id": "llm-aggrefact",
@@ -787,52 +809,94 @@
       "expected_verdict": "refuted"
     },
     {
-      "uid": "averitec-dev-0000",
+      "uid": "averitec-dev-0006",
       "source": "averitec",
       "source_label": "Supported",
-      "stratum": "open-book",
+      "stratum": "evidence-absent",
       "book": "open",
-      "expected_verdict": "unrefuted"
+      "expected_verdict": "refuted",
+      "recipe": {
+        "uid_seed": 6,
+        "transform": "magnitude",
+        "seed": 1,
+        "source_label": "Supported",
+        "generator": "out-of-family (non-voter); recipe-not-text (D-07)"
+      }
     },
     {
-      "uid": "averitec-dev-0001",
+      "uid": "averitec-dev-0007",
       "source": "averitec",
       "source_label": "Supported",
-      "stratum": "open-book",
+      "stratum": "evidence-absent",
       "book": "open",
-      "expected_verdict": "unrefuted"
+      "expected_verdict": "refuted",
+      "recipe": {
+        "uid_seed": 7,
+        "transform": "scope",
+        "seed": 2,
+        "source_label": "Supported",
+        "generator": "out-of-family (non-voter); recipe-not-text (D-07)"
+      }
     },
     {
-      "uid": "averitec-dev-0002",
+      "uid": "averitec-dev-0013",
       "source": "averitec",
-      "source_label": "Refuted",
-      "stratum": "open-book",
+      "source_label": "Supported",
+      "stratum": "buried",
       "book": "open",
-      "expected_verdict": "refuted"
+      "expected_verdict": "refuted",
+      "recipe": {
+        "uid_seed": 13,
+        "transform": "causation",
+        "seed": 3,
+        "source_label": "Supported",
+        "generator": "out-of-family (non-voter); recipe-not-text (D-07)"
+      }
     },
     {
-      "uid": "averitec-dev-0003",
+      "uid": "averitec-dev-0025",
       "source": "averitec",
-      "source_label": "Refuted",
-      "stratum": "open-book",
+      "source_label": "Supported",
+      "stratum": "buried",
       "book": "open",
-      "expected_verdict": "refuted"
+      "expected_verdict": "refuted",
+      "recipe": {
+        "uid_seed": 25,
+        "transform": "certainty",
+        "seed": 4,
+        "source_label": "Supported",
+        "generator": "out-of-family (non-voter); recipe-not-text (D-07)"
+      }
     },
     {
-      "uid": "averitec-dev-0004",
+      "uid": "averitec-dev-0031",
       "source": "averitec",
-      "source_label": "Refuted",
-      "stratum": "open-book",
+      "source_label": "Supported",
+      "stratum": "date-sensitive",
       "book": "open",
-      "expected_verdict": "refuted"
+      "expected_verdict": "refuted",
+      "recipe": {
+        "uid_seed": 31,
+        "transform": "scope",
+        "seed": 5,
+        "source_label": "Supported",
+        "generator": "out-of-family (non-voter); recipe-not-text (D-07)"
+      }
     },
     {
-      "uid": "averitec-dev-0005",
+      "uid": "averitec-dev-0032",
       "source": "averitec",
-      "source_label": "Refuted",
-      "stratum": "open-book",
+      "source_label": "Supported",
+      "stratum": "date-sensitive",
       "book": "open",
-      "expected_verdict": "refuted"
+      "expected_verdict": "refuted",
+      "recipe": {
+        "uid_seed": 32,
+        "transform": "magnitude",
+        "seed": 6,
+        "source_label": "Supported",
+        "generator": "out-of-family (non-voter); recipe-not-text (D-07)"
+      }
     },
     {
       "uid": "llm-aggrefact-test-0000",
