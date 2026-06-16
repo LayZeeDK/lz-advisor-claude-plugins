@@ -2,10 +2,10 @@
 gsd_state_version: 1.0
 milestone: v2.1.0
 milestone_name: lz-deep-research skill
-status: executing
-stopped_at: Phase 18 context gathered
-last_updated: "2026-06-16T02:19:59.076Z"
-last_activity: 2026-06-16 -- Phase 18 planning complete
+status: planning
+stopped_at: Phase 18 re-planned (5 plans, 3 waves) -- eval tooling relocated to repo-level eval/ with pinned jstat; ready to execute
+last_updated: "2026-06-16T06:05:08.617Z"
+last_activity: 2026-06-16 -- Phase 18 RE-PLANNED from scratch (5 plans, 3 waves) after the zero-dep AMENDMENT; old 18-01..18-05 regenerated against the eval/ relocation + jstat library + SC-2 re-scope
 progress:
   total_phases: 8
   completed_phases: 5
@@ -21,7 +21,7 @@ progress:
 See: .planning/PROJECT.md (updated 2026-06-15 -- milestone v2.1.0 started)
 
 **Core value:** Near-Opus intelligence at Sonnet cost, through strategic advisor consultation at high-leverage moments -- now extended from coding tasks to deep research
-**Current focus:** Phase 18 — haiku prompt engineering deep research + verify voter + early gating eval
+**Current focus:** Phase 18 — haiku-prompt-engineering-deep-research-verify-voter-early-ga
 
 ## Deferred Items
 
@@ -37,10 +37,10 @@ Items deferred across milestones (v1.0.1 close 2026-06-11; v2.0.0 additions tagg
 
 ## Current Position
 
-Phase: 18
-Plan: Not started
-Status: Ready to execute
-Last activity: 2026-06-16 -- Phase 18 planning complete
+Phase: 18 (haiku-prompt-engineering-deep-research-verify-voter-early-ga) — PLANNED (5 plans, 3 waves)
+Plan: 5 plans regenerated (18-01..18-05); 3 waves; ready for /gsd-execute-phase 18
+Status: Phase 18 re-planned. Wave 1: 18-01 (EVAL-05 Haiku-prompt reference) + 18-02 (eval/ install surface + jstat human-verify gate + SC-2 re-scope + D-11 packaging-boundary test). Wave 2: 18-03 (deterministic eval aggregator + pre-registered lock rule, library-computed CI via jstat) + 18-04 (zero-hand-authoring dataset loader + derived manifest + vendored WiCE). Wave 3: 18-05 (two verify-voter agents + staged gating eval, settle-or-raise the Haiku-first flag). Next: /gsd-execute-phase 18.
+Last activity: 2026-06-16 -- Phase 18 re-plan COMPLETE; 5 plans + ROADMAP plan-list written; 0 plans executed yet
 
 ### Milestone v2.1.0 roadmap (REVISED 2026-06-15)
 
@@ -122,7 +122,7 @@ Advisor runtime-proven on Opus 4.8. Final phase: Phase 10 (documentation-hygiene
 |-------|-------|-------|----------|
 | 16 (Aggregator + fixture) | 1/2 | - | - |
 | 17 (Schema + contract) | TBD | - | - |
-| 18 (Haiku research + voter + early eval) | TBD | - | - |
+| 18 (Haiku research + voter + early eval) | 0/5 | - | - |
 | 19 (Search + extract workers) | TBD | - | - |
 | 20 (Orchestrator + scale) | TBD | - | - |
 
@@ -189,6 +189,7 @@ Recent decisions affecting current work (v2.1.0):
 ### Blockers/Concerns
 
 - None blocking. Carry-forward watch items for the v2.1.0 build (from research flags, not blockers):
+  - **Phase 18 (follow-up, non-blocking):** the CI workflow glob `plugins/lz-advisor/skills/**/*.test.mjs` (.github/workflows/ci.yml) does NOT cover the new `eval/**` tests; the eval tests also need an `eval/` install step (`cd eval && npm install`) + import jstat. The re-plan did NOT extend CI (scope-control); the three eval-tree tests (eval-aggregate, dataset, packaging-boundary) run as a LOCAL-ONLY gate for now. Extend CI in a follow-up (add an eval/ install + an eval/ test step) once Phase 18 lands.
   - **Phase 18 (HIGH):** open-book voter behavior (disconfirming-search compliance, subtle-overclaim detection, source-independence weighting) is the cost-driving fork and the mechanism behind the named silent false-uphold. The pre-registered eval (now early) gates the whole Haiku-first economics; EVAL-05 requires the Haiku prompt to be research-grounded before the eval is fair, and a non-viable verdict escalates to the user (EVAL-03) rather than auto-resolving.
   - **Phase 20 (HIGHEST):** full-wave headless concurrency under `--permission-mode auto` is the lead empirical unknown (A2 proved only n=2; platform caps silently at ~10, no `maxParallelAgents` setting). Needs a dedicated scale-concurrency spike with disk-I/O-storm + silent-batching observations as explicit acceptance criteria, plus the packaged-skill permission re-proof (A2 was a bare `-p` prompt, not a declared-`allowed-tools` skill).
   - **Phase 16:** semantic-paraphrase dedup residual -- lexical dedup under-merges beyond number/format variance; document the lexical limit and phrase confidence as a lower bound; do NOT add an embedding dependency (zero-dep violation).

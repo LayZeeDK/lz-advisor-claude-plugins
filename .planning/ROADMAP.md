@@ -158,10 +158,10 @@ Plans:
   5. The Haiku-first flag exists, defaults OFF, and flips ON only if the research-grounded eval clears (~0 open-book false-upholds on the SUBTLE subset AND escalation kept materially below all-Sonnet, kill if escalation exceeds ~40-50%); if the eval shows Haiku non-viable, the decision is RAISED TO THE USER rather than auto-resolved, and Sonnet-default ships in the interim.
 **Plans**: 5 plans (3 waves)
 - [ ] 18-01-PLAN.md -- EVAL-05 Haiku prompt-engineering reference artifact (deliverable 1; precedes any Haiku agent) [Wave 1]
-- [ ] 18-02-PLAN.md -- Deterministic eval aggregator + fixture: Pass@1/Pass^k, per-stratum false-uphold, Clopper-Pearson upper bound, Haiku-minus-Sonnet DELTA, mechanical lock-rule check [Wave 1]
-- [ ] 18-03-PLAN.md -- Zero-dep dataset loader + committed DERIVED MANIFEST + vendored-WiCE NOTICE + .gitignore cache (sha256 fail-closed, gated-401 actionable, D-02d label remap) [Wave 1]
-- [ ] 18-04-PLAN.md -- Sonnet baseline + research-grounded Haiku verify-voter agents (isolated attack-mode vote, disconfirming search, source-independence) + the pre-registered lock-rule reference [Wave 2]
-- [ ] 18-05-PLAN.md -- Staged gating eval run: --validate oracle, SUBTLE first k>=5 temp-0, reliable=15 on PASS, settle-or-raise the Haiku-first flag (EVAL-03) [Wave 3]
+- [ ] 18-02-PLAN.md -- eval/ install surface (eval/package.json + committed lockfile pinning jstat@1.9.6, gitignore) + SC-2 re-scope + D-11 packaging-boundary test + human-verify gate on the first npm install [Wave 1]
+- [ ] 18-03-PLAN.md -- Deterministic eval aggregator + pre-registered lock rule: Pass@1/Pass^k + per-stratum false-uphold + Haiku-minus-Sonnet DELTA + library-computed (jstat) Clopper-Pearson upper bound + mechanical lock-rule check [Wave 2]
+- [ ] 18-04-PLAN.md -- Zero-hand-authoring dataset loader + committed derived manifest + vendored-WiCE NOTICE (hf-CLI fetch, sha256 fail-closed, gated-401 actionable, D-02d label remap, license-compliant) [Wave 2]
+- [ ] 18-05-PLAN.md -- Sonnet baseline + research-grounded Haiku verify-voter agents (isolated attack-mode vote, disconfirming search, source-independence) + the staged gating eval run that settles-or-raises the Haiku-first flag (EVAL-03) [Wave 3]
 
 ### Phase 19: Search + extract worker agents
 **Goal**: The fetch/extract worker (Sonnet, stores each fetched excerpt immutably at fetch time and extracts falsifiable claims) and the search worker are authored against the frozen schema, each least-privilege, each writing immutable evidence to the run dir and returning only a one-line receipt -- with the search worker's model tier (Haiku vs Sonnet) chosen FROM the Phase-18 Haiku research/eval outcome, honoring the "deep research before any Haiku agent" constraint.

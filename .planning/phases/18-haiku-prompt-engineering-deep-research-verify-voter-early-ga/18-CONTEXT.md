@@ -1,7 +1,9 @@
 # Phase 18: Haiku prompt-engineering deep research + verify-voter + early gating eval - Context
 
 **Gathered:** 2026-06-16
-**Status:** Ready for planning
+**Status:** Re-planning 2026-06-16 -- zero-dep relaxed for non-distributed eval tooling; eval scripts
+move to a repo-level `eval/` dir outside `plugins/`. See the AMENDMENT 2026-06-16 banner + amended
+D-01/D-01b/D-04/D-07/D-10 and new D-11 in Implementation Decisions.
 **Mode:** `--auto --analyze --chain` (ultracode). Two high-impact gray areas (dataset/labeling, eval
 execution/cost) were escalated to the user, who DELEGATED to research-backed judgment: "I will not
 handcode anything / I will not hand-write these. Find EXISTING datasets if you need to. Use your best
@@ -54,9 +56,25 @@ rule; the staged, credit-aware eval run.
 > leakage mitigation, and the CI method below were each re-fetched and confirmed/corrected against
 > primary sources by the adversarial workflow.
 
+> **AMENDMENT 2026-06-16 (re-plan, owner-directed):** The zero-dep constraint binds ONLY the
+> DISTRIBUTED PLUGIN RUNTIME. The non-distributed EVAL/DEV scripts (`lz-eval-*`) may now use pinned,
+> integrity-verified npm devDependencies (not only the `hf`/`claude` CLIs), and they MOVE OUT of the
+> plugin tree into a repo-level `eval/` directory with their own `package.json` + gitignored
+> `node_modules`. This supersedes the "node built-ins only / off-the-shelf CI library is a forbidden
+> npm dep / Don't Hand-Roll" framing in `18-RESEARCH.md` and the prior plans. **Owner directive
+> 2026-06-16: hand-rolling statistical / numerical primitives is FORBIDDEN** -- the verbatim hand-rolled
+> Clopper-Pearson / Wilson / Beta-Bernoulli (and the underlying `logGamma`/`incbeta`/`betaInv`) math is
+> REMOVED; a pinned, vetted statistics library is REQUIRED for all CI/interval and special-function
+> computation. The amended decisions below are D-01, D-01b, D-04, D-07, D-10, plus the new D-11
+> (packaging boundary). **CONTEXT takes precedence over RESEARCH:** the re-plan honors these amended
+> decisions over `18-RESEARCH.md`'s stale zero-dep + hand-rolled-math framing.
+
 ### Eval harness architecture (SkillsBench + skill-creator + skillgrade; CONFIRMED)
-- **D-01:** Mirror executor -> grader -> **deterministic off-model aggregator** in a COMMITTED, ZERO-DEP
-  harness. The false-uphold GATE is a **deterministic** verdict-vs-gold-label check (SkillsBench:
+- **D-01:** Mirror executor -> grader -> **deterministic off-model aggregator** in a COMMITTED harness
+  (AMENDED 2026-06-16: the harness is non-distributed DEV tooling and MAY use pinned, integrity-verified
+  npm devDependencies per D-01b; it lives in the repo-level `eval/` dir per D-10/D-11; only the
+  distributed plugin runtime stays strictly zero-dep). The false-uphold GATE is a **deterministic**
+  verdict-vs-gold-label check (SkillsBench:
   "reproducible pass/fail without LLM-as-a-judge variance"; Anthropic *Demystifying Evals*: deterministic
   preferred, LLM-judge only "where necessary"). A Node aggregator in `scripts/` computes Pass@1, Pass^k,
   per-stratum false-uphold + its interval from a single shared sample pool. An LLM-rubric grader is used
@@ -68,8 +86,17 @@ rule; the staged, credit-aware eval run.
   shipped voter agents -- which use no npm packages and no external CLIs. The EVAL scripts (`lz-eval-*`)
   are dev/design infrastructure and MAY use the globally-installed `hf` CLI (dataset fetch via
   `hf download` -- handles auth, LFS, `--include` selective fetch, `--revision` pinning, repo-type) and
-  the `claude` CLI (the headless run driver), as accepted eval-time TOOL dependencies. They still carry
-  no npm/package deps (node built-ins only), and we still re-verify sha256 after download for integrity.
+  the `claude` CLI (the headless run driver), as accepted eval-time TOOL dependencies. We still re-verify
+  sha256 after download for integrity.
+  - **AMENDED 2026-06-16 (re-plan):** The eval scripts MAY now also use **pinned, integrity-verified npm
+    devDependencies** (not only the `hf`/`claude` CLIs); in particular a vetted statistics library is now
+    **REQUIRED** (not merely permitted) for the CI/interval math (D-07) -- hand-rolling it is forbidden.
+    This relaxes the prior "node built-ins only / no npm deps" clause and supersedes the
+    `18-RESEARCH.md` / prior-plan "off-the-shelf CI library is a forbidden npm dep / Don't Hand-Roll"
+    framing FOR EVAL TOOLING ONLY. The eval deps live in the repo-level `eval/` tree's own `package.json`
+    + gitignored `node_modules` (D-10, D-11), pinned with a committed lockfile and never shipped. The
+    DISTRIBUTED RUNTIME (the `lz-deep-research` skill + Phase 19/20 workers + the Phase-16 runtime
+    aggregator + the shipped voter agents) stays **strictly zero-dep, in the plugin tree, unchanged.**
 
 ### Dataset selection -- EXISTING human-labeled corpora, no hand-authoring (D-02)
 - **D-02:** The SUBTLE-OVERREACH stratum -- the stratum the whole gate hinges on -- uses **WiCE**
@@ -120,7 +147,9 @@ rule; the staged, credit-aware eval run.
   or store verbatim with NOTICE; never derive/edit/release a modified variant. For every non-vendored
   source, COMMIT ONLY a DERIVED MANIFEST -- example IDs + our remapped strata labels + a PINNED HF revision
   + sha256 checksums -- and FETCH the claim/evidence text at eval time into a GITIGNORED local cache,
-  failing loud on checksum mismatch. Eval-only, local, not redistributed. Zero-dep preserved.
+  failing loud on checksum mismatch. Eval-only, local, not redistributed. (AMENDED 2026-06-16: cache +
+  manifest handling unchanged; the eval cache now lives under the repo-level `eval/` tree per D-10/D-11.
+  Eval tooling may use pinned npm deps per D-01b; the DISTRIBUTED plugin package stays clean.)
 
 ### Open-book leakage mitigation (D-05; verification-corrected)
 - **D-05:** The open-book arm uses AVeriTeC's **REVISED 2.0 knowledge store** (post-2024-11-15 / 2.0
@@ -160,6 +189,15 @@ rule; the staged, credit-aware eval run.
   PASS. Cost gate = kill Haiku if escalation fraction > 40-50%. Fail either gate -> RAISE TO USER
   (EVAL-03); Sonnet-default ships in the interim. Committed artifact, mechanically enforced
   (skillgrade `--ci --threshold` analog).
+  - **AMENDED 2026-06-16 (re-plan; owner directive "no hand-rolling"):** The CI interval MUST be computed
+    by a **pinned, vetted statistics library** (e.g. `@stdlib` beta-quantile / `jstat`). **Hand-rolling
+    the statistics is FORBIDDEN** -- no in-repo `logGamma`/`incbeta`/`betaInv`, and no hand-coded
+    Clopper-Pearson / Wilson / Beta-Bernoulli; call the library's functions. The estimator choice is
+    unchanged (Clopper-Pearson / Wilson / Beta-Bernoulli; NEVER Wald, NEVER bootstrap), judged on the
+    UPPER bound. The verified numeric anchors (CP(0,15)~0.218, betaInv(0.2,3,3)~0.327,
+    betaInv(0.4,1,6)~0.082, CP(n,n)=1) remain the integration test pinning the library is wired
+    correctly. Prefer the same library's `comb`/`binomial` for the Pass@1/Pass^k combinatorics rather
+    than a hand-rolled `comb`.
 
 ### EVAL-05 fairness separation (D-08; CONFIRMED)
 - **D-08:** The Haiku voter prompt comes from the dedicated Haiku-prompt research artifact (deliverable 1),
@@ -175,20 +213,39 @@ rule; the staged, credit-aware eval run.
   copies of one canonical source count as one (VERIF-03). **Grade outcomes, not steps** (Anthropic +
   SkillsBench, both confirmed): the deterministic gate scores `verdict` vs gold label, never the path.
 
-### Harness location + test discipline (D-10; CONFIRMED)
-- **D-10:** Harness + manifest are skill-internal under `skills/lz-deep-research/` (aggregator in
-  `scripts/`; committed dataset manifest + vendored-WiCE in `scripts/__fixtures__/` or an `eval/` sibling
-  -- planner picks). The fetched non-vendored corpora land in a GITIGNORED cache. Zero-dep. node:test gating
-  MUST use the explicit `.test.mjs` FILE form, never `node --test <dir>` (host quirk: dir form spuriously
-  exits 1 even when all tests pass).
+### Harness location + test discipline (D-10; AMENDED 2026-06-16)
+- **D-10:** (AMENDED 2026-06-16 -- supersedes the prior "skill-internal under `skills/lz-deep-research/`,
+  scripts/__fixtures__ vs eval/ -- planner picks" wording.) The EVAL harness + the committed dataset
+  manifest + vendored-WiCE + all `__fixtures__` move to a **REPO-LEVEL `eval/` directory OUTSIDE
+  `plugins/`** (Claude's Discretion on the exact name, recommended `eval/`), with its own `package.json`
+  + committed lockfile + gitignored `node_modules` (D-01b, D-11). The fetched non-vendored corpora land
+  in a GITIGNORED cache under that `eval/` tree. The Phase-16 RUNTIME aggregator
+  (`lz-deep-research-aggregate.mjs`) + its fixtures + the shipped voter agents STAY in the plugin tree
+  (they ship). The eval aggregator/loader/run-driver import the runtime aggregator across trees by
+  relative path when they need its hardening primitives. node:test gating MUST still use the explicit
+  `.test.mjs` FILE form, never `node --test <dir>` (host quirk: dir form spuriously exits 1 even when all
+  tests pass).
+
+### Packaging boundary -- eval tooling never ships (D-11; new 2026-06-16)
+- **D-11:** The marketplace plugin package (everything under `plugins/lz-advisor/`) MUST contain NO eval
+  scripts and NO eval dev dependencies. The repo-level `eval/` dir (D-10) is dev-only: its `node_modules`
+  is gitignored, and the `eval/` tree is outside the distributed plugin tree so it is structurally
+  excluded from the package -- a dependency added to the eval harness can never leak to plugin users.
+  The re-plan VERIFIES this boundary (e.g. a check that `git grep`/`find` finds no `package.json` or
+  `node_modules` anywhere under `plugins/lz-advisor/`, and no eval-script import from any shipped runtime
+  artifact). The Phase-16 runtime aggregator + the shipped voter agents remain strictly zero-dep so the
+  plugin tree stays import-clean.
 
 ### Claude's Discretion
 - Exact WiCE sampling/stratification recipe and the supported:partially:not ratios within the SUBTLE stratum.
-- The interval estimator among Clopper-Pearson / Wilson / Beta-Bernoulli (all valid; pick per implementation).
+- The interval estimator among Clopper-Pearson / Wilson / Beta-Bernoulli (all valid; pick per implementation),
+  AND the specific vetted statistics library that computes it (D-07, as amended 2026-06-16 -- the math
+  MUST come from a pinned library; hand-rolling it is forbidden).
 - Whether the saturation check triggers trap-augmentation, and the trap-generation templates.
 - The cross-family adjudication agreement statistic; the `--validate` seed-claim count.
-- Fixture/manifest directory (`scripts/__fixtures__/` vs `eval/`); the gitignored cache path name.
-- Section ordering of the Haiku-prompt reference artifact; aggregator internal naming.
+- The exact `eval/` dir name + internal layout; the gitignored cache path name (now under `eval/`, per D-10/D-11).
+- The specific eval npm devDependencies (must be pinned + lockfiled + vetted); aggregator internal naming.
+- Section ordering of the Haiku-prompt reference artifact.
 
 </decisions>
 
