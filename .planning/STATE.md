@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v2.1.0
 milestone_name: lz-deep-research skill
 status: executing
-stopped_at: Phase 18 context gathered
-last_updated: "2026-06-16T09:19:12.787Z"
-last_activity: 2026-06-16 -- Phase 18 planning complete
+stopped_at: Phase 18 Plan 01 complete (EVAL-05 artifact)
+last_updated: "2026-06-16T09:34:39.308Z"
+last_activity: 2026-06-16 -- Phase 18 Plan 01 complete (EVAL-05 Haiku prompt-engineering reference artifact)
 progress:
   total_phases: 8
   completed_phases: 5
   total_plans: 16
-  completed_plans: 11
-  percent: 63
+  completed_plans: 12
+  percent: 75
 ---
 
 # Project State
@@ -21,7 +21,7 @@ progress:
 See: .planning/PROJECT.md (updated 2026-06-15 -- milestone v2.1.0 started)
 
 **Core value:** Near-Opus intelligence at Sonnet cost, through strategic advisor consultation at high-leverage moments -- now extended from coding tasks to deep research
-**Current focus:** Phase 18 — haiku-prompt-engineering-deep-research-verify-voter-early-ga
+**Current focus:** Phase 18 -- haiku-prompt-engineering-deep-research-verify-voter-early-ga
 
 ## Deferred Items
 
@@ -37,10 +37,10 @@ Items deferred across milestones (v1.0.1 close 2026-06-11; v2.0.0 additions tagg
 
 ## Current Position
 
-Phase: 18 (haiku-prompt-engineering-deep-research-verify-voter-early-ga) — PLANNED (5 plans, 3 waves)
-Plan: 5 plans regenerated (18-01..18-05); 3 waves; ready for /gsd-execute-phase 18
-Status: Ready to execute
-Last activity: 2026-06-16 -- Phase 18 planning complete
+Phase: 18 (haiku-prompt-engineering-deep-research-verify-voter-early-ga) -- EXECUTING
+Plan: 2 of 5
+Status: Plan 01 complete (EVAL-05 artifact); ready to execute Plan 02
+Last activity: 2026-06-16 -- Plan 18-01 complete (EVAL-05 Haiku prompt-engineering reference artifact)
 
 ### Milestone v2.1.0 roadmap (REVISED 2026-06-15)
 
@@ -122,7 +122,7 @@ Advisor runtime-proven on Opus 4.8. Final phase: Phase 10 (documentation-hygiene
 |-------|-------|-------|----------|
 | 16 (Aggregator + fixture) | 1/2 | - | - |
 | 17 (Schema + contract) | TBD | - | - |
-| 18 (Haiku research + voter + early eval) | 0/5 | - | - |
+| 18 (Haiku research + voter + early eval) | 1/5 | 7min | 7min |
 | 19 (Search + extract workers) | TBD | - | - |
 | 20 (Orchestrator + scale) | TBD | - | - |
 
@@ -150,6 +150,7 @@ Advisor runtime-proven on Opus 4.8. Final phase: Phase 10 (documentation-hygiene
 | Phase 16 P16-02 | 7min | 3 tasks | 98 files |
 | Phase 17 P01 | 8min | 2 tasks | 20 files |
 | Phase 17 P02 | 5min | 2 tasks | 2 files |
+| Phase 18 P01 | 7min | 1 tasks | 1 files |
 
 ## Accumulated Context
 
@@ -180,6 +181,7 @@ Recent decisions affecting current work (v2.1.0):
 - [Phase ?]: [v2.1.0 / Phase 17 P01]: per-tier confidence coverage added -- four new committed __fixtures__ trees (medium-two-unrefuted, low-thin-support, low-refuted-downgraded, contested-split) + unsupported-no-votes (Pattern A, no votes/ dir); five per-tier assertions + a 5-label stdout assertion; suite 19 tests green via the FILE-form gate. Forbidden Low/Contested + Rejected tokens assembled from fragments so the closing git grep zero-hit gate stays clean. The corrected aggregator is now the source 17-02 freezes verbatim (D-12).
 - [Phase ?]: [v2.1.0 / Phase 17 P02]: references/lz-deep-research-schema.md created (the FIFTH references/ file) -- single source of truth for the deep-research data contract, frozen VERBATIM from the corrected aggregator under D-12. Freezes source/claim/vote/excerpt + survivor + report claim records, the Option I tally rubric + truth table, the single 5-tier enum High|Medium|Low|Contested|Unsupported, the two orthogonal assurances (quote_fidelity mechanical vs claim_support judgment) with a worked example, the named-ceilings + quote-recheck (+WR-04) contracts. No second confidence field, no schema-keyword/ajv validator. PIPE-07 + VERIF-06 close at the contract level.
 - [Phase ?]: [v2.1.0 / Phase 17 P02]: forbidden tokens (Rejected / Low/Contested / report_confidence / schema-keyword / ajv) kept OUT of the reference doc by describing the superseded concepts descriptively (terminal-delete tier / fused low-or-contested token / no second per-report confidence field), so the closing zero-hit gate stays clean while the doc still explains what is NOT in the contract. Claude's-discretion picks: claim_support not-yet-judged = unassessed; source-record forward field = fetched_at.
+- [Phase 18 P01]: [v2.1.0 / Phase 18 P01]: EVAL-05 deliverable authored -- `plugins/lz-advisor/references/lz-haiku-prompt-engineering.md` (shipped, pure-prose, zero-dep, the SIXTH references/ file) carries the 12 verified Haiku 4.5 techniques H1-H12, each with WHAT / WHY-for-a-cheap-model / `[CITED:]` source; the `[ASSUMED]` tags on H7 (abstain-when-unsure, A1) and H10 (step-bounded 3-5 steps, A3) preserved verbatim, NOT promoted to fact. Opens with the D-08 fairness framing (Haiku voter engineered to the SAME task contract as the Sonnet baseline -- identical schema/dataset/grader -- so the eval measures MODEL capability, not prompt quality) and names the downstream consumers (Plan 18-05 Haiku-voter author + the Phase-19 Haiku search-worker author). Stale-pattern corrections section: `budget_tokens` deprecated (use adaptive thinking + effort), prefill returns 400 on 4.6 (use Structured Outputs / direct instruction), aggressive `CRITICAL`/`MUST`/`NEVER` overtriggers (use plain phrasing), stale Structured-Outputs BETA caveat; names `lz-nx-ai-plugins` `MODEL-OPTIMIZATION-HAIKU.md` as the NON-authoritative starting point only. PRECEDES authoring any Haiku agent (D-08). Verify gate green (0 non-ASCII codepoints; CITED tags present; stale-pattern corrections present). No deviations.
 - [Phase ?]: [v2.1.0 / Phase 17 P02]: 16-01-SUMMARY superseded banner re-pointed at the new reference doc + the corrected aggregator as the contract authority (17-CONTEXT.md retained for decision provenance); the dated as-shipped historical record preserved unchanged below the banner. Phase 17 is ready_for_verification (last plan).
 
 ### Pending Todos
@@ -225,11 +227,11 @@ Recent decisions affecting current work (v2.1.0):
 
 ## Session Continuity
 
-Last session: 2026-06-16T01:15:48.299Z
-Stopped at: Phase 18 context gathered
-Resume file: .planning/phases/18-haiku-prompt-engineering-deep-research-verify-voter-early-ga/18-CONTEXT.md
-Resume next: Execute Plan 17-02 (write references/lz-deep-research-schema.md freezing the CORRECTED aggregator shapes verbatim -- records, the Option I tally rubric, the single 5-tier enum, the two assurances + worked example, named-ceilings + quote-recheck + the D-12 anti-drift rule; reconcile 16-01-SUMMARY). The freeze-from-corrected-code prerequisite (Pitfall 1) is now satisfied: 17-01 dropped Rejected / un-fused Low/Contested. Then Haiku-research + voter + early eval (18), search/extract workers (19), orchestrator+scale (20).
+Last session: 2026-06-16T09:34:32.471Z
+Stopped at: Phase 18 Plan 01 complete (EVAL-05 artifact)
+Resume file: .planning/phases/18-haiku-prompt-engineering-deep-research-verify-voter-early-ga/18-01-SUMMARY.md
+Resume next: Execute Plan 18-02 (scaffold the repo-level `eval/` package + the deterministic eval-tree tests: `eval/package.json` + committed `eval/package-lock.json` pinning `jstat@1.9.6`, the `eval/lz-eval-aggregate.test.mjs` / `eval/lz-eval-dataset.test.mjs` / `eval/lz-eval-packaging-boundary.test.mjs` deterministic fixtures, the re-scoped runtime SC-2 test, the `.gitignore` entries, and the CI extension to watch the eval tree -- D-01b/D-07/D-10/D-11). EVAL-05 (Plan 18-01) is complete: the research-grounded Haiku prompt-engineering reference now PRECEDES authoring any Haiku agent, so the later voter-author plans (18-05) can derive a fair Haiku voter prompt. Then the voter agents, the lock rule, and the live gating eval; search/extract workers (19); orchestrator+scale (20).
 
 ## Operator Next Steps
 
-- Execute Plan 17-02 (the schema reference doc freezing the corrected aggregator's shapes; PIPE-07 + VERIF-06 close once it lands and the phase verifier runs).
+- Execute Plan 18-02 (scaffold the `eval/` install surface + the Wave-0 deterministic tests; the first `npm install jstat@1.9.6` is human-verify-gated per the slopcheck note).

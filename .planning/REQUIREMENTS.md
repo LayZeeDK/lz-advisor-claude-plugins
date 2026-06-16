@@ -53,7 +53,7 @@ Requirements for the v2.1.0 milestone. Each maps to exactly one roadmap phase.
 - [ ] **EVAL-02**: The eval runs each claim k>=5 and reports Pass@1, Pass^k, and the false-uphold rate per stratum.
 - [ ] **EVAL-03**: The Haiku-first flag is flipped ON only if the research-grounded eval shows ~0 open-book false-upholds on the SUBTLE subset AND escalation fraction keeps cost materially below all-Sonnet (kill if escalation exceeds ~40-50%). If the eval shows Haiku non-viable, the resulting decision (drop the Haiku variant, retain it behind the OFF flag, or invest further) is RAISED TO THE USER rather than auto-resolved; Sonnet-default ships in the interim.
 - [ ] **EVAL-04**: The lock rule (the exact pass/kill thresholds and the false-uphold-as-sole-hard-gate decision) is written down BEFORE the eval runs, so the verdict cannot be rationalized post-hoc.
-- [ ] **EVAL-05**: The Haiku voter prompt under eval is engineered from a dedicated deep-research pass on Haiku prompt-engineering patterns and techniques (captured as a reference artifact), so the eval is a fair best-effort test of Haiku rather than a Sonnet prompt run on `model: haiku`. This research precedes authoring ANY Haiku agent (the verify-voter Haiku variant and the Haiku search worker). The research is grounded in CURRENT authoritative sources -- the Claude Code Guide / Claude Code Docs + web -- with every load-bearing technique verified; the local `lz-nx-ai-plugins` `MODEL-OPTIMIZATION-HAIKU.md` is a NON-AUTHORITATIVE starting point whose details are treated as potentially stale until verified.
+- [x] **EVAL-05**: The Haiku voter prompt under eval is engineered from a dedicated deep-research pass on Haiku prompt-engineering patterns and techniques (captured as a reference artifact), so the eval is a fair best-effort test of Haiku rather than a Sonnet prompt run on `model: haiku`. This research precedes authoring ANY Haiku agent (the verify-voter Haiku variant and the Haiku search worker). The research is grounded in CURRENT authoritative sources -- the Claude Code Guide / Claude Code Docs + web -- with every load-bearing technique verified; the local `lz-nx-ai-plugins` `MODEL-OPTIMIZATION-HAIKU.md` is a NON-AUTHORITATIVE starting point whose details are treated as potentially stale until verified.
 
 ### Integration (INTEG)
 
@@ -118,7 +118,7 @@ Which phase covers which requirement. Filled in during roadmap creation (2026-06
 | EVAL-02 | Phase 18 | Pending |
 | EVAL-03 | Phase 18 | Pending |
 | EVAL-04 | Phase 18 | Pending |
-| EVAL-05 | Phase 18 | Pending |
+| EVAL-05 | Phase 18 | Complete |
 | PIPE-03 | Phase 19 | Pending |
 | PIPE-04 | Phase 19 | Pending |
 | PIPE-05 | Phase 19 | Pending |
