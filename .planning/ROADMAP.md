@@ -158,7 +158,7 @@ Plans:
   5. The Haiku-first flag exists, defaults OFF, and flips ON only if the research-grounded eval clears (~0 open-book false-upholds on the SUBTLE subset AND escalation kept materially below all-Sonnet, kill if escalation exceeds ~40-50%); if the eval shows Haiku non-viable, the decision is RAISED TO THE USER rather than auto-resolved, and Sonnet-default ships in the interim.
 **Plans**: 5 plans (3 waves)
 - [x] 18-01-PLAN.md -- EVAL-05 Haiku prompt-engineering reference artifact (deliverable 1; precedes any Haiku agent) [Wave 1]
-- [ ] 18-02-PLAN.md -- eval/ install surface (eval/package.json + committed lockfile pinning jstat@1.9.6, gitignore) + SC-2 re-scope + D-11 packaging-boundary test + human-verify gate on the first npm install [Wave 1]
+- [x] 18-02-PLAN.md -- eval/ install surface (eval/package.json + committed lockfile pinning jstat@1.9.6, gitignore) + SC-2 re-scope + D-11 packaging-boundary test + human-verify gate on the first npm install [Wave 1]
 - [ ] 18-03-PLAN.md -- Deterministic eval aggregator + pre-registered lock rule: Pass@1/Pass^k + per-stratum false-uphold + Haiku-minus-Sonnet DELTA + library-computed (jstat) Clopper-Pearson upper bound + mechanical lock-rule check [Wave 2]
 - [ ] 18-04-PLAN.md -- Zero-hand-authoring dataset loader + committed derived manifest + vendored-WiCE NOTICE (hf-CLI fetch, sha256 fail-closed, gated-401 actionable, D-02d label remap, license-compliant) [Wave 2]
 - [ ] 18-05-PLAN.md -- Sonnet baseline + research-grounded Haiku verify-voter agents (isolated attack-mode vote, disconfirming search, source-independence) + the staged gating eval run that settles-or-raises the Haiku-first flag (EVAL-03) [Wave 3]
@@ -199,7 +199,7 @@ Phases execute in numeric order: 16 -> 17 -> 17.1 -> 18 -> 19 -> 20
 | 16. Aggregator + fixture | v2.1.0 | 2/2 | Complete    | 2026-06-15 |
 | 17. Schema + contract | v2.1.0 | 2/2 | Complete    | 2026-06-15 |
 | 17.1. Address Phase 16/17 review findings (INSERTED) | v2.1.0 | 3/3 | Complete    | 2026-06-15 |
-| 18. Haiku research + voter + early eval | v2.1.0 | 1/5 | In Progress|  |
+| 18. Haiku research + voter + early eval | v2.1.0 | 2/5 | In Progress|  |
 | 19. Search + extract workers | v2.1.0 | 0/TBD | Not started | - |
 | 20. Orchestrator + scale | v2.1.0 | 0/TBD | Not started | - |
 

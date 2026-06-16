@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v2.1.0
 milestone_name: lz-deep-research skill
 status: executing
-stopped_at: Phase 18 Plan 01 complete (EVAL-05 artifact)
-last_updated: "2026-06-16T09:34:39.308Z"
-last_activity: 2026-06-16 -- Phase 18 Plan 01 complete (EVAL-05 Haiku prompt-engineering reference artifact)
+stopped_at: Phase 18 Plan 02 complete (eval/ install surface + jstat supply-chain gate + D-11 boundary + CI backstop)
+last_updated: "2026-06-16T09:48:19.000Z"
+last_activity: 2026-06-16 -- Phase 18 Plan 02 complete (eval/ install surface, jstat@1.9.6 human-verified lockfile, D-11 packaging boundary, eval-tree CI gate in both workflows)
 progress:
   total_phases: 8
   completed_phases: 5
   total_plans: 16
-  completed_plans: 12
-  percent: 75
+  completed_plans: 13
+  percent: 81
 ---
 
 # Project State
@@ -38,9 +38,9 @@ Items deferred across milestones (v1.0.1 close 2026-06-11; v2.0.0 additions tagg
 ## Current Position
 
 Phase: 18 (haiku-prompt-engineering-deep-research-verify-voter-early-ga) -- EXECUTING
-Plan: 2 of 5
-Status: Plan 01 complete (EVAL-05 artifact); ready to execute Plan 02
-Last activity: 2026-06-16 -- Plan 18-01 complete (EVAL-05 Haiku prompt-engineering reference artifact)
+Plan: 3 of 5
+Status: Plan 02 complete (eval/ install surface + jstat@1.9.6 supply-chain gate + D-11 boundary + CI backstop); ready to execute Plan 03
+Last activity: 2026-06-16 -- Plan 18-02 complete (eval/ install surface, human-verified jstat@1.9.6 lockfile, D-11 packaging boundary enforced both sides, eval-tree CI gate in both workflows)
 
 ### Milestone v2.1.0 roadmap (REVISED 2026-06-15)
 
@@ -122,7 +122,7 @@ Advisor runtime-proven on Opus 4.8. Final phase: Phase 10 (documentation-hygiene
 |-------|-------|-------|----------|
 | 16 (Aggregator + fixture) | 1/2 | - | - |
 | 17 (Schema + contract) | TBD | - | - |
-| 18 (Haiku research + voter + early eval) | 1/5 | 7min | 7min |
+| 18 (Haiku research + voter + early eval) | 2/5 | 14min | 7min |
 | 19 (Search + extract workers) | TBD | - | - |
 | 20 (Orchestrator + scale) | TBD | - | - |
 
@@ -151,6 +151,7 @@ Advisor runtime-proven on Opus 4.8. Final phase: Phase 10 (documentation-hygiene
 | Phase 17 P01 | 8min | 2 tasks | 20 files |
 | Phase 17 P02 | 5min | 2 tasks | 2 files |
 | Phase 18 P01 | 7min | 1 tasks | 1 files |
+| Phase 18 P02 | 7min | 4 tasks | 7 files |
 
 ## Accumulated Context
 
@@ -183,6 +184,9 @@ Recent decisions affecting current work (v2.1.0):
 - [Phase ?]: [v2.1.0 / Phase 17 P02]: forbidden tokens (Rejected / Low/Contested / report_confidence / schema-keyword / ajv) kept OUT of the reference doc by describing the superseded concepts descriptively (terminal-delete tier / fused low-or-contested token / no second per-report confidence field), so the closing zero-hit gate stays clean while the doc still explains what is NOT in the contract. Claude's-discretion picks: claim_support not-yet-judged = unassessed; source-record forward field = fetched_at.
 - [Phase 18 P01]: [v2.1.0 / Phase 18 P01]: EVAL-05 deliverable authored -- `plugins/lz-advisor/references/lz-haiku-prompt-engineering.md` (shipped, pure-prose, zero-dep, the SIXTH references/ file) carries the 12 verified Haiku 4.5 techniques H1-H12, each with WHAT / WHY-for-a-cheap-model / `[CITED:]` source; the `[ASSUMED]` tags on H7 (abstain-when-unsure, A1) and H10 (step-bounded 3-5 steps, A3) preserved verbatim, NOT promoted to fact. Opens with the D-08 fairness framing (Haiku voter engineered to the SAME task contract as the Sonnet baseline -- identical schema/dataset/grader -- so the eval measures MODEL capability, not prompt quality) and names the downstream consumers (Plan 18-05 Haiku-voter author + the Phase-19 Haiku search-worker author). Stale-pattern corrections section: `budget_tokens` deprecated (use adaptive thinking + effort), prefill returns 400 on 4.6 (use Structured Outputs / direct instruction), aggressive `CRITICAL`/`MUST`/`NEVER` overtriggers (use plain phrasing), stale Structured-Outputs BETA caveat; names `lz-nx-ai-plugins` `MODEL-OPTIMIZATION-HAIKU.md` as the NON-authoritative starting point only. PRECEDES authoring any Haiku agent (D-08). Verify gate green (0 non-ASCII codepoints; CITED tags present; stale-pattern corrections present). No deviations.
 - [Phase ?]: [v2.1.0 / Phase 17 P02]: 16-01-SUMMARY superseded banner re-pointed at the new reference doc + the corrected aggregator as the contract authority (17-CONTEXT.md retained for decision provenance); the dated as-shipped historical record preserved unchanged below the banner. Phase 17 is ready_for_verification (last plan).
+- [Phase 18 P02]: [v2.1.0 / Phase 18 P02]: the repo's FIRST install surface stood up -- repo-level `eval/` (private `lz-eval`, type:module) with `eval/package.json` exact-pinning `jstat@1.9.6` (D-01b/D-10) + a COMMITTED `eval/package-lock.json` (lockfileVersion 3, integrity sha512-rPBkJbK2TnA8pzs...); `eval/node_modules/` + `eval/.cache/` gitignored. The distributed plugin tree gains NO package.json/node_modules (D-11). jstat verified at a BLOCKING-human supply-chain checkpoint before the lockfile was committed -- all 6 checks PASS (exact pin in manifest+lockfile; verbatim MIT LICENSE Copyright (c) 2013 jStat; no install/native scripts, zero runtime deps, gypfile unset; numeric anchors 0.21801936 / 0.32659794 / 0.08161410 / combination(15,3)=455; node_modules gitignored). The manifest `license` field is undefined (known jstat packaging gap, RESEARCH A7) -- the LICENSE file is the MIT proof. NOT auto-approved (gate=blocking-human); human typed approval.
+- [Phase 18 P02]: [v2.1.0 / Phase 18 P02]: D-11 packaging boundary enforced from BOTH sides -- the Phase-16 SC-2 zero-dependency test RE-SCOPED in place (in-scope edit, Pitfall 1) from a repo-root package.json walk to a recursive plugin-tree-only assertion (no package.json/node_modules under plugins/lz-advisor/; import-spec assertion kept verbatim; non-vacuous inspected-count guard; plugin root resolved file-relative three levels up from scripts/), plus a NEW eval-side `eval/lz-eval-packaging-boundary.test.mjs` (stdlib-only, no jstat) asserting (1) no install surface under the plugin tree and (2) no plugin-tree .mjs imports any eval/ script (one-directional eval->runtime boundary). Both pass via the explicit FILE-form node:test gate.
+- [Phase 18 P02]: [v2.1.0 / Phase 18 P02]: BOTH CI workflows backstop the three eval-tree tests on every push/PR -- ci.yml gained an eval-tree gate as steps IN THE EXISTING `test` job (ci.yml kept to exactly ONE job so test-act's `act -j test` mirrors the whole gate with no act-command change): `cd eval && (npm ci || npm install)` then `node --test eval/lz-eval-{aggregate,dataset,packaging-boundary}.test.mjs` by EXPLICIT file path WITHOUT any `--test-coverage-*` flags (the plugin-tree 97/89/100 coverage step kept verbatim, scoped to the plugin tree only). test-act.yml's push + pull_request `paths:` both extended to watch the eval tree (eval/**/*.test.mjs, eval/*.mjs, eval/package.json, eval/package-lock.json); ACT_VERSION/ACT_IMAGE + .actrc pin unchanged. The aggregate/dataset tests are authored in 18-03/18-04 -- the CI step references all three by path now (intentional forward reference per the plan). COST-02 + EVAL-04 unblocked at the infrastructure level. No deviations (one pre-commit self-corrected SC-2 level miscount; one Task-4-verify job-count false positive against the plan's over-broad regex that also matches `on:` keys -- single-job invariant satisfied).
 
 ### Pending Todos
 
@@ -227,11 +231,11 @@ Recent decisions affecting current work (v2.1.0):
 
 ## Session Continuity
 
-Last session: 2026-06-16T09:34:32.471Z
-Stopped at: Phase 18 Plan 01 complete (EVAL-05 artifact)
-Resume file: .planning/phases/18-haiku-prompt-engineering-deep-research-verify-voter-early-ga/18-01-SUMMARY.md
-Resume next: Execute Plan 18-02 (scaffold the repo-level `eval/` package + the deterministic eval-tree tests: `eval/package.json` + committed `eval/package-lock.json` pinning `jstat@1.9.6`, the `eval/lz-eval-aggregate.test.mjs` / `eval/lz-eval-dataset.test.mjs` / `eval/lz-eval-packaging-boundary.test.mjs` deterministic fixtures, the re-scoped runtime SC-2 test, the `.gitignore` entries, and the CI extension to watch the eval tree -- D-01b/D-07/D-10/D-11). EVAL-05 (Plan 18-01) is complete: the research-grounded Haiku prompt-engineering reference now PRECEDES authoring any Haiku agent, so the later voter-author plans (18-05) can derive a fair Haiku voter prompt. Then the voter agents, the lock rule, and the live gating eval; search/extract workers (19); orchestrator+scale (20).
+Last session: 2026-06-16T09:48:19.000Z
+Stopped at: Phase 18 Plan 02 complete (eval/ install surface + jstat supply-chain gate + D-11 boundary + CI backstop)
+Resume file: .planning/phases/18-haiku-prompt-engineering-deep-research-verify-voter-early-ga/18-02-SUMMARY.md
+Resume next: Execute Plan 18-03 (deterministic eval aggregator + pre-registered lock rule: Pass@1/Pass^k + per-stratum false-uphold + Haiku-minus-Sonnet DELTA + library-computed (jstat) Clopper-Pearson upper bound + mechanical lock-rule check). The eval/ install surface now exists: `eval/package.json` + a committed, human-verified `eval/package-lock.json` pinning `jstat@1.9.6`, with `eval/node_modules/` restorable via `cd eval && npm install`. The D-11 packaging boundary is enforced both sides (re-scoped plugin-tree SC-2 + `eval/lz-eval-packaging-boundary.test.mjs`) and backstopped in both CI workflows. 18-03 (aggregator) + 18-04 (loader) author the two eval-tree tests the CI step already references by path; then 18-05 (voter agents + live gating eval).
 
 ## Operator Next Steps
 
-- Execute Plan 18-02 (scaffold the `eval/` install surface + the Wave-0 deterministic tests; the first `npm install jstat@1.9.6` is human-verify-gated per the slopcheck note).
+- Execute Plan 18-03 (deterministic eval aggregator + pre-registered lock rule, computing Pass@1/Pass^k + Clopper-Pearson via the now-pinned jstat). 18-04 (dataset loader) then authors the third eval-tree test the CI step references; both land before the eval-tree CI gate is fully green end-to-end.
