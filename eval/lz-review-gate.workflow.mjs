@@ -163,8 +163,8 @@ function executorPrompt(group, round, maxRounds, lastRequests, priorCoverage) {
   const files = group && Array.isArray(group.files) && group.files.length > 0 ? group.files.join(', ') : name;
   const hint = group && group.hint ? `Group hint: ${group.hint}\n` : '';
   const scope = round === 1
-    ? 'ROUND 1: package your best-curated first batch of findings across this group.'
-    : `PRIOR ROUNDS already covered (do not re-package unless adding depth):\n${priorCoverage}\n`;
+    ? 'ROUND 1 -- AIM FOR CONVERGENCE IN ONE PASS: package COMPREHENSIVELY. Cover every significant finding AND name every notable function / branch / region / concern of this ENTIRE group, each with a verbatim file:line excerpt, so the reviewer can assess FULL coverage immediately. Do NOT hold back a partial "first batch" -- under-packaging just forces extra rounds.'
+    : `Address the reviewer's specific missed-surface requests below and add depth; do NOT re-package already-covered surfaces. PRIOR ROUNDS already covered:\n${priorCoverage}\n`;
   return `You are the EXECUTOR stage (Sonnet) of the lz-advisor advisor-strategy code review, round ${round} of up to ${maxRounds}, for the GROUP OF CHANGES: ${name}.
 Files in this group: ${files}.
 ${hint}Follow plugins/lz-advisor/skills/lz-review/SKILL.md scan/curate/package protocol, but STOP before the advisor-consultation phase -- the workflow runs the Opus reviewer as the NEXT stage (do not spawn a reviewer yourself).
