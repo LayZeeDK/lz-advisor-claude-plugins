@@ -188,7 +188,7 @@ Packaged findings (with verbatim excerpts), round ${round}:
 ----
 ${packaged}
 ----
-Validate or refute each packaged finding, add anything the executor missed that is judgable from the excerpts, and classify every finding as Critical / Important / Suggestion with a one-line rationale.
+Validate or refute each packaged finding, add anything the executor missed that is judgable from the excerpts, and classify every finding as Critical / Important / Suggestion with a one-line rationale, grouped under the standard ### Critical / ### Important / ### Suggestions / ### Questions sections (the downstream severity-drop check parses these sections, so keep them well-formed).
 Then assess COVERAGE OF THE GROUP: list any function, branch, region, or concern of this group that has NOT yet been packaged for you across all rounds so far (a "missed surface").
 END your message with EXACTLY:
 MISSED-SURFACES: none
@@ -204,8 +204,13 @@ function synthPrompt(group, roundLogs, converged, progressDir) {
   const slug = groupSlug(name);
   const allReviewed = roundLogs.map((r) => `=== ROUND ${r.round} (verdict=${r.verdict}) ===\n${r.reviewed}`).join('\n\n');
   const coverage = converged ? 'COMPLETE' : 'INCOMPLETE';
-  return `You are the SYNTHESIS stage (Sonnet) of the advisor-strategy review for the GROUP: ${name}.
-Consolidate the MULTI-ROUND reviewer analyses below into ONE severity-grouped report (Critical / Important / Suggestion / Questions; dedup findings that recurred across rounds; keep the union). Coverage for this group is ${coverage}.
+  return `You are the SYNTHESIS stage (Opus, high effort) of the advisor-strategy review for the GROUP: ${name}.
+Consolidate the MULTI-ROUND reviewer analyses below into ONE report. Coverage for this group is ${coverage}.
+FIDELITY CONTRACT (the reviewer's classification is AUTHORITATIVE -- you consolidate, you do NOT re-judge):
+- Emit ALL FOUR severity sections in this fixed order, each as a "### " header: ### Critical, then ### Important, then ### Suggestions, then ### Questions. For any section with no findings, write the header followed by a single line: (none). Never omit a section.
+- Place each finding under the SEVERITY THE REVIEWER ASSIGNED it (the ### section the reviewer listed it under). Never re-classify, re-bucket, downgrade, upgrade, or DROP a finding -- a Critical stays Critical, an Important stays Important. Preserve each finding's wording.
+- Dedup ONLY findings that are verbatim-identical recurrences of the SAME finding across rounds; keep the union of all distinct findings. Never merge two findings that reference different file:line locations.
+- After the four sections add a "### Cross-Cutting Patterns" section: copy the reviewer's own cross-cutting / systemic-pattern text through VERBATIM (concatenate across rounds, dedup identical lines); do NOT invent fresh patterns. If the reviewer named none, write: (none).
 Multi-round reviewer output:
 ----
 ${allReviewed}
@@ -297,7 +302,7 @@ const results = await pipeline(
 
       const synth = await agent(
         synthPrompt(group, roundLogs, converged, PROGRESS_DIR),
-        { model: 'sonnet', effort: 'medium', phase: 'Synthesize', label: `synth ${name}` },
+        { model: 'opus', effort: 'high', phase: 'Synthesize', label: `synth ${name}` },
       );
 
       if (hasNullStage([synth])) {
@@ -305,7 +310,11 @@ const results = await pipeline(
         return null;
       }
 
-      return { group: name, slug: groupSlug(name), converged, rounds: roundLogs.length, report: synth };
+      // Expose roundLogs (raw per-round reviewer outputs) so the ORCHESTRATOR can run the deterministic
+      // severity-drop diff post-run (eval/lz-review-gate-check.mjs) -- the workflow is filesystem-blind
+      // and the harness is prompt-text-only, so this return value is how the diff sees the reviewer's
+      // high-severity findings to compare against the generative synth report (2026-06-17 consensus).
+      return { group: name, slug: groupSlug(name), converged, rounds: roundLogs.length, report: synth, roundLogs };
     } catch (e) {
       log(`Group ${name}: error -- ${String((e && e.message) || e)}; leaving group NOT done for resume`);
       return null;

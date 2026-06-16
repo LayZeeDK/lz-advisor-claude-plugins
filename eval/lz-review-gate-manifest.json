@@ -1,0 +1,31 @@
+{
+  "_comment": "Data-flow coupling chains for the Phase-19 review gate (resolved 2026-06-17 cross-family consensus). Each chain's files MUST be co-located in ONE review group so a bug whose cause spans them is seen by a single per-group reviewer (the cross-group coupling blind spot). Grounded in actual cross-file imports in eval/ (verified 2026-06-17), not speculation. assertManifestCoverage(args.groups, thisFile) MUST pass before dispatching the Phase-19 gate.",
+  "chains": [
+    {
+      "name": "safeId path-traversal guard surface",
+      "files": [
+        "eval/lz-eval-aggregate.mjs",
+        "eval/lz-eval-offline-read.mjs",
+        "eval/lz-eval-dataset.mjs"
+      ],
+      "rationale": "safeId is defined in lz-eval-aggregate.mjs (line ~201) and imported + relied on as the path-traversal guard by lz-eval-offline-read.mjs (votePath basename) and lz-eval-dataset.mjs (slug). A guard weakness in aggregate or a misuse in either consumer is a defect spanning these files."
+    },
+    {
+      "name": "search-loop API surface",
+      "files": [
+        "eval/lz-eval-search-loop.mjs",
+        "eval/lz-eval-offline-read.mjs",
+        "eval/lz-eval-traps.mjs"
+      ],
+      "rationale": "searchAndStop / staticKsAdapter / dateFilter / parseAvtDate are defined in lz-eval-search-loop.mjs and consumed by lz-eval-offline-read.mjs and lz-eval-traps.mjs; a contract or date-parsing change spans these."
+    },
+    {
+      "name": "aggregate -> offline-read consumption surface",
+      "files": [
+        "eval/lz-eval-aggregate.mjs",
+        "eval/lz-eval-offline-read.mjs"
+      ],
+      "rationale": "lz-eval-offline-read.mjs imports a broad set from lz-eval-aggregate.mjs; an invariant assumed in aggregate and relied on in offline-read spans both files."
+    }
+  ]
+}

@@ -73,8 +73,10 @@ function runWorkflow(agent, argsObj) {
 // Slice the real inlined control-helper block from the workflow source and execute it, so the tests
 // exercise the ACTUAL functions that run in production (no copy, no lib).
 function getHelpers() {
+  const startIdx = SRC.indexOf('LZ-REVIEW-GATE-SHARED-START');
   const endIdx = SRC.indexOf('LZ-REVIEW-GATE-SHARED-END');
-  assert.ok(endIdx > 0, 'shared-block end marker missing');
+  assert.ok(startIdx > 0, 'shared-block START marker missing');
+  assert.ok(endIdx > startIdx, 'shared-block END marker missing or precedes START');
   const headerOnly = deExport(SRC.slice(0, endIdx));
   const exportTail = 'return { parseReviewerSentinel, missedIsNone, isConverged, nextRequests, groupSlug, computeRemainingGroups, hasNullStage, dedupeFindingLines };';
   // eslint-disable-next-line no-new-func
@@ -301,6 +303,52 @@ test('workflow structural contract: meta + effort discipline + real reviewer age
   assert.ok(!/effort:\s*'xhigh'/.test(SRC), 'reviewer effort must be high, not xhigh (protects maxTurns 3)');
   assert.match(SRC, /agentType: 'lz-advisor:reviewer'/);
   assert.match(SRC, /model: 'sonnet'/);
+  // synth stage runs on Opus-high (2026-06-17 cross-family consensus -- replaces the former Sonnet synth)
+  assert.match(SRC, /model: 'opus', effort: 'high', phase: 'Synthesize'/);
+});
+
+test('synth stage runs on Opus-high at runtime and exposes full roundLogs for the orchestrator diff', async () => {
+  let synthOpts = null;
+  const agent = async (_p, opts) => {
+    if (opts.label.startsWith('review')) {
+      // the real reviewer emits its native ### section grammar (NOT inline tags)
+      return '### Critical\n\nC-1 canonicalizeUrl strips the trailing slash on the serialized url\n\n### Important\n\n(none)\n\nMISSED-SURFACES: none\nROUND-VERDICT: CONVERGED';
+    }
+
+    if (opts.label.startsWith('synth')) {
+      synthOpts = opts;
+      return '### Critical\n\nC-1 canonicalizeUrl strips trailing slash\n\n### Important\n\n(none)\n\nCOVERAGE: COMPLETE';
+    }
+
+    return 'packaged';
+  };
+
+  const result = await runWorkflow(agent, { groups: [{ name: 'g1' }], maxRounds: 2, progressDir: 'tmp' });
+  assert.equal(synthOpts.model, 'opus');
+  assert.equal(synthOpts.effort, 'high');
+  // roundLogs (raw per-round reviewer output) is exposed on each report so the orchestrator severity
+  // diff can run post-run (the workflow is filesystem-blind; this return value IS the diff's input).
+  // Assert ALL four fields, not just shape/.reviewed (dogfood: dropping round/verdict/missed must fail).
+  const rl = result.reports[0].roundLogs;
+  assert.equal(rl.length, 1);
+  assert.equal(rl[0].round, 1);
+  assert.equal(rl[0].verdict, 'CONVERGED');
+  assert.equal(rl[0].missed, 'none');
+  assert.match(rl[0].reviewed, /### Critical/);
+});
+
+test('synthPrompt carries the fidelity contract (PROMPT-SHAPE guard only -- NOT a live-behavior guarantee)', () => {
+  // Booked honestly per the 2026-06-17 consensus + the harness-blindness fact: these assert the prompt
+  // TEXT contains the fidelity clauses. They do NOT prove the live Opus synth obeys them -- that is
+  // enforced post-run by the orchestrator severity-drop diff (eval/lz-review-gate-check.mjs).
+  // Scoped to the synthPrompt FUNCTION body (dogfood): a clause surviving only in a comment must NOT pass.
+  const spStart = SRC.indexOf('function synthPrompt(');
+  const synthSrc = SRC.slice(spStart, SRC.indexOf('// ---', spStart));
+  assert.ok(spStart > 0 && synthSrc.length > 0, 'synthPrompt body not found');
+  assert.match(synthSrc, /### Cross-Cutting Patterns/);
+  assert.match(synthSrc, /\(none\)/);
+  assert.match(synthSrc, /SEVERITY THE REVIEWER ASSIGNED/);
+  assert.match(synthSrc, /verbatim-identical/);
 });
 
 test('workflow source is strictly ASCII', () => {
