@@ -214,6 +214,35 @@ choice (recommended to the user + a final 3-family consult): accept Sonnet-defau
 on the parity evidence, OR invest in the heavier orchestration harness to attempt a positive Haiku
 clearance (low expected payoff given universal parity + the cost-asymmetry that favors Sonnet-default).
 
+## NEUTRAL FINAL CONSULT (2026-06-16) -- clean independent convergence
+
+After an earlier (led) conclude-vs-invest consult, the brief was re-run NEUTRALLY (facts only,
+symmetric/open options, no stated preference; a FRESH Opus agent so its context carried no prior
+framing; identical brief to GPT-5.5 + Gemini). All three independently converged:
+
+- **Conclude the eval now; Sonnet-default ships; Haiku-first NOT adopted.**
+- **Record as VOID / non-discriminating (saturation), NOT a Haiku pass.** DELTA=0 with both tiers at
+  0/30 trips the pre-registered saturation rule. The honest claim is "this test could not tell the
+  two models apart," NOT "the two models are proven equivalent" -- and the cost-asymmetry makes that
+  distinction load-bearing. Per EVAL-03 this is RAISED-to-user, not SETTLED.
+- **Do NOT build the full search-loop harness now.** Cost-asymmetry: a wrong Haiku flip risks silent
+  false confidence in a cited report (unbounded, hard to detect); Sonnet-default spends within an
+  accepted budget. EVAL-03 gives a clean exit (Sonnet ships regardless); the harness is optional
+  optimization, not on the critical path. Negative ROI unless/until Sonnet-voter cost becomes a
+  material concern.
+- **Record NARROWLY.** Established: the trap instrument is valid (10/10 genuine); on clean AND
+  noisy-but-supplied retrieval Haiku matches Sonnet on subtle-overreach detection; query-formulation
+  parity (1.70 vs 1.70). This rules OUT "Haiku grossly worse"; it does NOT establish "Haiku safe to
+  flip." Untested (both pilot simplifications biased toward catching): live multi-step search with
+  model-decided SEARCH-STOPPING, and per-claim DATE-CUTOFF enforcement.
+- **Pre-registered reopen trigger:** revisit Haiku-first ONLY if the Sonnet-voter cost becomes a
+  material budget concern; the reopening test must be the full search-loop + date-cutoff harness over
+  the raw KS (the cheap design space is exhausted and re-running supplied-retrieval strata will just
+  re-saturate).
+
+This clean convergence MATCHES the earlier led consensus (validating it) while wording the outcome
+more conservatively (VOID/raised, not "parity"). It is the basis for the phase close-out.
+
 ## What a replan touches
 
 - 18-03: lock-rule prose (above) + aggregator gate semantics (pooled-n DELTA + the `CP(1,N)` formula
