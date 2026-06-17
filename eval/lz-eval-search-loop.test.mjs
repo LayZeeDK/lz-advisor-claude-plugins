@@ -91,6 +91,21 @@ test('D-13 canonicalizeUrl is DISCRIMINATING: a tracking-only query string colla
   assert.equal(out, 'https://example.org/p', 'only the clean path/host survives');
 });
 
+test('D-13 canonicalizeUrl strips tracking params CASE-INSENSITIVELY (FBCLID / Ref / UTM_Source -- F3)', () => {
+  // Upper/mixed-case tracking keys must be stripped too, else two variants of one source canonicalize
+  // to DIFFERENT keys -> different SHA-256 dedup filenames (the dedup invariant breaks). Pre-fix the
+  // case-sensitive denylist let FBCLID / Ref survive.
+  const out = canonicalizeUrl('https://example.org/p?FBCLID=z&Ref=foo&UTM_Source=x&keep=1');
+  assert.ok(/keep=1/.test(out), 'a non-tracking param survives');
+  assert.ok(!/fbclid/i.test(out), 'FBCLID (uppercase) stripped case-insensitively');
+  assert.ok(!/(\?|&)ref=/i.test(out), 'Ref (capitalized) stripped case-insensitively');
+  assert.ok(!/utm_/i.test(out), 'UTM_Source (uppercase prefix) stripped case-insensitively');
+  // The dedup invariant holds across a lowercase and an uppercase tracking variant of one source.
+  const lower = canonicalizeUrl('https://example.org/study?id=7&fbclid=abc');
+  const upper = canonicalizeUrl('https://example.org/study?id=7&FBCLID=abc');
+  assert.equal(lower, upper, 'lowercase and uppercase tracking variants collapse to one canonical key');
+});
+
 test('D-13 canonicalizeUrl strips the URL fragment', () => {
   assert.equal(canonicalizeUrl('https://example.org/a#section-2'), 'https://example.org/a', 'fragment stripped');
 });
@@ -166,6 +181,29 @@ test('D-07 parseAvtDate fails closed on a malformed date (ContractError naming t
     (err) => err.name === 'ContractError' && /unparseable|date/i.test(err.message),
     'garbage must throw ContractError',
   );
+});
+
+test('D-07 parseAvtDate range-checks the components (a shape-valid but out-of-range date throws, no rollover -- probe #4)', () => {
+  // A shape-valid but out-of-range date must NOT silently roll over (99-99-2020 -> a future month;
+  // 31-02-2020 -> early March). Fail closed so a bogus date can never become a real cutoff.
+  assert.throws(
+    () => parseAvtDate('99-99-2020'),
+    (err) => err.name === 'ContractError' && /out-of-range|date/i.test(err.message),
+    'an impossible month/day must throw, not roll over',
+  );
+  assert.throws(
+    () => parseAvtDate('31-02-2020'),
+    (err) => err.name === 'ContractError' && /out-of-range|date/i.test(err.message),
+    'Feb 31 must throw (no rollover into March)',
+  );
+  assert.throws(
+    () => parseAvtDate('00-01-2020'),
+    (err) => err.name === 'ContractError',
+    'day 00 must throw',
+  );
+  // DISCRIMINATING: a genuinely valid edge date (leap day) still parses -- the guard rejects only
+  // invalid dates, not all dates.
+  assert.equal(parseAvtDate('29-02-2020').getUTCDate(), 29, 'a real leap day (29-02-2020) still parses');
 });
 
 // ===========================================================================
@@ -385,4 +423,55 @@ test('D-09 searchAndStop is DISCRIMINATING: an evidence-rich adapter and an empt
   assert.notEqual(ve, vr, 'the verdict flips with the evidence (not a constant)');
   assert.equal(ve, 'insufficient');
   assert.equal(vr, 'refuted');
+});
+
+test('D-10 searchAndStop fails closed on non-positive minimums ({minQueries:0,minDocs:0} cannot bypass the guard -- probe #3)', () => {
+  // { minQueries: 0, minDocs: 0 } would make `q+1>=0 && docsSeen>=0` trivially true and permit an
+  // uphold-equivalent stop with NO search. Positive-integer validation fails it closed.
+  const adapter = { fetchResults: () => [{ url: 'https://a/x', date: '01-01-2020', decisive: true, verdict: 'refuted' }] };
+  assert.throws(
+    () => searchAndStop({ claim: { id: 'c1', text: 'X' }, attackMode: 'disconfirm', adapter, minQueries: 0, minDocs: 0, maxQueries: 5 }),
+    (err) => err.name === 'ContractError' && /positive integer/.test(err.message),
+    'minQueries:0 / minDocs:0 fails closed (no zero-search uphold)',
+  );
+  assert.throws(
+    () => searchAndStop({ claim: { id: 'c1', text: 'X' }, attackMode: 'disconfirm', adapter, minQueries: 3, minDocs: 5, maxQueries: 0 }),
+    (err) => err.name === 'ContractError' && /positive integer/.test(err.message),
+    'maxQueries:0 fails closed',
+  );
+});
+
+test('D-10 searchAndStop pools decisive evidence across queries -- an EARLY decisive doc is retained (F1)', () => {
+  // A decisive doc appears ONLY on query 1 (before the minQueries floor is met); later queries return
+  // non-decisive docs. The pre-fix batch-only check forgot it and exhausted to refuted-default; the
+  // pooled check retains it and returns the decisive verdict once the minimums are met. This is the
+  // discriminating fixture: identical-batch adapters cannot distinguish the pooled fix from the bug.
+  let q = 0;
+  const adapter = {
+    fetchResults: () => {
+      q += 1;
+
+      if (q === 1) {
+        return [
+          { url: 'https://a/decisive', date: '01-01-2020', decisive: true, verdict: 'refuted' },
+          { url: 'https://a/x1', date: '01-01-2020' },
+        ];
+      }
+
+      return [
+        { url: 'https://a/n' + q, date: '01-01-2020' },
+        { url: 'https://a/m' + q, date: '01-01-2020' },
+      ];
+    },
+  };
+  const { verdict, trace } = searchAndStop({
+    claim: { id: 'c1', text: 'X' },
+    attackMode: 'disconfirm',
+    adapter,
+    minQueries: 3,
+    minDocs: 5,
+    maxQueries: 6,
+  });
+  assert.equal(verdict, 'refuted', 'the early decisive verdict is retained via the doc pool (not forgotten)');
+  assert.equal(trace.stop_reason, 'decisive-evidence', 'the pooled decisive evidence stops the loop once minimums are met');
 });

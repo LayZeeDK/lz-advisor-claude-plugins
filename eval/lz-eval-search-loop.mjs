@@ -81,7 +81,11 @@ export function canonicalizeUrl(raw) {
   }
 
   for (const k of [...u.searchParams.keys()]) {
-    if (TRACKING_PARAMS.has(k) || k.toLowerCase().startsWith('utm_')) {
+    // Case-INSENSITIVE match (both arms): query-param keys vary in case in the wild (`FBCLID`, `Ref`,
+    // `UTM_Source`), and a case-sensitive denylist would let an upper/mixed-case tracking param survive
+    // -> two variants of one source would canonicalize to DIFFERENT keys -> different SHA-256 dedup
+    // filenames (breaks the dedup invariant). The frozen TRACKING_PARAMS set is all-lowercase.
+    if (TRACKING_PARAMS.has(k.toLowerCase()) || k.toLowerCase().startsWith('utm_')) {
       u.searchParams.delete(k);
     }
   }
@@ -123,7 +127,20 @@ export function parseAvtDate(ddmmyyyy) {
     throw new ContractError('unparseable claim_date: ' + JSON.stringify(ddmmyyyy), 'date');
   }
 
-  return new Date(Date.UTC(Number(m[3]), Number(m[2]) - 1, Number(m[1])));
+  const day = Number(m[1]);
+  const month = Number(m[2]);
+  const year = Number(m[3]);
+  const d = new Date(Date.UTC(year, month - 1, day));
+
+  // Range-check via UTC round-trip: a shape-valid but out-of-range date (e.g. 99-99-2020, 31-02-2020,
+  // 00-00-2020) would SILENTLY ROLL OVER into a different month/day rather than fail. A real calendar
+  // date round-trips its UTC fields unchanged; a mismatch means the components do not form a real date
+  // -> fail closed (an out-of-range date must never be silently treated as a valid cutoff).
+  if (d.getUTCFullYear() !== year || d.getUTCMonth() !== month - 1 || d.getUTCDate() !== day) {
+    throw new ContractError('out-of-range claim_date (components do not form a real date): ' + JSON.stringify(ddmmyyyy), 'date');
+  }
+
+  return d;
 }
 
 // safeParse: a doc `date` may be DD-MM-YYYY (AVeriTeC KS) or absent/garbage. Return a Date for a
@@ -140,7 +157,18 @@ function safeParse(raw) {
     return null;
   }
 
-  return new Date(Date.UTC(Number(m[3]), Number(m[2]) - 1, Number(m[1])));
+  const day = Number(m[1]);
+  const month = Number(m[2]);
+  const year = Number(m[3]);
+  const d = new Date(Date.UTC(year, month - 1, day));
+
+  // An out-of-range (rolled-over) doc date is treated as undated (null) -- dateFilter drops it fail-
+  // closed, same as a missing date. A bogus "99-99-2020" can never masquerade as an in-window date.
+  if (d.getUTCFullYear() !== year || d.getUTCMonth() !== month - 1 || d.getUTCDate() !== day) {
+    return null;
+  }
+
+  return d;
 }
 
 // ---------------------------------------------------------------------------
@@ -277,11 +305,31 @@ export function searchAndStop({
     throw new ContractError('searchAndStop requires an adapter with fetchResults()', 'searchAndStop');
   }
 
+  // Positive-integer floor (anti-bypass): minQueries / minDocs / maxQueries must each be a positive
+  // integer. This fails closed on the pathological { minQueries: 0, minDocs: 0 } case -- which would
+  // make `q+1 >= 0 && docsSeen >= 0` trivially true and permit an uphold-equivalent stop with NO
+  // search at all -- and on negative / non-integer inputs. The frozen SEARCH_DEFAULTS remain the
+  // pre-registered floor, and the "tighten-only, never loosen" rule is enforced at the production
+  // binding (the calibrator); the suite legitimately drives sub-floor-but-positive minimums, so this
+  // primitive forbids only the <= 0 / non-integer degenerate cases.
+  for (const [name, val] of [['minQueries', minQueries], ['minDocs', minDocs], ['maxQueries', maxQueries]]) {
+    if (!Number.isInteger(val) || val < 1) {
+      throw new ContractError('searchAndStop requires a positive integer ' + name + ': ' + JSON.stringify(val), 'searchAndStop');
+    }
+  }
+
   const trace = { queries: [], depth: 0, stop_reason: null };
   // depth = the cumulative count of docs explored across queries (the RESEARCH-drafted protocol:
   // `docsSeen += results.length`). The minDocs floor is "at least M docs EXPLORED", not "M distinct
   // urls" -- the agent-side loop counts retrieval effort, and re-encountering a doc is still effort.
   let docsSeen = 0;
+  // The running doc POOL: decisiveness and the verdict are judged over ALL docs seen across queries,
+  // not just the current batch. A decisive doc surfaced in an EARLY query (before the minimums are
+  // met) must NOT be forgotten by the time the minimums ARE met. Latent under the fixed-return static
+  // adapter (every batch is identical), but a real correctness defect on the Phase-20 live binding the
+  // line-253 comment commits this core to -- there per-query results vary, so a batch-only check would
+  // silently drop an early decisive doc and exhaust to refuted-default.
+  const pool = [];
 
   for (let q = 0; q < maxQueries; q += 1) {
     // The disconfirming-query formulation cue is deterministic (search the negation, vary per round);
@@ -292,12 +340,17 @@ export function searchAndStop({
     docsSeen += results.length;
     trace.depth = docsSeen;
 
+    for (const r of results) {
+      pool.push(r);
+    }
+
     // The mechanical-minimum guard: an uphold-equivalent (decisive) stop is permitted ONLY once BOTH
-    // minimums are met. q + 1 is the number of queries issued so far.
-    if (q + 1 >= minQueries && docsSeen >= minDocs && hasDecisiveEvidence(results)) {
+    // minimums are met. q + 1 is the number of queries issued so far. Decisiveness + the verdict are
+    // judged over the accumulated POOL so an early decisive doc is retained, not the current batch.
+    if (q + 1 >= minQueries && docsSeen >= minDocs && hasDecisiveEvidence(pool)) {
       trace.stop_reason = 'decisive-evidence';
 
-      return { verdict: judge(results), trace };
+      return { verdict: judge(pool), trace };
     }
   }
 
