@@ -125,6 +125,15 @@ test('D-04 verifySha256 passes (returns the digest) when the buffer matches the 
   assert.equal(got, expected, 'a matching buffer verifies and returns its digest');
 });
 
+test('D-04 verifySha256 fails closed on a non-buffer buf (ContractError carrying .file, not a native TypeError -- F9)', () => {
+  const sha = createHash('sha256').update('x', 'utf8').digest('hex');
+  assert.throws(
+    () => verifySha256(null, sha, 'data/x.jsonl'),
+    (err) => err.name === 'ContractError' && err.file === 'data/x.jsonl',
+    'a null buf must fail closed as a ContractError with .file (preserving the error discipline)',
+  );
+});
+
 // ---------------------------------------------------------------------------
 // Pitfall 2 / T-18-TOKENLEAK: a gated dataset without a token surfaces an actionable HF_TOKEN
 // error naming the gated dataset and does NOT retry as transient.
@@ -274,6 +283,26 @@ test('EVAL-01 stratify is DISCRIMINATING: a supported-only pool cannot satisfy t
     () => stratify(pool, 60),
     (err) => err.name === 'ContractError' && /insufficient|stratum/i.test(err.message),
     'a pool that cannot satisfy a stratum must fail closed, not return a degenerate sample',
+  );
+});
+
+test('EVAL-01 stratify fails closed on an UNRECOGNIZED source_label (schema drift, not a silent drop -- F5)', () => {
+  const pool = [];
+
+  for (let i = 0; i < 100; i += 1) {
+    pool.push({ uid: 'sup-' + i, source_label: 'supported' });
+    pool.push({ uid: 'ps-' + i, source_label: 'partially_supported' });
+    pool.push({ uid: 'ns-' + i, source_label: 'not_supported' });
+  }
+
+  // Inject one item with a non-null but UNKNOWN label. Pre-fix it was silently dropped (and a short
+  // pool would then misreport "insufficient pool"); now it must fail closed naming the bad label.
+  pool.push({ uid: 'weird-0', source_label: 'mostly_true' });
+
+  assert.throws(
+    () => stratify(pool, 60),
+    (err) => err.name === 'ContractError' && /unknown source_label/i.test(err.message),
+    'an unrecognized source_label must fail closed (diagnosable schema drift), not be silently dropped',
   );
 });
 

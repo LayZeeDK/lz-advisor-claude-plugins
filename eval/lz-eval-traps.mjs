@@ -317,6 +317,12 @@ export function verifySha256(buf, expectedSha, file) {
     throw new ContractError('invalid expected sha256 (expected 64 hex chars): ' + JSON.stringify(expectedSha), file);
   }
 
+  // Guard buf so createHash().update(null/undefined) cannot throw a NATIVE TypeError -- that would
+  // break the ContractError-with-.file discipline (mirrors the dataset-loader verifySha256 guard).
+  if (!Buffer.isBuffer(buf) && typeof buf !== 'string') {
+    throw new ContractError('verifySha256 requires a Buffer or string buf', file);
+  }
+
   const got = createHash('sha256').update(buf).digest('hex');
 
   if (got !== expectedSha) {

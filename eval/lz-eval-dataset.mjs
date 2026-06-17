@@ -98,6 +98,12 @@ export function verifySha256(buf, expectedSha, file) {
     throw new ContractError('invalid expected sha256 (expected 64 hex chars): ' + JSON.stringify(expectedSha), file);
   }
 
+  // Guard buf so createHash().update(null/undefined) cannot throw a NATIVE TypeError -- that would
+  // break the "every error is a ContractError carrying .file" discipline this verifier upholds.
+  if (!Buffer.isBuffer(buf) && typeof buf !== 'string') {
+    throw new ContractError('verifySha256 requires a Buffer or string buf', file);
+  }
+
   const got = createHash('sha256').update(buf).digest('hex');
 
   if (got !== expectedSha) {
@@ -266,9 +272,17 @@ export function stratify(pool, n, fractions = STRATA_FRACTIONS) {
       throw new ContractError('stratify pool item missing source_label', 'stratify');
     }
 
-    if (buckets[item.source_label]) {
-      buckets[item.source_label].push(item);
+    // Fail closed on an UNRECOGNIZED label (schema drift) -- mirrors remapLabel. The prior
+    // `if (buckets[label])` SILENTLY dropped an unknown-label item, which later surfaced as a
+    // misleading "insufficient pool for stratum ..." error instead of naming the real cause.
+    if (!Object.prototype.hasOwnProperty.call(buckets, item.source_label)) {
+      throw new ContractError(
+        'unknown source_label (expected supported|partially_supported|not_supported): ' + JSON.stringify(item.source_label),
+        'stratify',
+      );
     }
+
+    buckets[item.source_label].push(item);
   }
 
   const need = {

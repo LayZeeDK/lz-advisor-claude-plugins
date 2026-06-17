@@ -382,3 +382,12 @@ test('verifySha256 passes (returns the digest) when the buffer matches the expec
   const got = verifySha256(buf, expected, 'eval/.cache/trap-0006.txt');
   assert.equal(got, expected, 'a matching buffer verifies and returns its digest');
 });
+
+test('verifySha256 fails closed on a non-buffer buf (ContractError carrying .file, not a native TypeError -- F9)', () => {
+  const sha = createHash('sha256').update('x', 'utf8').digest('hex');
+  assert.throws(
+    () => verifySha256(null, sha, 'eval/.cache/trap-0006.txt'),
+    (err) => err.name === 'ContractError' && err.file === 'eval/.cache/trap-0006.txt',
+    'a null buf must fail closed as a ContractError with .file (preserving the error discipline)',
+  );
+});
