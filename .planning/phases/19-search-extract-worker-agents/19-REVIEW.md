@@ -15,7 +15,7 @@ Run PACED, one coupling group per dispatch.
 | Group | Coupling chain | Files | Status |
 |-------|----------------|-------|--------|
 | A | search-loop API surface | `lz-eval-search-loop.mjs` + `lz-eval-offline-read.mjs` + `lz-eval-traps.mjs` | REVIEWED + fixed |
-| B | safeId guard + aggregate->offline-read | `lz-eval-aggregate.mjs` + `lz-eval-offline-read.mjs` + `lz-eval-dataset.mjs` | REVIEWED (triaged below; fixes pending decision) |
+| B | safeId guard + aggregate->offline-read | `lz-eval-aggregate.mjs` + `lz-eval-offline-read.mjs` + `lz-eval-dataset.mjs` | REVIEWED + fixed (F3/F4 deferred to gating-read harness) |
 
 `assertManifestCoverage` over the full partition [A, B] = ok (every coupling chain co-located in one
 group; `offline-read` is the hub, reviewed in both).
@@ -175,3 +175,35 @@ CONFIRMED, worth landing before the 19-04 gating read (it consumes exactly this 
   19-04 gating-read harness setup.
 
 OPTIONAL / low: F8 (comment), F11 (cosmetic), F12 (annotation), F14/F15 (CLI/token design). F13: no change.
+
+### Group B -- fix status (landed)
+
+Confirmed Group-B fixes landed on `feat/deep-research` (eval-tree only; shipped plugin tree untouched;
+150 eval tests green, 0 fail; all changed sources strictly ASCII; packaging-boundary 2/2):
+
+| Commit | Findings fixed |
+|--------|----------------|
+| `37ebbef` fix(19): harden aggregate stats helpers | **F1** `clopperPearsonUpper`/`wilsonUpper` throw on `x>n` (after the `n===0` short-circuit, so `CP(x,0)=1` is preserved); **F2** `passAtK`/`passHatK` throw on `c<0||c>n`; **F7** corrected the `countFalseUpholds` safeId comment. +1 test. |
+| `b57c8d0` fix(19): harden offline-read | **F6** `readDelta` requires `nPooled >= k` (no NaN `passHatK`); **F10** `resolveOutcome` range-checks `escalationFraction` to `[0,1]`. +2 tests. |
+| `bad429f` fix(19): harden dataset + traps | **F5** `stratify` fails closed on an unknown `source_label` (was a silent drop); **F9** `verifySha256` guards `buf` is Buffer/string (both the dataset + traps copies). +3 tests. |
+| `ba27c3b` refactor(19): de-duplicate readJson | **F12** consolidated the 5 per-module `readJson` copies into `eval/lz-eval-readjson.mjs`; removed the now-unused `stripBom`/`fs`/void-ref imports; -57 net lines. |
+
+Triage refinements proven against the tests (why source-triage is mandatory):
+- **F1** -- a naive `x>n` guard placed before the `n===0` check would break `aggregate.test.mjs:69`
+  (`CP(3,0)===1` "regardless of x"). Placed the guard AFTER the `n===0` short-circuit.
+- **F4 (Group A)** / **F6** -- the guards were tuned to NOT reject the deliberate partial-run reads the
+  tests exercise (`reliableTrials:10`, `nPooled:15`).
+
+NOT fixed this pass (with rationale):
+- **F3 + F4** (integrity: cross-validate `nPooled`/`reliableTrials` against the realized vote files) --
+  DEFERRED to the 19-04 gating-read harness (where the per-seat vote files actually exist), per the
+  user decision. Highest-judgment item; tracked for the gating read.
+- **F2/F1 were landed as defense-in-depth** though unreachable via current consumers (completing the
+  engine's fail-closed discipline in the numeric core).
+- **F8** (comment), **F11** (cosmetic `ContractError.file`), **F12-annotation** (calibrator ceiling
+  label note), **F13** (no change -- read boundary re-validates), **F14/F15** (HF-token / CLI-`k`
+  design questions) -- left as-is / optional; recorded above.
+
+Step-1 (review gate) is COMPLETE for both groups. Remaining Phase-19 arc: `gsd-code-review 19`
+(complementary cheap probe pass) -> 19-04 Task-2 offline gating read (blocking human checkpoint;
+fold in F3/F4 there) -> verify -> secure -> validate -> extract-learnings -> phase complete.

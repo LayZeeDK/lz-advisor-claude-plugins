@@ -3,9 +3,9 @@ gsd_state_version: 1.0
 milestone: v2.1.0
 milestone_name: lz-deep-research skill
 status: executing
-stopped_at: Phase 19 Step 1 IN PROGRESS -- review gate run on Group A + confirmed fixes committed (9827417/d532a81/715528c + docs); Group B dispatched (runId wf_a3e7a4cb-9ff)
+stopped_at: Phase 19 Step 1 (review gate) COMPLETE -- Groups A+B reviewed + triaged + confirmed fixes committed; F3/F4 integrity deferred to the 19-04 gating-read harness. 150 eval tests green. Next: gsd-code-review 19 -> 19-04 gating read -> verify chain.
 last_updated: "2026-06-17"
-last_activity: 2026-06-17 -- ran hardened review gate on Group A (search-loop surface), triaged 14 findings vs source (19-REVIEW.md), landed 5 confirmed + 2 probe-bug fixes (144 eval tests green); Group B gate dispatched
+last_activity: 2026-06-17 -- ran the hardened review gate on both Phase-19 coupling groups, triaged 29 findings vs source (19-REVIEW.md), landed all confirmed Group A+B fixes + the F12 readJson de-dup (150 eval tests green, 0 fail)
 progress:
   total_phases: 8
   completed_phases: 6
@@ -238,13 +238,13 @@ Recent decisions affecting current work (v2.1.0):
 ## Session Continuity
 
 Last session: 2026-06-17
-Stopped at: Phase 19 Step 1 IN PROGRESS. Review gate RAN on Group A (search-loop API surface: search-loop + offline-read + traps), converged 1 round, severityDropDiff 0 dropped. Triaged all 14 findings vs real source (19-REVIEW.md): 5 confirmed bugs/guards + 2 confirmed probe-bugs FIXED and committed (9827417 search-loop F1/F3/probe-#3/probe-#4; d532a81 offline-read F4/F10; 715528c traps F7 comment; docs commit for 19-REVIEW.md). 144 eval tests green (138 + 6 new discriminating). Group B (safeId guard + aggregate->offline-read: aggregate + offline-read + dataset) DISPATCHED as a background Workflow (runId wf_a3e7a4cb-9ff) -- awaiting completion.
-Resume file: .planning/phases/19-search-extract-worker-agents/.continue-here.md (HANDOFF.json superseded -- Step 1 already begun)
-Resume next: When the Group B gate completes, read its output JSON, run `severityDropDiff(report.roundLogs, report.report)` (driver at `eval/.cache/review-gate-19/run-diff.mjs`), TRIAGE every finding vs real source, append a Group B section + fix dispositions to 19-REVIEW.md. Then `gsd-code-review 19` (complementary cheap probe pass) + fixer, then F12 (de-dup readJson across all 5 eval modules), then 19-04 gating read, then verify.
+Stopped at: Phase 19 Step 1 (the paced review gate) COMPLETE for BOTH coupling groups. Group A (search-loop surface) + Group B (safeId/aggregate-consumption surface) each ran (converged 1 round, severityDropDiff 0 dropped), were triaged vs real source (19-REVIEW.md, 29 findings), and all confirmed fixes are committed: Group A 9827417/d532a81/715528c; Group B 37ebbef (aggregate F1/F2/F7), b57c8d0 (offline-read F6/F10), bad429f (dataset+traps F5/F9), ba27c3b (F12 readJson de-dup -> eval/lz-eval-readjson.mjs); + docs commits. 150 eval tests green, 0 fail. F3/F4 (cross-validate nPooled/reliableTrials against realized vote files) DEFERRED to the 19-04 gating-read harness per the user decision.
+Resume file: .planning/phases/19-search-extract-worker-agents/.continue-here.md (HANDOFF.json superseded)
+Resume next: `gsd-code-review 19` (complementary cheap probe pass; the 4 known probe-bugs: #2 case-sensitive denylist FIXED, #3 floor-bypass FIXED as positive-int guard, #4 date-range FIXED, #1 serialized trailing-slash assessed not-a-bug). Then 19-04 Task-2 offline Haiku-vs-Sonnet gating read (BLOCKING human checkpoint -- fold in the deferred F3/F4 integrity cross-validation in its harness). Then verify_phase_goal -> secure -> validate -> extract-learnings -> phase.complete.
 
 ## Operator Next Steps
 
-1. STEP 1 (Group A DONE+fixed+committed; Group B running, runId wf_a3e7a4cb-9ff): on Group B completion, severityDropDiff -> triage vs source -> append Group B section to 19-REVIEW.md. Group A confirmed fixes already landed: F1 decisive-doc pool, F3 case-insensitive tracking, probe-#3 positive-int guard, probe-#4 date range round-trip (9827417); F4 reliableTrials>=1, F10 falseUpholds<=nPooled (d532a81); F7 comment (715528c). DEFERRED: F12 (readJson de-dup spans 5 modules incl Group-B files -- do after Group B). DISMISSED: F5/F11/F13; probe-#1 (trailing-slash) assessed not-a-bug.
+1. STEP 1 COMPLETE: both coupling groups reviewed + triaged + confirmed fixes committed (Group A: 9827417/d532a81/715528c; Group B: 37ebbef/b57c8d0/bad429f/ba27c3b). 19-REVIEW.md carries all 29 findings + dispositions. DEFERRED: F3/F4 integrity cross-validation -> fold into the 19-04 gating-read harness.
 2. `gsd-code-review 19` (cheap one-pass) -> GSD fixer (`/gsd:code-review 19 --fix`) as the complementary probe pass. Probe-bugs status: #2 (case-sensitive denylist) FIXED; #3 (floor bypass) FIXED as positive-int guard; #4 (date range) FIXED; #1 (canonicalizeUrl serialized trailing-slash) assessed correct/intended -- confirm.
-3. 19-04 Task-2: the offline Haiku-vs-Sonnet gating read (BLOCKING human-verify checkpoint; settle-or-raise) -- AFTER the fixer corrects the eval modules the read consumes. Sonnet-default ships regardless.
+3. 19-04 Task-2: the offline Haiku-vs-Sonnet gating read (BLOCKING human-verify checkpoint; settle-or-raise) -- implement the deferred F3/F4 vote-file cross-validation in its harness. Sonnet-default ships regardless.
 4. verify_phase_goal (gsd-verifier) -> secure-phase -> validate-phase -> extract-learnings -> phase.complete.
