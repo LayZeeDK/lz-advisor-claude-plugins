@@ -57,6 +57,7 @@ import { searchAndStop, staticKsAdapter, dateFilter } from './lz-eval-search-loo
 import {
   ContractError,
   safeId,
+  listJson,
 } from '../plugins/lz-advisor/skills/lz-deep-research/scripts/lz-deep-research-aggregate.mjs';
 
 // Shared fail-closed JSON read (Group-B F12 de-dup); re-exported to preserve the prior export surface.
@@ -69,6 +70,14 @@ export { readJson };
 void searchAndStop;
 void staticKsAdapter;
 void dateFilter;
+
+// ---------------------------------------------------------------------------
+// The search-and-stop trace stop_reason enum (mirrors searchAndStop's three outcomes). persistVote
+// validates the recorded stop_reason against this set (D1-10) so a typo'd / unknown reason can never be
+// persisted into a vote -- the trace must be diagnosable (genuine parity vs both-stopped-early), which
+// requires a KNOWN stop_reason, not merely any string.
+// ---------------------------------------------------------------------------
+export const STOP_REASONS = Object.freeze(['decisive-evidence', 'exhausted', 'min-not-met']);
 
 // ---------------------------------------------------------------------------
 // The D-06 SATURATION pre-condition / Sonnet-as-calibrator gate (the gate ON the gate).
@@ -193,21 +202,37 @@ export function readDelta({
     throw new ContractError('readDelta requires nPooled >= k (else passHatK is NaN in the read): nPooled=' + nPooled + ' k=' + k, 'readDelta');
   }
 
+  // D1-17: the pooled pool must be at least the per-claim reliability depth. A PASS is declared at
+  // reliable=RELIABLE_TRIALS (15); a pooled pool smaller than reliableTrials cannot support the
+  // reliability the gate reads (the declared reliability would exceed the realized sample) -- a
+  // misconfigured read, never a silent over-claim of reliability.
+  if (nPooled < reliableTrials) {
+    throw new ContractError('readDelta requires nPooled >= reliableTrials (pool smaller than the reliability depth): nPooled=' + nPooled + ' reliableTrials=' + reliableTrials, 'readDelta');
+  }
+
+  // F3/F4 / probe-#5: cross-validate the DECLARED nPooled against the REALIZED per-seat vote population
+  // BEFORE counting. countFalseUpholds returns ONLY a count, never the number of files it read, so
+  // without this an UNDER-filled vote dir -- the NORMAL mid-interruption state of the resumable D-08 run
+  // (persistVote skip-already-done) -- would silently inflate correct = nPooled - falseUpholds and
+  // over-report Pass@1/Pass^k over a pool the run never completed; an OVER-filled (stale) dir skews the
+  // other way and can drive correct negative into passAtK. Each seat must hold EXACTLY nPooled votes
+  // (one per shared-pool claim). Fail closed in BOTH directions. (This subsumes the prior superset-only
+  // guard, which caught only falseUpholds > nPooled.)
+  const sonnetTrials = listJson(sonnetVoteDir).length;
+  const haikuTrials = listJson(haikuVoteDir).length;
+
+  if (sonnetTrials !== nPooled || haikuTrials !== nPooled) {
+    throw new ContractError(
+      'readDelta: realized per-seat vote count != nPooled (partial/interrupted or stale pool): sonnet=' +
+        sonnetTrials + ' haiku=' + haikuTrials + ' nPooled=' + nPooled,
+      'readDelta',
+    );
+  }
+
   // The FROZEN off-model verdict-vs-gold counts over the shared SUBTLE pool (each routes every vote id
   // through safeId inside the engine -- T-19-TRAVERSE).
   const sonnetFalseUpholds = countFalseUpholds(sonnetVoteDir, goldLabels);
   const haikuFalseUpholds = countFalseUpholds(haikuVoteDir, goldLabels);
-
-  // A vote dir holding MORE false-upholds than the declared pooled n (a superset / stale vote dir)
-  // would drive sonnetCorrect / haikuCorrect NEGATIVE into passAtK below. Fail closed: a realized
-  // false-uphold count can never exceed the pool it was drawn from.
-  if (sonnetFalseUpholds > nPooled || haikuFalseUpholds > nPooled) {
-    throw new ContractError(
-      'readDelta: false-uphold count exceeds nPooled (superset/stale vote dir): sonnet=' +
-        sonnetFalseUpholds + ' haiku=' + haikuFalseUpholds + ' nPooled=' + nPooled,
-      'readDelta',
-    );
-  }
 
   // The SOLE gated quantity: the Haiku-MINUS-Sonnet pooled EXCESS (never Haiku's absolute rate, D-06).
   const pooledExcess = delta(haikuFalseUpholds, sonnetFalseUpholds);
@@ -376,6 +401,15 @@ export function persistVote(voteDir, vote, { overwrite = false } = {}) {
   ) {
     throw new ContractError(
       'persistVote vote.trace must be { queries:[], depth:number, stop_reason:string } (D-10)',
+      'persistVote',
+    );
+  }
+
+  // D1-10: the stop_reason must be one of the search-and-stop enum values (not just any string). An
+  // unknown reason means the trace did not come from the shared loop and is not diagnosable.
+  if (!STOP_REASONS.includes(t.stop_reason)) {
+    throw new ContractError(
+      'persistVote vote.trace.stop_reason must be one of ' + STOP_REASONS.join('|') + ': ' + JSON.stringify(t.stop_reason),
       'persistVote',
     );
   }

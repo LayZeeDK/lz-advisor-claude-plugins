@@ -424,23 +424,53 @@ test('readDelta fails closed when nPooled < k (passHatK would be NaN in the read
   );
 });
 
-test('readDelta fails closed when a vote dir has MORE false-upholds than the declared nPooled (F10)', () => {
+test('readDelta fails closed when the realized per-seat vote count != nPooled (under-filled interrupted run OR over-filled stale dir -- F3/F4/probe-#5)', () => {
   const { gold, ids } = buildPool(15);
-  // All 15 sonnet votes are false-upholds (unrefuted on refuted-gold); declare a SMALLER pool (10).
-  // The post-count guard must fail closed -- else sonnetCorrect goes negative into passAtK.
-  const sonnetDir = writeVotes(ids.map((id) => ({ id, verdict: 'unrefuted' })));
-  const haikuDir = writeVotes(ids.map((id) => ({ id, verdict: 'refuted' })));
+
+  // UNDER-FILLED: only 10 of the 15 pool votes written, but nPooled declared 15. Pre-fix readDelta
+  // computed correct = 15 - falseUpholds over a 10-vote dir and over-reported Pass@1/Pass^k -- the exact
+  // silent reliability over-report probe-#5 surfaced (the resumable D-08 run's normal mid-interruption
+  // state). The realized-count guard must fail closed.
+  const underS = writeVotes(ids.slice(0, 10).map((id) => ({ id, verdict: 'refuted' })));
+  const underH = writeVotes(ids.slice(0, 10).map((id) => ({ id, verdict: 'refuted' })));
 
   try {
     assert.throws(
-      () => readDelta({ sonnetVoteDir: sonnetDir, haikuVoteDir: haikuDir, goldLabels: gold, nPooled: 10, reliableTrials: 15 }),
-      (e) => e.name === 'ContractError' && /exceeds nPooled/.test(e.message),
-      'a false-uphold count exceeding nPooled fails closed',
+      () => readDelta({ sonnetVoteDir: underS, haikuVoteDir: underH, goldLabels: gold, nPooled: 15, reliableTrials: 10 }),
+      (e) => e.name === 'ContractError' && /realized per-seat vote count != nPooled/.test(e.message),
+      'an under-filled (interrupted) vote dir fails closed -- no silent reliability over-report',
     );
   } finally {
-    fs.rmSync(sonnetDir, { recursive: true, force: true });
-    fs.rmSync(haikuDir, { recursive: true, force: true });
+    fs.rmSync(underS, { recursive: true, force: true });
+    fs.rmSync(underH, { recursive: true, force: true });
   }
+
+  // OVER-FILLED: 15 votes written but nPooled declared 10 (a stale / oversized dir). Must throw too --
+  // this is the direction the prior superset-only guard caught; the realized-count guard subsumes it.
+  const overS = writeVotes(ids.map((id) => ({ id, verdict: 'unrefuted' })));
+  const overH = writeVotes(ids.map((id) => ({ id, verdict: 'refuted' })));
+
+  try {
+    assert.throws(
+      () => readDelta({ sonnetVoteDir: overS, haikuVoteDir: overH, goldLabels: gold, nPooled: 10, reliableTrials: 10 }),
+      (e) => e.name === 'ContractError' && /realized per-seat vote count != nPooled/.test(e.message),
+      'an over-filled (stale) vote dir fails closed',
+    );
+  } finally {
+    fs.rmSync(overS, { recursive: true, force: true });
+    fs.rmSync(overH, { recursive: true, force: true });
+  }
+});
+
+test('readDelta fails closed when nPooled < reliableTrials (pool smaller than the reliability depth -- D1-17)', () => {
+  const { gold } = buildPool(5);
+  // nPooled=10 < reliableTrials=15: the pool cannot support the per-claim reliability the gate reads at
+  // (a PASS is declared at reliable=15). The guard fires before any vote dir is touched (dummy dirs).
+  assert.throws(
+    () => readDelta({ sonnetVoteDir: 'a', haikuVoteDir: 'b', goldLabels: gold, nPooled: 10, reliableTrials: 15 }),
+    (e) => e.name === 'ContractError' && /nPooled >= reliableTrials/.test(e.message),
+    'nPooled below reliableTrials fails closed',
+  );
 });
 
 // ===========================================================================
@@ -521,10 +551,32 @@ test('persistVote fails closed on a missing trace, bad verdict, or empty id (D-1
       'an out-of-enum verdict fails closed',
     );
     assert.throws(
-      () => persistVote(voteDir, { id: '', verdict: 'refuted', trace: { queries: [], depth: 0, stop_reason: 'x' } }),
+      () => persistVote(voteDir, { id: '', verdict: 'refuted', trace: { queries: [], depth: 0, stop_reason: 'decisive-evidence' } }),
       (e) => e.name === 'ContractError',
       'an empty id fails closed',
     );
+  } finally {
+    fs.rmSync(voteDir, { recursive: true, force: true });
+  }
+});
+
+test('persistVote fails closed on an unknown trace.stop_reason; every known enum value persists (D1-10)', () => {
+  const voteDir = fs.mkdtempSync(path.join(os.tmpdir(), 'lz-offline-stopreason-'));
+
+  try {
+    // A structurally-valid trace whose stop_reason is NOT a search-and-stop enum value fails closed: a
+    // vote whose trace did not come from the shared loop is not diagnosable (parity vs stopped-early).
+    assert.throws(
+      () => persistVote(voteDir, { id: 'haiku--trap-090', verdict: 'refuted', trace: { queries: ['q'], depth: 3, stop_reason: 'made-up' } }),
+      (e) => e.name === 'ContractError' && /stop_reason/.test(e.message),
+      'an out-of-enum stop_reason fails closed (D1-10)',
+    );
+
+    // DISCRIMINATING control: each of the three real search-and-stop enum values persists.
+    for (const reason of ['decisive-evidence', 'exhausted', 'min-not-met']) {
+      const res = persistVote(voteDir, { id: 'ok--' + reason, verdict: 'refuted', trace: { queries: ['q'], depth: 3, stop_reason: reason } });
+      assert.equal(res.persisted, true, 'a known stop_reason (' + reason + ') persists');
+    }
   } finally {
     fs.rmSync(voteDir, { recursive: true, force: true });
   }
