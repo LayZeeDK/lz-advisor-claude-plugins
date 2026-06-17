@@ -12,7 +12,7 @@ description: |
   <example>
   Context: The fetch stage dispatches one source for sub-angle 2.
   user: "Fetch https://example.org/a/study; store the excerpt at excerpts/e1.txt; write claims to claims/w1.json and the source record under sources/; worker id w1. Return the receipt."
-  assistant: "I will WebFetch the URL, store the returned content verbatim (capped) as the excerpt, extract falsifiable claims each bound to a verbatim quote + excerpt_id, canonicalize the URL to the source key, write the three files, and return the one-line receipt."
+  assistant: "I will WebFetch the URL, store the returned content verbatim as the excerpt, extract falsifiable claims each bound to a verbatim quote + excerpt_id, canonicalize the URL to the source key, write the three files, and return the one-line receipt."
   <commentary>
   The extract worker stores evidence at fetch time and returns only a one-line
   receipt; the main session never sees raw source text.
@@ -72,7 +72,7 @@ summarized or paraphrased. Constraints:
 - `excerpt-id` is the file basename (the `.txt` stripped). Every quote you
   extract must be a verbatim substring of this stored excerpt.
 
-## Step 2: canonicalize the URL to the source key (D-13)
+## Step 2: canonicalize the URL to the source key (D-08/D-13)
 
 Compute the canonical source key from the fetched URL. This recipe is mirrored
 verbatim from the schema reference (the single source of truth) and is kept
@@ -186,5 +186,4 @@ session reads only this receipt; the raw source text stays in `excerpts/<id>.txt
 Fetch one source and stop. Store the excerpt verbatim at fetch time, extract
 falsifiable claims bound to verbatim quotes, canonicalize the URL once, write
 only the run-dir files (the excerpt, the claim record, the source record), and
-return the one-line receipt. Reference plugin resources via
-`${CLAUDE_PLUGIN_ROOT}` if you need them. Take no other action.
+return the one-line receipt. Take no other action.

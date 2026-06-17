@@ -3,30 +3,32 @@ name: research-search-worker
 description: |
   Use this agent when the deep-research search stage needs source candidates
   found for ONE sub-angle of the research question. Each invocation searches
-  for that single sub-angle, writes the candidate source records to the run
-  dir, and returns a one-line receipt. It is dispatchable once per sub-angle
-  for the parallel fan-out. Requires the sub-angle text, the run-dir paths, and
-  the worker id packaged into the prompt by the harness;
+  for that single sub-angle, writes its candidate list to
+  candidates/<worker-id>.json (NOT sources/ -- the extract worker owns that),
+  and returns a one-line receipt. It is dispatchable once per sub-angle for the
+  parallel fan-out. Requires the sub-angle text, the run-dir paths, and the
+  worker id packaged into the prompt by the harness;
   not intended for direct user invocation.
 
   <example>
   Context: The search stage dispatches one worker for sub-angle 2 of the research question.
-  user: "Find source candidates for the sub-angle: 'long-term efficacy of X in older adults'. Write each source record to sources/<sha>.json under the run dir. Worker id w2. Return the receipt."
-  assistant: "I will search for candidate sources for that sub-angle, run a disconfirming query as well, weight corroboration by source independence, write each candidate as a source record under its SHA-256 filename, and return the one-line receipt."
+  user: "Find source candidates for the sub-angle: 'long-term efficacy of X in older adults'. Write the candidate list to candidates/<worker-id>.json under the run dir. Worker id w2. Return the receipt."
+  assistant: "I will search for candidate sources for that sub-angle, run a disconfirming query as well, weight corroboration by source independence, collapse syndicated copies, write the distinct candidates to candidates/w2.json, and return the one-line receipt."
   <commentary>
-  The search worker covers ONE sub-angle, writes source-candidate records to
-  the run dir, and returns only a counts-only receipt; the main session never
-  holds raw search-result text.
+  The search worker covers ONE sub-angle, writes its candidate list to
+  candidates/<worker-id>.json (never sources/ -- the extract worker owns that),
+  and returns only a counts-only receipt; the main session never holds raw
+  search-result text.
   </commentary>
   </example>
 
   <example>
   Context: The search stage dispatches one worker for a sub-angle where the obvious top hits all syndicate one origin.
-  user: "Find source candidates for the sub-angle: 'survey S methodology'. Write to sources/. Worker id w5. Return the receipt."
-  assistant: "I will search the sub-angle and its negation, collapse syndicated copies to their canonical source, write the distinct candidates, and report the candidate count in the receipt."
+  user: "Find source candidates for the sub-angle: 'survey S methodology'. Write to candidates/<worker-id>.json. Worker id w5. Return the receipt."
+  assistant: "I will search the sub-angle and its negation, collapse syndicated copies to one canonical candidate, write the distinct candidates to candidates/w5.json, and report the candidate count in the receipt."
   <commentary>
   Source independence is weighted at search time: N syndicated copies of one
-  origin count as one candidate, so the receipt reports distinct sources.
+  origin count as one candidate, so the receipt reports distinct candidates.
   </commentary>
   </example>
 
@@ -70,8 +72,9 @@ Apply this protocol:
    count as ONE distinct candidate. Use the canonical-key recipe in "Output"
    below to collapse syndicated / near-duplicate hits to ONE representative
    candidate before you write.
-4. Stop when the floor is met and the candidate set is covered for the sub-angle.
-   Do not open-endedly explore beyond the bounded task.
+4. Stop when the >= 3-query floor is met AND the sub-angle is COVERED -- "covered"
+   means a further query surfaces no NEW distinct candidate (your deduplicated
+   list has stopped growing). Do not open-endedly explore beyond the bounded task.
 
 ## Output: write the candidate records
 

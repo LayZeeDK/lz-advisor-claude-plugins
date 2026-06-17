@@ -106,3 +106,15 @@ test('clear fix: both workers raise maxTurns above 4 (extract: 1 fetch + 3 write
     assert.ok(Number(m[1]) >= 5, name + ' maxTurns raised to >= 5 (got ' + m[1] + ')');
   }
 });
+
+test('SSOT: no STALE design references survive in the frontmatter/examples (the re-gate-caught class)', () => {
+  // The post-fix LLM re-gate caught stale description/<example> blocks that the body-recipe checks
+  // missed: SHA-256 / sources/<sha> filenames and a "(capped)" excerpt. The WHOLE prompt (frontmatter
+  // + examples + body) must be free of the superseded design, or the routing-surface description lies.
+  assert.ok(!/sha-?256/i.test(SEARCH), 'search prompt carries no SHA-256 reference anywhere (incl. examples)');
+  assert.ok(!/sources\/<sha/i.test(SEARCH), 'search prompt carries no stale sources/<sha> reference');
+  assert.ok(!/sources\/<sha/i.test(EXTRACT), 'extract prompt carries no stale sources/<sha> reference');
+  assert.ok(!/\(capped\)/i.test(EXTRACT), 'extract prompt carries no stale "(capped)" excerpt reference');
+  // The search worker must not instruct writing to sources/ in any example (extract owns sources/).
+  assert.ok(!/write[^.\n]*\bto\b[^.\n]*sources\//i.test(SEARCH), 'no example tells search to write to sources/');
+});
