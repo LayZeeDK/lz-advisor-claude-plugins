@@ -16,6 +16,15 @@ Run PACED, one coupling group per dispatch.
 |-------|----------------|-------|--------|
 | A | search-loop API surface | `lz-eval-search-loop.mjs` + `lz-eval-offline-read.mjs` + `lz-eval-traps.mjs` | REVIEWED + fixed |
 | B | safeId guard + aggregate->offline-read | `lz-eval-aggregate.mjs` + `lz-eval-offline-read.mjs` + `lz-eval-dataset.mjs` | REVIEWED + fixed (F3/F4 deferred to gating-read harness) |
+| C | 19-02 shipped worker agents + round-trip test | `agents/research-extract-worker.md` + `agents/research-search-worker.md` + `lz-deep-research-aggregate.test.mjs` | RUNNING (wf_b9c66433-8a0) |
+| D | eval validation suites + lock-rule contract | 5x `lz-eval-*.test.mjs` + `eval/lz-eval-lock-rule.md` | PENDING |
+
+> SCOPE (user directive 2026-06-17): the lz-review gate MUST cover ALL Phase-19 plans/waves implemented,
+> not just the eval-import-coupling source the manifest scoped. Groups A+B covered the eval source;
+> Groups C+D were added to cover the shipped worker agents (19-02), the test suites, and the EVAL-04
+> lock-rule contract. Pure-data fixtures (manifest.json, worker-output-roundtrip/*, __fixtures__ trees)
+> are excluded -- they are exercised by the Group-D test suites. C/D are outside the manifest's coupling
+> scope, so `assertManifestCoverage` does not apply to them (it guards eval imports, satisfied by A+B).
 
 `assertManifestCoverage` over the full partition [A, B] = ok (every coupling chain co-located in one
 group; `offline-read` is the hub, reviewed in both).
