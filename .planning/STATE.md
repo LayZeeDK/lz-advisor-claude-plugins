@@ -197,6 +197,7 @@ Recent decisions affecting current work (v2.1.0):
 ### Pending Todos
 
 - [research-rtk-command-suitability-for-skills-and-agents](./todos/pending/research-rtk-command-suitability-for-skills-and-agents.md) -- analyze whether `rtk git diff` / `rtk gh pr diff` are appropriate for review + security-review skills/agents (token savings vs. detail-loss trade-off). Captured 2026-04-26 during Phase 05.6 Test 2 review.
+- [relocate-non-distributable-lz-deep-research-test-fixtures](./todos/pending/2026-06-17-relocate-non-distributable-lz-deep-research-test-fixtures-fr.md) -- the distributed plugin tree ships dev-only test artifacts under `skills/lz-deep-research/scripts/` (`__fixtures__/` + `lz-deep-research-aggregate.test.mjs`); only `lz-deep-research-aggregate.mjs` should ship. Review + relocate/exclude (resolve whether the marketplace install supports a per-file exclusion first); extend the D-11 packaging-boundary test to guard it. Captured 2026-06-17 during the 19-04 artifact review.
 
 ### Blockers/Concerns
 
@@ -237,7 +238,7 @@ Recent decisions affecting current work (v2.1.0):
 
 ## Session Continuity
 
-Last session: 2026-06-17
+Last session: 2026-06-17 (RESUMED 2026-06-17 via /gsd-resume-work; user chose: execute 19-04 Stage 1 via /gsd-execute-phase 19 -- Tasks 1-3 auto-build, then the Task-4 blocking Sonnet-calibrator checkpoint raises VOID/PROCEED to the user)
 Stopped at: Phase 19 Step 1 (the paced review gate) COMPLETE for BOTH coupling groups. Group A (search-loop surface) + Group B (safeId/aggregate-consumption surface) each ran (converged 1 round, severityDropDiff 0 dropped), were triaged vs real source (19-REVIEW.md, 29 findings), and all confirmed fixes are committed: Group A 9827417/d532a81/715528c; Group B 37ebbef (aggregate F1/F2/F7), b57c8d0 (offline-read F6/F10), bad429f (dataset+traps F5/F9), ba27c3b (F12 readJson de-dup -> eval/lz-eval-readjson.mjs); + docs commits. 150 eval tests green, 0 fail. F3/F4 (cross-validate nPooled/reliableTrials against realized vote files) DEFERRED to the 19-04 gating-read harness per the user decision.
 Resume file: .planning/phases/19-search-extract-worker-agents/.continue-here.md (HANDOFF.json superseded)
 SCOPE EXPANDED (user directive 2026-06-17): the lz-review gate MUST run for ALL Phase-19 plans/waves implemented, not just the eval-manifest source. The manifest was eval-import-coupling only, so it missed plugin-tree + test/contract deliverables. Added groups beyond A/B: Group C (19-02 SHIPPED worker agents research-extract-worker.md + research-search-worker.md + the +80 round-trip test) -- RUNNING (runId wf_b9c66433-8a0); Group D (the 5 eval .test.mjs suites + eval/lz-eval-lock-rule.md contract) -- PENDING (pace after C; may split D1/D2 if packaging is too large). Pure-data fixtures excluded (exercised by the Group-D tests). Using the default lz-advisor:reviewer (code/contract lens).
