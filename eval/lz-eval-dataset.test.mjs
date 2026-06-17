@@ -223,6 +223,73 @@ test('EVAL-01 loadManifest fails closed when examples[] is missing/not an array'
   }
 });
 
+test('EVAL-01 loadManifest fails closed when an example is missing book or has an empty stratum (the LOADER validates them, not just the fixture)', () => {
+  // DISCRIMINATING vs the prior coverage: the "maps rows" test asserts stratum/book on the COMMITTED
+  // (well-formed) fixture, so it would pass even if the loader ignored those fields. These rows are
+  // malformed -- a loader that skips stratum/book validation would NOT throw and this test would fail.
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'lz-eval-manifest-strat-'));
+
+  try {
+    const noBook = path.join(dir, 'no-book.json');
+    fs.writeFileSync(
+      noBook,
+      JSON.stringify({ sources: [{ id: 'wice' }], examples: [{ uid: 'x1', expected_verdict: 'unrefuted', stratum: 'supported' }] }),
+      'utf8',
+    );
+    assert.throws(
+      () => loadManifest(noBook),
+      (err) => err.name === 'ContractError' && /book/i.test(err.message),
+      'an example missing book must fail closed',
+    );
+
+    const badStratum = path.join(dir, 'bad-stratum.json');
+    fs.writeFileSync(
+      badStratum,
+      JSON.stringify({ sources: [{ id: 'wice' }], examples: [{ uid: 'x1', expected_verdict: 'refuted', stratum: '', book: 'closed' }] }),
+      'utf8',
+    );
+    assert.throws(
+      () => loadManifest(badStratum),
+      (err) => err.name === 'ContractError' && /stratum/i.test(err.message),
+      'an example with an empty stratum must fail closed',
+    );
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('EVAL-01 loadManifest fails closed on a malformed sources[] entry (null / missing id) -- a diagnosable ContractError, not a downstream TypeError', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'lz-eval-manifest-src-'));
+
+  try {
+    const nullSrc = path.join(dir, 'null-src.json');
+    fs.writeFileSync(
+      nullSrc,
+      JSON.stringify({ sources: [null], examples: [{ uid: 'x1', expected_verdict: 'unrefuted', stratum: 'supported', book: 'closed' }] }),
+      'utf8',
+    );
+    assert.throws(
+      () => loadManifest(nullSrc),
+      (err) => err.name === 'ContractError' && /source entry/i.test(err.message),
+      'a null source entry must fail closed via ContractError (not a later TypeError on s.id)',
+    );
+
+    const noId = path.join(dir, 'no-id.json');
+    fs.writeFileSync(
+      noId,
+      JSON.stringify({ sources: [{ repo: 'x/y' }], examples: [{ uid: 'x1', expected_verdict: 'unrefuted', stratum: 'supported', book: 'closed' }] }),
+      'utf8',
+    );
+    assert.throws(
+      () => loadManifest(noId),
+      (err) => err.name === 'ContractError' && /string id/i.test(err.message),
+      'a source entry missing a string id must fail closed',
+    );
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
 // ---------------------------------------------------------------------------
 // EVAL-01 / D-02d: programmatic stratification produces the EVAL-01 fractions (~40% supported /
 // ~60% bad, ~half the bad SUBTLE). Driven by an offline labeled pool.

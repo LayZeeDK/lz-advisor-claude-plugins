@@ -193,6 +193,20 @@ export function loadManifest(manifestPath) {
     throw new ContractError('manifest missing sources[] array', manifestPath);
   }
 
+  // Validate each source ENTRY, not just that sources is an array (symmetry with the examples loop).
+  // A null / non-object / empty-id entry would otherwise survive loadManifest and surface later as a
+  // native TypeError (e.g. m.sources.find((s) => s.id === ...)) instead of a diagnosable ContractError
+  // -- breaking the "every error carries .file" fail-closed discipline this loader upholds.
+  for (const s of m.sources) {
+    if (s == null || typeof s !== 'object') {
+      throw new ContractError('manifest source entry is not an object: ' + JSON.stringify(s), manifestPath);
+    }
+
+    if (typeof s.id !== 'string' || s.id.length === 0) {
+      throw new ContractError('manifest source entry missing non-empty string id: ' + JSON.stringify(s), manifestPath);
+    }
+  }
+
   const byUid = new Map();
 
   for (const ex of m.examples) {
@@ -208,6 +222,22 @@ export function loadManifest(manifestPath) {
       throw new ContractError(
         'manifest example has invalid expected_verdict (frozen enum unrefuted|refuted): ' +
           JSON.stringify(ex.expected_verdict),
+        manifestPath,
+      );
+    }
+
+    // The loader's documented contract maps a uid -> { source, stratum, book, expected_verdict }, so
+    // stratum + book are load-bearing and must be validated by the LOADER (not merely asserted in a
+    // test against the committed fixture, which would pass even if the loader ignored them). A dropped
+    // book or a typo'd stratum in a future manifest must fail CLOSED here, before it silently distorts
+    // the stratified composition (the subtle-count filter + the drift gate read these fields).
+    if (typeof ex.stratum !== 'string' || ex.stratum.length === 0) {
+      throw new ContractError('manifest example missing non-empty stratum: ' + JSON.stringify(ex.uid), manifestPath);
+    }
+
+    if (ex.book !== 'open' && ex.book !== 'closed') {
+      throw new ContractError(
+        'manifest example has invalid book (expected open|closed): ' + JSON.stringify(ex.book),
         manifestPath,
       );
     }
