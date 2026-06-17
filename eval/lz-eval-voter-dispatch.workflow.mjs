@@ -1,6 +1,6 @@
 export const meta = {
   name: 'lz-eval-voter-dispatch',
-  description: 'D-08 offline gating-read voter-dispatch: dispatches the PARAMETERIZED verify-voter seat (Sonnet Stage-1 / Haiku Stage-2) inside searchAndStop over the ENRICHED static-KS adapter (per-claim date cutoff enforced, never live web), records the MODEL voter free-text verdict (scoring reconciliation T-19-19 -- never searchAndStop flag-enum), no-abstention re-cast, skip-already-done resumable + pace-able; structured per eval/lz-review-gate.workflow.mjs (meta + marker SHARED block + injected globals, no import)',
+  description: 'D-08 offline gating-read voter-dispatch (CLOSED-BOOK realization, 19-04-REPLAN-DECISION-3): the ORCHESTRATOR runs a Node searchAndStop pre-pass in JS to produce the trace + the date-filtered evidence packet; this Workflow dispatches the PARAMETERIZED verify-voter seat (Sonnet Stage-1 / Haiku Stage-2) as a JUDGE over the INLINED date-filtered evidence (NO live web, NO self-search) and parses the agent return as a TEXT string; the orchestrator attaches the JS-produced trace, records the MODEL voter free-text verdict (scoring reconciliation T-19-19 -- never searchAndStop flag-enum), no-abstention re-cast, skip-already-done resumable + pace-able (maxInFlight honored), and reduces k votes/claim -> ONE pooled per-claim verdict (any-uphold); structured per eval/lz-review-gate.workflow.mjs (meta + marker SHARED block + injected globals, no import)',
   phases: [
     { title: 'Dispatch' },
   ],
@@ -21,12 +21,31 @@ export const meta = {
 // real helper functions. No lib copy and no anti-drift proxy are needed -- the test runs the actual
 // source. The markers are the slice point for the helper test.
 //
+// THE CLOSED-BOOK 3-PART REALIZATION (C1/I1/I2 fix, 19-04-REPLAN-DECISION-3): a Claude subagent
+// dispatched by a Workflow is filesystem-blind + import-sealed and agent() returns a TEXT string -- it
+// CANNOT run searchAndStop, the frozen staticKsAdapter ignores the query, and a string is not a
+// {vote,trace} object. So:
+//   PART 1 -- the ORCHESTRATOR (Task 4) runs the frozen searchAndStop in JS per claim over
+//     staticKsAdapter(enrichedKs, claimId, claimDate) to produce the real {queries, depth, stop_reason}
+//     trace + the date-filtered evidence packet. This pre-pass lives in the sibling importable module
+//     eval/lz-eval-voter-dispatch.prepass.mjs (searchAndStopPrePass) -- NOT in this Workflow body (the
+//     body is import-sealed). Packets are written to gitignored eval/.cache/.
+//   PART 2 -- THIS Workflow dispatches the parameterized voter seat as a JUDGE over the INLINED
+//     date-filtered evidence packet (passed in via args). The voter does NOT search, does NOT WebSearch,
+//     does NOT rely on a fact-check article -- it judges the claim against ONLY the supplied window
+//     (closed-book over a supplied packet) and returns a DEFINITE refuted/unrefuted verdict as a TEXT
+//     string. The agent return is parsed as a STRING (the prior {vote,trace}-object assumption is
+//     REMOVED); the trace handed to toScoredVote is the JS-PRODUCED trace from the packet, never a
+//     model-returned trace.
+//   PART 3 -- the ORCHESTRATOR attaches the JS trace, persists the MODEL verdict via persistVote, and
+//     reduces the k votes/claim -> ONE pooled per-claim verdict via reducePooledVerdict (any-uphold).
+//
 // SCORING RECONCILIATION (T-19-19, load-bearing): the SCORED quantity is the MODEL voter's free-text
-// vote.verdict over the date-filtered KS text (persisted in {unrefuted,refuted}, read by
+// vote.verdict over the INLINED date-filtered KS text (persisted in {unrefuted,refuted}, read by
 // countFalseUpholds). searchAndStop's flag-driven mechanical verdict enum {judge-result,
-// 'refuted-default','insufficient'} governs ONLY the TRACE + the mechanical minimums and NEVER becomes
-// the recorded vote. toScoredVote takes the verdict from the MODEL vote; a test FAILS if the dispatch
-// records searchAndStop's verdict.
+// 'refuted-default','insufficient'} governs ONLY the JS-produced TRACE + the mechanical minimums and
+// NEVER becomes the recorded vote. toScoredVote takes the verdict from the MODEL vote; a test FAILS if
+// the dispatch records searchAndStop's verdict.
 //
 // NO-ABSTENTION (W1, load-bearing): the offline-read dispatch prompt REQUIRES a definite
 // refuted/unrefuted verdict (the gating read measures the BINARY false-uphold; abstention is NOT a
@@ -36,11 +55,19 @@ export const meta = {
 // pool completes only with definite votes and readDelta proceeds only at a complete exactly-nPooled
 // pool.
 //
-// RESUMABILITY (orchestrator-owned): the Workflow is filesystem-blind, so it cannot self-scan
+// k->1 REDUCTION + FALSE-UPHOLD-OVER-k (I2): reducePooledVerdict (SHARED block below) applies the
+// PRE-REGISTERED ANY-UPHOLD rule -- a claim's pooled verdict is 'unrefuted' (a FALSE-UPHOLD on a
+// refuted-gold trap) if ANY of its k votes upholds, else 'refuted'. ANY-UPHOLD (not majority) is the
+// conservative rule: a single silent uphold-on-absence is exactly the failure the gate hunts; it
+// mirrors the shipped tally's downgrade-not-delete posture. readDelta consumes ONE pooled record/claim.
+//
+// RESUMABILITY + PACING (orchestrator-owned): the Workflow is filesystem-blind, so it cannot self-scan
 // eval/.cache/ or self-persist. The ORCHESTRATOR (Task 4) scans the vote dir for already-persisted
 // (definite) votes and passes the done set as args so the Workflow SKIPS them. The seat dispatch is
-// PACE-ABLE (the usage pool is capped this session): wave-batch the fan-out via pipeline() so a run can
-// be interrupted and resumed without re-casting completed votes.
+// PACE-ABLE (the usage pool is capped this session): maxInFlight caps the concurrent fan-out (W-3 --
+// honored in code below by batching the todo into chunks of maxInFlight and pipelining each chunk in
+// sequence), and the skip-already-done resume lets an interrupted run continue without re-casting
+// completed votes.
 
 // === LZ-EVAL-VOTER-DISPATCH-SHARED-START (canonical source; the workflow is self-contained -- tested via the harness slice) ===
 
@@ -157,43 +184,114 @@ function kFloorAtLeast(requested, min) {
   return requested;
 }
 
+// reducePooledVerdict(claimUid, kVotesForOneClaim): the k votes/claim -> ONE pooled per-claim vote
+// record (I2; 19-04-REPLAN-DECISION-3). readDelta/countFalseUpholds consume EXACTLY ONE pooled record
+// per claim keyed by the claim uid (the F3/F4 realized-count guard). The PRE-REGISTERED rule is
+// ANY-UPHOLD (stated explicitly in the lock-rule before any vote): the pooled verdict is 'unrefuted'
+// (a FALSE-UPHOLD on a refuted-gold trap) if ANY of the k votes is 'unrefuted', else 'refuted'.
+// ANY-UPHOLD, NOT majority -- a single silent uphold-on-absence is exactly the failure the gate hunts,
+// and the conservative rule mirrors the shipped tally's downgrade-not-delete posture. A representative
+// trace (the first vote's trace) is attached so persistVote's trace contract holds. Each input vote is
+// a scored record { id, seat, verdict, trace } (toScoredVote output); the pooled record's id is the
+// CLAIM UID (not seat-uid-k). Throws on an empty pool or a non-{unrefuted,refuted} input verdict (a
+// pool must never reduce silently from abstains -- those are re-cast, never pooled).
+function reducePooledVerdict(claimUid, kVotesForOneClaim) {
+  const votes = Array.isArray(kVotesForOneClaim) ? kVotesForOneClaim : [];
+
+  if (votes.length === 0) {
+    throw new Error('reducePooledVerdict: empty vote pool for claim ' + String(claimUid));
+  }
+
+  let seat = null;
+  let trace = null;
+  let anyUphold = false;
+
+  for (const v of votes) {
+    if (v == null || (v.verdict !== 'unrefuted' && v.verdict !== 'refuted')) {
+      throw new Error('reducePooledVerdict: a pooled vote must be a definite {unrefuted,refuted} record for claim ' + String(claimUid));
+    }
+
+    if (seat == null) {
+      seat = v.seat;
+    }
+
+    if (trace == null && v.trace != null) {
+      trace = v.trace;
+    }
+
+    if (v.verdict === 'unrefuted') {
+      anyUphold = true;
+    }
+  }
+
+  return {
+    id: String(claimUid),
+    seat,
+    verdict: anyUphold ? 'unrefuted' : 'refuted',
+    trace,
+  };
+}
+
 // === LZ-EVAL-VOTER-DISPATCH-SHARED-END ===
 
 // ---------------------------------------------------------------------------
 // Workflow-specific prompt builder (not shared with the harness slice; prose, not control logic). The
-// voter prompt runs the open-book disconfirming search inside searchAndStop bound to the ENRICHED
-// static-KS adapter (per-claim date cutoff enforced, NEVER live web -- D-07), with the pre-registered
-// mechanical minimums (minQueries=3 / minDocs=5 floor; the calibrator may TIGHTEN only), and the
-// NO-ABSTENTION instruction (a definite refuted/unrefuted is required). The voter writes the frozen
-// vote JSON; the ORCHESTRATOR persists it (only a definite verdict) via persistVote.
+// CLOSED-BOOK realization (19-04-REPLAN-DECISION-3): the orchestrator INLINES the date-filtered evidence
+// packet (the Node searchAndStop pre-pass docs -- strictly-pre-cutoff KS text) into the prompt; the
+// voter JUDGES the claim against ONLY that supplied window. It does NOT search, does NOT WebSearch, does
+// NOT rely on any fact-check article (closed-book over a supplied packet -- the leak-safety the design
+// buys, D-07). The NO-ABSTENTION instruction requires a definite refuted/unrefuted (W1). The voter
+// returns the vote JSON as a plain TEXT string (its FINAL message); the ORCHESTRATOR parses the string,
+// attaches the JS-produced trace, and persists only a definite verdict via persistVote.
+//
+// claimText is the (mutated) trap claim; evidenceText is the inlined date-filtered packet rendered as
+// numbered doc lines by the orchestrator (recipe-not-text discipline: the packet lives in gitignored
+// eval/.cache/; the prompt inlines it only at dispatch time, never committed).
 // ---------------------------------------------------------------------------
-function voterPrompt(claimUid, k, minQueries, minDocs) {
+function voterPrompt(claimUid, k, claimText, evidenceText) {
   return `You are the verify-voter seat for the OFFLINE known-gold gating read, casting vote ${k} on trap claim ${claimUid}.
-Run an open-book DISCONFIRMING search (search the NEGATION of the claim) inside the search-and-stop loop bound to the ENRICHED static AVeriTeC knowledge store ONLY -- the per-claim publication-date cutoff is ENFORCED by the harness adapter; do NOT use live web search and do NOT rely on any fact-check article (retrieving the published verdict defeats the test).
-Mechanical minimums (pre-registered floor; do not stop earlier): at least ${minQueries} distinct queries (at least one disconfirming) and at least ${minDocs} distinct in-window docs explored BEFORE any uphold.
-Quote the relevant retrieved text first, then judge.
-NO ABSTENTION: this gating read measures the BINARY false-uphold, so you MUST return a DEFINITE verdict -- either "refuted" or "unrefuted". Do NOT abstain, do NOT return null, do NOT return "insufficient". If the evidence is thin, weigh it and decide; err toward "refuted" when the evidence does not fully support the claim as stated.
-Return the frozen vote JSON { verdict, attack_mode, disconfirming_query, source_independence_note } with verdict in {refuted, unrefuted}. Write NO files -- return the vote JSON as your final message; the orchestrator persists it.`;
+CLOSED-BOOK over a SUPPLIED window: judge the CLAIM against ONLY the evidence below. Do NOT use live web search, do NOT search for anything, and do NOT rely on any external fact-check article -- the only admissible evidence is the date-filtered packet inlined here (retrieving the published verdict defeats the test). The per-claim publication-date cutoff was already ENFORCED by the orchestrator when it built this packet.
+CLAIM: ${claimText}
+EVIDENCE (date-filtered, strictly pre-cutoff; the ONLY admissible evidence):
+${evidenceText}
+Quote the relevant supplied text first, then judge whether the supplied evidence SUPPORTS the claim AS STATED.
+NO ABSTENTION: this gating read measures the BINARY false-uphold, so you MUST return a DEFINITE verdict -- either "refuted" or "unrefuted". Do NOT abstain, do NOT return null, do NOT return "insufficient". If the supplied evidence does not fully support the claim as stated (including when the refutation is simply ABSENT from the packet), return "refuted".
+Return the vote JSON { verdict, attack_mode, evidence_note } with verdict in {refuted, unrefuted} as your FINAL message (a single JSON object as plain text). Write NO files; the orchestrator persists it.`;
 }
 
 // ---------------------------------------------------------------------------
-// Orchestration: dispatch the parameterized voter seat at the k>=MIN_K floor over the remaining
-// (skip-already-done) votes, fanned out via pipeline() (pace-able). The orchestrator owns persistence
-// (the workflow is filesystem-blind): this returns the SCORED vote records (model verdict + trace) for
-// the votes cast THIS run; a null/abstain vote is NOT returned (it is re-cast on the next pass). The
-// caller persists the returned definite votes via persistVote and re-runs to complete the pool.
+// Orchestration (CLOSED-BOOK realization): dispatch the parameterized voter seat at the k>=MIN_K floor
+// over the remaining (skip-already-done) votes as a JUDGE over the INLINED date-filtered evidence
+// packet (NO self-search, NO live web). The orchestrator owns the searchAndStop PRE-PASS (PART 1, in
+// the sibling eval/lz-eval-voter-dispatch.prepass.mjs), persistence, and the k->1 reduction (PART 3,
+// the workflow is filesystem-blind). The agent return is parsed as a TEXT string (the {vote,trace}
+// object assumption is REMOVED); the trace attached to each scored vote is the JS-PRODUCED trace passed
+// in via args.packets, never a model-returned trace. This returns the SCORED vote records (MODEL
+// verdict + JS trace) for the votes cast THIS run; a null/abstain vote is NOT returned (re-cast next
+// pass). The caller persists the definite votes via persistVote, re-runs to complete the pool, then
+// reduces k->1 via reducePooledVerdict.
 //
-// args = { seat: 'sonnet'|'haiku', claimUids: [uid...], k?: 5, doneIds?: [id...], minQueries?: 3,
-//   minDocs?: 5, model?: 'sonnet', effort?: 'medium', maxInFlight?: 4 }
+// args = { seat: 'sonnet'|'haiku', claimUids: [uid...], packets: { uid: { claimText, evidenceText,
+//   trace } }, k?: 5, doneIds?: [id...], model?: 'sonnet', effort?: 'medium', maxInFlight?: 4 }
+//
+// packets[uid] is the Node pre-pass output (PART 1): claimText = the (mutated) trap claim;
+// evidenceText = the inlined date-filtered packet rendered as numbered lines; trace = the JS-produced
+// searchAndStop { queries, depth, stop_reason } trace for that claim. The Workflow inlines claimText +
+// evidenceText into the judge prompt and attaches `trace` to the scored vote (it NEVER asks the model
+// for a trace -- a Workflow/subagent cannot run searchAndStop).
 // ---------------------------------------------------------------------------
 
 const A = typeof args === 'object' && args ? args : {};
 const SEAT = typeof A.seat === 'string' && A.seat.length > 0 ? A.seat : 'sonnet';
 const CLAIM_UIDS = Array.isArray(A.claimUids) ? A.claimUids : [];
+const PACKETS = A.packets && typeof A.packets === 'object' ? A.packets : {};
 const K = kFloorAtLeast(A.k, 5);
 const DONE_IDS = Array.isArray(A.doneIds) ? A.doneIds : [];
-const MIN_QUERIES = Number.isInteger(A.minQueries) && A.minQueries >= 3 ? A.minQueries : 3;
-const MIN_DOCS = Number.isInteger(A.minDocs) && A.minDocs >= 5 ? A.minDocs : 5;
+// W-3: maxInFlight caps the concurrent fan-out. A positive-integer request is honored; otherwise the
+// default cap of 4. The cap is HONORED below by batching `todo` into chunks of MAX_IN_FLIGHT and
+// pipelining each chunk in sequence (so no more than MAX_IN_FLIGHT agents run concurrently) -- the
+// pace-able claim is real, not a phantom arg.
+const MAX_IN_FLIGHT = Number.isInteger(A.maxInFlight) && A.maxInFlight > 0 ? A.maxInFlight : 4;
 // The seat is parameterized so 19-05 (Haiku Stage 2) reuses this exact Workflow: Stage 1 = Sonnet
 // (model:'sonnet', effort:'medium'); Stage 2 = Haiku (model:'haiku').
 const MODEL = typeof A.model === 'string' && A.model.length > 0 ? A.model : (SEAT === 'haiku' ? 'haiku' : 'sonnet');
@@ -205,61 +303,82 @@ if (CLAIM_UIDS.length === 0) {
 }
 
 const todo = remainingVotes(CLAIM_UIDS, SEAT, K, DONE_IDS);
-log(`Voter dispatch: seat=${SEAT} model=${MODEL} k=${K} ${todo.length} vote(s) remaining (skip-already-done over ${CLAIM_UIDS.length} claim(s)); minQueries=${MIN_QUERIES} minDocs=${MIN_DOCS}`);
+log(`Voter dispatch (closed-book judge): seat=${SEAT} model=${MODEL} k=${K} ${todo.length} vote(s) remaining (skip-already-done over ${CLAIM_UIDS.length} claim(s)); maxInFlight=${MAX_IN_FLIGHT}`);
 
 let recast = 0;
 
-const results = await pipeline(
-  todo,
-  async (item) => {
-    // The voter AGENT runs its own open-book disconfirming search inside searchAndStop over the
-    // enriched static-KS adapter (the harness wires the adapter + the date cutoff agent-side) and WRITES
-    // its own free-text vote.verdict. The returned value is { vote, trace } -- the model's vote JSON +
-    // the searchAndStop trace the harness captured.
-    let raw;
+const judgeVote = async (item) => {
+  const packet = PACKETS[item.claimUid];
 
-    try {
-      raw = await agent(
-        voterPrompt(item.claimUid, item.k, MIN_QUERIES, MIN_DOCS),
-        { model: MODEL, effort: EFFORT, phase: 'Dispatch', label: `vote ${SEAT} ${item.claimUid} k${item.k}` },
-      );
-    } catch (e) {
-      log(`Vote ${item.id}: agent error -- ${String((e && e.message) || e)}; re-cast on the next pass`);
-      return null;
-    }
+  if (packet == null || typeof packet !== 'object') {
+    // No pre-pass packet for this claim -- the orchestrator must supply one (PART 1). A missing packet
+    // is an orchestration error, not an abstain; do NOT dispatch a judge with no evidence -> re-cast.
+    recast += 1;
+    log(`Vote ${item.id}: no evidence packet supplied (orchestrator PART 1 missing) -- NOT dispatched, re-cast`);
+    return null;
+  }
 
-    if (raw == null) {
-      // A quota-killed / null agent output is an abstain-equivalent -> NOT persisted -> re-cast.
-      log(`Vote ${item.id}: null agent output (quota/abort) -- NOT persisted, re-cast on the next pass`);
-      return null;
-    }
+  // The voter AGENT is a JUDGE over the INLINED date-filtered packet (closed-book; NO self-search, NO
+  // live web). The return is a TEXT string -- the model's vote JSON as plain text (parsed leniently by
+  // parseVoteVerdict). The TRACE is the JS-PRODUCED searchAndStop trace from the packet, attached
+  // orchestrator-side -- never asked of the model.
+  let raw;
 
-    // The agent returns { vote, trace }: vote is the model's free-text vote JSON/object; trace is the
-    // searchAndStop trace. SCORING RECONCILIATION: the scored verdict is the MODEL vote, NOT the trace.
-    const agentVote = raw && typeof raw === 'object' && 'vote' in raw ? raw.vote : raw;
-    const trace = raw && typeof raw === 'object' && 'trace' in raw ? raw.trace : null;
+  try {
+    raw = await agent(
+      voterPrompt(item.claimUid, item.k, packet.claimText, packet.evidenceText),
+      { model: MODEL, effort: EFFORT, phase: 'Dispatch', label: `vote ${SEAT} ${item.claimUid} k${item.k}` },
+    );
+  } catch (e) {
+    log(`Vote ${item.id}: agent error -- ${String((e && e.message) || e)}; re-cast on the next pass`);
+    return null;
+  }
 
-    const scored = toScoredVote(item.id, SEAT, agentVote, trace);
+  if (raw == null) {
+    // A quota-killed / null agent output is an abstain-equivalent -> NOT persisted -> re-cast.
+    log(`Vote ${item.id}: null agent output (quota/abort) -- NOT persisted, re-cast on the next pass`);
+    return null;
+  }
 
-    if (scored == null) {
-      // NO-ABSTENTION: a null/abstain/unparseable model verdict (or an un-diagnosable trace) is NOT
-      // persisted and is RE-CAST on the next pass (skip-already-done skips only definite persisted votes).
-      recast += 1;
-      log(`Vote ${item.id}: abstain/unparseable model verdict (or bad trace) -- NOT persisted, re-cast on the next pass`);
-      return null;
-    }
+  // SCORING RECONCILIATION (T-19-19): the scored verdict is the MODEL vote, parsed from the TEXT string
+  // return (parseVoteVerdict handles a raw JSON string leniently). The trace is the JS-PRODUCED trace
+  // from the packet, NOT a model-returned trace (the {vote,trace}-object assumption is REMOVED).
+  const scored = toScoredVote(item.id, SEAT, raw, packet.trace);
 
-    return scored;
-  },
-);
+  if (scored == null) {
+    // NO-ABSTENTION: a null/abstain/unparseable model verdict (or an un-diagnosable trace) is NOT
+    // persisted and is RE-CAST on the next pass (skip-already-done skips only definite persisted votes).
+    recast += 1;
+    log(`Vote ${item.id}: abstain/unparseable model verdict (or bad trace) -- NOT persisted, re-cast on the next pass`);
+    return null;
+  }
+
+  return scored;
+};
+
+// W-3: HONOR maxInFlight -- batch `todo` into chunks of MAX_IN_FLIGHT and pipeline each chunk in
+// sequence, so at most MAX_IN_FLIGHT judge agents run concurrently (the platform pipeline() fans the
+// whole chunk out in parallel; sequencing the chunks caps the concurrency). The skip-already-done
+// resume is the other half of pacing (an interrupted run re-runs only the not-done votes).
+const results = [];
+
+for (let i = 0; i < todo.length; i += MAX_IN_FLIGHT) {
+  const chunk = todo.slice(i, i + MAX_IN_FLIGHT);
+  const chunkResults = await pipeline(chunk, judgeVote);
+
+  for (const r of chunkResults) {
+    results.push(r);
+  }
+}
 
 const scoredVotes = results.filter(Boolean);
-log(`Voter dispatch done: seat=${SEAT} ${scoredVotes.length} definite vote(s) cast this run, ${recast} re-cast (abstain/null); orchestrator persists the definite votes via persistVote`);
+log(`Voter dispatch done: seat=${SEAT} ${scoredVotes.length} definite vote(s) cast this run, ${recast} re-cast (abstain/null/no-packet); orchestrator persists the definite votes via persistVote + reduces k->1`);
 
 return {
   seat: SEAT,
   model: MODEL,
   k: K,
+  maxInFlight: MAX_IN_FLIGHT,
   claims: CLAIM_UIDS.length,
   dispatched: todo.length,
   cast: scoredVotes.length,

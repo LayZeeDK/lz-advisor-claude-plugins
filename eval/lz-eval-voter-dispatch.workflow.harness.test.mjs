@@ -13,13 +13,15 @@
 // orchestration deterministically, asserts on its observable outputs, and slices the real
 // control-helper block to exercise the actual functions.
 //
-// COVERAGE BOUNDARY (W3): the harness mocks agents, so it proves ONLY the deterministic CONTROL LOGIC
-// of the dispatch (the scoring-reconciliation mapping, the no-abstention re-cast, skip-already-done,
-// the k-floor, the trace shape, the readDelta guard). The correctness of the ENRICHED-KS-over-
-// searchAndStop binding rests on three OTHER signals: (a) the frozen eval/lz-eval-search-loop.test.mjs
-// (the spine + staticKsAdapter + dateFilter), (b) the Task-1 enrichment tests (dates + flags wired),
-// (c) the Task-4 per-vote-trace inspection on the real run. This harness is NOT full dispatch-path
-// coverage.
+// COVERAGE BOUNDARY (W3, 19-04-REPLAN-DECISION-3): the harness mocks the JUDGE agent (which is correct
+// -- the agent return is a TEXT string in the closed-book realization), so the orchestration tests prove
+// the deterministic CONTROL LOGIC of the dispatch (the scoring-reconciliation mapping, the no-abstention
+// re-cast, skip-already-done, the k-floor, the trace shape, the maxInFlight cap, the readDelta guard,
+// the reducePooledVerdict k->1 reduction). The ENRICHED-KS-over-searchAndStop binding (PART 1) rests on
+// (a) the frozen eval/lz-eval-search-loop.test.mjs, (b) the Task-1 enrichment tests, PLUS (c) the NEW
+// INTEGRATION SMOKE below over the REAL searchAndStopPrePass (the sibling prepass module) -- so I1 (the
+// harness never touching the real binding) cannot recur. The judge mock returns the REAL TEXT STRING
+// contract (a JSON vote string), NEVER a {vote,trace} object (the I1 false-confidence fix).
 //
 // HOST QUIRK: gate on the explicit FILE form:
 //   node --test eval/lz-eval-voter-dispatch.workflow.harness.test.mjs
@@ -42,6 +44,17 @@ import {
   readDelta,
   STOP_REASONS,
 } from './lz-eval-offline-read.mjs';
+
+// PART 1 of the closed-book realization -- the REAL Node searchAndStop pre-pass (the sibling importable
+// module). The integration smoke drives this over a tiny enriched KS (no model call) to prove the JS
+// pre-pass actually produces the { queries, depth, stop_reason } trace + the date-filtered packet the
+// dispatch attaches (so I1 -- the harness never touching the real binding -- cannot recur).
+import {
+  searchAndStopPrePass,
+  renderEvidenceText,
+} from './lz-eval-voter-dispatch.prepass.mjs';
+
+import { parseAvtDate } from './lz-eval-search-loop.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const WF = path.join(HERE, 'lz-eval-voter-dispatch.workflow.mjs');
@@ -97,7 +110,7 @@ function getHelpers() {
   assert.ok(startIdx > 0, 'shared-block START marker missing');
   assert.ok(endIdx > startIdx, 'shared-block END marker missing or precedes START');
   const headerOnly = deExport(SRC.slice(0, endIdx));
-  const exportTail = 'return { STOP_REASONS, parseVoteVerdict, toScoredVote, voteId, remainingVotes, kFloorAtLeast };';
+  const exportTail = 'return { STOP_REASONS, parseVoteVerdict, toScoredVote, voteId, remainingVotes, kFloorAtLeast, reducePooledVerdict };';
   // eslint-disable-next-line no-new-func
   return new Function(`"use strict";\n${headerOnly}\n${exportTail}`)();
 }
@@ -107,6 +120,29 @@ const H = getHelpers();
 // A canonical searchAndStop-shaped trace whose mechanical flag-verdict DIFFERS from the model verdict.
 function traceWithStop(stopReason) {
   return { queries: ['disconfirm:r0:c', 'disconfirm:r1:c', 'disconfirm:r2:c'], depth: 6, stop_reason: stopReason };
+}
+
+// The REAL agent-return contract in the closed-book realization is a TEXT STRING (a JSON vote string),
+// NEVER a {vote,trace} object (the I1 fix). Build the string the way a real judge agent would emit it.
+function voteString(verdict) {
+  return JSON.stringify({ verdict, attack_mode: 'disconfirm', evidence_note: 'judged inlined packet' });
+}
+
+// Build the per-claim `packets` arg the orchestrator (PART 1) supplies: each packet carries the inlined
+// claimText + evidenceText + the JS-PRODUCED trace. The orchestration tests must supply a packet per
+// claimUid (a missing packet is treated as an orchestration error -> re-cast, not dispatched).
+function packetsFor(claimUids, stopReason) {
+  const out = {};
+
+  for (const uid of (Array.isArray(claimUids) ? claimUids : [])) {
+    out[uid] = {
+      claimText: 'trap claim ' + uid,
+      evidenceText: '[0] supporting sentence (date-filtered)\n[1] another in-window doc',
+      trace: traceWithStop(stopReason),
+    };
+  }
+
+  return out;
 }
 
 // ===========================================================================
@@ -166,6 +202,29 @@ test('remainingVotes: skip-already-done expands only the k NOT already done; kFl
   assert.equal(H.kFloorAtLeast(undefined, 5), 5, 'a missing k falls back to the floor');
 });
 
+test('reducePooledVerdict (I2): k votes -> ONE pooled per-claim record; ANY uphold among k -> pooled false-uphold (DISCRIMINATING, not majority)', () => {
+  const tr = traceWithStop('exhausted');
+  const v = (verdict) => ({ id: 'sonnet-c1-x', seat: 'sonnet', verdict, trace: tr });
+
+  // ALL refuted -> pooled refuted (a clean stratum). The pooled record is keyed by the CLAIM UID.
+  const allRefuted = H.reducePooledVerdict('c1', [v('refuted'), v('refuted'), v('refuted'), v('refuted'), v('refuted')]);
+  assert.equal(allRefuted.id, 'c1', 'the pooled record is keyed by the claim uid (not seat-uid-k)');
+  assert.equal(allRefuted.verdict, 'refuted', 'k all-refuted -> pooled refuted');
+  assert.equal(allRefuted.seat, 'sonnet', 'the pooled record carries the seat');
+  assert.ok(allRefuted.trace && Array.isArray(allRefuted.trace.queries), 'a representative trace is attached');
+
+  // ANY uphold among k -> pooled unrefuted (a FALSE-UPHOLD). DISCRIMINATING: a SINGLE uphold among 5
+  // flips the pooled verdict -- the conservative any-uphold rule, NOT majority (4/5 refuted would be
+  // 'refuted' under majority, but it is 'unrefuted' here because one vote upheld).
+  const oneUphold = H.reducePooledVerdict('c2', [v('refuted'), v('refuted'), v('unrefuted'), v('refuted'), v('refuted')]);
+  assert.equal(oneUphold.verdict, 'unrefuted', 'a single uphold among k -> pooled false-uphold (any-uphold, not majority)');
+
+  // An empty pool throws (a pool must never reduce silently); an abstain in the pool throws (abstains
+  // are re-cast, never pooled).
+  assert.throws(() => H.reducePooledVerdict('c3', []), /empty vote pool/, 'an empty pool throws');
+  assert.throws(() => H.reducePooledVerdict('c4', [v('refuted'), v(null)]), /definite/, 'an abstain in the pool throws');
+});
+
 // ===========================================================================
 // Orchestration: the real dispatch loop/fan-out, driven by scripted mock agents.
 // ===========================================================================
@@ -174,20 +233,43 @@ test('orchestration: empty claimUids returns early without spawning agents', asy
   let called = false;
   const agent = async () => {
     called = true;
-    return { vote: { verdict: 'refuted' }, trace: traceWithStop('exhausted') };
+    return voteString('refuted');
   };
   const result = await runWorkflow(agent, { seat: 'sonnet', claimUids: [] });
   assert.equal(result.dispatched, 0);
   assert.equal(called, false);
 });
 
+test('orchestration: the closed-book judge agent returns a TEXT STRING (I1 fix) -- the dispatch builds the scored vote from the STRING + the PASSED-IN packet trace', async () => {
+  // I1 FIX: the mock agent returns the REAL contract -- a JSON vote STRING (NOT a {vote,trace} object).
+  // The trace on the scored vote is the JS-PRODUCED packet trace, NOT anything the agent returned.
+  const received = [];
+  const agent = async (_p) => {
+    received.push(typeof voteString('refuted')); // record the return TYPE the dispatch consumes
+    return voteString('refuted');
+  };
+  const result = await runWorkflow(agent, {
+    seat: 'sonnet',
+    claimUids: ['c1'],
+    k: 5,
+    packets: packetsFor(['c1'], 'decisive-evidence'),
+  });
+  assert.equal(result.cast, 5, 'all 5 string-return votes are scored');
+  assert.ok(received.every((t) => t === 'string'), 'the agent return is a TEXT string, never an object');
+
+  for (const v of result.scoredVotes) {
+    assert.equal(v.verdict, 'refuted', 'the model STRING verdict is the scored quantity');
+    assert.equal(v.trace.stop_reason, 'decisive-evidence', 'the trace is the JS-PRODUCED packet trace');
+  }
+});
+
 test('orchestration: the k-floor casts at least MIN_K (5) votes per claim', async () => {
   const seen = [];
   const agent = async (_p, opts) => {
     seen.push(opts.label);
-    return { vote: { verdict: 'refuted' }, trace: traceWithStop('exhausted') };
+    return voteString('refuted');
   };
-  const result = await runWorkflow(agent, { seat: 'sonnet', claimUids: ['c1'], k: 5 });
+  const result = await runWorkflow(agent, { seat: 'sonnet', claimUids: ['c1'], k: 5, packets: packetsFor(['c1'], 'exhausted') });
   // 1 claim * 5 = 5 dispatched + 5 scored definite votes.
   assert.equal(result.dispatched, 5, 'exactly MIN_K votes dispatched for the one claim');
   assert.equal(result.cast, 5, 'all 5 are definite scored votes');
@@ -195,8 +277,8 @@ test('orchestration: the k-floor casts at least MIN_K (5) votes per claim', asyn
 });
 
 test('orchestration: a requested k below MIN_K is raised to the floor (tighten-only)', async () => {
-  const agent = async () => ({ vote: { verdict: 'refuted' }, trace: traceWithStop('exhausted') });
-  const result = await runWorkflow(agent, { seat: 'sonnet', claimUids: ['c1'], k: 2 });
+  const agent = async () => voteString('refuted');
+  const result = await runWorkflow(agent, { seat: 'sonnet', claimUids: ['c1'], k: 2, packets: packetsFor(['c1'], 'exhausted') });
   assert.equal(result.k, 5, 'k=2 was raised to the MIN_K floor of 5');
   assert.equal(result.dispatched, 5);
 });
@@ -205,51 +287,65 @@ test('orchestration: skip-already-done -- a vote already in doneIds is NOT re-ca
   const invoked = [];
   const agent = async (_p, opts) => {
     invoked.push(opts.label);
-    return { vote: { verdict: 'refuted' }, trace: traceWithStop('exhausted') };
+    return voteString('refuted');
   };
   // c1 has all 5 done; c2 has none done. Only c2's 5 votes should dispatch.
   const done = ['sonnet-c1-0', 'sonnet-c1-1', 'sonnet-c1-2', 'sonnet-c1-3', 'sonnet-c1-4'];
-  const result = await runWorkflow(agent, { seat: 'sonnet', claimUids: ['c1', 'c2'], k: 5, doneIds: done });
+  const result = await runWorkflow(agent, { seat: 'sonnet', claimUids: ['c1', 'c2'], k: 5, doneIds: done, packets: packetsFor(['c1', 'c2'], 'exhausted') });
   assert.equal(result.dispatched, 5, 'only c2 (5 votes) remains; c1 is fully done');
   assert.equal(invoked.length, 5, 'the agent is invoked only for the not-done votes');
   assert.ok(invoked.every((l) => l.includes('c2')), 'no done vote (c1) is re-cast');
 });
 
+test('orchestration: a vote with NO evidence packet (orchestrator PART 1 missing) is NOT dispatched and is re-cast', async () => {
+  // A missing packet is an orchestration error (PART 1 not run), not an abstain -- the judge is NEVER
+  // dispatched with no evidence, and the vote is re-cast on the next pass.
+  let invoked = 0;
+  const agent = async () => {
+    invoked += 1;
+    return voteString('refuted');
+  };
+  const result = await runWorkflow(agent, { seat: 'sonnet', claimUids: ['c1'], k: 5, packets: {} });
+  assert.equal(result.cast, 0, 'no vote is scored without a packet');
+  assert.equal(result.recast, 5, 'all 5 are re-cast (no-packet)');
+  assert.equal(invoked, 0, 'the judge agent is NEVER dispatched without an evidence packet');
+});
+
 test('NO-ABSTENTION (W1): a null/abstain model verdict is NOT persisted (not a scored vote) and is re-cast', async () => {
-  // The mock agent abstains on every vote (null verdict). NONE are scored; all are counted as re-cast.
-  const agent = async () => ({ vote: { verdict: null }, trace: traceWithStop('exhausted') });
-  const result = await runWorkflow(agent, { seat: 'sonnet', claimUids: ['c1'], k: 5 });
+  // The mock agent abstains on every vote (a string with a null verdict). NONE are scored; all re-cast.
+  const agent = async () => voteString(null);
+  const result = await runWorkflow(agent, { seat: 'sonnet', claimUids: ['c1'], k: 5, packets: packetsFor(['c1'], 'exhausted') });
   assert.equal(result.cast, 0, 'no abstain vote lands in the pool');
   assert.equal(result.recast, 5, 'all 5 abstains are flagged for re-cast');
   assert.equal(result.scoredVotes.length, 0, 'no scored vote is returned for persistence');
 });
 
 test('NO-ABSTENTION: a re-run after an abstain lands a DEFINITE vote (re-cast completes the pool)', async () => {
-  // First pass: abstain on c1-k0. Second pass: the same vote re-cast as a definite verdict.
+  // First pass: abstain on c1-k0 (string with null verdict). Second pass: re-cast as a definite verdict.
   let pass = 0;
   const agent = async (_p, opts) => {
     if (opts.label.includes('k0') && pass === 0) {
-      return { vote: { verdict: null }, trace: traceWithStop('exhausted') };
+      return voteString(null);
     }
 
-    return { vote: { verdict: 'refuted' }, trace: traceWithStop('exhausted') };
+    return voteString('refuted');
   };
 
-  const first = await runWorkflow(agent, { seat: 'sonnet', claimUids: ['c1'], k: 5 });
+  const first = await runWorkflow(agent, { seat: 'sonnet', claimUids: ['c1'], k: 5, packets: packetsFor(['c1'], 'exhausted') });
   assert.equal(first.cast, 4, 'k0 abstained -> only 4 definite this pass');
   assert.equal(first.recast, 1, 'k0 is flagged for re-cast');
 
   // Second pass: the orchestrator passes the 4 definite ids as done; only k0 re-casts (now definite).
   pass = 1;
   const done = first.scoredVotes.map((v) => v.id);
-  const second = await runWorkflow(agent, { seat: 'sonnet', claimUids: ['c1'], k: 5, doneIds: done });
+  const second = await runWorkflow(agent, { seat: 'sonnet', claimUids: ['c1'], k: 5, doneIds: done, packets: packetsFor(['c1'], 'exhausted') });
   assert.equal(second.dispatched, 1, 'only the abstained k0 remains to re-cast');
   assert.equal(second.cast, 1, 'the re-cast lands a definite vote');
 });
 
-test('trace shape: each scored vote carries { queries[], depth, stop_reason in STOP_REASONS }', async () => {
-  const agent = async () => ({ vote: { verdict: 'refuted' }, trace: traceWithStop('decisive-evidence') });
-  const result = await runWorkflow(agent, { seat: 'sonnet', claimUids: ['c1'], k: 5 });
+test('trace shape: each scored vote carries the JS-produced { queries[], depth, stop_reason in STOP_REASONS }', async () => {
+  const agent = async () => voteString('refuted');
+  const result = await runWorkflow(agent, { seat: 'sonnet', claimUids: ['c1'], k: 5, packets: packetsFor(['c1'], 'decisive-evidence') });
 
   for (const v of result.scoredVotes) {
     assert.ok(Array.isArray(v.trace.queries), 'trace.queries is an array');
@@ -262,15 +358,36 @@ test('the parameterized seat resolves the model (sonnet Stage-1; haiku Stage-2 r
   const models = [];
   const agent = async (_p, opts) => {
     models.push(opts.model);
-    return { vote: { verdict: 'refuted' }, trace: traceWithStop('exhausted') };
+    return voteString('refuted');
   };
-  const sonnet = await runWorkflow(agent, { seat: 'sonnet', claimUids: ['c1'], k: 5 });
+  const sonnet = await runWorkflow(agent, { seat: 'sonnet', claimUids: ['c1'], k: 5, packets: packetsFor(['c1'], 'exhausted') });
   assert.equal(sonnet.model, 'sonnet', 'Stage-1 seat resolves to sonnet');
   assert.ok(models.every((m) => m === 'sonnet'), 'every dispatch used the sonnet model');
 
   models.length = 0;
-  const haiku = await runWorkflow(agent, { seat: 'haiku', claimUids: ['c1'], k: 5 });
+  const haiku = await runWorkflow(agent, { seat: 'haiku', claimUids: ['c1'], k: 5, packets: packetsFor(['c1'], 'exhausted') });
   assert.equal(haiku.model, 'haiku', 'Stage-2 seat resolves to haiku (same Workflow, parameterized)');
+});
+
+test('W-3 maxInFlight: the fan-out never runs more than maxInFlight judge agents concurrently', async () => {
+  // A mock agent that records the concurrent-call depth (increments on entry, decrements on exit, after
+  // a microtask yield so concurrent calls overlap). With maxInFlight=2 over 5 votes, the observed peak
+  // concurrency must never exceed 2 (the chunked-pipeline cap is HONORED, not a phantom arg).
+  let inFlight = 0;
+  let peak = 0;
+  const agent = async () => {
+    inFlight += 1;
+    peak = Math.max(peak, inFlight);
+    await Promise.resolve(); // yield so overlapping calls are observable
+    await Promise.resolve();
+    inFlight -= 1;
+    return voteString('refuted');
+  };
+  const result = await runWorkflow(agent, { seat: 'sonnet', claimUids: ['c1'], k: 5, maxInFlight: 2, packets: packetsFor(['c1'], 'exhausted') });
+  assert.equal(result.maxInFlight, 2, 'the maxInFlight cap is surfaced in the result');
+  assert.equal(result.cast, 5, 'all 5 votes still cast (the cap paces, does not drop)');
+  assert.ok(peak <= 2, 'never more than maxInFlight=2 agents concurrently (got peak ' + peak + ')');
+  assert.ok(peak >= 2, 'the cap is actually exercised (peak reached 2, not trivially 1)');
 });
 
 // ===========================================================================
@@ -293,32 +410,31 @@ test('resumability (F3/F4): a partial pool makes readDelta throw; a completed re
       goldLabels[uid] = 'refuted';
     }
 
-    // Dispatch ONE definite vote per claim (k=5 floor; we persist the k0 vote per claim as the pooled
-    // per-claim vote, keyed by the claim uid so countFalseUpholds/readDelta index gold by claim).
-    const agent = async (_p, opts) => {
-      // Sonnet refutes every trap (correct); Haiku also refutes (a clean zero-excess pool).
-      return { vote: { verdict: 'refuted' }, trace: traceWithStop('exhausted') };
-    };
+    // The closed-book judge returns a TEXT STRING vote (the I1-correct contract). Sonnet refutes every
+    // trap (correct); Haiku also refutes (a clean zero-excess pool).
+    const agent = async () => voteString('refuted');
 
-    const sonnetRun = await runWorkflow(agent, { seat: 'sonnet', claimUids, k: 5 });
-    const haikuRun = await runWorkflow(agent, { seat: 'haiku', claimUids, k: 5 });
+    const sonnetRun = await runWorkflow(agent, { seat: 'sonnet', claimUids, k: 5, packets: packetsFor(claimUids, 'exhausted') });
+    const haikuRun = await runWorkflow(agent, { seat: 'haiku', claimUids, k: 5, packets: packetsFor(claimUids, 'exhausted') });
 
-    // The ORCHESTRATOR persists ONE definite vote per claim (id = claim uid) -- the per-claim pooled
-    // vote readDelta/countFalseUpholds read. (The workflow returns k scored votes per claim; the
-    // orchestrator selects the per-claim pooled vote. Here we persist the k0 vote per claim, re-keyed to
-    // the claim uid, so the realized per-seat count == nPooled == the claim count.)
-    const persistPerClaim = (run, dir, claims) => {
+    // The ORCHESTRATOR reduces the k votes/claim -> ONE pooled per-claim record (id = claim uid) via the
+    // REAL reducePooledVerdict (PART 3, any-uphold) and persists THAT -- the per-claim pooled vote
+    // readDelta/countFalseUpholds read. This exercises the k->1 reduction in the persistence path (not a
+    // hand-rolled k0 selection): the realized per-seat count == nPooled == the claim count.
+    const persistPerClaim = (run, seatName, dir, claims) => {
       for (const uid of claims) {
-        const v = run.scoredVotes.find((s) => s.id === 'sonnet-' + uid + '-0' || s.id === 'haiku-' + uid + '-0');
-        const rec = { id: uid, seat: v.seat, verdict: v.verdict, trace: v.trace };
-        const res = persistVote(dir, rec);
-        assert.ok(res.persisted || res.skipped, 'the definite vote persists (model verdict, valid trace)');
+        const kVotes = run.scoredVotes.filter((s) => s.id === seatName + '-' + uid + '-0' ||
+          s.id === seatName + '-' + uid + '-1' || s.id === seatName + '-' + uid + '-2' ||
+          s.id === seatName + '-' + uid + '-3' || s.id === seatName + '-' + uid + '-4');
+        const pooled = H.reducePooledVerdict(uid, kVotes);
+        const res = persistVote(dir, pooled);
+        assert.ok(res.persisted || res.skipped, 'the pooled definite vote persists (model verdict, valid trace)');
       }
     };
 
-    // PARTIAL pool: persist only 3 of the 5 sonnet votes -> readDelta must throw the F3/F4 guard.
-    persistPerClaim(sonnetRun, sonnetDir, claimUids.slice(0, 3));
-    persistPerClaim(haikuRun, haikuDir, claimUids);
+    // PARTIAL pool: persist only 3 of the 5 sonnet claims -> readDelta must throw the F3/F4 guard.
+    persistPerClaim(sonnetRun, 'sonnet', sonnetDir, claimUids.slice(0, 3));
+    persistPerClaim(haikuRun, 'haiku', haikuDir, claimUids);
 
     assert.throws(
       () =>
@@ -334,9 +450,9 @@ test('resumability (F3/F4): a partial pool makes readDelta throw; a completed re
       'a partial (interrupted) pool fails closed (F3/F4 realized-count guard)',
     );
 
-    // COMPLETED re-run: persist the remaining 2 sonnet votes (skip-already-done is idempotent) -> the
+    // COMPLETED re-run: persist the remaining 2 sonnet claims (skip-already-done is idempotent) -> the
     // pool is now exactly nPooled per seat -> readDelta proceeds.
-    persistPerClaim(sonnetRun, sonnetDir, claimUids);
+    persistPerClaim(sonnetRun, 'sonnet', sonnetDir, claimUids);
 
     const read = readDelta({
       sonnetVoteDir: sonnetDir,
@@ -371,6 +487,68 @@ test('NO-ABSTENTION end-to-end: the real persistVote REJECTS a non-{unrefuted,re
 });
 
 // ===========================================================================
+// INTEGRATION SMOKE over the REAL searchAndStop/staticKsAdapter pre-pass (PART 1). No model call. This
+// proves the JS pre-pass actually produces the { queries, depth, stop_reason } trace + the date-filtered
+// evidence packet the dispatch attaches -- so I1 (the harness never touching the real binding) cannot
+// recur (the harness CONTROL-LOGIC tests above mock the judge; this test drives the real spine).
+// ===========================================================================
+
+test('integration smoke (PART 1, I1 fix): the REAL searchAndStopPrePass yields a real trace + a non-empty date-filtered packet (no model call)', () => {
+  // A tiny ENRICHED KS fixture (Task-1 enrichKsForClaim shape): doc.date is the DD-MM-YYYY STRING the
+  // frozen dateFilter consumes; 6 strictly-pre-cutoff dated docs survive a 15-05-2020 cutoff; one
+  // same-day doc + one undated doc are DROPPED by the strict `<`.
+  const enrichedKs = [];
+
+  for (let i = 0; i < 6; i += 1) {
+    const dd = String(i + 1).padStart(2, '0');
+    enrichedKs.push({ sentence: 'in-window support ' + i, url: 'https://x/2019/01/' + dd + '/p', date: dd + '-01-2019' });
+  }
+
+  enrichedKs.push({ sentence: 'same-day (excluded)', url: 'https://x/2020/05/15/sd', date: '15-05-2020' });
+  enrichedKs.push({ sentence: 'undated (excluded)', url: 'https://x/no-date', date: null });
+
+  const claimId = 42;
+  const claimDate = parseAvtDate('15-05-2020');
+
+  const packet = searchAndStopPrePass({
+    claim: { id: claimId, text: 'a trap claim' },
+    claimText: 'a trap claim',
+    enrichedKs,
+    claimId,
+    claimDate,
+  });
+
+  // The trace is the REAL searchAndStop trace -- a known STOP_REASON, an array of queries, a depth.
+  assert.ok(Array.isArray(packet.trace.queries), 'the pre-pass yields a real trace.queries array');
+  assert.ok(packet.trace.queries.length >= 3, 'at least the minQueries floor of queries were issued');
+  assert.equal(typeof packet.trace.depth, 'number', 'the trace carries a numeric depth');
+  assert.ok(STOP_REASONS.includes(packet.trace.stop_reason), 'the trace stop_reason is a known STOP_REASON (persistable)');
+
+  // The date-filtered packet is non-empty and contains ONLY the strictly-pre-cutoff docs (same-day +
+  // undated dropped by the frozen dateFilter -- the leak-safety the closed-book design buys).
+  assert.equal(packet.docs.length, 6, 'exactly the 6 strictly-pre-cutoff docs survive (same-day + undated dropped)');
+  assert.equal(packet.docs.some((d) => d.sentence === 'same-day (excluded)'), false, 'the same-day doc is excluded by strict <');
+  assert.equal(packet.docs.some((d) => d.sentence === 'undated (excluded)'), false, 'the undated doc is dropped');
+
+  // The evidenceText the Workflow inlines is rendered from the date-filtered packet (numbered lines).
+  assert.equal(typeof packet.evidenceText, 'string', 'the packet carries the inlined evidenceText');
+  assert.match(packet.evidenceText, /in-window support 0/, 'the inlined evidence renders a surviving doc');
+  assert.equal(/decisive|disconfirmer|refuted/i.test(packet.evidenceText), false, 'no flag leaks into the inlined evidence text');
+
+  // The scored vote the dispatch would build from a (string) model verdict + THIS JS trace is valid for
+  // persistVote (closes the loop: PART 1 trace + PART 2 model verdict -> a persistable scored record).
+  const scored = H.toScoredVote('sonnet-c1-0', 'sonnet', voteString('refuted'), packet.trace);
+  assert.ok(scored != null && scored.verdict === 'refuted', 'the JS trace + model string verdict build a scored vote');
+  const res = persistVote(fs.mkdtempSync(path.join(os.tmpdir(), 'lz-eval-prepass-')), scored);
+  assert.ok(res.persisted, 'the scored vote (JS trace + model verdict) persists -- the real binding closes the loop');
+});
+
+test('integration smoke: renderEvidenceText renders the ABSENCE explicitly for an empty packet (evidence-absent judge sees no in-window evidence)', () => {
+  const empty = renderEvidenceText([]);
+  assert.match(empty, /no in-window evidence/i, 'an empty packet renders an explicit absence line (not a blank string)');
+});
+
+// ===========================================================================
 // Structural contract + ASCII (mirroring the review-gate harness).
 // ===========================================================================
 
@@ -389,6 +567,35 @@ test('workflow structural contract: meta present, marker block present, no stati
   assert.match(SRC, /function parseVoteVerdict\(/);
   assert.match(SRC, /function toScoredVote\(/);
   assert.match(SRC, /model: MODEL, effort: EFFORT, phase: 'Dispatch'/);
+
+  // CLOSED-BOOK rework (19-04-REPLAN-DECISION-3): the reducePooledVerdict k->1 helper is in the SHARED
+  // block; the maxInFlight cap is HONORED (read from args + chunked fan-out); the {vote,trace}-OBJECT
+  // destructuring is REMOVED (the agent return is parsed as a TEXT string). Scope these to CODE (strip
+  // line comments) so the header comment that DOCUMENTS the removed assumption does not false-trip.
+  assert.match(SRC, /function reducePooledVerdict\(/);
+  const codeOnlyB = SRC.split(/\r?\n/).filter((l) => !/^\s*\/\//.test(l)).join('\n');
+  assert.match(codeOnlyB, /MAX_IN_FLIGHT\s*=\s*Number\.isInteger\(A\.maxInFlight\)/, 'maxInFlight is read from args (W-3 honored)');
+  assert.match(codeOnlyB, /i \+= MAX_IN_FLIGHT/, 'the fan-out is chunked by MAX_IN_FLIGHT (the cap is honored, not a phantom arg)');
+  assert.ok(!/'vote'\s+in\s+raw/.test(codeOnlyB), "the {vote,trace}-object destructuring is REMOVED (no \"'vote' in raw\" in code)");
+  assert.ok(!/'trace'\s+in\s+raw/.test(codeOnlyB), "the model-returned-trace assumption is REMOVED (no \"'trace' in raw\" in code)");
+  // The judge prompt inlines the supplied evidence packet (closed-book, no self-search).
+  assert.match(SRC, /voterPrompt\(item\.claimUid, item\.k, packet\.claimText, packet\.evidenceText\)/);
+});
+
+test('prepass module structural contract: the sibling pre-pass is importable + composes the FROZEN spine, strictly ASCII', () => {
+  const prepassPath = path.join(HERE, 'lz-eval-voter-dispatch.prepass.mjs');
+  const prepassSrc = fs.readFileSync(prepassPath, 'utf8');
+
+  // PART 1 lives in an IMPORTABLE sibling (it needs the frozen-spine imports the Workflow body cannot
+  // make). It exports searchAndStopPrePass + composes the FROZEN searchAndStop/staticKsAdapter.
+  assert.match(prepassSrc, /export function searchAndStopPrePass\(/);
+  assert.match(prepassSrc, /import\s*\{[\s\S]*searchAndStop[\s\S]*staticKsAdapter[\s\S]*\}\s*from '\.\/lz-eval-search-loop\.mjs'/);
+
+  const buf = fs.readFileSync(prepassPath);
+
+  for (let i = 0; i < buf.length; i += 1) {
+    assert.ok(buf[i] <= 0x7f, `prepass non-ASCII byte 0x${buf[i].toString(16)} at offset ${i}`);
+  }
 });
 
 test('workflow source is strictly ASCII', () => {
