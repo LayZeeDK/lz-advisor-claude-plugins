@@ -110,8 +110,13 @@ test('D-13 canonicalizeUrl strips the URL fragment', () => {
   assert.equal(canonicalizeUrl('https://example.org/a#section-2'), 'https://example.org/a', 'fragment stripped');
 });
 
-test('D-13 canonicalizeUrl strips a single trailing slash (but not a bare-host root authority)', () => {
-  assert.equal(canonicalizeUrl('https://example.org/a/'), 'https://example.org/a', 'trailing slash stripped');
+test('D-13 canonicalizeUrl strips a single trailing slash, INCLUDING the bare-host root slash (consistent dedup key)', () => {
+  assert.equal(canonicalizeUrl('https://example.org/a/'), 'https://example.org/a', 'path trailing slash stripped');
+  // The bare-host root slash is ALSO stripped: https://example.org/ and https://example.org collapse to
+  // ONE canonical key (intended dedup -- same resource). The prior test name wrongly implied the root
+  // slash was PRESERVED; the source strips it (and that is correct, D1-5).
+  assert.equal(canonicalizeUrl('https://example.org/'), 'https://example.org', 'bare-host root slash stripped');
+  assert.equal(canonicalizeUrl('https://example.org'), 'https://example.org', 'bare host (no slash) unchanged');
 });
 
 test('D-13 canonicalizeUrl preserves the path and yields a stable key for two tracking variants', () => {

@@ -336,3 +336,43 @@ extract `maxTurns` 4->5/6, `excerpt_id`/quote-fidelity clarity); + the test fixe
 non-tautological round-trip fixture, assert via `aggregate()`, AGG-03 relabel); + a new dev-time
 build/test asserting the inlined recipe matches the schema. DEFERRED to Phase 20: the deterministic
 normalizer.
+
+### Group C re-gate (post-fix, wf_c529d5c6-a0a, 1 round) -- findings fixed
+
+The single-round LLM re-gate on the rewritten prompts caught what the deterministic SSOT test could not:
+the body-rewrite left the frontmatter `description` + `<example>` blocks STALE (SHA-256, `sources/<sha>`,
+"(capped)") -- high-leverage since Claude Code surfaces the description at routing time. FIXED: both
+examples + the description reconciled to `candidates/`/percent-encoding/verbatim; the search stop-criterion
+now DEFINES "covered" (no new distinct candidate); extract Step-2 tag `D-13` -> `D-08/D-13`; dropped the
+dead `${CLAUDE_PLUGIN_ROOT}` reference. The dev-time SSOT gate was STRENGTHENED (10 tests) to reject stale
+`sha-256`/`sources/<sha>`/`(capped)`/write-to-`sources/` references anywhere in the prompts. Group C CLOSED.
+
+---
+
+## Group D1 -- search-loop-surface eval test suites
+
+Gate run: `wf_b0a17790-709`; did NOT converge (3 rounds, INCOMPLETE); 7 agents, ~454.9k tokens.
+`severityDropDiff`: 0 dropped. **0 Critical, 0 source bugs** (the source was already reviewed + fixed in
+Groups A/B). The findings are a large, uniform TEST-QUALITY set -- the "constant-stub-survives" class:
+the suites assert the happy-path verdict/shape but skip (a) fail-closed guard branches and (b) named
+schema/output fields the source explicitly populates, so a regression replacing real logic with a
+hardcoded constant would pass. ~17 Important + ~14 Suggestion coverage gaps across the three suites.
+
+Dispositions:
+- **D1-5 (test-name vs behavior) -- FIXED.** The `canonicalizeUrl` trailing-slash test name claimed the
+  bare-host root slash was preserved, but the source strips it (intended dedup: `https://example.org/`
+  and `https://example.org` collapse). Corrected the name + added the asserting cases. (Resolves the
+  lingering probe-#1 trailing-slash question: stripping IS intended.)
+- **D1-17 + D1-10 (source-coherence guards) -- DEFERRED to the 19-04 gating-read author.** `readDelta`
+  lacks a `nPooled >= reliableTrials` coherence guard (D1-17) and `persistVote` accepts an open
+  `stop_reason` (D1-10). These are `offline-read` input-coherence guards whose semantics live with the
+  gating-read harness + the deferred F3/F4 integrity cross-validation; bundle them there (the
+  `nPooled`/`reliableTrials` invariant is owned by that author). NOT fixed blindly here.
+- **The ~30 TEST-coverage gaps -- recorded; investment decision pending (consolidated with D2).** They
+  are real regression-protection (negative-path + named-field assertions on already-correct source) but
+  high-volume + low-stakes (no bugs). Highest-value subset (load-bearing constant-stub gaps):
+  `liveWebSearchAdapter` throw-on-unbound, `buried_deep`, `validityGate` both gold directions,
+  `mutateOverreach`/`writeTrap` fail-closed guards, `normalizeUrlForCompare` actually-exercised,
+  `formulateDisconfirmingQuery` non-disconfirm/fallback, exhausted-needs-`minQueries`. Lower-value:
+  tolerance tightening, `finally`-cleanup hygiene, decorative-assertion pinning, boundary pairs. Full
+  list + line refs in the gitignored `eval/.cache/review-gate-19/group-d1-*.md`.
