@@ -16,9 +16,10 @@ Run PACED, one coupling group per dispatch.
 |-------|----------------|-------|--------|
 | A | search-loop API surface | `lz-eval-search-loop.mjs` + `lz-eval-offline-read.mjs` + `lz-eval-traps.mjs` | REVIEWED + fixed |
 | B | safeId guard + aggregate->offline-read | `lz-eval-aggregate.mjs` + `lz-eval-offline-read.mjs` + `lz-eval-dataset.mjs` | REVIEWED + fixed (F3/F4 deferred to gating-read harness) |
-| C | 19-02 shipped worker agents + round-trip test | `agents/research-extract-worker.md` + `agents/research-search-worker.md` + `lz-deep-research-aggregate.test.mjs` | REVIEWED + RESOLVED (panel) + FIXES APPLIED (prompts/schema/SSOT-test/round-trip, committed); single-round re-gate running (wf_c529d5c6-a0a) |
-| C-re | 19-02 worker agents post-fix re-review | `agents/research-extract-worker.md` + `agents/research-search-worker.md` | RUNNING (wf_c529d5c6-a0a, maxRounds 1) |
-| D | eval validation suites + lock-rule contract | 5x `lz-eval-*.test.mjs` + `eval/lz-eval-lock-rule.md` | PENDING |
+| C | 19-02 shipped worker agents + round-trip test | `agents/research-extract-worker.md` + `agents/research-search-worker.md` + `lz-deep-research-aggregate.test.mjs` | CLOSED -- reviewed + panel-resolved + fixed (prompts/schema/SSOT-test/round-trip) + re-gated (findings fixed) |
+| C-re | 19-02 worker agents post-fix re-review | `agents/research-extract-worker.md` + `agents/research-search-worker.md` | DONE (wf_c529d5c6-a0a, 1 round): caught stale frontmatter/examples (SHA-256/sources/(capped)); FIXED + SSOT gate strengthened to bar recurrence |
+| D1 | search-loop-surface eval test suites | `lz-eval-search-loop.test.mjs` + `lz-eval-traps.test.mjs` + `lz-eval-offline-read.test.mjs` | RUNNING (wf_b0a17790-709) |
+| D2 | aggregate-surface eval test suites + lock-rule | `lz-eval-aggregate.test.mjs` + `lz-eval-dataset.test.mjs` + `eval/lz-eval-lock-rule.md` | PENDING |
 
 > SCOPE (user directive 2026-06-17): the lz-review gate MUST cover ALL Phase-19 plans/waves implemented,
 > not just the eval-import-coupling source the manifest scoped. Groups A+B covered the eval source;
