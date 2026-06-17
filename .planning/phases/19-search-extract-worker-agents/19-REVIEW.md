@@ -14,8 +14,8 @@ Run PACED, one coupling group per dispatch.
 
 | Group | Coupling chain | Files | Status |
 |-------|----------------|-------|--------|
-| A | search-loop API surface | `lz-eval-search-loop.mjs` + `lz-eval-offline-read.mjs` + `lz-eval-traps.mjs` | REVIEWED (this doc) |
-| B | safeId guard + aggregate->offline-read | `lz-eval-aggregate.mjs` + `lz-eval-offline-read.mjs` + `lz-eval-dataset.mjs` | PENDING (next paced run) |
+| A | search-loop API surface | `lz-eval-search-loop.mjs` + `lz-eval-offline-read.mjs` + `lz-eval-traps.mjs` | REVIEWED + fixed |
+| B | safeId guard + aggregate->offline-read | `lz-eval-aggregate.mjs` + `lz-eval-offline-read.mjs` + `lz-eval-dataset.mjs` | REVIEWED (triaged below; fixes pending decision) |
 
 `assertManifestCoverage` over the full partition [A, B] = ok (every coupling chain co-located in one
 group; `offline-read` is the hub, reviewed in both).
@@ -125,3 +125,53 @@ NOT fixed this pass (with rationale):
 
 Remaining Step-1 work: **Group B** review (aggregate + offline-read + dataset), then `gsd-code-review 19`
 as the complementary cheap probe pass, then the 19-04 gating read.
+
+---
+
+## Group B -- safeId guard + aggregate-to-offline-read consumption surface
+
+Gate run: `wf_a3e7a4cb-9ff`; converged in **1 round**; 3 agents; ~168.9k subagent tokens; 7 tool uses.
+`severityDropDiff`: reviewerHighCount=1 (block-coalesced), droppedCount=0, **dropDetected=false** (synth
+preserved all findings; orchestrator-verified). 0 Critical, 6 Important, 7 Suggestions, 2 Questions.
+
+### Triaged findings
+
+| # | Gate severity | Triage | Adjusted | Location | Finding (triaged) |
+|---|---------------|--------|----------|----------|-------------------|
+| F1 | Important | CONFIRMED defensive (unreachable via consumers) | Important | `aggregate.mjs:91-118` | `clopperPearsonUpper`/`wilsonUpper` have no `x > n` guard -> `n-x < 0` feeds `jStat.beta.inv` a negative shape -> silent NaN into a frozen output. NOT reachable via the consumers (`x in {0,1}`, `n >= 1`), but the function's own comment claims it handles degenerate boundaries (`n===0`, `x===n`) -- `x>n` completes that contract. Fix: throw `ContractError` on `x > n`. |
+| F2 | Important | CONFIRMED defensive (unreachable via consumers) | Suggestion | `aggregate.mjs:133-135` | `passAtK` returns `1.0` when `c > n` (`comb(n-c,k)=0`) -- a corrupted "all-correct". NOT reachable via `readDelta` (`c = correct = nPooled - falseUpholds <= nPooled = n`). Cheap guard. Fix: throw on `c > n` in `passAtK`/`passHatK`. |
+| F3 | Important | CONFIRMED integrity (matters for the gating read) | Important | `offline-read.mjs:191-221` | `nPooled` is caller-asserted; only the over-count case is guarded (F10, landed). It is NOT cross-validated against the actual per-seat vote-file count / `goldLabels` cardinality, so a stale/wrong `run.json` mis-scales Pass@k. DESIGN: cross-validate `nPooled` against the realized vote-file count before the 19-04 gating read. |
+| F4 | Important | CONFIRMED integrity (matters for the gating read) | Important | `offline-read.mjs` readDelta/resolveOutcome | `reliableTrials` is caller-asserted, not derived from the vote files; a stale/optimistic value games the `>= 15` reliability gate. Same family as F3. DESIGN: cross-validate `reliableTrials` against the realized vote count, or bind it to the run artifact, before the gating read. |
+| F5 | Important | CONFIRMED real (silent drop) | Important | `dataset.mjs:262-272` | `stratify` buckets only known labels (`if (buckets[item.source_label])`), so an item with a non-null but UNRECOGNIZED `source_label` is SILENTLY dropped -> later surfaces as a misleading "insufficient pool" error instead of a clear schema-drift failure. `remapLabel` already fails closed on unknown; `stratify`'s bucketing does not. Fix: throw fail-closed on an unknown `source_label`. |
+| F6 | Important | CONFIRMED (fix) | Important | `offline-read.mjs:183-205,253` | `passHatK(nPooled,_,k)` returns NaN when `nPooled < k`; `readDelta` only guards `nPooled > 0`, so NaN can land in the frozen read output. Fix: require `nPooled >= k` in `readDelta` (the existing partial-run test uses `nPooled=15 >= 5`, so unaffected). |
+| F7 | Suggestion | CONFIRMED doc | Suggestion | `aggregate.mjs:197-201` | Comment says the `safeId` "return value is discarded", but `const id = safeId(...)` IS used as the `goldLabels[id]` key (line 212). Fix the comment; code is correct. |
+| F8 | Suggestion | CONFIRMED minor doc | Suggestion | `offline-read.mjs:198-201` | `readDelta` permits `reliableTrials` in `1..14` (below `RELIABLE_TRIALS=15`); `lockRuleVerdict` is the `>= 15` backstop (intentional -- partial-run reads must compute). Add a comment noting the backstop (the `< 1` degenerate case is already fixed). |
+| F9 | Suggestion | CONFIRMED defensive | Suggestion | `dataset.mjs:96-108` (+ `traps.mjs:312`) | `verifySha256` does not guard `buf`; `createHash().update(null/undefined)` throws a native `TypeError`, breaking the "every error is a `ContractError` with `.file`" discipline. Fix: guard `buf` is a Buffer/string. (Same gap in `traps.mjs verifySha256`.) |
+| F10 | Suggestion | CONFIRMED defensive | Suggestion | `offline-read.mjs:267-304` | `resolveOutcome` checks `Number.isFinite(escalationFraction)` but not the range `[0,1]`; a negative value silently clears the cost gate (`escalationFraction < 0.5`). Fix: constrain to `[0,1]`. |
+| F11 | Suggestion | CONFIRMED cosmetic | Suggestion | `dataset.mjs:316-321` | `cacheSlug` passes the HuggingFace `repo` id as the `ContractError.file` context -> the error prints a non-path. Cosmetic; pass a path-shaped/labeled context. |
+| F12 | Suggestion | CONFIRMED minor doc | Suggestion | `offline-read.mjs:131-154` | `calibratorGate` returns the `CP(1,trials)` ceiling LABEL in the `saturated` branch; the comment already calls it a label "never re-derived as a clustered CI". Optional: annotate as a hypothetical-single-excess label. Low value. |
+| F13 | Suggestion | CONFIRMED low (no action) | -- | `offline-read.mjs:329-391` | `persistVote` guards the FILENAME via `votePath`/`safeId` but serializes the raw `vote.id` into the JSON body. The read boundary (`countFalseUpholds`) re-routes `rec.id` through `safeId` (aggregate.mjs:201), so the body id is re-validated on read. Low risk; reviewer agrees. No change. |
+| F14 | Question | ANSWERED | -- | `dataset.mjs:117-145` | `resolveHfToken` omits the LEGACY `~/.huggingface/token`. The current order mirrors the documented `huggingface_hub` (`HF_TOKEN` -> `HF_TOKEN_PATH` -> `HF_HOME/token`). Low impact (WiCE ungated; gated sources fetch-only at eval time). Optional: add `~/.huggingface/token` as a legacy fallback. |
+| F15 | Question | ANSWERED | -- | `offline-read.mjs:402-435` | The CLI `--resolve` calls `readDelta` without `k`, defaulting to `MIN_K`, so `passHatK` reflects `k=5` not the run's actual `k`. Optional: thread `cfg.k` from `run.json` through the CLI call. Low impact (5 is the floor and likely the actual). |
+
+### Cross-cutting (reviewer, retained)
+
+The reviewer's root-cause grouping holds: **F1/F2/F6** = degenerate-arithmetic inputs (`x>n`, `c>n`,
+`n<k`) reaching the stats helpers and landing as NaN / wrong-direction values inside frozen output
+instead of throwing (the fail-closed discipline stops at the function boundary, absent in the numeric
+core). **F3/F4** = caller-asserted denominators (`nPooled`, `reliableTrials`) trusted as authoritative
+without cross-validation against the realized vote files -- the integrity seam that matters most for
+the 19-04 gating read. **F9/F11** + the F1/F2/F6 NaN-leaks erode the "every error is a ContractError
+with `.file`" invariant from different angles.
+
+### Recommended Group-B fix set
+
+CONFIRMED, worth landing before the 19-04 gating read (it consumes exactly this code):
+- F5 (stratify fail-closed on unknown label) -- the one real silent-drop bug.
+- F6 (`readDelta` requires `nPooled >= k`); F1 (`x>n` throw); F2 (`c>n` throw); F9 (`verifySha256` buf
+  guard, both copies); F10 (`escalationFraction` in `[0,1]`); F7 (comment fix).
+- F3 + F4 (cross-validate `nPooled`/`reliableTrials` against the realized vote files) -- HIGHEST-judgment
+  integrity items; a design choice (couple `readDelta` to vote-file counts). Land here or as part of the
+  19-04 gating-read harness setup.
+
+OPTIONAL / low: F8 (comment), F11 (cosmetic), F12 (annotation), F14/F15 (CLI/token design). F13: no change.
