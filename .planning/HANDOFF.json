@@ -1,39 +1,45 @@
 {
   "version": "1.0",
-  "timestamp": "2026-06-17T12:17:40.268Z",
+  "timestamp": "2026-06-17T21:03:17.810Z",
   "phase": "19",
   "phase_name": "search-extract-worker-agents",
   "phase_dir": ".planning/phases/19-search-extract-worker-agents",
   "plan": 4,
-  "task": null,
-  "total_tasks": null,
+  "task": 0,
+  "total_tasks": 4,
   "status": "paused",
-  "stage": "post-execution review/verify arc -- the lz-review GATE is FULLY COMPLETE (all groups reviewed + all confirmed fixes applied); paused before gsd-code-review 19 -> 19-04 gating read -> verify chain",
-  "head_commit": "4b31e57",
+  "summary": "19-04 + 19-05 RE-PLANNED-2 (consult-driven) and committed (b51ad73). Paused before execution per user. Re-plan corrects three construct-validity defects: KS-enrichment gap, date-sensitive not constructible offline, model-verdict-is-scored. gsd-plan-checker PASS-WITH-WARNINGS (5 warnings folded).",
   "completed_tasks": [
-    {"id": 1, "name": "Plans 19-01..19-04 executed + merged + green (search-loop spine, workers, traps, offline-read)", "status": "done"},
-    {"id": 2, "name": "Review gate Group A (search-loop API surface) reviewed + fixed (F1 decisive-doc pool, F3 case-insensitive tracking, probe-#3 positive-int guard, probe-#4 date range)", "status": "done", "commit": "9827417/d532a81/715528c"},
-    {"id": 3, "name": "Review gate Group B (safeId guard + aggregate->offline-read) reviewed + fixed (F4/F6/F10 guards, F5 stratify, F9 verifySha256, F7 comment, F1/F2 stats guards) + F12 readJson de-dup", "status": "done", "commit": "37ebbef/b57c8d0/bad429f/ba27c3b"},
-    {"id": 4, "name": "Review gate Group C (shipped worker agents) -- 3-round advisor panel (Opus+GPT-5.5+Gemini, unanimous) resolved the two design clusters; fixes applied (percent-encoding filename, verbatim store, delete consult-schema, one case-insensitive recipe, extract sole sources/ writer, search writes candidates/, dev-time SSOT gate) + re-gated + re-gate findings fixed (stale frontmatter/examples)", "status": "done", "commit": "986e0d1/4a3fa5b/6a1f552/205e769"},
-    {"id": 5, "name": "Review gate Groups D1+D2 (5 eval test suites + lock-rule) reviewed + HARDENED -- user chose fix-all; ~35 discriminating assertions (constant-stub-survives class) + lock-rule doc fixes (D2-6/D2-1/D2-3). 161 eval tests green", "status": "done", "commit": "be1956f/4b31e57"}
+    {"id": "19-01", "name": "search-and-stop spine + adapters + date primitives", "status": "done"},
+    {"id": "19-02", "name": "search + extract worker agents", "status": "done"},
+    {"id": "19-03", "name": "trap-construction recipe + validity/leakage gates + manifest", "status": "done"},
+    {"id": "19-04-Task1-driver", "name": "offline-read decision driver (calibratorGate/readDelta/resolveOutcome/persistVote + F3/F4/D1-17/D1-10 guards)", "status": "done", "note": "committed earlier; 33 tests green; consumed by the re-planned dispatch"},
+    {"id": "replan-2", "name": "consult-driven re-plan of 19-04 + 19-05 (gsd-planner + gsd-plan-checker)", "status": "done", "commit": "b51ad73"}
   ],
   "remaining_tasks": [
-    {"id": 6, "name": "gsd-code-review 19 (cheap complementary one-pass probe) + GSD fixer. The 4 known probe-bugs are ALREADY fixed (case-insensitive denylist, floor guard, date range; trailing-slash assessed correct) -- mostly confirmation + a sweep for anything both passes missed", "status": "not_started"},
-    {"id": 7, "name": "19-04 Task-2 offline Haiku-vs-Sonnet gating read (BLOCKING human-verify checkpoint; settle-or-raise PASS/FAIL-RAISE/VOID). IMPLEMENT the deferred input-coherence guards in its harness: F3/F4 (cross-validate nPooled/reliableTrials vs the realized per-seat vote files), D1-17 (readDelta nPooled>=reliableTrials), D1-10 (persistVote stop_reason enum). Sonnet-default ships regardless", "status": "not_started"},
-    {"id": 8, "name": "verify_phase_goal (gsd-verifier) -> secure-phase -> validate-phase -> extract-learnings -> phase.complete", "status": "not_started"}
+    {"id": "19-04-T1", "name": "KS-enrichment layer + 2-strata assembler (buried + evidence-absent) + FILE-form test", "status": "not_started", "type": "auto"},
+    {"id": "19-04-T2", "name": "D-08 voter-dispatch Workflow + harness test (scoring-reconciliation + no-abstention guards)", "status": "not_started", "type": "auto"},
+    {"id": "19-04-T3", "name": "pre-register manifest + lock-rule (byte-lock URL_DATE_RULE, remove date-sensitive rows, update dataset.test)", "status": "not_started", "type": "auto"},
+    {"id": "19-04-T4", "name": "run Sonnet calibrator across buried + evidence-absent; settle D-06 saturation", "status": "not_started", "type": "checkpoint:human-verify", "gate": "blocking", "spends_usage_pool": true},
+    {"id": "19-05", "name": "CONDITIONAL Stage-2: out-of-family paid expansion + Haiku read -> PASS/FAIL-RAISE/VOID", "status": "not_started", "conditional_on": "19-04 Task 4 == PROCEED (a Sonnet-below-ceiling stratum)", "gate": "blocking"},
+    {"id": "close-out", "name": "verify_phase_goal -> secure-phase -> validate-phase -> extract-learnings -> phase.complete", "status": "not_started"}
   ],
   "blockers": [
-    {"description": "Org MONTHLY spend cap was hit on Group D2's synth this session, then RAISED by the admin; the per-group review gate is token-heavy (~150-500k/group). The gate is resumable (resumeFromRunId replays cached executor+reviewer rounds; only the failed synth re-runs).", "type": "external", "workaround": "Pace one group/run at a time; resume a synth failure via Workflow({scriptPath, resumeFromRunId}) WITH byte-identical args."}
+    {"description": "19-04 Task 4 + 19-05 Task 2 are blocking human-verify checkpoints (settle-OR-raise); outcome must be raised to the user, never auto-resolved", "type": "human_action", "workaround": "none -- by design"},
+    {"description": "19-05 uses a PAID Copilot out-of-family generator (AI-Credit pool); needs a fresh user confirmation when reached", "type": "human_action", "workaround": "only runs if 19-04 == PROCEED"}
   ],
   "human_actions_pending": [
-    {"action": "Interpret the 19-04 offline Haiku-vs-Sonnet gating-read outcome (PASS / FAIL-RAISE / VOID) and respond to the checkpoint", "context": "19-04 Task-2 is a blocking human-verify checkpoint; Sonnet-default ships regardless -- the read only decides whether Haiku-first clears for Phase-20 shadow. Runs AFTER gsd-code-review + the deferred-guard implementation", "blocking": true}
+    {"action": "Resume execution (user said pause before executing the plans)", "context": "re-plan complete + committed; execution not started", "blocking": true},
+    {"action": "Approve the 19-04 Task-4 calibrator outcome (VOID vs PROCEED)", "context": "blocking human-verify checkpoint; spends the usage pool", "blocking": true},
+    {"action": "Confirm the 19-05 paid out-of-family generation round (if PROCEED)", "context": "AI-Credit pool; standing authorization recorded but confirm at the point of spend", "blocking": true}
   ],
   "decisions": [
-    {"decision": "Group-C design clusters RESOLVED by a 3-round advisor panel (Opus Agent + Copilot GPT-5.5 + Copilot Gemini-3.1-pro-preview, unanimous, ~73 AI Credits; transcripts in gitignored eval/.cache/panel/): ship PROMPT-ONLY now -- sources/ filename SHA-256 -> PERCENT-ENCODING (LLM-executable; filename not a lookup key); store excerpt VERBATIM (drop the LLM cap); delete the consult-schema/do-not-inline contradiction (no Read tool -> inlined contract IS the runtime contract, kept in sync by a dev-time SSOT test); ONE case-insensitive canonicalize recipe in both prompts; EXTRACT is sole sources/ writer + canonical-key owner; SEARCH writes candidates/<worker-id>.json (non-authoritative) + >=3-query floor; maxTurns 6. The deterministic NORMALIZER is DEFERRED to Phase 20 (supersedes the prompt recipe when the orchestrator that invokes it exists).", "rationale": "Tool-limited LLMs cannot reliably compute SHA-256 or truncate to an exact boundary or Read the schema at runtime; the aggregator dedups by the id/source FIELD not the filename, so percent-encoding suffices.", "phase": "19"},
-    {"decision": "Group-D test-coverage gaps: user chose FIX ALL (~35 discriminating assertions across the 5 eval test suites) + the 3 lock-rule/dataset doc fixes.", "rationale": "Maximal regression-resilience against the constant-stub-survives class; the source is already correct.", "phase": "19"},
-    {"decision": "Input-coherence guards (F3/F4 nPooled/reliableTrials vote-file cross-validation, D1-17 nPooled>=reliableTrials, D1-10 persistVote stop_reason enum) DEFERRED to the 19-04 gating-read author.", "rationale": "Their semantics live with the gating-read harness + the realized vote files; not safe to add blindly without that context.", "phase": "19"}
+    {"decision": "KS-enrichment via strict path-only URL-date extraction (not synthetic dates, not a different KS)", "rationale": "8.1% coverage, 0.17% archive-inner [correct], 0% future; 62/122 viable seeds; triple-model converged; fail-closed", "phase": "19"},
+    {"decision": "Drop date-sensitive from the offline gate; run buried + evidence-absent; defer date-sensitivity to Phase-20 live", "rationale": "staticKsAdapter applies dateFilter before any voter sees a doc -> the post-cutoff-leak arm is unobservable offline", "phase": "19"},
+    {"decision": "Scored vote = MODEL verdict; searchAndStop = trace/minimums only (T-19-19); no-abstention re-cast (W1)", "rationale": "searchAndStop's verdict is a different enum; recording it makes every model tie -> structural VOID; pre-registered + harness-test-guarded", "phase": "19"},
+    {"decision": "Re-plan via gsd-planner + gsd-plan-checker (not hand-authored)", "rationale": "canonical GSD loop; decision record is the authoritative input so no drift; PASS-WITH-WARNINGS, 5 warnings folded", "phase": "19"}
   ],
-  "uncommitted_files": [".claude/settings.json (M -- pre-existing from before this session, unrelated to Phase 19; do NOT bundle into phase commits)"],
-  "next_action": "Run `gsd-code-review 19` (the cheap complementary probe pass) -> GSD fixer for any new findings. Then set up the 19-04 Task-2 gating read (a BLOCKING human checkpoint), implementing the deferred F3/F4 + D1-17 + D1-10 input-coherence guards in its harness. Then verify_phase_goal -> secure -> validate -> extract-learnings -> phase.complete. CRITICAL: triage every gsd-code-review finding against the REAL source before applying (the reviewer reasons from packaged excerpts and can misdescribe code), and when fixing an AGENT prompt also reconcile its frontmatter description + <example> blocks, not just the body (Claude Code surfaces the description at routing time -- the re-gate caught stale SHA-256/sources/(capped) examples the body-rewrite left behind).",
-  "context_notes": "This session ran the ENTIRE Phase-19 lz-review gate to completion (the user's explicit MUST: review ALL plans/waves, not just the eval-import-coupling source the manifest scoped). Arc: Group A+B (eval source) reviewed+fixed; Group C (shipped worker agents) reviewed -> a 3-round neutral facts-only advisor panel resolved the two design clusters -> fixes applied -> single-round re-gate caught stale frontmatter/examples -> fixed + the dev-time SSOT gate strengthened to bar recurrence; Groups D1+D2 (the 5 eval test suites + lock-rule contract) reviewed -> all ~35 test-coverage gaps fixed via a 5-subagent fan-out (each self-verified green) + lock-rule doc fixes. 161 eval tests green; no shipped source bugs found in D; the worker-agent design issues were the high-value catch (vindicating the all-plans/waves requirement). The hardened review-gate tooling (eval/lz-review-gate.workflow.mjs + lz-review-gate-check.mjs severityDropDiff + the manifest) + the new dev-time SSOT gate (eval/lz-eval-worker-contract.test.mjs, in ci.yml) are trustworthy and proven this session. NOTE: 19-02-SUMMARY.md still describes the old SHA-256 fixture filename (superseded by the percent-encoding change) -- a historical-summary staleness, not a defect."
+  "uncommitted_files": [".claude/settings.json (pre-existing, unrelated -- do NOT bundle)"],
+  "next_action": "On user go: execute the re-planned 19-04 Stage 1 via /gsd-execute-phase 19 (Tasks 1-3 auto-build gated by FILE-form node --test, then the Task-4 blocking Sonnet-calibrator checkpoint -> raise VOID/PROCEED to the user). Read 19-04-REPLAN-DECISION-2.md + 19-04-PLAN.md first; do NOT re-open the design.",
+  "context_notes": "The re-plan is triple-validated (blind cross-family panel) + plan-checker-clean + grounded in verified code/corpus facts. PAUSED at the execution boundary per user. The likely Task-4 outcome is VOID (re-saturation, per Phase-18) -> Sonnet-default ships, 19-05 skipped. Frozen primitives must NOT be edited (assembly-layer enrichment only); pre-registration (Task 3) must commit before any vote (Task 4); the model's vote is the scored value. Two panelist agents shut down. Consult transcripts in gitignored eval/.cache/."
 }
