@@ -3,9 +3,9 @@ gsd_state_version: 1.0
 milestone: v2.1.0
 milestone_name: lz-deep-research skill
 status: executing
-stopped_at: Phase 19 review-gate tooling design-resolved + hardened + committed (c66590a); paused BEFORE Step 1 (run the hardened gate on the real Phase-19 eval modules)
-last_updated: "2026-06-16T23:20:32.018Z"
-last_activity: 2026-06-16 -- review-gate design resolved via cross-family consensus, implemented (Opus-high synth + diff + manifest) + dogfood-verified + committed c66590a; paused to run the gate next session
+stopped_at: Phase 19 Step 1 IN PROGRESS -- review gate run on Group A + confirmed fixes committed (9827417/d532a81/715528c + docs); Group B dispatched (runId wf_a3e7a4cb-9ff)
+last_updated: "2026-06-17"
+last_activity: 2026-06-17 -- ran hardened review gate on Group A (search-loop surface), triaged 14 findings vs source (19-REVIEW.md), landed 5 confirmed + 2 probe-bug fixes (144 eval tests green); Group B gate dispatched
 progress:
   total_phases: 8
   completed_phases: 6
@@ -237,14 +237,14 @@ Recent decisions affecting current work (v2.1.0):
 
 ## Session Continuity
 
-Last session: 2026-06-16T23:20:32.018Z
-Stopped at: Phase 19 review-gate TOOLING is now design-complete, hardened, and committed (c66590a on feat/deep-research). This session resolved the review-gate design via a neutral cross-family consensus (Opus Agent + Copilot GPT-5.5 + Gemini-3.1-pro-preview, 2 rounds) -> scoped-option-1 + synth stage on Opus-high + a deterministic severity-drop `diff` guard + a data-flow grouping manifest (the PARKED lz-review-fidelity decision is RESOLVED: keep Design-B; addon-A "bypass" DROPPED in favor of the lighter `diff`; addon-B manifest KEPT). Implemented, dogfood-reviewed (the gate reviewing its own changes), fixed the real findings, validated end-to-end (138 eval tests green; the diff extracts 5/4 high-severity findings from the real dogfood roundLogs with 0 dropped). PAUSED before Step 1 (running the gate on the REAL Phase-19 modules).
-Resume file: .planning/HANDOFF.json (authoritative) + .planning/phases/19-search-extract-worker-agents/.continue-here.md
-Resume next: STEP 1 -- run the HARDENED review-gate Workflow (`eval/lz-review-gate.workflow.mjs`, now Opus-high synth) on the REAL Phase-19 eval modules, PACED per-plan from 19-01. Group by the coupling chains in `eval/lz-review-gate-manifest.json` and call `assertManifestCoverage(args.groups, manifest)` BEFORE dispatch; after each group run `severityDropDiff(report.roundLogs, report.report)` from `eval/lz-review-gate-check.mjs` and re-run synth-only on any `dropDetected`. CRITICAL: triage every finding against the REAL source (the reviewer reasons from packaged excerpts and can misdescribe code). Merge per-group reports into 19-REVIEW.md.
+Last session: 2026-06-17
+Stopped at: Phase 19 Step 1 IN PROGRESS. Review gate RAN on Group A (search-loop API surface: search-loop + offline-read + traps), converged 1 round, severityDropDiff 0 dropped. Triaged all 14 findings vs real source (19-REVIEW.md): 5 confirmed bugs/guards + 2 confirmed probe-bugs FIXED and committed (9827417 search-loop F1/F3/probe-#3/probe-#4; d532a81 offline-read F4/F10; 715528c traps F7 comment; docs commit for 19-REVIEW.md). 144 eval tests green (138 + 6 new discriminating). Group B (safeId guard + aggregate->offline-read: aggregate + offline-read + dataset) DISPATCHED as a background Workflow (runId wf_a3e7a4cb-9ff) -- awaiting completion.
+Resume file: .planning/phases/19-search-extract-worker-agents/.continue-here.md (HANDOFF.json superseded -- Step 1 already begun)
+Resume next: When the Group B gate completes, read its output JSON, run `severityDropDiff(report.roundLogs, report.report)` (driver at `eval/.cache/review-gate-19/run-diff.mjs`), TRIAGE every finding vs real source, append a Group B section + fix dispositions to 19-REVIEW.md. Then `gsd-code-review 19` (complementary cheap probe pass) + fixer, then F12 (de-dup readJson across all 5 eval modules), then 19-04 gating read, then verify.
 
 ## Operator Next Steps
 
-1. STEP 1 -- per-plan review gate (PACED) using the HARDENED gate (c66590a): run `eval/lz-review-gate.workflow.mjs` on the real Phase-19 eval modules, grouped by the coupling chains in `eval/lz-review-gate-manifest.json` (`assertManifestCoverage` before dispatch); start at 19-01; after each group run the `severityDropDiff` guard and re-run synth-only on any dropped Critical/Important; triage findings vs real source; merge into 19-REVIEW.md.
-2. `gsd-code-review 19` (cheap one-pass) -> GSD fixer (`/gsd:code-review 19 --fix`). Probe-known bugs to confirm fixed: canonicalizeUrl trailing-slash strip on the SERIALIZED url (corrupts dedup keys); case-sensitive tracking-param denylist; searchAndStop `{minQueries:0,minDocs:0}` floor bypass; date regex with no value-range check.
+1. STEP 1 (Group A DONE+fixed+committed; Group B running, runId wf_a3e7a4cb-9ff): on Group B completion, severityDropDiff -> triage vs source -> append Group B section to 19-REVIEW.md. Group A confirmed fixes already landed: F1 decisive-doc pool, F3 case-insensitive tracking, probe-#3 positive-int guard, probe-#4 date range round-trip (9827417); F4 reliableTrials>=1, F10 falseUpholds<=nPooled (d532a81); F7 comment (715528c). DEFERRED: F12 (readJson de-dup spans 5 modules incl Group-B files -- do after Group B). DISMISSED: F5/F11/F13; probe-#1 (trailing-slash) assessed not-a-bug.
+2. `gsd-code-review 19` (cheap one-pass) -> GSD fixer (`/gsd:code-review 19 --fix`) as the complementary probe pass. Probe-bugs status: #2 (case-sensitive denylist) FIXED; #3 (floor bypass) FIXED as positive-int guard; #4 (date range) FIXED; #1 (canonicalizeUrl serialized trailing-slash) assessed correct/intended -- confirm.
 3. 19-04 Task-2: the offline Haiku-vs-Sonnet gating read (BLOCKING human-verify checkpoint; settle-or-raise) -- AFTER the fixer corrects the eval modules the read consumes. Sonnet-default ships regardless.
 4. verify_phase_goal (gsd-verifier) -> secure-phase -> validate-phase -> extract-learnings -> phase.complete.
