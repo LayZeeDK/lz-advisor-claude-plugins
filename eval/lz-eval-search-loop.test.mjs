@@ -41,6 +41,7 @@ import {
   canonicalizeUrl,
   sourceFilename,
   parseAvtDate,
+  safeParse,
   dateFilter,
   staticKsAdapter,
   liveWebSearchAdapter,
@@ -239,6 +240,19 @@ test('D-07 parseAvtDate range-checks the components (a shape-valid but out-of-ra
   assert.equal(parseAvtDate('29-02-2020').getUTCDate(), 29, 'a real leap day (29-02-2020) still parses');
 });
 
+test('D-07 safeParse returns a Date for valid DD-MM-YYYY and null for absent/malformed/out-of-range (exported for the traps leakage probe)', () => {
+  // safeParse is the LENIENT sibling of parseAvtDate (never throws); it is now exported so the traps
+  // leakage probe can tell a parseable post-cutoff doc date (a real leak) from a present-but-
+  // unparseable one (treated as undated, NOT a leak). DISCRIMINATING: it returns a real Date for a
+  // valid input and null -- never a throw, never a rolled-over Date -- for every bad input class.
+  assert.equal(safeParse('01-01-2020').getTime(), Date.UTC(2020, 0, 1), 'valid DD-MM-YYYY -> UTC Date');
+  assert.equal(safeParse(null), null, 'absent date -> null');
+  assert.equal(safeParse('unknown'), null, 'a non-matching string -> null (never throws)');
+  assert.equal(safeParse('2020-01-01'), null, 'an ISO-shaped (not DD-MM-YYYY) date -> null');
+  assert.equal(safeParse('99-99-2020'), null, 'an out-of-range date -> null (no silent rollover)');
+  assert.equal(safeParse(12345), null, 'a numeric (non-string-shaped) date -> null');
+});
+
 // ===========================================================================
 // dateFilter (D-05/D-07): the per-claim date-cutoff leakage guard.
 // ===========================================================================
@@ -405,10 +419,18 @@ test('D-10 searchAndStop: an EARLY decisive hit before minQueries does NOT short
 
 test('D-10 searchAndStop: minimums met + decisive evidence -> judged verdict, stop_reason decisive-evidence', () => {
   // Decisive 'refuted' evidence present once minimums are met -> the judged verdict is returned.
+  // The adapter returns 5 docs/call (one decisive), so minDocs=5 is satisfied at query 1. Stopping at
+  // query 3 can therefore ONLY be explained by the minQueries=3 floor (NOT minDocs, met at q1) -- this
+  // isolates the minQueries half of the two-part guard. A stub gating only on minDocs would stop at
+  // query 1 here and fail the trace.queries.length===3 assertion below (the discrimination the prior
+  // 2-docs/call cadence lacked, where both floors happened to be met at the same query).
   const adapter = {
     fetchResults: () => [
       { url: 'https://a/d', date: '01-01-2020', decisive: true, verdict: 'refuted' },
       { url: 'https://a/2', date: '01-01-2020' },
+      { url: 'https://a/3', date: '01-01-2020' },
+      { url: 'https://a/4', date: '01-01-2020' },
+      { url: 'https://a/5', date: '01-01-2020' },
     ],
   };
   const { verdict, trace } = searchAndStop({
@@ -422,10 +444,9 @@ test('D-10 searchAndStop: minimums met + decisive evidence -> judged verdict, st
   assert.equal(verdict, 'refuted', 'the decisive evidence verdict is returned once minimums are met');
   assert.equal(trace.stop_reason, 'decisive-evidence', 'stop_reason records the decisive stop');
   assert.ok(trace.depth >= 5, 'depth reflects the docs explored (>= minDocs)');
-  // The loop stops AT the minQueries floor (3), not later: the adapter returns decisive evidence on
-  // every call, so once q+1 >= minQueries=3 AND docsSeen >= minDocs=5 the guard fires immediately.
-  // Each call returns 2 docs: after 3 queries docsSeen=6 >= 5 and pool has a decisive doc -> stops at 3.
-  assert.equal(trace.queries.length, 3, 'stops AT minQueries=3 (not later) when decisive evidence and minimums are met simultaneously');
+  // minDocs=5 is met at query 1 (5 docs/call); the loop still cannot stop until q+1 >= minQueries=3,
+  // so it stops at exactly query 3 -- proving the minQueries floor binds independently of minDocs.
+  assert.equal(trace.queries.length, 3, 'stops AT minQueries=3 -- the query floor binds even though minDocs was met at query 1');
 });
 
 test('D-10 searchAndStop: minimums met, NO decisive evidence by exhaustion -> refuted-default / exhausted', () => {
@@ -451,6 +472,29 @@ test('D-10 searchAndStop: minimums met, NO decisive evidence by exhaustion -> re
   // The adapter returns 2 docs per call; minQueries=3, maxQueries=4 -> exhausted after 4 queries,
   // so trace.queries.length >= minQueries (3) and equals maxQueries (4).
   assert.ok(trace.queries.length >= 3, 'exhausted-with-mins-met issued >= minQueries queries');
+});
+
+test('D-10 searchAndStop: maxQueries < minQueries with docsSeen >= minDocs -> insufficient / min-not-met (the query floor is re-checked at exhaustion, not only minDocs)', () => {
+  // A self-contradictory-but-guard-passing config: each minimum is an independent positive integer, so
+  // minQueries:5 with maxQueries:3 is accepted. With 1 doc/call, docsSeen reaches minDocs=2 by
+  // exhaustion, but only 3 queries are ever issued (< minQueries=5). The exhaustion branch must NOT
+  // emit refuted-default/exhausted (which asserts the minimums were met) -- it must report the query
+  // floor was never met: insufficient / min-not-met. Pre-fix the branch checked ONLY trace.depth >=
+  // minDocs and wrongly returned refuted-default/exhausted here. This is the discriminating case the
+  // in-loop guard's tests do not cover (they all use maxQueries >= minQueries).
+  const adapter = { fetchResults: () => [{ url: 'https://a/x', date: '01-01-2020' }] };
+  const { verdict, trace } = searchAndStop({
+    claim: { id: 'c1', text: 'X' },
+    attackMode: 'disconfirm',
+    adapter,
+    minQueries: 5,
+    minDocs: 2,
+    maxQueries: 3,
+  });
+  assert.equal(verdict, 'insufficient', 'the unmet minQueries floor yields insufficient, not refuted-default');
+  assert.equal(trace.stop_reason, 'min-not-met', 'stop_reason records the query floor was not met');
+  assert.ok(trace.depth >= 2, 'minDocs WAS reached (docsSeen >= minDocs) -- it is the minQueries floor that was not');
+  assert.equal(trace.queries.length, 3, 'only maxQueries (3) queries issued, below the minQueries (5) floor');
 });
 
 test('D-10 searchAndStop: the trace is fully populated (queries[], depth, stop_reason)', () => {

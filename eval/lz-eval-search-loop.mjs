@@ -3,8 +3,11 @@
 // The genuinely-NEW deterministic spine of Phase 19: the ONE shared autonomous search-and-stop core
 // (D-09/D-10/D-11 -- built once, no throwaway), its two retrieval adapters (a live-WebSearch
 // protocol-shape stub + a static-AVeriTeC-KS pure function), the per-claim date-cutoff leakage guard
-// (D-07), and the URL-canonicalization + SHA-256 filename rule (D-13) that the extract worker
-// invokes. Every export is a pure, MC/DC-tested deterministic seam consumed by the workers (Plan 02),
+// (D-07), and the URL-canonicalization recipe (D-13). The extract worker's sources/ FILENAME rule is
+// PERCENT-ENCODING (panel-settled; see the schema reference + research-extract-worker.md), NOT a hash;
+// sourceFilename() below is a dev-time hashing utility (CLI demo + fixture), distinct from the
+// worker's percent-encoding filename rule. Every export is a pure, MC/DC-tested deterministic seam
+// consumed by the workers (Plan 02),
 // the trap builder (Plan 03), and the offline read (Plan 04).
 //
 // Tree / dependency boundary (D-10/D-11): this script lives in the repo-level eval/ tree, NEVER in
@@ -58,9 +61,11 @@ export const TRACKING_PARAMS = Object.freeze(
 // ---------------------------------------------------------------------------
 // D-13 URL canonicalization: lowercase scheme + host; strip default ports (80/443); strip the
 // tracking-param denylist (exact keys above + the `utm_` prefix); strip the URL fragment; strip a
-// single trailing slash. The RAW canonical key returned here lives in the JSON `id` field; the
-// FILENAME uses sourceFilename() (SHA-256 hex) below. `new URL(raw)` THROWS on a malformed URL ->
-// fail-closed upstream (the established ContractError discipline -- a bad URL never silently passes).
+// single trailing slash. The RAW canonical key returned here lives in the JSON `id` field. The extract
+// worker's sources/ FILENAME rule is PERCENT-ENCODING of this key (panel-settled), NOT a hash;
+// sourceFilename() below is a separate dev-time hash util, not the worker's filename rule. `new
+// URL(raw)` THROWS on a malformed URL -> fail-closed upstream (the established ContractError
+// discipline -- a bad URL never silently passes).
 // ---------------------------------------------------------------------------
 export function canonicalizeUrl(raw) {
   const u = new URL(raw); // throws on malformed -> fail-closed upstream
@@ -94,10 +99,12 @@ export function canonicalizeUrl(raw) {
 }
 
 // ---------------------------------------------------------------------------
-// D-13 filename-safety: the FILENAME for a sources/<id>.json record is the SHA-256 hex of the
-// canonical key + '.json' -- collision-safe, fixed-length, and (by construction) free of path
-// separators / parent-dir references (T-19-01: eliminates the traversal vector entirely; the raw key
-// stays only inside the JSON `id`). node:crypto is stdlib; never hand-roll a hash.
+// sourceFilename: a dev-time SHA-256-hex-of-the-canonical-key + '.json' utility. NOTE: this is NOT the
+// shipped worker's filename rule -- the extract worker PERCENT-ENCODES the canonical key for the
+// sources/<...>.json basename (panel-settled; see the schema reference + research-extract-worker.md).
+// sourceFilename() is retained only as a deterministic dev convenience (the CLI demo + the fixture
+// exercise it); it yields a fixed-length, path-separator-free name. node:crypto is stdlib; never
+// hand-roll a hash.
 // ---------------------------------------------------------------------------
 export function sourceFilename(canonicalKey) {
   if (typeof canonicalKey !== 'string' || canonicalKey.length === 0) {
@@ -140,8 +147,11 @@ export function parseAvtDate(ddmmyyyy) {
 
 // safeParse: a doc `date` may be DD-MM-YYYY (AVeriTeC KS) or absent/garbage. Return a Date for a
 // parseable DD-MM-YYYY, else null (undated). NEVER throws here -- dateFilter treats null as "drop"
-// (fail-closed), so a malformed doc date is simply excluded, not crashed on.
-function safeParse(raw) {
+// (fail-closed), so a malformed doc date is simply excluded, not crashed on. Exported so the traps
+// leakage probe can distinguish a parseable post-cutoff date (a real leak) from a present-but-
+// unparseable one (treated as undated, NOT a leak) -- the two are indistinguishable via dateFilter
+// alone (both yield an empty kept set).
+export function safeParse(raw) {
   if (raw == null) {
     return null;
   }
@@ -349,9 +359,13 @@ export function searchAndStop({
     }
   }
 
-  // Exhausted maxQueries. If the minimums were met we return the refuted-default (never a lazy
-  // default-uphold); if they were not met we return 'insufficient' (the early-uphold block).
-  if (trace.depth >= minDocs) {
+  // Exhausted maxQueries. If BOTH minimums were met we return the refuted-default (never a lazy
+  // default-uphold); if EITHER was not met we return 'insufficient' (the early-uphold block). Both
+  // halves of the two-part minimum are re-checked here, mirroring the in-loop guard: trace.queries
+  // .length is the count of queries actually issued (the minQueries floor) and trace.depth is docsSeen
+  // (the minDocs floor). Checking only minDocs would mislabel a min-not-met state as exhausted/
+  // refuted-default when maxQueries < minQueries (the query floor is then structurally unmeetable).
+  if (trace.queries.length >= minQueries && trace.depth >= minDocs) {
     trace.stop_reason = 'exhausted';
 
     return { verdict: 'refuted-default', trace };
@@ -374,8 +388,9 @@ function formulateDisconfirmingQuery(claim, attackMode, round) {
 
 // ---------------------------------------------------------------------------
 // Thin CLI (guarded so importing the module does NOT run it). With a single positional <url> it
-// prints the canonical key + the SHA-256 filename; exits 0 / 2. The actual eval run drives the
-// exported functions directly, NOT this convenience CLI.
+// prints the canonical key + the dev-time sourceFilename() SHA-256 hash (a dev convenience -- NOT the
+// shipped worker's percent-encoded sources/ filename rule); exits 0 / 2. The actual eval run drives
+// the exported functions directly, NOT this convenience CLI.
 // ---------------------------------------------------------------------------
 /* node:coverage disable */
 if (process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.argv[1])) {
@@ -389,7 +404,8 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.a
 
     const key = canonicalizeUrl(raw);
     console.log('canonical: ' + key);
-    console.log('filename: ' + sourceFilename(key));
+    // Dev-time hash only -- NOT the shipped worker's percent-encoded sources/ filename (panel-settled).
+    console.log('dev-sha256-hash: ' + sourceFilename(key));
     process.exit(0);
   } catch (err) {
     const where = err && err.file ? ' (' + err.file + ')' : '';
