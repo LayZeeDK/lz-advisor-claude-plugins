@@ -2,132 +2,159 @@
 phase: 19-search-extract-worker-agents
 plan: 04
 subsystem: testing
-tags: [eval, clopper-pearson, jstat, haiku-vs-sonnet, gating-read, voter, false-uphold, node-test, resumable]
+tags: [eval, ks-enrichment, url-date-extraction, two-strata, buried, evidence-absent, voter-dispatch, workflow, scoring-reconciliation, no-abstention, haiku-vs-sonnet, gating-read, node-test, resumable, pre-registration]
 
 # Dependency graph
 requires:
   - phase: 19-01
-    provides: "the search-and-stop spine (searchAndStop, staticKsAdapter, dateFilter, parseAvtDate)"
+    provides: "the search-and-stop spine (searchAndStop, staticKsAdapter, dateFilter, parseAvtDate, safeParse, SEARCH_DEFAULTS) -- FROZEN, consumed not rewritten"
   - phase: 19-03
-    provides: "the re-registered lock rule (pooled-n CP(1,N) ceiling, D-06 saturation/VOID, pinned minimums) + the trap recipe (lz-eval-traps.mjs)"
+    provides: "the trap recipe machinery (mutateOverreach, classifySeed, validityGate, writeTrap, loadDevSeedsAndKs, BURIED_RANK_FLOOR) + the re-registered lock rule + manifest"
   - phase: 18-03
     provides: "the frozen off-model engine (countFalseUpholds, delta, clopperPearsonUpper, passAtK, passHatK, lockRuleVerdict, EVAL_THRESHOLDS)"
+  - phase: 19-04 (Task 1, prior commit)
+    provides: "the offline-read decision driver (calibratorGate, readDelta, resolveOutcome, persistVote, votePath, STOP_REASONS) -- already built, consumed not rebuilt"
 provides:
-  - "eval/lz-eval-offline-read.mjs -- the DETERMINISTIC offline-read decision driver (calibrator gate, pooled DELTA read, VOID/PASS/FAIL-RAISE outcome resolver, resumable vote persistence + per-vote search trace)"
-  - "eval/lz-eval-offline-read.test.mjs -- FILE-form deterministic coverage (17 discriminating tests, no model calls) of every outcome branch"
-affects: [phase-20-orchestrator, phase-20-shadow-canary, voter-tier-default, search-worker-tier]
+  - "eval/lz-eval-trap-assembler.mjs -- the net-new KS-ENRICHMENT layer (extractUrlDate, normalizeClaimDate, enrichKsForClaim, URL_DATE_RULE) + the 2-strata Stage-1 assembler (assembleStage1Traps; buried + evidence-absent; strict cutoff; >=5-survivor + >=3/stratum floors; validityGate + blind content-grounding probe; writeTrap cache-only)"
+  - "eval/lz-eval-trap-assembler.test.mjs -- FILE-form deterministic coverage (21 discriminating tests, no network / no model calls)"
+  - "eval/lz-eval-voter-dispatch.workflow.mjs -- the net-new D-08 dynamic Workflow (parameterized seat, scoring reconciliation, no-abstention re-cast, skip-already-done, k>=MIN_K floor, pace-able; orchestrator-owns-persistence)"
+  - "eval/lz-eval-voter-dispatch.workflow.harness.test.mjs -- FILE-form harness-slice test (16 tests; scoring reconciliation / no-abstention / skip-already-done / k-floor / trace shape / readDelta resumability)"
+  - "eval/__fixtures__/lz-eval-manifest.json + eval/lz-eval-lock-rule.md -- pre-registered (zero-votes window): 2 offline strata, byte-locked URL_DATE_RULE, scoring reconciliation, no-abstention, >=5-survivor, strict-cutoff/no-date-shift; date-sensitive example rows removed + stratum-def deferred"
+affects: [phase-19-04-task-4-calibrator, phase-19-05-stage2-haiku, phase-20-orchestrator, phase-20-shadow-canary, voter-tier-default]
 
 # Tech tracking
 tech-stack:
   added: []
   patterns:
-    - "Deterministic decision seam around model votes: the unit-tested driver owns the calibrator gate + delta read + outcome resolver; the model vote DISPATCH is the (out-of-band) D-08 Workflow"
-    - "EXACT-ZERO pooled-excess count gate (Pitfall 3): the engine-facing delta upper is CP(indicator, reliableTrials) so any single excess FAILs at the per-claim reliability scale regardless of the large pooled n; the pooled CP(1,N) is a recorded LABEL only"
-    - "VOID precedes the frozen engine: a saturated calibrator (Sonnet aces a stratum) forces VOID before lockRuleVerdict runs -- a both-models-ace tie is never read as Haiku-safe"
-    - "Resumable skip-already-done filesystem vote persistence with a required per-vote search trace"
+    - "Assembly-layer enrichment over FROZEN primitives: extractUrlDate/normalizeClaimDate/enrichKsForClaim IMPORT + COMPOSE parseAvtDate/safeParse/dateFilter/staticKsAdapter/searchAndStop and the built recipe machinery -- never rewrite them (the single-digit-day fix is a NEW normalizer, the parser stays frozen)"
+    - "doc.date is the DD-MM-YYYY STRING (not a Date object) so the frozen safeParse/dateFilter consume it -- a Date object would be String-coerced and silently dropped"
+    - "Dynamic Workflow structured per lz-review-gate.workflow.mjs: export const meta + marker-delimited SHARED control-logic block + injected agent()/log()/pipeline() globals (no static/dynamic import); the harness slices the marker block to unit-test the real helpers and wraps the body in an async IIFE with MOCK globals"
+    - "SCORING RECONCILIATION: the scored quantity is the MODEL voter free-text verdict; searchAndStop's mechanical flag-enum is trace + minimums only (harness-test-guarded)"
+    - "NO-ABSTENTION re-cast: a null/abstain vote is not persisted and is re-cast until a definite verdict lands (persistVote rejects non-{unrefuted,refuted}); skip-already-done makes the run resumable + pace-able"
 
 key-files:
   created:
-    - "eval/lz-eval-offline-read.mjs"
-    - "eval/lz-eval-offline-read.test.mjs"
-  modified: []
+    - "eval/lz-eval-trap-assembler.mjs"
+    - "eval/lz-eval-trap-assembler.test.mjs"
+    - "eval/lz-eval-voter-dispatch.workflow.mjs"
+    - "eval/lz-eval-voter-dispatch.workflow.harness.test.mjs"
+  modified:
+    - "eval/__fixtures__/lz-eval-manifest.json"
+    - "eval/lz-eval-lock-rule.md"
+    - "eval/lz-eval-aggregate.test.mjs"
+    - "eval/lz-eval-dataset.test.mjs"
 
 key-decisions:
-  - "Engine-facing subtleOpenBookDeltaUpper is computed as CP(excessIndicator, reliableTrials), NOT CP(excess, nPooled): at the large pooled n CP(>=1,N) sits well below the 0.25 per-claim anchor (e.g. CP(2,80)~=0.087), so reading the engine anchor at the pooled n would let a non-zero excess SLIDE UNDER the gate. Computing it at the per-claim reliability scale keeps any-single-excess-fails MECHANICALLY true (CP(0,15)~=0.218 PASS, CP(1,15)~=0.319 FAIL) and honors the Pitfall-3 EXACT-ZERO-count framing. The pooled CP(1,N) is recorded separately as the run-artifact LABEL."
-  - "calibratorGate's mechanical 'below-ceiling' reading is sonnetFalseUpholds >= 1 (Sonnet recorded at least one false-uphold on the stratum); zero is 'saturated' (the both-models-ace fallacy). This is the literal D-06 discrimination decision; the recorded CP(1,N) ceiling is a LABEL, never a CI-width comparison."
-  - "The driver does NOT spawn subagents: it reads persisted vote files and computes the mechanical decision. The model dispatch is the Task-2 D-08 Workflow."
+  - "doc.date is attached as a DD-MM-YYYY STRING (via toDocDateString) so the FROZEN dateFilter/safeParse can consume it -- extractUrlDate still returns a Date for direct testing, but the enriched doc field is the string the spine reads (Rule 3 blocking-issue fix discovered during Task 1)"
+  - "The buried/evidence-absent split is decided deterministically by the deepest strictly-pre-cutoff surviving doc index (>= BURIED_RANK_FLOOR=20 -> buried), then re-enriched WITH the disconfirmer/decisive flags at that rank, and classifySeed is asserted to agree (fail closed on a mismatch)"
+  - "The no-import structural assertion in the Task-2 harness is scoped to comment-stripped CODE so the header comment that DOCUMENTS the no-import constraint (it literally writes 'dynamic import()') does not false-trip the regex"
+  - "EVAL_THRESHOLDS numbers are byte-UNCHANGED; the re-plan touches the manifest + lock rule only as pre-registration in the zero-votes window"
 
 patterns-established:
-  - "EXACT-ZERO-count gate via a 0/1 indicator into CP at the reliability scale (decouples the gate from the pooled-CI width -- the clustering caveat is honored, not re-derived)"
-  - "VOID-before-engine outcome resolver (the pre-condition outcome is decided before the frozen PASS/FAIL-RAISE engine; the engine never sees a saturated stratum)"
+  - "Pre-registration anti-drift: the manifest's byte-locked URL_DATE_RULE string == the assembler RegExp .source (aggregate.test asserts it); a drifted rule cannot silently re-populate the strata after the zero-votes window"
+  - "Fail-closed floors: a seed with <5 strictly-pre-cutoff survivors is excluded; a stratum with <3 distinct claims throws -- so min-not-met cannot silently change the trap and nPooled >= reliableTrials=15 at k=5"
 
-requirements-completed: [EVAL-02]
+requirements-completed: [EVAL-01, EVAL-02, EVAL-04]
 
 # Metrics
-duration: ~35min
-completed: 2026-06-16
+duration: ~45min (Tasks 1-3; Task 4 calibrator NOT run -- blocking human checkpoint)
+completed: 2026-06-17
 ---
 
-# Phase 19 Plan 04: Offline known-gold gating read (Task 1) Summary
+# Phase 19 Plan 04: Offline gating-read Stage-1 instrument (KS-enrichment + 2-strata assembler + D-08 voter-dispatch Workflow) Summary
 
-**Deterministic offline-read decision driver: the D-06 Sonnet-as-calibrator gate, the Haiku-MINUS-Sonnet pooled DELTA read over the frozen engine, the VOID/PASS/FAIL-RAISE outcome resolver, and resumable skip-already-done vote persistence with a required per-vote search trace -- 17 discriminating FILE-form tests, every outcome branch covered, no model calls.**
-
-> SCOPE NOTE: This plan has TWO tasks. **Task 1 is DONE** (the deterministic driver + test, committed atomically). **Task 2 is PENDING-CHECKPOINT** -- it is a `checkpoint:human-verify` (gate=blocking) that runs the ACTUAL gating read via the D-08 dynamic Workflow dispatching real Sonnet + Haiku voter subagents over the trap set. A worktree executor cannot reliably drive the Workflow tool; Task 2 is executed by the orchestrator + human at the session level. The Task-2 checkpoint state is returned to the orchestrator (see "Next Phase Readiness").
+**The construct-validity-corrected Stage-1 instrument: a KS-enrichment layer that attaches real dates (byte-locked strict path-only URL rule, archive-inner, fail-closed) + flags-at-pre-registered-ranks to the otherwise-degenerate dev KS, a 2-strata (buried + evidence-absent) assembler with strict cutoff + fail-closed floors, and a D-08 voter-dispatch Workflow whose SCORED quantity is the MODEL verdict (not searchAndStop's flag-enum) under a no-abstention re-cast -- all deterministic, pre-registered, and test-green. Task 4 (the live Sonnet calibrator) is PENDING its blocking human-verify checkpoint and was NOT run (zero usage-pool spend).**
 
 ## Performance
 
-- **Duration:** ~35 min
-- **Started:** 2026-06-16T~19:24Z
-- **Completed:** 2026-06-16T19:59Z
-- **Tasks:** 1 of 2 (Task 2 is a blocking human-verify checkpoint, NOT run)
-- **Files modified:** 2 created (eval/lz-eval-offline-read.mjs 445 lines, eval/lz-eval-offline-read.test.mjs 487 lines)
+- **Duration:** ~45 min (Tasks 1-3 only)
+- **Started:** 2026-06-17 (sequential executor, main working tree, branch feat/deep-research)
+- **Completed (Tasks 1-3):** 2026-06-17T21:36Z
+- **Tasks:** 3 of 4 (Task 4 is a blocking human-verify checkpoint -- NOT run)
+- **Files created:** 4
+- **Files modified:** 4
 
 ## Accomplishments
-
-- **The deterministic decision driver** (`eval/lz-eval-offline-read.mjs`): exports `calibratorGate` (D-06 saturation pre-condition), `readDelta` (the pooled Haiku-MINUS-Sonnet false-uphold DELTA over the frozen engine + Pass@1/Pass^k/pooled-CP labels), `resolveOutcome` (VOID/PASS/FAIL-RAISE), and the resumable vote persistence trio (`votePath`, `votePersisted`, `persistVote`). It consumes the frozen engine (`countFalseUpholds`, `delta`, `clopperPearsonUpper`, `passAtK`, `passHatK`, `lockRuleVerdict`, `EVAL_THRESHOLDS`) and the Plan-01 spine -- it never re-derives the CI math (Pitfall 3).
-- **VOID precedes the engine:** a saturated calibrator (Sonnet aces a stratum -> zero false-upholds) resolves to VOID BEFORE `lockRuleVerdict` runs (the frozen engine has no VOID branch). A both-models-ace tie is never read as Haiku-safe (D-06).
-- **The EXACT-ZERO pooled-excess gate** is mechanically true: the engine-facing `subtleOpenBookDeltaUpper` is `CP(excessIndicator, reliableTrials)` (0/1 indicator at the per-claim reliability scale), so ANY single Haiku-only excess FAILs identically (1 excess and 5 excess both FAIL), independent of the large pooled n. The pooled `CP(1,N_pooled)` is recorded separately as the run-artifact LABEL, never re-derived as a clustered CI.
-- **Resumability (D-08) + per-vote trace (D-10):** `persistVote` skips an already-persisted vote (so a credit/account interruption mid-run is recoverable) and REQUIRES the `{queries[], depth, stop_reason}` search trace (so a null delta is diagnosable as parity vs both-stopped-early). The vote basename is `safeId`-guarded (T-19-TRAVERSE).
-- **17 discriminating FILE-form tests, all green** (exit 0); the full eval-tree engine+spine+traps+new suite is 78/78 green together.
+- **Task 1 (EVAL-01) -- KS-enrichment layer + 2-strata assembler.** `extractUrlDate` applies the byte-locked strict path-only `URL_DATE_RULE`, grabs the archive INNER publication date, and fails closed (no-match / out-of-range / implausibly-future -> null, DROP only never leak); `normalizeClaimDate` zero-pads a single-digit day at the assembly layer while the FROZEN `parseAvtDate` still throws on the raw `9-10-2020`; `enrichKsForClaim` returns NEW objects (shared-mutation guard) with a DD-MM-YYYY date string on every doc + flags only at the pre-registered ranks (never text-leaked); `assembleStage1Traps` builds buried + evidence-absent ONLY (no date-sensitive), enforces the strict cutoff (no date-shift), the >=5-survivor + >=3/stratum fail-closed floors, and screens each trap via `validityGate` + the injected blind content-grounding probe before it counts, emitting recipe-not-text rows cache-only. FILE-form test: 21 discriminating assertions green.
+- **Task 2 (EVAL-02, T-19-19) -- D-08 voter-dispatch Workflow.** Structured per `lz-review-gate.workflow.mjs` (meta + marker-delimited `LZ-EVAL-VOTER-DISPATCH-SHARED` block + injected globals, no import). `toScoredVote` takes the verdict from the MODEL vote, NEVER from `searchAndStop`'s mechanical flag-enum; `parseVoteVerdict` null -> not persisted -> re-cast (no-abstention); parameterized seat (Sonnet Stage-1 / Haiku Stage-2 reuse); k>=MIN_K floor (tighten-only); `remainingVotes` skip-already-done; pace-able pipeline fan-out; orchestrator owns persistence. Harness-slice test: 16 tests green, including the readDelta F3/F4 realized-count resumability guard end-to-end against the real `persistVote` + `readDelta`.
+- **Task 3 (EVAL-04, T-19-15) -- pre-registration in the zero-votes window.** Removed the date-sensitive example rows (uid_seed 31 + 32); annotated the date-sensitive stratum DEFINITION as DEFERRED-to-Phase-20-live; reconciled the open-book note to two offline strata; added the `stage1_pre_registration` block (byte-locked URL_DATE_RULE, deterministic ascending-claim_id seed selection, scoring reconciliation, no-abstention, >=5-survivor, strict-cutoff/no-date-shift). The lock rule gained the two-offline-strata rule, a SCORING RECONCILIATION section, the NO-ABSTENTION rule, the byte-locked URL_DATE_RULE, and the strict-cutoff/no-date-shift/>=5-survivor rules; `EVAL_THRESHOLDS` numbers byte-unchanged. `aggregate.test` asserts the manifest URL_DATE_RULE == the assembler RegExp source byte-for-byte; `dataset.test` W4 drift gate now asserts EXACTLY two offline strata while keeping the uid-coverage/no-text/recipe guards.
 
 ## Task Commits
 
-1. **Task 1: Author the resumable offline-read driver + its deterministic test** - `00aa81a` (feat)
+Each task was committed atomically:
 
-_Task 2 is a blocking `checkpoint:human-verify` -- NOT run (see "Next Phase Readiness"). No plan-metadata commit yet (STATE.md / ROADMAP.md are owned by the orchestrator after the wave completes; this worktree does NOT modify them)._
+1. **Task 1: KS-enrichment layer + 2-strata Stage-1 assembler** - `c253431` (feat)
+2. **Task 2: D-08 voter-dispatch Workflow + harness-slice test** - `e5fa8d6` (feat)
+3. **Task 3: pre-register 2 offline strata + scoring reconciliation + URL_DATE_RULE byte-lock** - `5f05121` (docs)
+
+**Task 4 (the live Sonnet calibrator):** NOT run -- it is a `type="checkpoint:human-verify" gate="blocking"` step. It SPENDS the capped usage pool and must be settled WITH the human in the loop (settle-OR-raise; the D-06 saturation pre-condition). The orchestrator drives it separately.
+
+_Note: Task 1 was specified TDD but was authored as a single discriminating FILE-form test alongside the implementation in one commit (the test file and the module were committed together; both green at commit time)._
 
 ## Files Created/Modified
-
-- `eval/lz-eval-offline-read.mjs` - the deterministic offline-read decision driver (calibrator gate -> pooled delta read -> VOID/PASS/FAIL-RAISE; resumable vote persistence + per-vote trace; guarded `--resolve <run-dir>` CLI tail).
-- `eval/lz-eval-offline-read.test.mjs` - FILE-form deterministic coverage: calibrator gate discriminates saturated vs below-ceiling; VOID on a saturated calibrator regardless of the Haiku delta; FAIL-RAISE on a non-zero pooled excess at reliable>=15; PASS only on a zero excess AT reliable=15 with escalation below the kill band; the conjunctive PASS gates (reliability + cost); the exact-zero-count gate (any non-zero excess maps to the same CP(1,reliable) value); negative-excess clamp; trace fields populated; skip-already-done resumability; safeId traversal rejection.
+- `eval/lz-eval-trap-assembler.mjs` - The net-new KS-enrichment layer + the 2-strata Stage-1 assembler. Composes the frozen spine + built recipe machinery; never rewrites them.
+- `eval/lz-eval-trap-assembler.test.mjs` - 21 discriminating FILE-form tests (tmpdir cache, injected generate/validityProbe/weakVerifier stubs, no network / no model calls).
+- `eval/lz-eval-voter-dispatch.workflow.mjs` - The net-new D-08 dynamic Workflow (parameterized seat, scoring reconciliation, no-abstention, skip-already-done, k-floor, pace-able).
+- `eval/lz-eval-voter-dispatch.workflow.harness.test.mjs` - 16 harness-slice tests (mocked agents; readDelta resumability proven against the real persistVote + readDelta).
+- `eval/__fixtures__/lz-eval-manifest.json` - Pre-registered: date-sensitive rows removed, stratum-def deferred, open-book note reconciled, stage1_pre_registration block added.
+- `eval/lz-eval-lock-rule.md` - Pre-registered: two offline strata, SCORING RECONCILIATION + NO-ABSTENTION sections, byte-locked URL_DATE_RULE, strict-cutoff/no-date-shift/>=5-survivor; EVAL_THRESHOLDS byte-unchanged.
+- `eval/lz-eval-aggregate.test.mjs` - Added the URL_DATE_RULE byte-lock + EVAL_THRESHOLDS-byte-unchanged + lock-rule re-plan-prose anti-drift tests.
+- `eval/lz-eval-dataset.test.mjs` - W4 drift gate updated to EXACTLY two offline strata {buried, evidence-absent}; uid-coverage/no-text/recipe guards kept.
 
 ## Decisions Made
-
-- **Engine-facing delta upper at the per-claim reliability scale, not the pooled n** (see frontmatter key-decisions). Verified numerically against the frozen engine: CP(0,15)=0.218 (<=0.25, PASS), CP(1,15)=0.319 (>0.25, FAIL); the pooled CP(1,N) table matches the lock-rule prose (0.089/0.068/0.054 at N=60/80/100). This is the only design choice that required care; everything else is direct consumption of the frozen contracts.
-- **`below-ceiling` = Sonnet false-upholds >= 1.** The literal D-06 discrimination decision (Sonnet demonstrably below ceiling). Zero is the saturation fallacy.
-- The driver is a pure decision seam (no subagent spawning) -- per the plan, the model dispatch is the Task-2 Workflow.
+- **doc.date as a DD-MM-YYYY STRING (not a Date).** The frozen `dateFilter` calls `safeParse(doc.date)`, which parses ONLY the DD-MM-YYYY string shape. Attaching a `Date` object would have it `String`-coerced to an ISO-ish form `safeParse` rejects -- silently dropping EVERY enriched doc. `enrichKsForClaim` attaches the DD-MM-YYYY string via a `toDocDateString` helper; `extractUrlDate` still returns a `Date` for direct testing. (Caught during Task 1 -- see Deviations Rule 3.)
+- **Deterministic buried/evidence-absent split.** The stratum is decided by the deepest strictly-pre-cutoff surviving doc index (`>= BURIED_RANK_FLOOR = 20` -> buried), then the KS is re-enriched WITH the disconfirmer/decisive flags at that rank, and `classifySeed` (the built classifier) is asserted to agree -- fail closed on a mismatch. The EXACT per-seed ranks are logged in the gitignored run artifact (recipe-not-text), never the committed manifest.
+- **No-import assertion scoped to comment-stripped code.** The Task-2 header comment documents the no-import constraint and literally writes `dynamic import()`; the structural test strips `//` lines before the regex so the documentation does not false-trip the no-`import(` check.
+- **EVAL_THRESHOLDS byte-unchanged.** The re-plan touches the manifest + lock rule only as pre-registration; the frozen engine thresholds are byte-identical (asserted).
 
 ## Deviations from Plan
 
-None - plan executed exactly as written for Task 1. The one design choice that needed resolution (engine-facing delta upper scale) is faithful to the lock rule's EXACT-ZERO-pooled-excess framing (Pitfall 3) and the frozen `EVAL_THRESHOLDS.DELTA_UPPER_MAX = 0.25` per-claim anchor; it is not a deviation from any plan instruction.
+### Auto-fixed Issues
 
-## Known Stubs
+**1. [Rule 3 - Blocking] Enriched doc.date must be a DD-MM-YYYY string, not a Date object, for the frozen dateFilter to consume it**
+- **Found during:** Task 1 (the assembler's >=5-survivor / buried-stratum tests all reported 0 survivors)
+- **Issue:** `enrichKsForClaim` initially set `doc.date = extractUrlDate(url)` (a `Date`). The FROZEN `dateFilter` calls `safeParse(doc.date)`, and `safeParse` parses ONLY a DD-MM-YYYY string -- a `Date` is `String`-coerced to an ISO form it rejects, so every enriched doc was silently dropped and both strata fell below the floor.
+- **Fix:** Added a module-private `toDocDateString(date)` helper and set `doc.date` to the DD-MM-YYYY string (`extractUrlDate` still returns a `Date` for direct testing). The frozen `safeParse`/`dateFilter`/`parseAvtDate` were NOT touched. Added a test that PROVES the enriched date string is consumable by the frozen `dateFilter`.
+- **Files modified:** eval/lz-eval-trap-assembler.mjs, eval/lz-eval-trap-assembler.test.mjs
+- **Verification:** `node --test eval/lz-eval-trap-assembler.test.mjs` -> 21/21 green; the full eval-tree suite confirms the frozen primitives are byte-unchanged.
+- **Committed in:** c253431 (Task 1 commit)
 
-None. The `liveWebSearchAdapter` (Plan-01) is a documented protocol-shape stub the eval never executes (the offline read drives the static-KS adapter only, D-05/D-07); it is not introduced by this plan and is intentional per Plan 01.
+**2. [Rule 1 - Bug] The Task-2 no-import structural assertion false-tripped on the header comment**
+- **Found during:** Task 2 (the structural-contract test failed on the first run)
+- **Issue:** The no-`import(` regex matched the header comment text that DOCUMENTS the no-import constraint (it writes `dynamic import()`), not actual code.
+- **Fix:** The structural test strips `//`-prefixed comment lines before applying the no-import regex (the workflow body has no block comments), so it checks CODE only.
+- **Files modified:** eval/lz-eval-voter-dispatch.workflow.harness.test.mjs
+- **Verification:** `node --test eval/lz-eval-voter-dispatch.workflow.harness.test.mjs` -> 16/16 green.
+- **Committed in:** e5fa8d6 (Task 2 commit)
+
+---
+
+**Total deviations:** 2 auto-fixed (1 blocking, 1 bug). Both are test/assembly-layer fixes; NO frozen primitive was edited and no plan contract was weakened.
+**Impact on plan:** Both auto-fixes were necessary for correctness (the date-string seam is load-bearing for the whole offline read; the comment-scoping fix makes the structural guard sound). No scope creep.
 
 ## Issues Encountered
+- The single self-discovered correctness seam (Date-vs-string for the enriched doc.date) is documented above as Rule 3. It is the construct-validity crux of the whole re-plan: without it the offline read is degenerate (the original gap the re-plan corrects).
 
-- The worktree's `eval/node_modules` (jstat) was absent on spawn; restored with `cd eval && npm ci` (1 package; gitignored, never committed). This is the standard eval-deps restore documented in the plan's Task-2 verify step and 19-RESEARCH.md Runtime State Inventory; no code change.
+## Full Suite Verification (before the calibrator run)
 
-## Carry-forward note for the Task-2 read (single-digit-day claim_date)
+Run by explicit FILE path (the host's `node --test <dir>` quirk):
 
-The frozen `parseAvtDate` (Plan 19-01) uses a two-digit-day regex `/^\d{2}-\d{2}-\d{4}$/` and THROWS on a single-digit-day `claim_date` like `"9-10-2020"`. The frozen parser must NOT be modified. When the Task-2 D-08 Workflow builds the full N=60-100 read set from AVeriTeC dev seeds, it MUST tolerate this (skip or zero-pad such seeds when assembling the read set) so a single-digit-day seed does not crash the run. The Task-1 driver/test never exercise `parseAvtDate` directly (the test injects vote files and pre-computed counts), so this carry-forward binds the Task-2 read, not Task 1.
+- Full eval-tree suite (11 files): **243 tests, 243 pass, 0 fail** (exit 0).
+- Plugin-tree aggregator (`lz-deep-research-aggregate.test.mjs`): **41 tests, 41 pass, 0 fail** (exit 0).
+- Combined: **284 tests, 0 failures.**
+- `git status` shows NO committed AVeriTeC/NC corpus text; `eval/.cache/chenxwh__AVeriTeC` is gitignored; mutated trap prose + enriched KS + votes stay under `eval/.cache/`.
+- The FROZEN primitives (parseAvtDate, safeParse, dateFilter, staticKsAdapter, searchAndStop in lz-eval-search-loop.mjs; the engine lz-eval-aggregate.mjs; the driver lz-eval-offline-read.mjs; the recipe machinery lz-eval-traps.mjs) are byte-unchanged (no modification in any commit; verified via `git status`).
 
-## Next Phase Readiness -- TASK 2 CHECKPOINT (PENDING)
+## Next Phase Readiness -- Task 4 PENDING (blocking human-verify checkpoint)
 
-**Task 2 is a blocking `checkpoint:human-verify` and is NOT run by this worktree executor.** It is returned to the orchestrator for the orchestrator + human to execute at the session level (it needs the Workflow tool to dispatch real voter subagents).
+Tasks 1-3 build the CONSTRUCT-VALID instrument (real dates + flags, two observable strata, the scored quantity pinned to the model verdict, pre-registered). **Task 4 is NOT run** -- it is the LIVE Sonnet calibrator that SPENDS the capped usage pool and must be settled WITH the human in the loop (settle-OR-raise; never auto-resolve). It will:
+1. Assemble the Stage-1 trap set (Opus-subagent generator) over all qualifying Supported seeds, enriching each KS, enforcing the strict cutoff + the >=5-survivor + >=3/stratum floors, building buried + evidence-absent only.
+2. Dispatch the SONNET calibrator at k>=5 over the enriched static-KS adapter via the D-08 Workflow (votes persist to gitignored eval/.cache/; resumable skip-already-done; no-abstention re-cast).
+3. Feed per-stratum sonnetFalseUpholds into `calibratorGate`; inspect per-vote traces to confirm a below-ceiling stratum is GENUINE (minimums met, stop_reason exhausted/decisive-evidence, not min-not-met).
+4. Settle the D-06 saturation pre-condition: BOTH strata saturate after one hardening pass -> VOID -> raise (Sonnet-default ships, 19-05 skipped); a below-ceiling stratum -> PROCEED to 19-05.
 
-- **What is built (ready):** the deterministic offline-read driver (Task 1) + the Plan-01 search loop + the Plan-03 trap set and re-registered lock rule. The driver computes the calibrator gate, the Haiku-MINUS-Sonnet pooled DELTA, the CP(1,N_pooled) label, Pass@1/Pass^k/per-stratum false-uphold, and the PASS/FAIL-RAISE/VOID outcome over PERSISTED votes.
-- **How to verify (Task 2, for the orchestrator + human):**
-  1. Restore eval deps if needed: `cd eval && npm ci`.
-  2. Run the full deterministic eval-tree suite (must be green before the read), each by explicit FILE path:
-     `node --test eval/lz-eval-aggregate.test.mjs eval/lz-eval-dataset.test.mjs eval/lz-eval-packaging-boundary.test.mjs eval/lz-eval-search-loop.test.mjs eval/lz-eval-traps.test.mjs eval/lz-eval-offline-read.test.mjs`
-     then `node --test plugins/lz-advisor/skills/lz-deep-research/scripts/lz-deep-research-aggregate.test.mjs`.
-  3. Execute the offline read via the D-08 dynamic Workflow (Sonnet calibrator step FIRST). Confirm from the per-vote search traces that on a hardened stratum Sonnet is demonstrably BELOW ceiling (a non-trivial false-uphold count). If NO hardened stratum puts Sonnet below ceiling -> VOID/INCONCLUSIVE.
-  4. On a Sonnet-below-ceiling stratum, read the Haiku-MINUS-Sonnet pooled DELTA + the CP(1,N) ceiling at reliable=15; record Pass@1, Pass^k, per-stratum false-uphold.
-  5. Interpret: PASS (zero pooled excess at reliable=15, escalation below the kill band) -> clear Haiku for the Phase-20 shadow/canary; FAIL-RAISE (non-zero excess or kill-band escalation) -> RAISE to the user, Sonnet-default ships; VOID (saturation) -> RAISE to the user, defer to the Phase-20 shadow, Sonnet-default ships. A both-models-ace tie is NEVER read as Haiku-safe.
-  6. Write the outcome + per-vote search traces + realized pooled n + CP(1,N) label into a run artifact under gitignored `eval/.cache/` (and summarize in the SUMMARY). NO mutated NC text leaves the cache.
-- **Resume signal:** Type "approved" with the recorded outcome (PASS / FAIL-RAISE / VOID), or describe issues. On FAIL-RAISE or VOID, confirm the decision is raised to the user and Sonnet-default ships in the interim.
-
-## Self-Check: PASSED
-
-- FOUND: eval/lz-eval-offline-read.mjs
-- FOUND: eval/lz-eval-offline-read.test.mjs
-- FOUND: .planning/phases/19-search-extract-worker-agents/19-04-SUMMARY.md
-- FOUND commit: 00aa81a (Task 1)
-- Test gate: `node --test eval/lz-eval-offline-read.test.mjs` -> 17/17 pass, exit 0
-- Joint eval-tree gate (engine+spine+traps+new): 78/78 pass, exit 0
+Plan 19-04 is therefore NOT complete and phase 19 is NOT complete. STATE/ROADMAP are not marked complete for 19-04 (Task 4 checkpoint pending).
 
 ---
 *Phase: 19-search-extract-worker-agents*
-*Completed (Task 1): 2026-06-16*
+*Completed (Tasks 1-3): 2026-06-17 -- Task 4 PENDING the blocking human-verify checkpoint*
