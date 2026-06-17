@@ -16,7 +16,7 @@ Run PACED, one coupling group per dispatch.
 |-------|----------------|-------|--------|
 | A | search-loop API surface | `lz-eval-search-loop.mjs` + `lz-eval-offline-read.mjs` + `lz-eval-traps.mjs` | REVIEWED + fixed |
 | B | safeId guard + aggregate->offline-read | `lz-eval-aggregate.mjs` + `lz-eval-offline-read.mjs` + `lz-eval-dataset.mjs` | REVIEWED + fixed (F3/F4 deferred to gating-read harness) |
-| C | 19-02 shipped worker agents + round-trip test | `agents/research-extract-worker.md` + `agents/research-search-worker.md` + `lz-deep-research-aggregate.test.mjs` | RUNNING (wf_b9c66433-8a0) |
+| C | 19-02 shipped worker agents + round-trip test | `agents/research-extract-worker.md` + `agents/research-search-worker.md` + `lz-deep-research-aggregate.test.mjs` | REVIEWED (INCOMPLETE/4 rounds; triaged below; fixes pending design decisions) |
 | D | eval validation suites + lock-rule contract | 5x `lz-eval-*.test.mjs` + `eval/lz-eval-lock-rule.md` | PENDING |
 
 > SCOPE (user directive 2026-06-17): the lz-review gate MUST cover ALL Phase-19 plans/waves implemented,
@@ -213,6 +213,87 @@ NOT fixed this pass (with rationale):
   label note), **F13** (no change -- read boundary re-validates), **F14/F15** (HF-token / CLI-`k`
   design questions) -- left as-is / optional; recorded above.
 
-Step-1 (review gate) is COMPLETE for both groups. Remaining Phase-19 arc: `gsd-code-review 19`
-(complementary cheap probe pass) -> 19-04 Task-2 offline gating read (blocking human checkpoint;
-fold in F3/F4 there) -> verify -> secure -> validate -> extract-learnings -> phase complete.
+Group A + B (the eval source) are reviewed + fixed. Groups C + D extend coverage to all plans/waves.
+
+---
+
+## Group C -- 19-02 shipped worker agents + round-trip test
+
+Gate run: `wf_b9c66433-8a0`; **did NOT converge** -- ran all 4 rounds (MAX_ROUNDS), coverage INCOMPLETE
+(the reviewer reported MORE-NEEDED every round; rounds 3-4 largely re-surfaced the same themes, so the
+major findings are captured even though it never formally converged). 9 agents, ~511.6k subagent tokens.
+`severityDropDiff`: reviewerHighCount=7, droppedCount=0, **dropDetected=false** (synth preserved all).
+
+This was the highest-yield group by far -- the shipped agents carry far more latent contract surface than
+the eval modules. **Decisive triage fact (verified against the runtime aggregator):** corroboration/dedup
+is keyed on the `source`/`id` FIELD (`aggregate.mjs:312` `hit.sources.add(c.source)`; survivors index by
+`id`), NOT on the `sources/<sha>.json` filename. So a wrong/hallucinated SHA filename does NOT break
+lookup -- it only risks a rare basename collision. That lowers the SHA-256 finding from "Critical, breaks
+lookup" to a spec-vs-capability mismatch.
+
+The findings consolidate (across the 4 rounds) into two design clusters + clear fixes:
+
+### DESIGN DECISIONS (high-impact; touch the shipped deliverable -- raised to the user, NOT auto-fixed)
+
+**D-CLUSTER-1: the workers are tool-limited LLMs asked to perform DETERMINISTIC mechanics they cannot reliably do or access.** Root cause shared by C-findings 1/2/3 + R2-2/2-3:
+- **No Read tool** (`tools: [WebFetch|WebSearch, Write]`), so every "consult the schema reference"
+  instruction is DEAD at runtime and the inlined contract IS the real contract -- while the prompt also
+  says "do not inline the schema" (self-contradictory). [CONFIRMED]
+- **SHA-256 filename**: the extract worker must write `sources/<sha-256-hex>.json`, but an LLM cannot
+  reliably compute SHA-256. Functionally tolerated (dedup is by `id`, not filename) but the spec is
+  unfulfillable as written + risks collisions. [CONFIRMED, severity lowered per the aggregator fact]
+- **`~50 KB` excerpt cap**: model-directed truncation (byte-vs-char, boundary, `~` all unspecified) makes
+  the quote-recheck determinism goal unguaranteed. [CONFIRMED]
+- Options (per finding): grant a compute/Read tool (breaks least-privilege) | move the mechanics into the
+  harness/aggregator (compute the filename + truncate outside the model) | make the contract
+  LLM-executable (model-producible filename, tolerated-fuzzy truncation) + make the inlined contract
+  authoritative-for-the-worker with a drift test. **Needs a design decision.**
+
+**D-CLUSTER-2: search vs extract canonicalization ownership (C-findings 1/4 + R3-2/3-4/3-6 + Q11).**
+- The extract worker INLINES the 11-key tracking denylist; the search worker only says "tracking
+  parameters stripped" without listing them -> divergent canonical keys between the two workers. Plus the
+  inlined recipe omits the **case-insensitive** stripping (the F3 fix just landed in the eval spine
+  `9827417`) -- so the shipped agents would drift from the corrected behavior. [CONFIRMED]
+- Both write `sources/<sha>.json` for the same key with unspecified write-ordering (search's record lacks
+  `fetched_at`; a late search write could clobber extract's). [CONFIRMED, minor -- typical order is
+  search-then-extract]
+- The open question (Q11): does search compute the FINAL canonical key, or a best-effort dedup key with
+  extract owning final canonicalization? **The answer collapses several findings.** Needs a decision.
+
+### CONFIRMED prompt-fixes (clear; apply once the cluster decisions are made, since they're coupled)
+
+| Finding | Fix |
+|---------|-----|
+| Query floor (R1-10/R4-1) | Hardcode "at least 3 distinct queries" in search-worker (the agent-side analog of the eval probe-#3 floor). |
+| `maxTurns:4` (R1-13/R3-10) | Extract: 1 WebFetch + 3 Writes + synthesis = 5 turns -> raise to 5-6 or instruct batched Writes (else the receipt is cut off -- same maxTurns-exhaustion class as the reviewer-agent bug). |
+| `excerpt_id` (R1-6/R2-1) | Worker treats it required; schema marks it optional->silent `downgraded`. Document the consequence or fail-close. |
+| quote self-check / `quote_fidelity` (R4-2/R4-4) | State the worker verifies the quote vs its Step-1 excerpt; add "the aggregator assigns `quote_fidelity`; do not write it." |
+| dead schema pointers (R1-2/R3-3) | Drop "consult the schema" (unreadable) or mark the inlined block authoritative-for-the-worker. |
+| receipt cap (Sugg 7) | Use the count form, not the full URL, in the extract receipt (long DOIs approach the ~200-char cap). |
+| Suggestions | trailing-slash wording; `model: sonnet` cost-bound annotation; `fetched_at` pre-fetch rationale; drop/relocate the eval-scope forward pointer; `D-13` tag opacity. |
+
+### CONFIRMED test-fixes (the round-trip suite is non-discriminating -- Phase-17 CR-01 class)
+
+- The fixture uses a CLEAN URL (`https://example.org/a/study`, already canonical) -> the entire
+  canonicalization/denylist path has ZERO coverage. Add a DIRTY-URL fixture (mixed case, `utm_*`,
+  `fbclid`, trailing slash, fragment) and assert the stripped canonical key. [CONFIRMED]
+- Fixture `text === quote` is tautological -> can't distinguish a quote-vs-excerpt from a text-vs-excerpt
+  check. Make `text` a paraphrase distinct from the verbatim `quote`. [CONFIRMED]
+- T-19-08 reads `sources/<sha>.json` directly, bypassing `aggregate()`; assert on the aggregator output
+  (`survivors[].sources` contains the canonical key). [CONFIRMED]
+- AGG-03 asserts a hardcoded receipt literal (`claims=3`, inconsistent with the 1-claim fixture) -- label
+  it a format/doc-conformance test, or drive it from real worker emission. [CONFIRMED]
+
+### Questions to resolve (gate them before the coupled fixes)
+
+- Q11: search computes the final canonical key, or best-effort? (collapses D-CLUSTER-2)
+- Q7: is `sources/` read by `aggregate()` for corroboration, or write-only? -- ANSWERED above: dedup is by
+  the `source`/`id` field; `sources/` supplies citation metadata. So divergence mainly hurts search-phase
+  candidate dedup + the search/extract handoff, not the corroboration count.
+- Q17: are receipt `status=` values a closed enum? (then tighten both the prompt and the AGG-03 regex).
+
+COVERAGE: INCOMPLETE (did not converge in 4 rounds; major themes captured; re-run not auto-triggered to
+avoid another ~500k-token pass for diminishing returns -- flagged for the user).
+
+Group C fixes are NOT yet applied -- the two design clusters need a decision first, and the clear
+prompt-fixes are coupled to them (e.g., the denylist-inlining fix depends on the no-Read/SSOT decision).
