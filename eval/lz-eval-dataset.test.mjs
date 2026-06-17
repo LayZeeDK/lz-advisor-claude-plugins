@@ -453,8 +453,11 @@ test('D-04 DRIFT GATE is DISCRIMINATING: a tampered vendored buffer fails the sh
 });
 
 // ---------------------------------------------------------------------------
-// Plan 19-03 / EVAL-01 / D-07: the manifest gains the AVeriTeC OPEN-BOOK retrieval-difficulty strata
-// rows (buried / evidence-absent / date-sensitive). The drift gate is extended to cover them:
+// Plan 19-03 / EVAL-01 / D-07: the manifest gains the AVeriTeC OPEN-BOOK CLOSED-BOOK JUDGMENT-difficulty
+// strata rows (buried / evidence-absent / date-sensitive). The drift gate is extended to cover them
+// (W-1, 19-04-REPLAN-DECISION-3: the difficulty axis is closed-book JUDGMENT, NOT retrieval
+// orchestration -- corrected in lockstep with the lock-rule/manifest prose; the stratum NAMES are
+// unchanged, so the membership/count/no-text/recipe guards below are intact):
 //   - every AVeriTeC example uid is covered (and the matched-count == uid-count discriminating guard
 //     holds -- no vacuous empty-set pass);
 //   - NO AVeriTeC row carries a `text` field (the CC-BY-NC license-clean assertion -- mutated NC
@@ -487,10 +490,12 @@ test('EVAL-01 AVeriTeC open-book DRIFT GATE: every AVeriTeC uid is covered AND t
   // No duplicate AVeriTeC uids (loadManifest already fails closed on dupes; assert here too).
   assert.equal(new Set(avtUids).size, avtUids.length, 'AVeriTeC uids are unique');
 
-  // (b) STRATA DISCRIMINATE: the open-book rows span EXACTLY the two OFFLINE retrieval-difficulty
-  // strata (buried + evidence-absent) so the set is not a single-stratum (non-discriminating) sample.
-  // date-sensitive is DEFERRED to the Phase-20 live phase (re-plan 19-04-REPLAN-DECISION-2 item 1): its
-  // post-cutoff-leak arm is unobservable offline, so NO date-sensitive example row is assembled.
+  // (b) STRATA DISCRIMINATE: the open-book rows span EXACTLY the two OFFLINE CLOSED-BOOK
+  // JUDGMENT-difficulty strata (buried + evidence-absent) so the set is not a single-stratum
+  // (non-discriminating) sample. date-sensitive is DEFERRED to the Phase-20 live phase (re-plan
+  // 19-04-REPLAN-DECISION-3 item 4): its post-cutoff-leak arm is unobservable offline, so NO
+  // date-sensitive example row is assembled. (W-1: the difficulty axis is closed-book judgment, NOT
+  // retrieval orchestration; the stratum NAMES are unchanged, so the guards below are intact.)
   const strata = new Set(avtRows.map((e) => e.stratum));
 
   for (const s of ['buried', 'evidence-absent']) {

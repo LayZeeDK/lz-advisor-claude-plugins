@@ -429,9 +429,14 @@ test('Task-3 pre-registration: EVAL_THRESHOLDS numbers are byte-UNCHANGED (the r
 test('Task-3 lock rule documents the two offline strata + scoring reconciliation + no-abstention (re-plan pre-registration)', () => {
   const prose = fs.readFileSync(LOCK_RULE, 'utf8');
 
-  // Two offline strata (date-sensitive deferred).
-  assert.ok(/Two offline retrieval-difficulty strata/i.test(prose), 'the lock rule states two offline strata');
+  // Two offline strata (date-sensitive deferred). W-1: the difficulty-axis wording is CLOSED-BOOK
+  // JUDGMENT, NOT retrieval orchestration (the stale prose was corrected in lockstep with this assertion
+  // -- 19-04-REPLAN-DECISION-3; the stratum NAMES {buried, evidence-absent} are unchanged).
+  assert.ok(/Two offline CLOSED-BOOK JUDGMENT-difficulty strata/i.test(prose), 'the lock rule states two offline closed-book judgment-difficulty strata');
   assert.ok(/date-sensitive is DEFERRED to the Phase-20 live phase/i.test(prose), 'date-sensitive deferral is recorded');
+  // The corrected prose no longer claims the difficulty lives in retrieval orchestration (anti
+  // self-contradiction): it states retrieval orchestration is NOT measured offline.
+  assert.ok(!/difficulty lives in RETRIEVAL ORCHESTRATION/i.test(prose), 'the stale "difficulty lives in RETRIEVAL ORCHESTRATION" prose is corrected');
 
   // The scoring reconciliation + the no-abstention rule (T-19-19 / W1).
   assert.ok(/SCORING RECONCILIATION/.test(prose), 'the lock rule carries a SCORING RECONCILIATION section');

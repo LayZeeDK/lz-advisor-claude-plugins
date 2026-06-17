@@ -119,11 +119,15 @@ ships Sonnet-default.
 The offline known-gold trap set is built by these rules (19-RESEARCH.md lines 319-360); they are
 locked in this pre-registration so the construction cannot be tuned after a vote:
 
-1. **Two offline retrieval-difficulty strata** -- buried (a decisive pre-cutoff in-corpus disconfirmer
-   ranked DEEP behind distractors) + evidence-absent (a one-step-overreach mutation whose refutation is
-   NOT in the KS; it retains the original unmutated SUPPORTING docs as plausible text -- a genuine
-   text-based temptation to false-uphold). The difficulty lives in RETRIEVAL ORCHESTRATION, NEVER claim
-   subtlety (the subtlety axis is empirically proven saturated: Haiku 0/30 == Sonnet 0/30).
+1. **Two offline CLOSED-BOOK JUDGMENT-difficulty strata** -- buried (a decisive pre-cutoff in-corpus
+   disconfirmer ranked DEEP behind distractors) + evidence-absent (a one-step-overreach mutation whose
+   refutation is NOT in the KS; it retains the original unmutated SUPPORTING docs as plausible text -- a
+   genuine text-based temptation to false-uphold). The difficulty lives in CLOSED-BOOK JUDGMENT
+   (resist-uphold-on-absence for evidence-absent; distractor-attention / refuter-detection for buried),
+   NEVER claim subtlety (the subtlety axis is empirically proven saturated -- Haiku 0/30 == Sonnet 0/30)
+   and NEVER retrieval orchestration (which is not cleanly + leak-safely measurable offline -- the frozen
+   staticKsAdapter ignores the query -- and defers to the Phase-20 live operational shadow; see the
+   construct-scope boundary below).
    **date-sensitive is DEFERRED to the Phase-20 live phase** (re-plan 19-04-REPLAN-DECISION-2 item 1):
    its STRONGER arm (post-cutoff-doc leakage) is NOT constructible offline -- the static KS adapter
    applies the FROZEN dateFilter BEFORE any voter sees a doc, so a post-cutoff "leak" is dropped
@@ -182,6 +186,69 @@ vote is NOT persisted (`persistVote` rejects a verdict not in `{unrefuted, refut
 the next pass (skip-already-done skips only a DEFINITE persisted vote; a never-persisted abstain is
 re-attempted until a definite vote lands). So each seat's pool completes only with definite votes and
 `readDelta` proceeds only at a complete exactly-`nPooled` pool (the F3/F4 realized-count guard).
+
+## The k->1 reduction + the false-uphold-over-k rule (I2, pre-registered BEFORE any vote)
+
+The dispatch persists `k` votes/claim keyed `seat-uid-k`, but `readDelta` consumes ONE pooled
+record/claim keyed by the claim uid (the F3/F4 realized-count guard wants exactly `nPooled` records --
+one per claim). The reduction is `reducePooledVerdict` (the dispatch Workflow's SHARED block, Task 2).
+
+**The chosen rule is ANY-UPHOLD (stated explicitly, locked here before the calibrator vote):** a claim's
+pooled verdict is a FALSE-UPHOLD (`unrefuted` on a refuted-gold trap) if ANY of its `k` votes upholds --
+NOT majority. Rationale: a single silent uphold-on-absence is exactly the failure the gate hunts, and the
+conservative any-uphold rule mirrors the shipped pipeline tally's downgrade-not-delete posture (so the
+eval measures production). The rule is unit-tested DISCRIMINATING (a single uphold among `k` flips the
+pooled verdict) and pre-registered here in the zero-votes window.
+
+## Construct-scope boundary (CLOSED-BOOK JUDGMENT, NOT retrieval; pre-registered)
+
+The offline gate measures CLOSED-BOOK JUDGMENT (resist-uphold-on-absence) over an orchestrator-supplied
+date-window evidence packet -- NOT retrieval orchestration. A closed-book PASS tests JUDGMENT difficulty,
+NOT query-formulation / search-depth / premature-stop. Retrieval is NOT cleanly + leak-safely measurable
+offline: the frozen `staticKsAdapter` IGNORES the query (so the model's query-formulation is not
+exercised through this seam), and a leak-safe model-driven offline retrieval would need a NET-NEW ranked
+top-k index over a thin median-5 corpus (poor ROI). Retrieval DEFERS to the **Phase-20 LIVE operational
+shadow** (shadow -> canary -> tier-1; ROADMAP SC-6), which is OPERATIONAL, not a clean leak-controlled
+gold-known retrieval eval (on the live web the published gold verdict is reachable at vote time -- the
+leak the offline gate exists to prevent). So retrieval is NEVER silently assumed-covered, and a
+closed-book PASS NEVER certifies retrieval. This boundary is recorded BOTH here and in the run artifact
+(19-04-REPLAN-DECISION-3 item 4 + the lone-dissent reconciliation).
+
+## The buried-auto-drop rule (pre-registered)
+
+`evidence-absent` is the PRIMARY arm (resist-uphold-on-absence -- the one genuinely-new failure mode vs
+the saturated Phase-18 subtle arm). `buried` is AUTO-GATED: it is kept ONLY IF the assembler builds
+`>= perStratumFloor` (3) distinct buried claims with a decisive refuter at the build-gate rank
+(`>= BURIED_RANK_FLOOR` = 20) AND the Sonnet calibrator shows it discriminates; otherwise it AUTO-DROPS to
+evidence-absent-only (LOGGED in the run artifact + `attrition.buriedAutoDropped` with the reason -- never
+silent). At median-5 strictly-pre-cutoff docs/claim the deepest survivor rarely reaches rank 20, so buried
+will almost certainly fail-closed and drop. `buried` offline is acknowledged a context-attention /
+refuter-detection JUDGMENT test, NOT retrieval. The PRIMARY evidence-absent stratum FAILS CLOSED below the
+floor (a degenerate corpus); only buried auto-drops.
+
+## The no-MCP-build decision + rationale (pre-registered)
+
+The offline gate is CLOSED-BOOK judgment (Option A). The dev MCP + a NET-NEW ranked-retrieval index
+(Option B) is NOT built: bounded downside (it gates only an OFF-by-default flag -- Sonnet ships
+regardless) + a thin/low-fidelity median-5 corpus + redundancy with the Phase-20 live pilot make the index
+build poor ROI. Decided by THREE independent consult rounds (a blind in-family Opus panel, an in-family
+reconciliation after a claude-code-guide capability consult, and a cross-family advisory board to explicit
+consensus -- 19-04-REPLAN-DECISION-3). A clean offline model-driven retrieval gate is a CONDITIONAL
+follow-on (separately pre-registered; NOT in 19-04/19-05), triggered ONLY IF: (a) the evidence-absent arm
+discriminates, (b) the owner explicitly signs off that a clean retrieval read is wanted given Phase-20-live
+cannot give it, AND (c) a `>= 100`-doc leak-safe trap set proves feasible (the corpus collapse to median-5
+may make this infeasible). Recorded so Phase-20 is NEVER assumed to cover retrieval.
+
+## Haiku-ON preconditions (the lone dissent, reconciled; pre-registered)
+
+Turning the Haiku-first Tier-1 flag ON requires BOTH:
+1. an offline CLOSED-BOOK PASS on `evidence-absent` (the strata must DISCRIMINATE -- a non-saturated
+   calibrator: Sonnet demonstrably below ceiling), AND
+2. live shadow -> canary OPERATIONAL evidence on retrieval within a pre-committed tolerance of Sonnet.
+
+On a closed-book PASS ALONE the flag STAYS OFF, with retrieval as the NAMED pre-registered precondition for
+any future flip (EVAL-03 raise-to-user). A closed-book PASS tests JUDGMENT difficulty, NOT retrieval, so it
+does NOT certify retrieval. OFF-by-default + pre-committed rollback throughout.
 
 ## The strict-cutoff / no-date-shift / >=5-survivor rules (pre-registered)
 
