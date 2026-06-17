@@ -395,18 +395,24 @@ test('assembler: the >=5-survivor floor FAILS CLOSED -- a seed with too few stri
   }
 });
 
-test('assembler: the >=3/stratum floor FAILS CLOSED -- a corpus that cannot fill a stratum throws', async () => {
-  // Only 2 buried-shaped seeds (below the per-stratum floor of 3) -> the assembler must throw.
+test('assembler: the >=3/stratum floor FAILS CLOSED on a degenerate corpus -- a SHORT PRIMARY (evidence-absent) stratum throws (W-2 re-pointed)', async () => {
+  // W-2 RE-POINT (19-04-REPLAN-DECISION-3): under the buried-auto-drop rule a buried-SHORT corpus no
+  // longer THROWS (it auto-drops -- see the dedicated auto-drop test below). The THROW path now fires
+  // only when the PRIMARY evidence-absent stratum is short: a degenerate corpus with no honest PRIMARY
+  // arm fails closed. Build only 2 evidence-absent-shaped seeds (below the per-stratum floor of 3) plus
+  // plenty of buried-shaped seeds (so buried is NOT the short stratum) -- the assembler must THROW
+  // /perStratumFloor/ on the missing PRIMARY arm.
   const seeds = [];
   const ksByClaim = {};
 
-  for (let id = 0; id < 2; id += 1) {
+  // 5 buried-shaped seeds (well above the floor) so buried is NOT the short stratum.
+  for (let id = 0; id < 5; id += 1) {
     seeds.push({ claim: 'buried claim ' + id, label: 'Supported', claim_date: '15-05-2020' });
     ksByClaim[id] = buriedKs();
   }
 
-  // 4 evidence-absent seeds (above the floor) so ONLY the buried stratum is short.
-  for (let id = 2; id < 6; id += 1) {
+  // Only 2 evidence-absent-shaped seeds (below the per-stratum floor of 3) -- the PRIMARY arm is short.
+  for (let id = 5; id < 7; id += 1) {
     seeds.push({ claim: 'absent claim ' + id, label: 'Supported', claim_date: '15-05-2020' });
     ksByClaim[id] = evidenceAbsentKs();
   }
@@ -422,9 +428,142 @@ test('assembler: the >=3/stratum floor FAILS CLOSED -- a corpus that cannot fill
           generate: acceptGenerate,
           validityProbe: acceptProbe,
         }),
-      (e) => e.name === 'ContractError' && /perStratumFloor/.test(e.message),
-      'a stratum below the per-stratum floor fails closed',
+      (e) => e.name === 'ContractError' && /perStratumFloor/.test(e.message) && /evidence-absent/.test(e.message),
+      'a SHORT PRIMARY evidence-absent stratum (degenerate corpus) fails closed',
     );
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('assembler: I4 inclusive boundary -- a seed with EXACTLY 5 strictly-pre-cutoff survivors is KEPT (the floor is `<5`, not `<=5`)', async () => {
+  // The COMPLEMENT of the 4-survivor exclusion test above: a seed whose KS has EXACTLY minSurvivors (5)
+  // strictly-pre-cutoff dated survivors (plus same-day/undated docs that do NOT count) is KEPT -- its
+  // uid reaches a stratum. This proves the floor admits exactly 5 (an off-by-one `<` -> `<=` regression
+  // would EXCLUDE this seed and fail the assertion). Both boundary directions are now exercised: 4 drops,
+  // 5 keeps.
+  const { seeds, ksByClaim } = buildBalancedCorpus();
+  const exactId = seeds.length; // next claim_id
+  seeds.push({ claim: 'exactly-5 claim', label: 'Supported', claim_date: '15-05-2020' });
+  const exactKs = [];
+
+  for (let i = 0; i < 5; i += 1) {
+    exactKs.push(preCutoffDoc(i)); // EXACTLY 5 strictly-pre-cutoff survivors
+  }
+
+  exactKs.push(sameDayDoc(0)); // same-day: excluded by strict < (does NOT count)
+  exactKs.push(undatedDoc(0)); // undated: dropped (does NOT count)
+  exactKs.push(undatedDoc(1));
+
+  ksByClaim[exactId] = exactKs;
+  const root = writeCache({ seeds, ksByClaim });
+
+  try {
+    const res = await assembleStage1Traps({
+      cacheRoot: root,
+      cacheDir: path.join(root, 'out'),
+      generate: acceptGenerate,
+      validityProbe: acceptProbe,
+    });
+
+    // The exactly-5-survivor seed was NOT excluded for too-few survivors.
+    const exactUid = 'averitec-dev-' + String(exactId).padStart(4, '0');
+    const allUids = [...res.strata.buried, ...res.strata['evidence-absent']].map((r) => r.uid);
+    assert.equal(allUids.includes(exactUid), true, 'the exactly-5-survivor seed is KEPT (floor admits 5)');
+    // It lands in evidence-absent (5 shallow survivors -> deepest survivor < BURIED_RANK_FLOOR).
+    const exactRow = res.strata['evidence-absent'].find((r) => r.uid === exactUid);
+    assert.ok(exactRow, 'the exactly-5-survivor seed is an evidence-absent trap (shallow survivor pool)');
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('assembler: buried AUTO-DROP -- a corpus that cannot build >=3 buried claims drops to evidence-absent-only (logged, no whole-run abort)', async () => {
+  // 19-04-REPLAN-DECISION-3 item 3: evidence-absent is the PRIMARY arm; buried is AUTO-GATED. A corpus
+  // with only 2 buried-shaped seeds (below the floor) but >= 3 evidence-absent seeds AUTO-DROPS buried
+  // to evidence-absent-only -- the assembler returns evidence-absent populated + buried EMPTY, records
+  // attrition.buriedAutoDropped=true with a why string, and does NOT throw the whole run closed.
+  // DISTINGUISH from the >=3/stratum THROW test above (which fires only on a SHORT PRIMARY arm).
+  const seeds = [];
+  const ksByClaim = {};
+
+  // Only 2 buried-shaped seeds (below the per-stratum floor of 3) -> buried cannot be honestly built.
+  for (let id = 0; id < 2; id += 1) {
+    seeds.push({ claim: 'buried claim ' + id, label: 'Supported', claim_date: '15-05-2020' });
+    ksByClaim[id] = buriedKs();
+  }
+
+  // 5 evidence-absent seeds (above the floor) so the PRIMARY arm carries the run.
+  for (let id = 2; id < 7; id += 1) {
+    seeds.push({ claim: 'absent claim ' + id, label: 'Supported', claim_date: '15-05-2020' });
+    ksByClaim[id] = evidenceAbsentKs();
+  }
+
+  const root = writeCache({ seeds, ksByClaim });
+
+  try {
+    const res = await assembleStage1Traps({
+      cacheRoot: root,
+      cacheDir: path.join(root, 'out'),
+      generate: acceptGenerate,
+      validityProbe: acceptProbe,
+    });
+
+    // The whole run did NOT abort (it returned a result, not a throw).
+    assert.equal(res.strata.buried.length, 0, 'the buried stratum is empty after the auto-drop');
+    assert.ok(res.strata['evidence-absent'].length >= 3, 'the PRIMARY evidence-absent stratum carries the run');
+
+    // The drop is EXPLICIT + LOGGED (never silent).
+    assert.equal(res.attrition.buriedAutoDropped, true, 'the buried auto-drop is recorded');
+    assert.equal(typeof res.attrition.buriedAutoDropReason, 'string', 'a why string is recorded');
+    assert.match(res.attrition.buriedAutoDropReason, /perStratumFloor|buried/, 'the reason names the floor / buried');
+    assert.equal(res.attrition.perStratumCount.buried, 0, 'the buried per-stratum count is zeroed on drop');
+
+    // The dropped buried gold labels were pruned (no orphan refuted labels for un-emitted buried traps).
+    const allUids = [...res.strata.buried, ...res.strata['evidence-absent']].map((r) => r.uid);
+
+    for (const uid of Object.keys(res.goldLabels)) {
+      assert.ok(allUids.includes(uid), 'goldLabels carries no uid that was dropped (' + uid + ')');
+    }
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('assembler: I3 removed-with-rationale -- the BLIND validityProbe is the load-bearing stratification guard (NOT a runtime classifySeed tautology)', async () => {
+  // 19-04-REPLAN-DECISION-3 / I3: the tautological classifySeed agreement guard was REMOVED. The
+  // stratification correctness now rests on the BLIND content-grounding validityProbe + the manifest
+  // ranks, NOT a runtime cross-check. This test proves the probe is load-bearing: a probe that REJECTS
+  // a (deliberately) mis-grounded construction fails the set closed, whereas an accepting probe lets it
+  // through -- a DISCRIMINATING guard (the removed tautology could never fire on a mis-flagged build).
+  const root = writeCache(buildBalancedCorpus());
+
+  try {
+    // The probe inspects the stratum + decisiveRank it is handed and REJECTS a buried construction whose
+    // decisiveRank is not genuinely a refuter (here: reject every buried trap as mis-grounded). With all
+    // buried rejected, only evidence-absent survives -- buried AUTO-DROPS, the run still completes, and
+    // the probe (not a runtime tautology) is what gated the buried construction out.
+    const rejectBuriedProbe = async ({ stratum }) => {
+      if (stratum === 'buried') {
+        return { accepted: false, reason: 'mis-grounded buried refuter (probe rejected)' };
+      }
+
+      return { accepted: true, reason: 'evidence-absent grounded (no pre-cutoff refuter)' };
+    };
+
+    const res = await assembleStage1Traps({
+      cacheRoot: root,
+      cacheDir: path.join(root, 'out'),
+      generate: acceptGenerate,
+      validityProbe: rejectBuriedProbe,
+    });
+
+    // The probe gated the buried construction out -> buried auto-dropped, evidence-absent carries the run.
+    assert.equal(res.strata.buried.length, 0, 'the probe rejected every buried construction -> none survive');
+    assert.equal(res.attrition.buriedAutoDropped, true, 'buried auto-dropped after the probe rejected it');
+    assert.ok(res.strata['evidence-absent'].length >= 3, 'the probe accepted the evidence-absent constructions');
+    // The probe screened-out the buried traps (DISCRIMINATING vs the all-accept probe, which keeps buried).
+    assert.ok(res.attrition.screenedOut >= 1, 'the blind probe screened out the mis-grounded buried constructions');
   } finally {
     fs.rmSync(root, { recursive: true, force: true });
   }
