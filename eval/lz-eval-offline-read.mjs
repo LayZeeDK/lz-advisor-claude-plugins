@@ -196,8 +196,8 @@ export function readDelta({
     throw new ContractError('readDelta requires a positive integer nPooled: ' + JSON.stringify(nPooled), 'readDelta');
   }
 
-  if (!Number.isInteger(reliableTrials) || reliableTrials < 0) {
-    throw new ContractError('readDelta requires a non-negative integer reliableTrials: ' + JSON.stringify(reliableTrials), 'readDelta');
+  if (!Number.isInteger(reliableTrials) || reliableTrials < 1) {
+    throw new ContractError('readDelta requires a positive integer reliableTrials (>= 1; reliableTrials=0 feeds a degenerate clopperPearsonUpper(_,0,_)): ' + JSON.stringify(reliableTrials), 'readDelta');
   }
 
   if (!Number.isInteger(k) || k < EVAL_THRESHOLDS.MIN_K) {
@@ -208,6 +208,17 @@ export function readDelta({
   // through safeId inside the engine -- T-19-TRAVERSE).
   const sonnetFalseUpholds = countFalseUpholds(sonnetVoteDir, goldLabels);
   const haikuFalseUpholds = countFalseUpholds(haikuVoteDir, goldLabels);
+
+  // A vote dir holding MORE false-upholds than the declared pooled n (a superset / stale vote dir)
+  // would drive sonnetCorrect / haikuCorrect NEGATIVE into passAtK below. Fail closed: a realized
+  // false-uphold count can never exceed the pool it was drawn from.
+  if (sonnetFalseUpholds > nPooled || haikuFalseUpholds > nPooled) {
+    throw new ContractError(
+      'readDelta: false-uphold count exceeds nPooled (superset/stale vote dir): sonnet=' +
+        sonnetFalseUpholds + ' haiku=' + haikuFalseUpholds + ' nPooled=' + nPooled,
+      'readDelta',
+    );
+  }
 
   // The SOLE gated quantity: the Haiku-MINUS-Sonnet pooled EXCESS (never Haiku's absolute rate, D-06).
   const pooledExcess = delta(haikuFalseUpholds, sonnetFalseUpholds);

@@ -379,6 +379,37 @@ test('readDelta fails closed on out-of-contract inputs (missing dirs, non-positi
   );
 });
 
+test('readDelta fails closed on reliableTrials=0 (a degenerate clopperPearsonUpper(_,0,_) input -- F4)', () => {
+  const { gold } = buildPool(5);
+  // The old guard was `reliableTrials < 0`, so 0 slipped through into a degenerate CP(_,0,_). The
+  // tightened `< 1` guard rejects it. (A partial-run reliableTrials between 1 and 14 still computes --
+  // see the reliable<15 FAIL-RAISE test above -- so the fix does not over-constrain.)
+  assert.throws(
+    () => readDelta({ sonnetVoteDir: 'a', haikuVoteDir: 'b', goldLabels: gold, nPooled: 15, reliableTrials: 0 }),
+    (e) => e.name === 'ContractError' && /positive integer reliableTrials|degenerate/.test(e.message),
+    'reliableTrials=0 fails closed',
+  );
+});
+
+test('readDelta fails closed when a vote dir has MORE false-upholds than the declared nPooled (F10)', () => {
+  const { gold, ids } = buildPool(15);
+  // All 15 sonnet votes are false-upholds (unrefuted on refuted-gold); declare a SMALLER pool (10).
+  // The post-count guard must fail closed -- else sonnetCorrect goes negative into passAtK.
+  const sonnetDir = writeVotes(ids.map((id) => ({ id, verdict: 'unrefuted' })));
+  const haikuDir = writeVotes(ids.map((id) => ({ id, verdict: 'refuted' })));
+
+  try {
+    assert.throws(
+      () => readDelta({ sonnetVoteDir: sonnetDir, haikuVoteDir: haikuDir, goldLabels: gold, nPooled: 10, reliableTrials: 15 }),
+      (e) => e.name === 'ContractError' && /exceeds nPooled/.test(e.message),
+      'a false-uphold count exceeding nPooled fails closed',
+    );
+  } finally {
+    fs.rmSync(sonnetDir, { recursive: true, force: true });
+    fs.rmSync(haikuDir, { recursive: true, force: true });
+  }
+});
+
 // ===========================================================================
 // persistVote (D-08 / D-10): resumable vote persistence + the per-vote search trace.
 // ===========================================================================
