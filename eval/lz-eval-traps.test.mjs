@@ -433,6 +433,42 @@ test('leakageProbe DISCRIMINATES: the same seed flips clean<->leaky based ONLY o
   assert.notEqual(clean.clean, leaky.clean, 'the probe flips on KS contents alone (DISCRIMINATING)');
 });
 
+test('leakageProbe does NOT flag a present-but-UNPARSEABLE doc date as a post-cutoff leak (treated as undated)', () => {
+  // A KS doc whose `date` is present but NOT a parseable DD-MM-YYYY ('unknown', a number, an ISO-shaped
+  // string, an out-of-range date) must be treated as UNDATED -- NOT escalated as a post-cutoff leak.
+  // Pre-fix the date arm inferred a leak from an empty dateFilter result, which an UNPARSEABLE date
+  // also produces, so a malformed date falsely flipped clean -> leaky and blocked the manifest lock.
+  // DISCRIMINATING: the KS carries NO genuine post-cutoff dated doc, so a correct probe is clean; a
+  // probe that conflates unparseable with post-cutoff would report leaks here.
+  const seeds = [
+    {
+      claim_id: 6,
+      claim: 'malformed-date claim',
+      claim_date: '30-10-2020',
+      fact_checking_article: null,
+      cached_original_claim_url: null,
+      original_claim_url: null,
+    },
+  ];
+  const ks = {
+    6: [
+      { sentence: 'undated via garbage string', url: 'https://news.example/a', date: 'unknown' },
+      { sentence: 'numeric date', url: 'https://news.example/b', date: 12345 },
+      { sentence: 'iso-shaped, not DD-MM-YYYY', url: 'https://news.example/c', date: '2020-06-01' },
+      { sentence: 'genuinely pre-cutoff dated', url: 'https://news.example/d', date: '01-06-2020' },
+    ],
+  };
+  const res = leakageProbe(seeds, ks);
+  assert.equal(res.clean, true, 'present-but-unparseable doc dates are treated as undated, not flagged as leaks');
+  assert.equal(res.leaks.length, 0, 'no false post-cutoff leak from a malformed date');
+
+  // CONTROL: a genuinely post-cutoff PARSEABLE date is STILL flagged -- the fix did not disable the
+  // date arm, it only stopped misreading unparseable dates as post-cutoff.
+  const leakyKs = { 6: [{ sentence: 'real post-cutoff', url: 'https://news.example/late', date: '01-12-2020' }] };
+  const leaky = leakageProbe(seeds, leakyKs);
+  assert.equal(leaky.clean, false, 'a genuinely post-cutoff PARSEABLE date is still flagged (date arm intact)');
+});
+
 // ---------------------------------------------------------------------------
 // The writer: it writes mutated text ONLY under .cache/ (gitignored) and emits a manifest row with
 // NO `text` field (uid + remapped label + stratum + recipe/seed + sha256 of the cached bytes).

@@ -62,7 +62,7 @@ import {
 
 // Reuse the Plan-19-01 date primitives (the leakage seam): parseAvtDate (DD-MM-YYYY, fail-closed) +
 // dateFilter (drop undated OR >= claimDate). One-directional within the eval tree.
-import { parseAvtDate, dateFilter } from './lz-eval-search-loop.mjs';
+import { parseAvtDate, dateFilter, safeParse } from './lz-eval-search-loop.mjs';
 
 // Shared fail-closed JSON read (Group-B F12 de-dup); re-exported to preserve the prior export surface.
 import { readJson } from './lz-eval-readjson.mjs';
@@ -293,14 +293,19 @@ export function leakageProbe(seeds, ksByClaim) {
         continue;
       }
 
-      // STEP 2 -- DATE arm: a DATED doc dated >= claim_date is a post-cutoff leak that survives the
-      // screen. dateFilter KEEPS only strictly-pre-cutoff dated docs; a dated doc that is NOT kept is
-      // a leak. Undated docs are not flagged (they carry no provable post-cutoff verdict and are
-      // dropped at retrieval time by the production dateFilter).
+      // STEP 2 -- DATE arm: a doc with a PARSEABLE date that is NOT strictly pre-cutoff (i.e. dated
+      // >= claim_date) is a post-cutoff leak that survives the screen. Parse the doc date explicitly
+      // (via the same safeParse the production dateFilter uses) and flag ONLY when it parses AND is
+      // >= cd. A present-but-UNPARSEABLE date ('unknown', a number, an ISO-shaped string, an
+      // out-of-range date) is treated as UNDATED -- NOT flagged -- matching the contract above
+      // ("Undated docs are not flagged ... dropped at retrieval time by the production dateFilter").
+      // Inferring a leak from an empty dateFilter result (the prior code) conflated an unparseable
+      // date with a post-cutoff one and falsely ESCALATED a non-leak, blocking the manifest lock with
+      // a misleading reason string.
       if (d.date != null) {
-        const kept = dateFilter([d], cd);
+        const parsed = safeParse(d.date);
 
-        if (kept.length === 0) {
+        if (parsed != null && !(parsed < cd)) {
           leaks.push({ claim_id: id, url: d.url, reason: 'post-cutoff date (>= claim_date) survives screen' });
         }
       }
