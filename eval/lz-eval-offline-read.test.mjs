@@ -258,6 +258,23 @@ test('resolveOutcome FAILs a clean read when reliability is below 15 OR escalati
   }
 });
 
+test('resolveOutcome fails closed on an escalationFraction outside [0,1] (a negative would silently clear the cost gate -- F10)', () => {
+  const calibration = calibratorGate({ sonnetFalseUpholds: 1, trials: 15 });
+  const read = { subtleOpenBookDeltaUpper: 0.2, reliableTrials: 15 };
+  // A negative escalationFraction is `< ESCALATION_KILL_HIGH`, so it would silently CLEAR the cost gate
+  // and mask a computation error as PASS-eligible. The range guard fails it closed.
+  assert.throws(
+    () => resolveOutcome({ calibration, read, escalationFraction: -0.1 }),
+    (e) => e.name === 'ContractError' && /\[0,1\]/.test(e.message),
+    'a negative escalationFraction fails closed (does not silently clear the cost gate)',
+  );
+  assert.throws(
+    () => resolveOutcome({ calibration, read, escalationFraction: 1.5 }),
+    (e) => e.name === 'ContractError',
+    'an escalationFraction > 1 fails closed',
+  );
+});
+
 // ===========================================================================
 // readDelta (EVAL-02 / D-05): the pooled DELTA read over the FROZEN engine.
 // ===========================================================================
@@ -388,6 +405,17 @@ test('readDelta fails closed on reliableTrials=0 (a degenerate clopperPearsonUpp
     () => readDelta({ sonnetVoteDir: 'a', haikuVoteDir: 'b', goldLabels: gold, nPooled: 15, reliableTrials: 0 }),
     (e) => e.name === 'ContractError' && /positive integer reliableTrials|degenerate/.test(e.message),
     'reliableTrials=0 fails closed',
+  );
+});
+
+test('readDelta fails closed when nPooled < k (passHatK would be NaN in the read -- F6)', () => {
+  const { gold } = buildPool(5);
+  // nPooled=3 < default k=5: passHatK(3,_,5) would be NaN. The guard rejects it before any vote read
+  // (so the dummy dirs are never touched).
+  assert.throws(
+    () => readDelta({ sonnetVoteDir: 'a', haikuVoteDir: 'b', goldLabels: gold, nPooled: 3, reliableTrials: 15 }),
+    (e) => e.name === 'ContractError' && /nPooled >= k/.test(e.message),
+    'nPooled below the reporting k fails closed (no NaN passHatK)',
   );
 });
 

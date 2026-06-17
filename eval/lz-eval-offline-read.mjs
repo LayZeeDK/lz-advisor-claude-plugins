@@ -204,6 +204,13 @@ export function readDelta({
     throw new ContractError('readDelta requires k >= MIN_K (' + EVAL_THRESHOLDS.MIN_K + '): ' + JSON.stringify(k), 'readDelta');
   }
 
+  // passHatK/passAtK are undefined for n < k (they return NaN by contract). Guard nPooled >= k here so
+  // a NaN can never land silently in the frozen read output; a pool smaller than the reporting k is a
+  // misconfigured run, not a valid read.
+  if (nPooled < k) {
+    throw new ContractError('readDelta requires nPooled >= k (else passHatK is NaN in the read): nPooled=' + nPooled + ' k=' + k, 'readDelta');
+  }
+
   // The FROZEN off-model verdict-vs-gold counts over the shared SUBTLE pool (each routes every vote id
   // through safeId inside the engine -- T-19-TRAVERSE).
   const sonnetFalseUpholds = countFalseUpholds(sonnetVoteDir, goldLabels);
@@ -300,8 +307,11 @@ export function resolveOutcome({ calibration, read, escalationFraction } = {}) {
     throw new ContractError('resolveOutcome requires a read (readDelta output) on a below-ceiling stratum', 'resolveOutcome');
   }
 
-  if (!Number.isFinite(escalationFraction)) {
-    throw new ContractError('resolveOutcome requires a numeric escalationFraction: ' + JSON.stringify(escalationFraction), 'resolveOutcome');
+  if (!Number.isFinite(escalationFraction) || escalationFraction < 0 || escalationFraction > 1) {
+    // Range-check [0,1]: an escalation FRACTION outside [0,1] is a computation error. Left unguarded, a
+    // negative value silently clears the cost gate (escalationFraction < ESCALATION_KILL_HIGH), masking
+    // the error as a PASS-eligible read. Fail closed.
+    throw new ContractError('resolveOutcome requires escalationFraction in [0,1]: ' + JSON.stringify(escalationFraction), 'resolveOutcome');
   }
 
   // Below ceiling: delegate to the FROZEN engine (PASS / FAIL-RAISE only -- VOID is handled above).
