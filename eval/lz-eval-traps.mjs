@@ -64,8 +64,12 @@ import {
 // dateFilter (drop undated OR >= claimDate). One-directional within the eval tree.
 import { parseAvtDate, dateFilter } from './lz-eval-search-loop.mjs';
 
+// Shared fail-closed JSON read (Group-B F12 de-dup); re-exported to preserve the prior export surface.
+import { readJson } from './lz-eval-readjson.mjs';
+export { readJson };
+
 // safeId / stripBom are part of the established cross-tree hardening surface; referenced below where
-// the writer guards a content-derived basename and where readJson strips a BOM.
+// the writer guards a content-derived basename and where the KS loader strips a BOM.
 void safeId;
 void stripBom;
 
@@ -387,26 +391,10 @@ export function writeTrap(trap, { cacheDir } = {}) {
 }
 
 // ---------------------------------------------------------------------------
-// Fail-closed JSON read (copy of the runtime aggregator's module-private readJson shape, using the
-// IMPORTED ContractError + stripBom -- never a bare JSON.parse on an untrusted dev.json / KS file).
+// readText: raw UTF-8 read used by loadDevSeedsAndKs (the KS is JSONL, parsed line-by-line, not via
+// readJson). The shared fail-closed readJson is imported from lz-eval-readjson.mjs (F12 de-dup).
 // ---------------------------------------------------------------------------
 const readText = (p) => fs.readFileSync(p, 'utf8');
-
-export function readJson(p) {
-  let text;
-
-  try {
-    text = stripBom(readText(p));
-  } catch (err) {
-    throw new ContractError('cannot read file: ' + err.message, p);
-  }
-
-  try {
-    return JSON.parse(text);
-  } catch (err) {
-    throw new ContractError('malformed JSON: ' + err.message, p);
-  }
-}
 
 // ---------------------------------------------------------------------------
 // Load the dev seeds (data/dev.json -- array indexed by position = claim_id) + the KS

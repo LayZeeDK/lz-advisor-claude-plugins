@@ -21,8 +21,8 @@
 // runtime hardening primitives; zero direct npm deps (the CI math is jstat-backed via the frozen
 // engine, never hand-rolled here).
 //
-// The byte-order mark is code point U+FEFF. This source contains no literal byte-order mark; the
-// imported stripBom handles a BOM at read time (ASCII-only source per CLAUDE.md).
+// This source contains no literal byte-order mark and is strictly ASCII (per CLAUDE.md); JSON reads go
+// through the shared lz-eval-readjson.mjs helper, which strips a BOM at read time.
 //
 // Pure functions are exported for the validation fixture; the thin CLI is guarded so that `import`-ing
 // this module does NOT run the CLI.
@@ -52,12 +52,16 @@ import { searchAndStop, staticKsAdapter, dateFilter } from './lz-eval-search-loo
 
 // (3) Cross-tree reuse of the SHIPPED runtime aggregator's hardening primitives (D-10; eval ->
 //     runtime, one-directional, never the reverse). safeId guards a content-derived vote basename
-//     before it can index gold or reach any path; ContractError / stripBom give the fail-closed read.
+//     before it can index gold or reach any path; ContractError backs the fail-closed reads. The
+//     shared fail-closed JSON read lives in lz-eval-readjson.mjs (F12).
 import {
   ContractError,
-  stripBom,
   safeId,
 } from '../plugins/lz-advisor/skills/lz-deep-research/scripts/lz-deep-research-aggregate.mjs';
+
+// Shared fail-closed JSON read (Group-B F12 de-dup); re-exported to preserve the prior export surface.
+import { readJson } from './lz-eval-readjson.mjs';
+export { readJson };
 
 // searchAndStop / staticKsAdapter / dateFilter are part of the deterministic spine the offline read
 // composes; referenced where a vote is produced (CLI / Workflow). Kept exported-by-use so a lint pass
@@ -65,28 +69,6 @@ import {
 void searchAndStop;
 void staticKsAdapter;
 void dateFilter;
-
-// ---------------------------------------------------------------------------
-// Fail-closed JSON read (copy of the runtime aggregator's module-private readJson shape, using the
-// IMPORTED ContractError + stripBom -- never a bare JSON.parse on an untrusted vote file). T-19-PARSE.
-// ---------------------------------------------------------------------------
-const readText = (p) => fs.readFileSync(p, 'utf8');
-
-export function readJson(p) {
-  let text;
-
-  try {
-    text = stripBom(readText(p));
-  } catch (err) {
-    throw new ContractError('cannot read file: ' + err.message, p);
-  }
-
-  try {
-    return JSON.parse(text);
-  } catch (err) {
-    throw new ContractError('malformed JSON: ' + err.message, p);
-  }
-}
 
 // ---------------------------------------------------------------------------
 // The D-06 SATURATION pre-condition / Sonnet-as-calibrator gate (the gate ON the gate).

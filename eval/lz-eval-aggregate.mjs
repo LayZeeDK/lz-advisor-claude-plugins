@@ -18,8 +18,8 @@
 // hand-rolling the statistics is FORBIDDEN by the 2026-06-16 owner directive (D-07). The test pins
 // only the verified anchors to prove the library is wired.
 //
-// The byte-order mark is code point U+FEFF. This source contains no literal byte-order mark; the
-// imported stripBom handles a BOM at read time (ASCII-only source per CLAUDE.md).
+// This source contains no literal byte-order mark and is strictly ASCII (per CLAUDE.md); JSON reads go
+// through the shared lz-eval-readjson.mjs helper, which strips a BOM at read time.
 //
 // Pure functions + the frozen EVAL_THRESHOLDS are exported for the validation fixture; the thin CLI
 // is guarded so that `import`-ing this module does NOT run the CLI.
@@ -33,15 +33,16 @@ import jStatPkg from 'jstat';
 
 // (2) Cross-tree reuse of the SHIPPED runtime aggregator's hardening primitives (D-10; eval ->
 //     runtime, one-directional, never the reverse). From eval/ to the plugin tree: up one level,
-//     then into plugins/. readJson is module-private in the runtime aggregator, so its 14-line
-//     fail-closed shape is copied below using the IMPORTED ContractError + stripBom (no bare
-//     JSON.parse on untrusted vote files).
+//     then into plugins/. The fail-closed JSON read lives in the shared lz-eval-readjson.mjs helper
+//     (F12); safeId + listJson are used directly by the false-uphold counter below.
 import {
   ContractError,
-  stripBom,
   safeId,
   listJson,
 } from '../plugins/lz-advisor/skills/lz-deep-research/scripts/lz-deep-research-aggregate.mjs';
+
+// Shared fail-closed JSON read (Group-B F12 de-dup; was a per-module copy, now one eval-tree helper).
+import { readJson } from './lz-eval-readjson.mjs';
 
 const { jStat } = jStatPkg;
 
@@ -162,30 +163,8 @@ export function passHatK(n, c, k) {
 }
 
 // ---------------------------------------------------------------------------
-// Fail-closed JSON read (copy of the runtime aggregator's module-private readJson shape, using the
-// IMPORTED ContractError + stripBom -- never a bare JSON.parse on an untrusted vote file). T-18-PARSE.
-// ---------------------------------------------------------------------------
-
-const readText = (p) => fs.readFileSync(p, 'utf8');
-
-function readJson(p) {
-  let text;
-
-  try {
-    text = stripBom(readText(p));
-  } catch (err) {
-    throw new ContractError('cannot read file: ' + err.message, p);
-  }
-
-  try {
-    return JSON.parse(text);
-  } catch (err) {
-    throw new ContractError('malformed JSON: ' + err.message, p);
-  }
-}
-
-// ---------------------------------------------------------------------------
 // Per-stratum false-uphold counting (EVAL-02 / D-01): DETERMINISTIC, OFF-MODEL verdict-vs-gold.
+// readJson (the fail-closed parse, T-18-PARSE) is imported from lz-eval-readjson.mjs (F12 de-dup).
 // ---------------------------------------------------------------------------
 //
 // A vote file under voteDir is { id, verdict } where verdict is the FROZEN enum 'unrefuted' |

@@ -13,31 +13,26 @@
 // eval dependency can ever leak into the marketplace package. NEVER add an eval/ import to any
 // plugin-tree file. The module is node stdlib + the runtime hardening primitives; zero npm deps.
 //
-// The byte-order mark is code point U+FEFF. This source contains no literal byte-order mark; the
-// imported stripBom handles a BOM at read time (ASCII-only source per CLAUDE.md).
+// This source contains no literal byte-order mark and is strictly ASCII (per CLAUDE.md). JSON reads go
+// through the shared lz-eval-readjson.mjs helper, which strips a BOM at read time.
 //
 // Pure functions + the frozen constants are exported for the validation fixture; the thin CLI is
 // guarded so that `import`-ing this module does NOT run the CLI.
 
-import fs from 'node:fs';
 import path from 'node:path';
 import { createHash } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 
-// Cross-tree reuse of the SHIPPED runtime aggregator's hardening primitives (D-10; eval -> runtime,
+// Cross-tree reuse of the SHIPPED runtime aggregator's ContractError (D-10; eval -> runtime,
 // one-directional, never the reverse). From eval/ to the plugin tree: up one level, then into
-// plugins/. readJson is module-private in the runtime aggregator, so its fail-closed shape is copied
-// below using the IMPORTED ContractError + stripBom (no bare JSON.parse on untrusted data).
+// plugins/. The fail-closed JSON read lives in the shared lz-eval-readjson.mjs helper (F12).
 import {
   ContractError,
-  stripBom,
-  safeId,
 } from '../plugins/lz-advisor/skills/lz-deep-research/scripts/lz-deep-research-aggregate.mjs';
 
-// safeId/stripBom are part of the established cross-tree hardening surface and are re-exported-by-use
-// where this module reads JSON (readJson below) and where the trap builder / adapters guard ids.
-void safeId;
-void stripBom;
+// Shared fail-closed JSON read (Group-B F12 de-dup); re-exported to preserve the prior export surface.
+import { readJson } from './lz-eval-readjson.mjs';
+export { readJson };
 
 // ---------------------------------------------------------------------------
 // D-13: the tracking-param denylist (frozen). canonicalizeUrl strips any of these exact keys plus
@@ -375,28 +370,6 @@ function formulateDisconfirmingQuery(claim, attackMode, round) {
   const mode = typeof attackMode === 'string' && attackMode.length > 0 ? attackMode : 'disconfirm';
 
   return mode + ':r' + round + ':' + base;
-}
-
-// ---------------------------------------------------------------------------
-// Fail-closed JSON read (copy of the runtime aggregator's module-private readJson shape, using the
-// IMPORTED ContractError + stripBom -- never a bare JSON.parse on an untrusted KS/manifest).
-// ---------------------------------------------------------------------------
-const readText = (p) => fs.readFileSync(p, 'utf8');
-
-export function readJson(p) {
-  let text;
-
-  try {
-    text = stripBom(readText(p));
-  } catch (err) {
-    throw new ContractError('cannot read file: ' + err.message, p);
-  }
-
-  try {
-    return JSON.parse(text);
-  } catch (err) {
-    throw new ContractError('malformed JSON: ' + err.message, p);
-  }
 }
 
 // ---------------------------------------------------------------------------
