@@ -228,9 +228,12 @@ export function validityGate({ expected_verdict, weakVerifierVerdict } = {}) {
 // exits 2) -- the manifest lock NEVER proceeds on a leaky KS (D-07 / Pitfall 2 / A1).
 // ---------------------------------------------------------------------------
 function normalizeUrlForCompare(u) {
-  // Compare URLs by host + path (lowercased, no trailing slash, no scheme/query/fragment) so an
-  // archive-wrapper / trailing-slash variant of the SAME URL is matched by the exact-screen. Fail-
-  // soft to the raw string on a malformed URL (a malformed URL never silently "matches").
+  // Compare URLs by host (www. dropped) + path (lowercased, no trailing slash), dropping
+  // scheme/query/fragment, so trailing-slash / www / case / scheme / query variants of the SAME URL
+  // match the exact-screen. KNOWN LIMITATION (do not overstate): this does NOT unwrap an
+  // archive-wrapper prefix -- a web.archive.org-wrapped copy has a DIFFERENT host+path and will NOT
+  // match the bare KS URL; the date arm (post-cutoff drop) is the backstop for an archived post-cutoff
+  // copy. Fail-soft to the raw string on a malformed URL (a malformed URL never silently "matches").
   try {
     const x = new URL(String(u));
 
