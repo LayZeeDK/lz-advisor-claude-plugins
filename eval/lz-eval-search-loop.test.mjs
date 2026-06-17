@@ -70,6 +70,23 @@ test('D-13 canonicalizeUrl strips the default ports 80 (http) and 443 (https)', 
   assert.equal(canonicalizeUrl('https://example.org:8443/a'), 'https://example.org:8443/a', 'non-default port kept');
 });
 
+test('D-13 canonicalizeUrl per-scheme default-port specificity: 443 is default for https only, 80 for http only', () => {
+  // http://example.org:443 -- 443 is the default port for HTTPS, NOT for HTTP, so :443 must be
+  // PRESERVED on an http:// URL (stripping it would change the target server).
+  assert.equal(
+    canonicalizeUrl('http://example.org:443/a'),
+    'http://example.org:443/a',
+    'http:443 is a non-default port and must be kept (443 is default only for https)',
+  );
+  // https://example.org:80 -- 80 is the default port for HTTP, NOT for HTTPS, so :80 must be
+  // PRESERVED on an https:// URL.
+  assert.equal(
+    canonicalizeUrl('https://example.org:80/a'),
+    'https://example.org:80/a',
+    'https:80 is a non-default port and must be kept (80 is default only for http)',
+  );
+});
+
 test('D-13 canonicalizeUrl strips utm_* and the tracking-param denylist, preserving other params', () => {
   const out = canonicalizeUrl(
     'https://example.org/p?utm_source=x&utm_medium=y&fbclid=z&gclid=g&keep=1&ref=foo&msclkid=m',
@@ -134,6 +151,17 @@ test('D-13 canonicalizeUrl fails closed on a malformed URL (new URL throws)', ()
     (err) => err instanceof Error,
     'a malformed URL must throw (fail-closed upstream)',
   );
+});
+
+test('D-13 canonicalizeUrl accepted under-merge scope limit: query-param ORDER is preserved (not sorted)', () => {
+  // The canonicalizer strips tracking params but does NOT reorder the remaining params.
+  // Two URLs with the same path and params in DIFFERENT orders therefore produce DIFFERENT canonical
+  // keys -> different SHA-256 dedup filenames. This is an ACCEPTED limitation (the dedup is a
+  // best-effort de-duplicate of practical URL variants; canonical param-order normalization is out of
+  // scope and would require a sort step not present in the source). Document it as a known lower bound.
+  const ab = canonicalizeUrl('https://e.org/p?a=1&b=2');
+  const ba = canonicalizeUrl('https://e.org/p?b=2&a=1');
+  assert.notEqual(ab, ba, 'query-param order is preserved (not sorted): a=1&b=2 and b=2&a=1 are distinct canonical keys');
 });
 
 // ===========================================================================
@@ -203,8 +231,8 @@ test('D-07 parseAvtDate range-checks the components (a shape-valid but out-of-ra
   );
   assert.throws(
     () => parseAvtDate('00-01-2020'),
-    (err) => err.name === 'ContractError',
-    'day 00 must throw',
+    (err) => err.name === 'ContractError' && /out-of-range claim_date/.test(err.message),
+    'day 00 must throw ContractError with out-of-range claim_date message',
   );
   // DISCRIMINATING: a genuinely valid edge date (leap day) still parses -- the guard rejects only
   // invalid dates, not all dates.
@@ -295,6 +323,26 @@ test('D-09 liveWebSearchAdapter exposes the same fetchResults seam shape (stub, 
   assert.equal(typeof adapter.fetchResults, 'function', 'liveWebSearchAdapter exposes fetchResults');
 });
 
+test('D-09 liveWebSearchAdapter unbound executor throws ContractError; bound executor delegates', () => {
+  // An unbound adapter (no executor arg) must fail LOUD when fetchResults is actually called -- never
+  // silently return [] (a silent empty would make the missing-executor bug undetectable at runtime).
+  const unbound = liveWebSearchAdapter();
+  assert.throws(
+    () => unbound.fetchResults('q'),
+    (err) => err.name === 'ContractError',
+    'calling fetchResults on an unbound liveWebSearchAdapter must throw ContractError',
+  );
+
+  // A bound executor receives the query and its return value is passed through unchanged.
+  const fakeResult = [{ url: 'u', snippet: 's', date: null }];
+  const bound = liveWebSearchAdapter((q) => {
+    assert.equal(q, 'test-query', 'executor receives the forwarded query');
+    return fakeResult;
+  });
+  const out = bound.fetchResults('test-query');
+  assert.deepEqual(out, fakeResult, 'bound executor return value is passed through as-is');
+});
+
 // ===========================================================================
 // searchAndStop (D-09/D-10/D-11): the ONE shared spine + the mechanical-minimum guard.
 // ===========================================================================
@@ -320,6 +368,8 @@ test('D-10 searchAndStop: minimums NOT met -> insufficient with stop_reason min-
   assert.equal(verdict, 'insufficient', 'no docs -> cannot uphold -> insufficient');
   assert.equal(trace.stop_reason, 'min-not-met', 'stop_reason records the minimum was not met');
   assert.ok(Array.isArray(trace.queries) && trace.queries.length > 0, 'trace.queries populated');
+  // The empty adapter never satisfies minDocs, so the loop runs to maxQueries (5) before stopping.
+  assert.equal(trace.queries.length, 5, 'min-not-met empty-adapter case ran all maxQueries (5) queries before giving up');
 });
 
 test('D-10 searchAndStop: an EARLY decisive hit before minQueries does NOT short-circuit to a verdict', () => {
@@ -372,6 +422,10 @@ test('D-10 searchAndStop: minimums met + decisive evidence -> judged verdict, st
   assert.equal(verdict, 'refuted', 'the decisive evidence verdict is returned once minimums are met');
   assert.equal(trace.stop_reason, 'decisive-evidence', 'stop_reason records the decisive stop');
   assert.ok(trace.depth >= 5, 'depth reflects the docs explored (>= minDocs)');
+  // The loop stops AT the minQueries floor (3), not later: the adapter returns decisive evidence on
+  // every call, so once q+1 >= minQueries=3 AND docsSeen >= minDocs=5 the guard fires immediately.
+  // Each call returns 2 docs: after 3 queries docsSeen=6 >= 5 and pool has a decisive doc -> stops at 3.
+  assert.equal(trace.queries.length, 3, 'stops AT minQueries=3 (not later) when decisive evidence and minimums are met simultaneously');
 });
 
 test('D-10 searchAndStop: minimums met, NO decisive evidence by exhaustion -> refuted-default / exhausted', () => {
@@ -394,6 +448,9 @@ test('D-10 searchAndStop: minimums met, NO decisive evidence by exhaustion -> re
   assert.equal(verdict, 'refuted-default', 'exhaustion with minimums met returns refuted-default (no default uphold)');
   assert.equal(trace.stop_reason, 'exhausted', 'stop_reason records exhaustion');
   assert.ok(trace.depth >= 5, 'minDocs was met before exhaustion');
+  // The adapter returns 2 docs per call; minQueries=3, maxQueries=4 -> exhausted after 4 queries,
+  // so trace.queries.length >= minQueries (3) and equals maxQueries (4).
+  assert.ok(trace.queries.length >= 3, 'exhausted-with-mins-met issued >= minQueries queries');
 });
 
 test('D-10 searchAndStop: the trace is fully populated (queries[], depth, stop_reason)', () => {
@@ -409,6 +466,11 @@ test('D-10 searchAndStop: the trace is fully populated (queries[], depth, stop_r
   assert.ok(Array.isArray(trace.queries), 'trace.queries is an array');
   assert.equal(typeof trace.depth, 'number', 'trace.depth is a number');
   assert.ok(trace.stop_reason !== null, 'trace.stop_reason is set');
+  // Concrete expected values: adapter returns 1 doc/call; minQueries=2, maxQueries=3, minDocs=3.
+  // No decisive doc -> loop exhausts at maxQueries=3. docsSeen=3 >= minDocs=3 -> 'exhausted'.
+  // trace.queries.length === maxQueries (3); trace.depth === docsSeen (3).
+  assert.equal(trace.queries.length, 3, 'trace.queries.length equals maxQueries (3) for this adapter/config');
+  assert.equal(trace.depth, 3, 'trace.depth equals total docs explored: 1 doc/call * 3 calls = 3');
 });
 
 test('D-09 searchAndStop is DISCRIMINATING: an evidence-rich adapter and an empty one give different verdicts', () => {
@@ -443,6 +505,33 @@ test('D-10 searchAndStop fails closed on non-positive minimums ({minQueries:0,mi
     () => searchAndStop({ claim: { id: 'c1', text: 'X' }, attackMode: 'disconfirm', adapter, minQueries: 3, minDocs: 5, maxQueries: 0 }),
     (err) => err.name === 'ContractError' && /positive integer/.test(err.message),
     'maxQueries:0 fails closed',
+  );
+});
+
+test('D-10 searchAndStop attackMode corroborate vs omitted/empty -- formulateDisconfirmingQuery prefix', () => {
+  // attackMode:'corroborate' -> the first query must START WITH 'corroborate:' (the mode prefix).
+  // attackMode omitted / '' -> the formulateDisconfirmingQuery fallback applies 'disconfirm', so the
+  // first query must START WITH 'disconfirm:'.
+  const adapter = { fetchResults: () => [] };
+  const base = { claim: { id: 'c1', text: 'X' }, adapter, minQueries: 1, minDocs: 5, maxQueries: 1 };
+
+  const { trace: tCorr } = searchAndStop({ ...base, attackMode: 'corroborate' });
+  assert.ok(
+    tCorr.queries.length > 0 && tCorr.queries[0].startsWith('corroborate:'),
+    'attackMode:corroborate -> first query starts with "corroborate:" (got: ' + tCorr.queries[0] + ')',
+  );
+
+  const { trace: tOmit } = searchAndStop({ ...base, attackMode: '' });
+  assert.ok(
+    tOmit.queries.length > 0 && tOmit.queries[0].startsWith('disconfirm:'),
+    'attackMode:"" -> fallback to disconfirm: prefix (got: ' + tOmit.queries[0] + ')',
+  );
+
+  // Also test the truly-omitted case (attackMode key absent) -- the default is 'disconfirm'.
+  const { trace: tDef } = searchAndStop({ claim: { id: 'c1', text: 'X' }, adapter, minQueries: 1, minDocs: 5, maxQueries: 1 });
+  assert.ok(
+    tDef.queries.length > 0 && tDef.queries[0].startsWith('disconfirm:'),
+    'attackMode omitted -> fallback to disconfirm: prefix (got: ' + tDef.queries[0] + ')',
   );
 });
 

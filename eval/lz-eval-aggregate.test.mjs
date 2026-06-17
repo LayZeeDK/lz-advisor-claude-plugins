@@ -379,3 +379,116 @@ test('EVAL-04 the lock rule is strictly ASCII (committed bytes, CLAUDE.md)', () 
     assert.ok(buf[i] <= 0x7f, 'lock-rule byte at offset ' + i + ' must be ASCII (<= 0x7F), got 0x' + buf[i].toString(16));
   }
 });
+
+// ---------------------------------------------------------------------------
+// D2 additions: lockRuleVerdict boundary pins + countFalseUpholds contract guards + passHatK all-fail
+// ---------------------------------------------------------------------------
+
+test('D2 lockRuleVerdict: escalationFraction 0.45 (inside [0.40,0.50]) with clean DELTA + reliable=15 -> PASS (kill is the HIGH edge, not LOW)', () => {
+  // The cost gate is a strict < on the HIGH edge (0.50). 0.45 is inside the named band [0.40,0.50]
+  // but BELOW the 0.50 kill threshold, so it must clear. This pins that the LOW edge (0.40) is NOT
+  // the kill threshold -- a regression that swapped HIGH for LOW would fail this assertion.
+  const verdict = lockRuleVerdict({
+    subtleOpenBookDeltaUpper: clopperPearsonUpper(0, 15),
+    escalationFraction: 0.45,
+    reliableTrials: 15,
+  });
+  assert.equal(verdict, 'PASS', 'escalation 0.45 is below the kill threshold 0.50 -> PASS');
+});
+
+test('D2 lockRuleVerdict: escalationFraction 0.50 (exact HIGH edge, strict <) -> FAIL-RAISE', () => {
+  // The cost gate is escalationFraction < ESCALATION_KILL_HIGH (0.50). Exact equality (0.50 < 0.50
+  // is false) must fail. This pins the strict-less-than boundary: a >= implementation would pass 0.50.
+  const verdict = lockRuleVerdict({
+    subtleOpenBookDeltaUpper: clopperPearsonUpper(0, 15),
+    escalationFraction: 0.50,
+    reliableTrials: 15,
+  });
+  assert.equal(verdict, 'FAIL-RAISE', 'escalation 0.50 is NOT strictly < 0.50 -> FAIL-RAISE (strict <)');
+});
+
+test('D2 lockRuleVerdict: subtleOpenBookDeltaUpper === DELTA_UPPER_MAX (at the <= boundary) -> PASS', () => {
+  // The false-uphold gate is <=: exact equality with DELTA_UPPER_MAX must clear. Pins 0.25 as the
+  // boundary. A regression using strict < would fail this assertion.
+  const verdict = lockRuleVerdict({
+    subtleOpenBookDeltaUpper: EVAL_THRESHOLDS.DELTA_UPPER_MAX,
+    escalationFraction: 0.3,
+    reliableTrials: 15,
+  });
+  assert.equal(verdict, 'PASS', 'deltaUpper === DELTA_UPPER_MAX clears the <= gate -> PASS');
+});
+
+test('D2 lockRuleVerdict: subtleOpenBookDeltaUpper one ULP above DELTA_UPPER_MAX -> FAIL-RAISE (pins 0.25 as ceiling)', () => {
+  // A value infinitesimally above DELTA_UPPER_MAX must not clear. Pins the exact value of the
+  // threshold: any drift (e.g. to 0.26) would flip this assertion.
+  const verdict = lockRuleVerdict({
+    subtleOpenBookDeltaUpper: EVAL_THRESHOLDS.DELTA_UPPER_MAX + 1e-9,
+    escalationFraction: 0.3,
+    reliableTrials: 15,
+  });
+  assert.equal(verdict, 'FAIL-RAISE', 'deltaUpper one ULP above DELTA_UPPER_MAX fails the <= gate -> FAIL-RAISE');
+});
+
+test('D2 lockRuleVerdict: reliableTrials 14 (boundary-minus-1) with clean DELTA + escalation below kill -> FAIL-RAISE', () => {
+  // The reliability gate is reliableTrials >= RELIABLE_TRIALS (15). 14 is one below the boundary
+  // and must not pass. Pins the >= edge: a > implementation would wrongly reject 15 too. Existing
+  // test uses 8; this pins the exact minus-1 boundary.
+  const verdict = lockRuleVerdict({
+    subtleOpenBookDeltaUpper: clopperPearsonUpper(0, 15),
+    escalationFraction: 0.3,
+    reliableTrials: 14,
+  });
+  assert.equal(verdict, 'FAIL-RAISE', 'reliableTrials 14 is one below the >= 15 gate -> FAIL-RAISE');
+});
+
+test('D2 countFalseUpholds: vote record with unrecognized verdict throws ContractError', () => {
+  // A verdict value that is neither "unrefuted" nor "refuted" is a contract violation. Pins that the
+  // guard fires (a regression removing the verdict check would silently count or skip the record).
+  const runDir = fs.mkdtempSync(path.join(os.tmpdir(), 'lz-eval-badverdict-'));
+  const votesDir = path.join(runDir, 'votes');
+  fs.mkdirSync(votesDir, { recursive: true });
+
+  try {
+    fs.writeFileSync(
+      path.join(votesDir, 'c-x-0.json'),
+      JSON.stringify({ id: 'c-x', verdict: 'UNKNOWN' }),
+      'utf8',
+    );
+    assert.throws(
+      () => countFalseUpholds(votesDir, { 'c-x': 'refuted' }),
+      (e) => e.name === 'ContractError',
+      'an unrecognized verdict must throw ContractError',
+    );
+  } finally {
+    fs.rmSync(runDir, { recursive: true, force: true });
+  }
+});
+
+test('D2 countFalseUpholds: vote record whose id is absent from goldLabels throws ContractError', () => {
+  // A vote id not present in goldLabels is a contract violation (there is no gold to compare against).
+  // Pins that the missing-gold guard fires (a regression returning 0 silently would lose discrimination).
+  const runDir = fs.mkdtempSync(path.join(os.tmpdir(), 'lz-eval-missinggold-'));
+  const votesDir = path.join(runDir, 'votes');
+  fs.mkdirSync(votesDir, { recursive: true });
+
+  try {
+    fs.writeFileSync(
+      path.join(votesDir, 'c-unknown-0.json'),
+      JSON.stringify({ id: 'c-unknown', verdict: 'unrefuted' }),
+      'utf8',
+    );
+    assert.throws(
+      () => countFalseUpholds(votesDir, { 'c-other': 'refuted' }),
+      (e) => e.name === 'ContractError',
+      'a vote id absent from goldLabels must throw ContractError',
+    );
+  } finally {
+    fs.rmSync(runDir, { recursive: true, force: true });
+  }
+});
+
+test('D2 passHatK(15, 0, 5) === 0 (all-fail: no k-subset of zero correct trials can pass)', () => {
+  // Symmetric to the passAtK(n,0,k)===0 assertion. passHatK(n,c,k) = C(c,k)/C(n,k).
+  // C(0,5) === 0 (cannot choose 5 from 0), so the result is 0/C(15,5) = 0. Pins all-fail symmetry.
+  assert.ok(Math.abs(passHatK(15, 0, 5) - 0) < 1e-12, 'passHatK(15,0,5) === 0 (no correct -> no passing k-subset)');
+});

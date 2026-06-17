@@ -49,7 +49,7 @@ import {
   persistVote,
 } from './lz-eval-offline-read.mjs';
 
-import { EVAL_THRESHOLDS } from './lz-eval-aggregate.mjs';
+import { EVAL_THRESHOLDS, clopperPearsonUpper } from './lz-eval-aggregate.mjs';
 
 // Resolve fixtures test-file-relative (NEVER process.cwd() -- cwd drifts under GSD worktrees and
 // headless `claude -p`). Vote fixtures are written to a per-test tmpdir, not under HERE, so no
@@ -238,8 +238,10 @@ test('resolveOutcome FAILs a clean read when reliability is below 15 OR escalati
       nPooled: 15,
       reliableTrials: 10,
     });
-    const calibration = calibratorGate({ sonnetFalseUpholds: earlyRead.sonnetFalseUpholds, trials: 15 });
-    const earlyOut = resolveOutcome({ calibration, read: earlyRead, escalationFraction: 0.1 });
+    // Each read gets its OWN calibration derived from that read's sonnetFalseUpholds (not reused
+    // across distinct sub-reads -- the calibration is per-read, not shared).
+    const earlyCalibration = calibratorGate({ sonnetFalseUpholds: earlyRead.sonnetFalseUpholds, trials: 15 });
+    const earlyOut = resolveOutcome({ calibration: earlyCalibration, read: earlyRead, escalationFraction: 0.1 });
     assert.equal(earlyOut.outcome, 'FAIL-RAISE', 'a clean read at reliable<15 cannot PASS (reliability gate)');
 
     // escalation in the kill band (>= 0.50): a zero-excess clean read at reliable=15 still FAILs on cost.
@@ -250,7 +252,10 @@ test('resolveOutcome FAILs a clean read when reliability is below 15 OR escalati
       nPooled: 15,
       reliableTrials: 15,
     });
-    const killBandOut = resolveOutcome({ calibration, read: reliableRead, escalationFraction: 0.55 });
+    // Separate calibration for the reliable read (same vote dirs, same sonnetFalseUpholds in this case,
+    // but derived independently -- the pattern enforces per-read calibration discipline).
+    const reliableCalibration = calibratorGate({ sonnetFalseUpholds: reliableRead.sonnetFalseUpholds, trials: 15 });
+    const killBandOut = resolveOutcome({ calibration: reliableCalibration, read: reliableRead, escalationFraction: 0.55 });
     assert.equal(killBandOut.outcome, 'FAIL-RAISE', 'a clean read with kill-band escalation FAILs on cost');
   } finally {
     fs.rmSync(sonnetDir, { recursive: true, force: true });
@@ -343,9 +348,11 @@ test('readDelta treats ANY non-zero excess identically (the EXACT-ZERO count gat
   const haiku1 = writeVotes(ids.map((id, i) => ({ id, verdict: i < 2 ? 'unrefuted' : 'refuted' })));
   // excess +5
   const haiku5 = writeVotes(ids.map((id, i) => ({ id, verdict: i < 6 ? 'unrefuted' : 'refuted' })));
+  // A second sonnet dir for read5 (same votes as sonnet -- separate object so neither read shares a dir).
+  // Created here so it is in scope for the finally block regardless of assertion throws.
+  const sonnet1 = writeVotes(ids.map((id, i) => ({ id, verdict: i < 1 ? 'unrefuted' : 'refuted' })));
 
   try {
-    const sonnet1 = writeVotes(ids.map((id, i) => ({ id, verdict: i < 1 ? 'unrefuted' : 'refuted' })));
     const read1 = readDelta({ sonnetVoteDir: sonnet, haikuVoteDir: haiku1, goldLabels: gold, nPooled: 15, reliableTrials: 15 });
     const read5 = readDelta({ sonnetVoteDir: sonnet1, haikuVoteDir: haiku5, goldLabels: gold, nPooled: 15, reliableTrials: 15 });
 
@@ -355,10 +362,8 @@ test('readDelta treats ANY non-zero excess identically (the EXACT-ZERO count gat
     // count being non-zero, never its size (so 1 excess and 5 excess both FAIL identically).
     assert.equal(read1.subtleOpenBookDeltaUpper, read5.subtleOpenBookDeltaUpper, 'any non-zero excess maps to the same CP(1,reliable) FAIL-side value');
     assert.ok(read1.subtleOpenBookDeltaUpper > EVAL_THRESHOLDS.DELTA_UPPER_MAX, 'both are FAIL-side of the anchor');
-
-    fs.rmSync(sonnet1, { recursive: true, force: true });
   } finally {
-    for (const d of [sonnet, haiku1, haiku5]) {
+    for (const d of [sonnet, haiku1, haiku5, sonnet1]) {
       fs.rmSync(d, { recursive: true, force: true });
     }
   }
@@ -543,4 +548,237 @@ test('votePath routes the vote id through safeId (a traversal id is rejected, T-
   } finally {
     fs.rmSync(voteDir, { recursive: true, force: true });
   }
+});
+
+// ===========================================================================
+// Additional coverage -- D1 hardening assertions (Plan 19 Group D)
+// ===========================================================================
+
+// ---------------------------------------------------------------------------
+// calibratorGate: below-ceiling case at trials=60 (stable above MIN_K).
+// ---------------------------------------------------------------------------
+test('calibratorGate below-ceiling at trials=60 (stable above MIN_K)', () => {
+  const res = calibratorGate({ sonnetFalseUpholds: 3, trials: 60 });
+  assert.equal(res.status, 'below-ceiling', 'sonnetFalseUpholds=3 at trials=60 -> below-ceiling');
+  assert.equal(res.trials, 60, 'trials recorded as 60');
+  assert.equal(res.sonnetFalseUpholds, 3, 'sonnetFalseUpholds recorded as 3');
+});
+
+// ---------------------------------------------------------------------------
+// calibratorGate: {sonnetFalseUpholds:15, trials:15} (100% miss, at-ceiling) -> below-ceiling.
+// All 15 trials are false-upholds: Sonnet fails every trap -> clearly below ceiling, not saturated.
+// ---------------------------------------------------------------------------
+test('calibratorGate {sonnetFalseUpholds:15, trials:15} (100% miss, at-ceiling) -> below-ceiling', () => {
+  const res = calibratorGate({ sonnetFalseUpholds: 15, trials: 15 });
+  assert.equal(res.status, 'below-ceiling', 'sonnetFalseUpholds=trials=15 (100% miss) -> below-ceiling (not saturated)');
+  assert.equal(res.sonnetFalseUpholds, 15, 'sonnetFalseUpholds recorded');
+  assert.equal(res.trials, 15, 'trials recorded');
+});
+
+// ---------------------------------------------------------------------------
+// calibratorGate: ceiling equals clopperPearsonUpper(1, 60, ALPHA) exactly (not magic 0.0894).
+// ---------------------------------------------------------------------------
+test('calibratorGate ceiling at trials=60 equals clopperPearsonUpper(1, 60, ALPHA) exactly', () => {
+  const res = calibratorGate({ sonnetFalseUpholds: 2, trials: 60 });
+  const expected = clopperPearsonUpper(1, 60, EVAL_THRESHOLDS.ALPHA);
+  assert.equal(res.ceiling, expected, 'ceiling === clopperPearsonUpper(1, 60, ALPHA) exactly (no magic constant)');
+  // The frozen engine value should be near 0.0894 -- prove the formula is wired, not a stub.
+  assert.ok(Math.abs(expected - 0.0894) < 0.01, 'clopperPearsonUpper(1, 60, ALPHA) is near the locked table value 0.0894');
+});
+
+// ---------------------------------------------------------------------------
+// readDelta: standalone assertion -- with zero excess at reliableTrials=10,
+// subtleOpenBookDeltaUpper === clopperPearsonUpper(0, 10, ALPHA) (formula identity, decoupled from
+// resolveOutcome). At reliableTrials=15 (sufficient), the same zero-excess upper is <= DELTA_UPPER_MAX.
+// These are two assertions on the same zero-excess CP formula, each independently discriminating.
+// ---------------------------------------------------------------------------
+test('readDelta subtleOpenBookDeltaUpper with zero excess equals clopperPearsonUpper(0, reliableTrials, ALPHA) exactly', () => {
+  // Part 1: formula identity at reliableTrials=10 (decoupled from resolveOutcome).
+  // CP(0, 10, alpha) ~= 0.308 (above DELTA_UPPER_MAX because 10 < RELIABLE_TRIALS -- the formula is
+  // still wired correctly; the wider CI reflects fewer trials, not a wrong formula).
+  {
+    const { gold, ids } = buildPool(10);
+    const sonnetDir = writeVotes(ids.map((id, i) => ({ id, verdict: i < 1 ? 'unrefuted' : 'refuted' })));
+    const haikuDir = writeVotes(ids.map((id, i) => ({ id, verdict: i < 1 ? 'unrefuted' : 'refuted' })));
+
+    try {
+      const read = readDelta({
+        sonnetVoteDir: sonnetDir,
+        haikuVoteDir: haikuDir,
+        goldLabels: gold,
+        nPooled: 10,
+        reliableTrials: 10,
+      });
+      assert.equal(read.pooledExcess, 0, 'zero excess confirmed at reliableTrials=10');
+      const expected10 = clopperPearsonUpper(0, 10, EVAL_THRESHOLDS.ALPHA);
+      assert.equal(read.subtleOpenBookDeltaUpper, expected10, 'subtleOpenBookDeltaUpper === clopperPearsonUpper(0, 10, ALPHA) exactly');
+    } finally {
+      fs.rmSync(sonnetDir, { recursive: true, force: true });
+      fs.rmSync(haikuDir, { recursive: true, force: true });
+    }
+  }
+
+  // Part 2: at reliableTrials=15 (the canonical RELIABLE_TRIALS), zero excess yields a value
+  // that is BOTH equal to clopperPearsonUpper(0, 15, ALPHA) AND <= DELTA_UPPER_MAX (PASS-side).
+  {
+    const { gold, ids } = buildPool(15);
+    const sonnetDir = writeVotes(ids.map((id, i) => ({ id, verdict: i < 1 ? 'unrefuted' : 'refuted' })));
+    const haikuDir = writeVotes(ids.map((id, i) => ({ id, verdict: i < 1 ? 'unrefuted' : 'refuted' })));
+
+    try {
+      const read = readDelta({
+        sonnetVoteDir: sonnetDir,
+        haikuVoteDir: haikuDir,
+        goldLabels: gold,
+        nPooled: 15,
+        reliableTrials: 15,
+      });
+      assert.equal(read.pooledExcess, 0, 'zero excess confirmed at reliableTrials=15');
+      const expected15 = clopperPearsonUpper(0, 15, EVAL_THRESHOLDS.ALPHA);
+      assert.equal(read.subtleOpenBookDeltaUpper, expected15, 'subtleOpenBookDeltaUpper === clopperPearsonUpper(0, 15, ALPHA) exactly');
+      assert.ok(read.subtleOpenBookDeltaUpper <= EVAL_THRESHOLDS.DELTA_UPPER_MAX, 'zero-excess at reliableTrials=15 is <= DELTA_UPPER_MAX (PASS-side)');
+    } finally {
+      fs.rmSync(sonnetDir, { recursive: true, force: true });
+      fs.rmSync(haikuDir, { recursive: true, force: true });
+    }
+  }
+});
+
+// ---------------------------------------------------------------------------
+// readDelta: nPooled === k boundary succeeds (no throw).
+// ---------------------------------------------------------------------------
+test('readDelta nPooled === k boundary case succeeds (no throw)', () => {
+  const k = EVAL_THRESHOLDS.MIN_K;
+  const { gold, ids } = buildPool(k);
+  // Sonnet: 1 false-uphold; Haiku: 1 false-uphold -> excess = 0.
+  const sonnetDir = writeVotes(ids.map((id, i) => ({ id, verdict: i < 1 ? 'unrefuted' : 'refuted' })));
+  const haikuDir = writeVotes(ids.map((id, i) => ({ id, verdict: i < 1 ? 'unrefuted' : 'refuted' })));
+
+  try {
+    // nPooled === k === MIN_K is the exact boundary: must succeed, not throw.
+    const read = readDelta({
+      sonnetVoteDir: sonnetDir,
+      haikuVoteDir: haikuDir,
+      goldLabels: gold,
+      nPooled: k,
+      reliableTrials: k,
+      k,
+    });
+    assert.equal(read.nPooled, k, 'nPooled=k succeeds and records the pool size');
+  } finally {
+    fs.rmSync(sonnetDir, { recursive: true, force: true });
+    fs.rmSync(haikuDir, { recursive: true, force: true });
+  }
+});
+
+// ---------------------------------------------------------------------------
+// resolveOutcome: escalationFraction exactly === ESCALATION_KILL_HIGH (0.50) -> FAIL-RAISE.
+// The cost gate is a STRICT less-than (escalationFraction < KILL_HIGH), so the boundary itself fails.
+// ---------------------------------------------------------------------------
+test('resolveOutcome escalationFraction === ESCALATION_KILL_HIGH (0.50) -> FAIL-RAISE (strict <)', () => {
+  const { gold, ids } = buildPool(15);
+  // Sonnet 1, Haiku 1 -> zero excess (otherwise PASS-eligible except for escalation).
+  const sonnetDir = writeVotes(ids.map((id, i) => ({ id, verdict: i < 1 ? 'unrefuted' : 'refuted' })));
+  const haikuDir = writeVotes(ids.map((id, i) => ({ id, verdict: i < 1 ? 'unrefuted' : 'refuted' })));
+
+  try {
+    const read = readDelta({
+      sonnetVoteDir: sonnetDir,
+      haikuVoteDir: haikuDir,
+      goldLabels: gold,
+      nPooled: 15,
+      reliableTrials: 15,
+    });
+    const calibration = calibratorGate({ sonnetFalseUpholds: read.sonnetFalseUpholds, trials: 15 });
+    assert.equal(calibration.status, 'below-ceiling', 'sonnet below ceiling -> delta is read');
+
+    const out = resolveOutcome({
+      calibration,
+      read,
+      escalationFraction: EVAL_THRESHOLDS.ESCALATION_KILL_HIGH,
+    });
+    assert.equal(out.outcome, 'FAIL-RAISE', 'escalationFraction exactly at KILL_HIGH (0.50) -> FAIL-RAISE (strict < means boundary itself fails)');
+  } finally {
+    fs.rmSync(sonnetDir, { recursive: true, force: true });
+    fs.rmSync(haikuDir, { recursive: true, force: true });
+  }
+});
+
+// ---------------------------------------------------------------------------
+// resolveOutcome: just below ESCALATION_KILL_HIGH with clean read + reliable=15 -> PASS.
+// Confirms the boundary is tight: the value just below the kill threshold clears the cost gate.
+// ---------------------------------------------------------------------------
+test('resolveOutcome just below ESCALATION_KILL_HIGH with clean read + reliable=15 -> PASS', () => {
+  const { gold, ids } = buildPool(15);
+  // Sonnet 1, Haiku 1 -> zero excess.
+  const sonnetDir = writeVotes(ids.map((id, i) => ({ id, verdict: i < 1 ? 'unrefuted' : 'refuted' })));
+  const haikuDir = writeVotes(ids.map((id, i) => ({ id, verdict: i < 1 ? 'unrefuted' : 'refuted' })));
+
+  try {
+    const read = readDelta({
+      sonnetVoteDir: sonnetDir,
+      haikuVoteDir: haikuDir,
+      goldLabels: gold,
+      nPooled: 15,
+      reliableTrials: 15,
+    });
+    const calibration = calibratorGate({ sonnetFalseUpholds: read.sonnetFalseUpholds, trials: 15 });
+    assert.equal(calibration.status, 'below-ceiling', 'sonnet below ceiling');
+
+    // One floating-point step below 0.50 clears the strict-< cost gate.
+    const justBelow = EVAL_THRESHOLDS.ESCALATION_KILL_HIGH - Number.EPSILON;
+    const out = resolveOutcome({ calibration, read, escalationFraction: justBelow });
+    assert.equal(out.outcome, 'PASS', 'just below ESCALATION_KILL_HIGH with clean read + reliable=15 -> PASS');
+  } finally {
+    fs.rmSync(sonnetDir, { recursive: true, force: true });
+    fs.rmSync(haikuDir, { recursive: true, force: true });
+  }
+});
+
+// ---------------------------------------------------------------------------
+// resolveOutcome: saturated calibrator with a FAIL-side read -> still VOID.
+// VOID precedes the engine regardless of the read (the delta is never consulted on saturation).
+// ---------------------------------------------------------------------------
+test('resolveOutcome saturated calibrator with a FAIL-side read -> still VOID (VOID precedes engine)', () => {
+  // A saturated calibrator: Sonnet aces the stratum.
+  const calibration = calibratorGate({ sonnetFalseUpholds: 0, trials: 15 });
+  assert.equal(calibration.status, 'saturated', 'calibrator is saturated');
+
+  // A read that would be FAIL-RAISE on a below-ceiling stratum (non-zero excess).
+  const failRead = {
+    subtleOpenBookDeltaUpper: 0.4, // above the 0.25 anchor -> FAIL-side
+    reliableTrials: 15,
+  };
+
+  const out = resolveOutcome({ calibration, read: failRead, escalationFraction: 0.1 });
+  assert.equal(out.outcome, 'VOID', 'saturated calibrator with FAIL-side read -> VOID (engine is never reached)');
+  assert.equal(out.raiseToUser, true, 'VOID raises to user');
+  assert.equal(out.shipsSonnetDefault, true, 'Sonnet-default ships on VOID');
+});
+
+// ---------------------------------------------------------------------------
+// readDelta F4 guard: throws at reliableTrials=-1 (negative) and reliableTrials=0.5 (non-integer).
+// ---------------------------------------------------------------------------
+test('readDelta F4 guard: throws at reliableTrials=-1 (negative) and reliableTrials=0.5 (non-integer)', () => {
+  const { gold } = buildPool(5);
+  assert.throws(
+    () => readDelta({ sonnetVoteDir: 'a', haikuVoteDir: 'b', goldLabels: gold, nPooled: 15, reliableTrials: -1 }),
+    (e) => e.name === 'ContractError',
+    'reliableTrials=-1 (negative) fails closed',
+  );
+  assert.throws(
+    () => readDelta({ sonnetVoteDir: 'a', haikuVoteDir: 'b', goldLabels: gold, nPooled: 15, reliableTrials: 0.5 }),
+    (e) => e.name === 'ContractError',
+    'reliableTrials=0.5 (non-integer) fails closed',
+  );
+});
+
+// ---------------------------------------------------------------------------
+// votePersisted: returns false for a nonexistent dir/id (no file exists yet).
+// ---------------------------------------------------------------------------
+test('votePersisted returns false for a nonexistent dir/id', () => {
+  const nonexistentDir = path.join(os.tmpdir(), 'lz-offline-nonexistent-' + Date.now());
+  // Neither the dir nor the vote file exists; votePersisted must return false, not throw.
+  const result = votePersisted(nonexistentDir, 'some-vote-id');
+  assert.equal(result, false, 'votePersisted returns false when the dir/id does not exist');
 });

@@ -407,17 +407,15 @@ test('EVAL-01 AVeriTeC open-book DRIFT GATE: every AVeriTeC uid is covered AND t
   const avtRows = m.examples.filter((e) => e.source === 'averitec');
   assert.ok(avtRows.length >= 1, 'there is at least one AVeriTeC example (non-vacuous)');
 
-  // (a) COVERAGE: the matched-count must equal the AVeriTeC uid count (no vacuous empty-set pass).
+  // (a) COVERAGE: every AVeriTeC uid is a non-empty string, and all uids are unique.
+  // The uniqueness check is discriminating: it would fail if loadManifest regressed and emitted
+  // duplicate uids. The non-empty-string check would fail if the loader emitted a blank uid.
   const avtUids = avtRows.map((e) => e.uid);
-  let matched = 0;
 
   for (const uid of avtUids) {
     assert.equal(typeof uid, 'string', 'AVeriTeC uid is a string');
     assert.ok(uid.length > 0, 'AVeriTeC uid is non-empty');
-    matched += 1;
   }
-
-  assert.equal(matched, avtUids.length, 'matched-uid count must equal the AVeriTeC uid count (no vacuous pass)');
 
   // No duplicate AVeriTeC uids (loadManifest already fails closed on dupes; assert here too).
   assert.equal(new Set(avtUids).size, avtUids.length, 'AVeriTeC uids are unique');

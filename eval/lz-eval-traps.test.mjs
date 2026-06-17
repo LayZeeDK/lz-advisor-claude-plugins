@@ -95,6 +95,36 @@ test('TRANSFORM_CLASSES enumerates the one-step overreach axes and is frozen', (
   }
 });
 
+test('TRANSFORM_CLASSES has exactly 4 elements', () => {
+  assert.equal(TRANSFORM_CLASSES.length, 4, 'TRANSFORM_CLASSES must have exactly 4 elements (scope/causation/magnitude/certainty)');
+});
+
+test('mutateOverreach throws ContractError on an unknown transform class', () => {
+  const seed = { claim_id: 1, claim: 'x', label: 'Supported', claim_date: '01-01-2020' };
+
+  assert.throws(
+    () => mutateOverreach(seed, { transform: 'temporal', seed: 1 }),
+    (err) => err.name === 'ContractError' && /unknown transform class/i.test(err.message),
+    'an unknown transform class must fail closed with ContractError',
+  );
+});
+
+test('mutateOverreach throws ContractError on a non-integer recipe seed', () => {
+  const seed = { claim_id: 1, claim: 'x', label: 'Supported', claim_date: '01-01-2020' };
+
+  assert.throws(
+    () => mutateOverreach(seed, { transform: 'scope', seed: 1.5 }),
+    (err) => err.name === 'ContractError' && /integer/i.test(err.message),
+    'a non-integer recipe seed must fail closed with ContractError',
+  );
+
+  assert.throws(
+    () => mutateOverreach(seed, { transform: 'scope', seed: 'seven' }),
+    (err) => err.name === 'ContractError' && /integer/i.test(err.message),
+    'a string recipe seed must fail closed with ContractError',
+  );
+});
+
 // ---------------------------------------------------------------------------
 // OQ-3 classifier: buried (a pre-cutoff in-corpus disconfirmer present, ranked deep) vs
 // evidence-absent (no in-corpus disconfirmer). The classifier discriminates mechanically.
@@ -134,6 +164,48 @@ test('classifySeed DISCRIMINATES: a pre-cutoff in-corpus disconfirmer -> buried;
   assert.notEqual(buried.stratum, absent.stratum, 'the classifier genuinely DISCRIMINATES (not a constant)');
 });
 
+test('classifySeed buried_deep is true for a deep buried seed (rank >= BURIED_RANK_FLOOR) and false for a shallow buried seed (rank < 20)', () => {
+  const claimDate = '30-10-2020';
+
+  // Deep buried: disconfirmer at rank 20 (index 20 -> rank 20, >= BURIED_RANK_FLOOR).
+  const ksDeep = [];
+
+  for (let i = 0; i < 20; i += 1) {
+    ksDeep.push({ sentence: 'distractor ' + i, url: 'https://news.example/d' + i });
+  }
+
+  ksDeep.push({ sentence: 'deep disconfirmer', url: 'https://news.example/deep', date: '01-06-2020', disconfirmer: true });
+
+  const deep = classifySeed({ ks: ksDeep, claimDate });
+  assert.equal(deep.stratum, 'buried', 'deep buried seed is classified buried');
+  assert.equal(deep.buried_deep, true, 'a disconfirmer at rank >= BURIED_RANK_FLOOR -> buried_deep === true');
+
+  // Shallow buried: disconfirmer at rank 0 (the first element, rank 0 < 20).
+  const ksShallow = [
+    { sentence: 'shallow disconfirmer', url: 'https://news.example/shallow', date: '01-06-2020', disconfirmer: true },
+    { sentence: 'distractor', url: 'https://news.example/x0' },
+  ];
+
+  const shallow = classifySeed({ ks: ksShallow, claimDate });
+  assert.equal(shallow.stratum, 'buried', 'shallow buried seed is still classified buried');
+  assert.equal(shallow.buried_deep, false, 'a disconfirmer at rank < BURIED_RANK_FLOOR -> buried_deep === false');
+
+  assert.notEqual(deep.buried_deep, shallow.buried_deep, 'buried_deep discriminates deep vs shallow (not a constant)');
+});
+
+test('classifySeed returns buried_deep === false for an evidence-absent seed', () => {
+  const claimDate = '30-10-2020';
+  const ks = [];
+
+  for (let i = 0; i < 30; i += 1) {
+    ks.push({ sentence: 'distractor ' + i, url: 'https://news.example/x' + i });
+  }
+
+  const absent = classifySeed({ ks, claimDate });
+  assert.equal(absent.stratum, 'evidence-absent', 'no disconfirmer -> evidence-absent');
+  assert.equal(absent.buried_deep, false, 'an evidence-absent seed always has buried_deep === false');
+});
+
 test('classifySeed excludes a POST-cutoff disconfirmer (it cannot make a seed buried -- leakage rule)', () => {
   const claimDate = '30-10-2020';
   const ks = [];
@@ -167,6 +239,18 @@ test('validityGate ACCEPTS a trap that flips a deliberately-weak verifier and RE
   assert.equal(rejected.accepted, false, 'a trap the weak verifier already catches is rejected (too easy)');
 
   assert.notEqual(accepted.accepted, rejected.accepted, 'the validity gate genuinely DISCRIMINATES');
+});
+
+test('validityGate unrefuted-gold direction: weak flips (weak returns refuted on unrefuted-gold) -> accepted; weak matches (both unrefuted) -> rejected', () => {
+  // Unrefuted-gold, weak verifier wrongly returns refuted -> the weak verifier flips -> accepted.
+  const accepted = validityGate({ expected_verdict: 'unrefuted', weakVerifierVerdict: 'refuted' });
+  assert.equal(accepted.accepted, true, 'unrefuted-gold + weak-refuted (weak flips) -> accepted');
+
+  // Unrefuted-gold, weak verifier correctly returns unrefuted -> the weak verifier matches -> rejected (too easy).
+  const rejected = validityGate({ expected_verdict: 'unrefuted', weakVerifierVerdict: 'unrefuted' });
+  assert.equal(rejected.accepted, false, 'unrefuted-gold + weak-unrefuted (weak matches) -> rejected');
+
+  assert.notEqual(accepted.accepted, rejected.accepted, 'the validity gate discriminates in the unrefuted-gold direction');
 });
 
 // ---------------------------------------------------------------------------
@@ -291,6 +375,37 @@ test('leakageProbe returns { clean:true } on a screened KS (NOT tautological -- 
   assert.equal(res.leaks.length, 0, 'a clean screen reports no leaks');
 });
 
+test('leakageProbe normalizeUrlForCompare fires: a KS doc URL differing ONLY by www./case/trailing-slash is screened OUT (clean)', () => {
+  // The seed declares fact_checking_article as the bare-host form. The KS doc carries the same URL
+  // but with "www.", different casing in the path, and a trailing slash. These are semantically
+  // identical. normalizeUrlForCompare must match them so the screen REMOVES the KS doc -> clean.
+  const seeds = [
+    {
+      claim_id: 77,
+      claim: 'normalization test claim',
+      claim_date: '30-10-2020',
+      fact_checking_article: 'https://usatoday.example/factcheck/verdict-article',
+      cached_original_claim_url: null,
+      original_claim_url: null,
+    },
+  ];
+
+  // The KS doc has the same URL but differs by www. prefix, uppercase path characters, and a
+  // trailing slash -- only normalizeUrlForCompare can match this to the declared fact_checking_article.
+  const ks = {
+    77: [
+      {
+        sentence: 'the published fact-check with www/case/slash variant',
+        url: 'https://www.usatoday.example/FactCheck/Verdict-Article/',
+      },
+    ],
+  };
+
+  const res = leakageProbe(seeds, ks);
+  assert.equal(res.clean, true, 'a KS doc differing only by www./case/trailing-slash is screened out via normalizeUrlForCompare -> clean');
+  assert.equal(res.leaks.length, 0, 'normalizeUrlForCompare matches the variant URL and removes it from the residue');
+});
+
 test('leakageProbe DISCRIMINATES: the same seed flips clean<->leaky based ONLY on the KS contents', () => {
   const seed = {
     claim_id: 6,
@@ -361,6 +476,140 @@ test('writeTrap emits NO text field in the manifest row and writes mutated text 
   }
 });
 
+test('writeTrap row carries source === averitec and a non-empty source_label', () => {
+  const cacheDir = fs.mkdtempSync(path.join(os.tmpdir(), 'lz-eval-traps-src-'));
+
+  try {
+    const result = writeTrap(
+      {
+        uid: 'averitec-dev-0077',
+        uid_seed: 77,
+        expected_verdict: 'refuted',
+        stratum: 'buried',
+        recipe: { transform: 'scope', seed: 3, source_label: 'Supported' },
+        mutatedText: 'the mutated CC-BY-NC prose for source/label test',
+      },
+      { cacheDir },
+    );
+
+    assert.equal(result.row.source, 'averitec', 'row.source must be "averitec"');
+    assert.ok(typeof result.row.source_label === 'string' && result.row.source_label.length > 0, 'row.source_label must be a non-empty string');
+  } finally {
+    fs.rmSync(cacheDir, { recursive: true, force: true });
+  }
+});
+
+test('writeTrap throws ContractError on missing uid', () => {
+  const cacheDir = fs.mkdtempSync(path.join(os.tmpdir(), 'lz-eval-traps-err-'));
+
+  try {
+    assert.throws(
+      () =>
+        writeTrap(
+          {
+            uid: '',
+            uid_seed: 1,
+            expected_verdict: 'refuted',
+            stratum: 'buried',
+            recipe: { transform: 'scope', seed: 1 },
+            mutatedText: 'text',
+          },
+          { cacheDir },
+        ),
+      (err) => err.name === 'ContractError' && /uid/i.test(err.message),
+      'an empty uid must throw ContractError',
+    );
+  } finally {
+    fs.rmSync(cacheDir, { recursive: true, force: true });
+  }
+});
+
+test('writeTrap throws ContractError on missing mutatedText', () => {
+  const cacheDir = fs.mkdtempSync(path.join(os.tmpdir(), 'lz-eval-traps-err-'));
+
+  try {
+    assert.throws(
+      () =>
+        writeTrap(
+          {
+            uid: 'averitec-dev-0001',
+            uid_seed: 1,
+            expected_verdict: 'refuted',
+            stratum: 'buried',
+            recipe: { transform: 'scope', seed: 1 },
+            mutatedText: '',
+          },
+          { cacheDir },
+        ),
+      (err) => err.name === 'ContractError' && /mutatedText/i.test(err.message),
+      'an empty mutatedText must throw ContractError',
+    );
+  } finally {
+    fs.rmSync(cacheDir, { recursive: true, force: true });
+  }
+});
+
+test('writeTrap throws ContractError on an out-of-enum expected_verdict', () => {
+  const cacheDir = fs.mkdtempSync(path.join(os.tmpdir(), 'lz-eval-traps-err-'));
+
+  try {
+    assert.throws(
+      () =>
+        writeTrap(
+          {
+            uid: 'averitec-dev-0001',
+            uid_seed: 1,
+            expected_verdict: 'supported',
+            stratum: 'buried',
+            recipe: { transform: 'scope', seed: 1 },
+            mutatedText: 'text',
+          },
+          { cacheDir },
+        ),
+      (err) => err.name === 'ContractError' && /expected_verdict/i.test(err.message),
+      'an out-of-enum expected_verdict must throw ContractError',
+    );
+  } finally {
+    fs.rmSync(cacheDir, { recursive: true, force: true });
+  }
+});
+
+test('writeTrap throws ContractError on a missing cacheDir', () => {
+  assert.throws(
+    () =>
+      writeTrap(
+        {
+          uid: 'averitec-dev-0001',
+          uid_seed: 1,
+          expected_verdict: 'refuted',
+          stratum: 'buried',
+          recipe: { transform: 'scope', seed: 1 },
+          mutatedText: 'text',
+        },
+        { cacheDir: '' },
+      ),
+    (err) => err.name === 'ContractError' && /cacheDir/i.test(err.message),
+    'an empty cacheDir must throw ContractError',
+  );
+
+  assert.throws(
+    () =>
+      writeTrap(
+        {
+          uid: 'averitec-dev-0001',
+          uid_seed: 1,
+          expected_verdict: 'refuted',
+          stratum: 'buried',
+          recipe: { transform: 'scope', seed: 1 },
+          mutatedText: 'text',
+        },
+        {},
+      ),
+    (err) => err.name === 'ContractError' && /cacheDir/i.test(err.message),
+    'an undefined cacheDir must throw ContractError',
+  );
+});
+
 // ---------------------------------------------------------------------------
 // verifySha256 fails closed on a tampered buffer (the corpus-integrity guard, T-19-09).
 // ---------------------------------------------------------------------------
@@ -381,6 +630,13 @@ test('verifySha256 passes (returns the digest) when the buffer matches the expec
   const expected = createHash('sha256').update(buf).digest('hex');
   const got = verifySha256(buf, expected, 'eval/.cache/trap-0006.txt');
   assert.equal(got, expected, 'a matching buffer verifies and returns its digest');
+});
+
+test('verifySha256 succeeds on a string buf: returns the digest equal to createHash sha256 of the string', () => {
+  const theString = 'the real cached mutated bytes as a string';
+  const expected = createHash('sha256').update(theString).digest('hex');
+  const got = verifySha256(theString, expected, 'eval/.cache/trap-string-test.txt');
+  assert.equal(got, expected, 'verifySha256 accepts a string buf and returns the matching digest');
 });
 
 test('verifySha256 fails closed on a non-buffer buf (ContractError carrying .file, not a native TypeError -- F9)', () => {

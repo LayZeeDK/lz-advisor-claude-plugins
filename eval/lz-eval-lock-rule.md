@@ -67,8 +67,8 @@ expectation, not a substitute for the realized computation.
 
 ### Reconciliation with the `DELTA_UPPER_MAX = 0.25` scalar (State-of-the-Art note)
 
-The legacy `DELTA_UPPER_MAX = 0.25` scalar and the pooled-n FORMULA are TWO DIFFERENT QUANTITIES that
-coexist, NOT a contradiction:
+The engine-enforced `DELTA_UPPER_MAX = 0.25` scalar anchor and the pooled-n FORMULA are TWO DIFFERENT
+QUANTITIES that coexist, NOT a contradiction (the scalar is CURRENT + enforced, not superseded):
 
 - The `DELTA_UPPER_MAX = 0.25` scalar is the PER-CLAIM-RELIABILITY anchor: it sits between CP(0,15)
   (~0.218, PASS) and CP(1,15) (~0.319, FAIL), so the mechanical `lockRuleVerdict` engine PASSES a
@@ -168,8 +168,10 @@ outcome decided before this engine runs -- see the saturation pre-condition abov
    zero-excess-at-reliable-15 Clopper-Pearson ceiling. Any non-zero excess false-uphold pushes the
    upper bound above 0.25 and FAILS. (The pooled run-artifact ceiling is the CP(1,N) formula above;
    the engine enforces the per-claim 0.25 anchor.)
-2. **Cost gate.** `escalationFraction < ESCALATION_KILL_HIGH` (0.50). If the escalation fraction
-   crosses the 0.40-0.50 kill band, Haiku is killed on cost even if the false-uphold gate clears.
+2. **Cost gate.** `escalationFraction < ESCALATION_KILL_HIGH` (0.50). The enforced kill threshold is
+   the 0.50 HIGH edge (strict `<`, so 0.50 itself FAILS); the 0.40 LOW edge is carried for context but
+   is NOT the threshold (an escalation of e.g. 0.45 still clears). At or above 0.50 escalation, Haiku
+   is killed on cost even if the false-uphold gate clears.
 3. **Reliability gate.** `reliableTrials >= RELIABLE_TRIALS` (15). A PASS may only be declared after
    the SUBTLE subset is escalated to reliable = 15 trials. Fewer trials cannot declare PASS, even on
    a clean DELTA -- there is not yet enough evidence.
