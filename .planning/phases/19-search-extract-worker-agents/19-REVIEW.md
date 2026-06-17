@@ -19,7 +19,7 @@ Run PACED, one coupling group per dispatch.
 | C | 19-02 shipped worker agents + round-trip test | `agents/research-extract-worker.md` + `agents/research-search-worker.md` + `lz-deep-research-aggregate.test.mjs` | CLOSED -- reviewed + panel-resolved + fixed (prompts/schema/SSOT-test/round-trip) + re-gated (findings fixed) |
 | C-re | 19-02 worker agents post-fix re-review | `agents/research-extract-worker.md` + `agents/research-search-worker.md` | DONE (wf_c529d5c6-a0a, 1 round): caught stale frontmatter/examples (SHA-256/sources/(capped)); FIXED + SSOT gate strengthened to bar recurrence |
 | D1 | search-loop-surface eval test suites | `lz-eval-search-loop.test.mjs` + `lz-eval-traps.test.mjs` + `lz-eval-offline-read.test.mjs` | REVIEWED (test-coverage gaps; D1-5 fixed; D1-17/D1-10 deferred to gating-read author; ~30 gaps pending consolidated decision) |
-| D2 | aggregate-surface eval test suites + lock-rule | `lz-eval-aggregate.test.mjs` + `lz-eval-dataset.test.mjs` + `eval/lz-eval-lock-rule.md` | RUNNING (wf_10e09553-f3f) |
+| D2 | aggregate-surface eval test suites + lock-rule | `lz-eval-aggregate.test.mjs` + `lz-eval-dataset.test.mjs` + `eval/lz-eval-lock-rule.md` | REVIEWED (converged; 0 source bugs; 2 Important + 4 Suggestion test/doc gaps) |
 
 > SCOPE (user directive 2026-06-17): the lz-review gate MUST cover ALL Phase-19 plans/waves implemented,
 > not just the eval-import-coupling source the manifest scoped. Groups A+B covered the eval source;
@@ -376,3 +376,45 @@ Dispositions:
   `formulateDisconfirmingQuery` non-disconfirm/fallback, exhausted-needs-`minQueries`. Lower-value:
   tolerance tightening, `finally`-cleanup hygiene, decorative-assertion pinning, boundary pairs. Full
   list + line refs in the gitignored `eval/.cache/review-gate-19/group-d1-*.md`.
+
+---
+
+## Group D2 -- aggregate-surface eval test suites + lock-rule contract
+
+Gate run: `wf_10e09553-f3f` (synth hit the org monthly spend cap on the first attempt; RESUMED via
+`resumeFromRunId` after the cap was raised -- executor+reviewer replayed from cache, only the synth
+re-ran, 49k tokens). CONVERGED (1 round, COMPLETE). `severityDropDiff`: 0 dropped. **0 Critical, 0
+source bugs.** Same class as D1 (boundary / fail-closed-branch test gaps) + 2 doc-clarity items:
+
+- **D2-1 (Important):** `lockRuleVerdict` band edges untested at the discriminators -- `escalationFraction=0.45`
+  (inside the advertised [0.40,0.50] kill band but currently PASSes) and `0.50` (the strict-`<` edge). NOTE:
+  the 0.45 PASS is INTENDED (the engine kills at the HIGH edge `ESCALATION_KILL_HIGH=0.50`; `KILL_LOW=0.40`
+  is carried but NOT enforced), but the lock-rule prose "crosses the 0.40-0.50 band" reads as if 0.40 is the
+  threshold -- a prose/code looseness. Fix: add 0.45->PASS + 0.50->FAIL tests AND tighten the prose to say
+  the kill threshold is the 0.50 high edge.
+- **D2-2 (Important):** `countFalseUpholds` invalid-verdict + missing-gold-label `ContractError` branches untested.
+- **D2-3 (Suggestion):** the AVeriTeC "COVERAGE" loop assert is DECORATIVE (`matched` increments
+  unconditionally -> always holds). Drop/rename; keep the strata-discrimination assert.
+- **D2-4/D2-5 (Suggestion):** `passHatK(15,0,5)===0` symmetry; `reliableTrials=14` boundary-minus-1 FAIL.
+- **D2-6 (Suggestion):** lock-rule.md labels the engine-ENFORCED `DELTA_UPPER_MAX` scalar "legacy" -- misleading
+  (reads as superseded). Rename to "scalar anchor".
+
+---
+
+## Review coverage -- COMPLETE (the all-plans/waves requirement is satisfied)
+
+Every Phase-19 deliverable has now been through the lz-review gate: Groups A+B (eval source) reviewed+fixed;
+Group C (shipped worker agents) reviewed + panel-resolved + fixed + re-gated; Groups D1+D2 (the 5 eval test
+suites + the lock-rule contract) reviewed. **No Critical findings anywhere; no source bugs in D1/D2.**
+
+Outstanding (consolidated):
+- **Test-hardening (D1+D2): ~19 Important + ~18 Suggestion gaps**, all the "constant-stub-survives" /
+  boundary-not-tested / fail-closed-branch-untested class on ALREADY-CORRECT, already-reviewed source.
+  Real regression-resilience, but high-volume + low-stakes (no bugs). INVESTMENT DECISION PENDING (user to
+  set the level: high-value subset / all / accept-as-documented-test-debt).
+- **Quick doc/prose fixes (do regardless):** D2-3 (decorative assert), D2-6 (lock-rule "legacy" label),
+  D2-1 prose (kill threshold = 0.50 high edge).
+- **Deferred source-coherence guards -> the 19-04 gating-read author:** F3/F4 (cross-validate
+  nPooled/reliableTrials vs the realized vote files), D1-17 (`nPooled>=reliableTrials`), D1-10 (`persistVote`
+  stop_reason enum).
+- Then: `gsd-code-review 19` -> 19-04 gating read -> verify -> secure -> validate -> extract-learnings -> complete.
