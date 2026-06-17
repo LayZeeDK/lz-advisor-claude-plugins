@@ -487,15 +487,18 @@ test('EVAL-01 AVeriTeC open-book DRIFT GATE: every AVeriTeC uid is covered AND t
   // No duplicate AVeriTeC uids (loadManifest already fails closed on dupes; assert here too).
   assert.equal(new Set(avtUids).size, avtUids.length, 'AVeriTeC uids are unique');
 
-  // (b) STRATA DISCRIMINATE: the open-book rows span the three retrieval-difficulty strata so the
-  // set is not a single-stratum (non-discriminating) sample.
+  // (b) STRATA DISCRIMINATE: the open-book rows span EXACTLY the two OFFLINE retrieval-difficulty
+  // strata (buried + evidence-absent) so the set is not a single-stratum (non-discriminating) sample.
+  // date-sensitive is DEFERRED to the Phase-20 live phase (re-plan 19-04-REPLAN-DECISION-2 item 1): its
+  // post-cutoff-leak arm is unobservable offline, so NO date-sensitive example row is assembled.
   const strata = new Set(avtRows.map((e) => e.stratum));
 
-  for (const s of ['buried', 'evidence-absent', 'date-sensitive']) {
-    assert.ok(strata.has(s), 'the AVeriTeC open-book set includes the ' + s + ' stratum');
+  for (const s of ['buried', 'evidence-absent']) {
+    assert.ok(strata.has(s), 'the AVeriTeC open-book set includes the ' + s + ' offline stratum');
   }
 
-  assert.ok(strata.size >= 3, 'the open-book rows DISCRIMINATE across >= 3 strata (not a single stratum)');
+  assert.equal(strata.size, 2, 'EXACTLY the two offline strata {buried, evidence-absent}; date-sensitive deferred to Phase-20 live');
+  assert.equal(strata.has('date-sensitive'), false, 'no date-sensitive example row is assembled in the offline gate (deferred to Phase-20)');
 });
 
 test('EVAL-01 license-clean: NO AVeriTeC row carries a `text` field (CC-BY-NC, D-07/Pitfall 5)', () => {

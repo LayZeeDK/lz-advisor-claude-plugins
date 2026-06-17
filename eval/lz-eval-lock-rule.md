@@ -119,11 +119,17 @@ ships Sonnet-default.
 The offline known-gold trap set is built by these rules (19-RESEARCH.md lines 319-360); they are
 locked in this pre-registration so the construction cannot be tuned after a vote:
 
-1. **Three retrieval-difficulty strata** -- buried (a decisive pre-cutoff in-corpus disconfirmer
-   ranked DEEP behind distractors), evidence-absent (a one-step-overreach mutation whose refutation is
-   NOT in the KS), date-sensitive (the decisive disconfirmer is date-gated). The difficulty lives in
-   RETRIEVAL ORCHESTRATION, NEVER claim subtlety (the subtlety axis is empirically proven saturated:
-   Haiku 0/30 == Sonnet 0/30).
+1. **Two offline retrieval-difficulty strata** -- buried (a decisive pre-cutoff in-corpus disconfirmer
+   ranked DEEP behind distractors) + evidence-absent (a one-step-overreach mutation whose refutation is
+   NOT in the KS; it retains the original unmutated SUPPORTING docs as plausible text -- a genuine
+   text-based temptation to false-uphold). The difficulty lives in RETRIEVAL ORCHESTRATION, NEVER claim
+   subtlety (the subtlety axis is empirically proven saturated: Haiku 0/30 == Sonnet 0/30).
+   **date-sensitive is DEFERRED to the Phase-20 live phase** (re-plan 19-04-REPLAN-DECISION-2 item 1):
+   its STRONGER arm (post-cutoff-doc leakage) is NOT constructible offline -- the static KS adapter
+   applies the FROZEN dateFilter BEFORE any voter sees a doc, so a post-cutoff "leak" is dropped
+   identically for both seats and neither can false-uphold from it. True date-sensitivity (and its
+   qualifying seeds) migrate to Phase-20, where the model controls retrieval and can actually face a
+   post-cutoff doc.
 2. **No hand-authoring.** Mutate EXISTING AVeriTeC-dev Supported seeds via a one-step-overreach recipe
    (scope / causation / magnitude / certainty) so the gold flips to refuted. The mutation PROSE is
    produced by a GENERATOR OUTSIDE the Haiku/Sonnet voter families (A3, generator hygiene) -- the
@@ -137,6 +143,58 @@ locked in this pre-registration so the construction cannot be tuned after a vote
    EXCLUSION before the manifest is locked. The GATING `leakageProbe` (lz-eval-traps.mjs) must return
    CLEAN on the ~10-seed screen; a leaky KS ESCALATES to the user (prefer revised TEST-set KS seeds,
    or defer) -- it NEVER silently proceeds. (Run in Plan 19-03: CLEAN on the 10 dev seeds, exit 0.)
+5. **The KS-enrichment layer + the byte-locked URL_DATE_RULE** (re-plan 19-04-REPLAN-DECISION-2; net-new
+   assembly layer, the frozen primitives untouched). The raw dev KS docs are `{sentence, url}` with ZERO
+   date fields + ZERO decisive/disconfirmer/verdict flags, so without enrichment the frozen `dateFilter`
+   drops every doc and `staticKsAdapter` returns an EMPTY set for every claim (the offline read is
+   degenerate). The assembly layer (`eval/lz-eval-trap-assembler.mjs`) attaches a date to every doc + the
+   decisive/disconfirmer/verdict flags ONLY at the pre-registered ranks (returning NEW objects -- the
+   shared-mutation guard). Dates are extracted by the BYTE-LOCKED strict path-only URL_DATE_RULE:
+
+   `(19|20)\d{2}\/(0[1-9]|1[0-2])\/(0[1-9]|[12]\d|3[01])(\/|$)`
+
+   range-checked through the FROZEN `safeParse`. An archive-wrapped URL yields the INNER publication date
+   (the 14-digit wrapper timestamp has no slash separators). A no-match / out-of-range / implausibly-future
+   date returns null (fail closed -- DROP only, never leak). The manifest carries this EXACT source string;
+   the `eval/lz-eval-aggregate.test.mjs` anti-drift test asserts it equals `URL_DATE_RULE.source`
+   byte-for-byte. The single-digit-day fix is a SET-ASSEMBLY normalizer (`normalizeClaimDate`) -- the
+   FROZEN `parseAvtDate` stays frozen and still throws on a raw single-digit day like `9-10-2020`.
+
+## SCORING RECONCILIATION (T-19-19, pre-registered + harness-test-guarded)
+
+The SCORED quantity is the MODEL voter's free-text `vote.verdict` over the date-filtered KS text,
+persisted in `{unrefuted, refuted}` and read by `countFalseUpholds`. `searchAndStop`'s flag-driven
+mechanical verdict enum `{judge-result, 'refuted-default', 'insufficient'}` is the TRACE + the mechanical
+minimums ONLY and NEVER overrides the recorded vote (it is not even the persisted-vote enum). The
+`decisive` / `disconfirmer` / `verdict` flags the enrichment layer attaches drive ONLY `searchAndStop`'s
+trace + `classifySeed`'s stratum assignment. The D-08 dispatch Workflow's `toScoredVote` takes the
+verdict from the MODEL vote, NEVER from `searchAndStop`'s enum; the harness-slice test
+(`eval/lz-eval-voter-dispatch.workflow.harness.test.mjs`) FAILS if the dispatch records `searchAndStop`'s
+verdict instead of the model's. If this reconciliation could not hold, the offline read would be
+structurally VOID (defer to Phase-20 live) -- the flags are NEVER hand-skewed to manufacture
+discrimination.
+
+## NO-ABSTENTION rule (W1, pre-registered + harness-test-guarded)
+
+The offline-read dispatch prompt REQUIRES a definite `refuted` / `unrefuted` verdict -- the gating read
+measures the BINARY false-uphold, so abstention is NOT a valid vote here. A null / abstain / unparseable
+vote is NOT persisted (`persistVote` rejects a verdict not in `{unrefuted, refuted}`) and is RE-CAST on
+the next pass (skip-already-done skips only a DEFINITE persisted vote; a never-persisted abstain is
+re-attempted until a definite vote lands). So each seat's pool completes only with definite votes and
+`readDelta` proceeds only at a complete exactly-`nPooled` pool (the F3/F4 realized-count guard).
+
+## The strict-cutoff / no-date-shift / >=5-survivor rules (pre-registered)
+
+- **STRICT cutoff, NO date-shift.** No `claimDate-1` imputation (rejected by all three reviewers). Undated
+  AND same-day (`== claimDate`) docs are DROPPED by the strict `<` in the frozen `dateFilter`.
+- **>=5 strictly-pre-cutoff surviving docs per seed.** A seed with fewer than 5 surviving dated docs is
+  EXCLUDED (else `min-not-met` silently changes the trap). Per-stratum attrition is recorded in the run
+  artifact.
+- **>=3 distinct surviving claims per stratum.** Each offline stratum (buried + evidence-absent) must
+  reach at least 3 distinct claims so the pooled `nPooled >= reliableTrials = 15` holds at `k = 5`; the
+  assembler FAILS CLOSED otherwise.
+- **Deterministic seed selection.** ALL qualifying Supported seeds by ASCENDING `claim_id` (no
+  hand-picking -- anti result-shopping, T-19-15).
 
 ## The mechanical search-minimums (OQ-2, PINNED here in the zero-votes window)
 

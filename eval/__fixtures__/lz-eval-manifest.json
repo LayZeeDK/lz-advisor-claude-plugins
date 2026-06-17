@@ -1,6 +1,19 @@
 {
   "schema_version": 1,
   "description": "Derived, pre-registered, stratified eval dataset manifest (EVAL-01). WiCE rows are vendored under wice-vendored/ (ODC-BY/MIT, the only commit-safe corpus). AVeriTeC (CC-BY-NC) and LLM-AggreFact (CC-BY-ND) are FETCH-ONLY: this manifest carries only their IDs + remapped labels + pinned revision + sha256, never the raw corpus text (D-04 license compliance). The remap target is the FROZEN verdict enum unrefuted|refuted.",
+  "stage1_pre_registration": {
+    "note": "Pre-registered in the ZERO-VOTES window BEFORE any Stage-1 vote (anti result-shopping, T-19-15). The construct-validity-corrected offline gating read (19-04-REPLAN-DECISION-2): two offline retrieval-difficulty strata (buried + evidence-absent); date-sensitive DEFERRED to Phase-20 live (its post-cutoff-leak arm is unobservable offline). EVAL_THRESHOLDS numbers are byte-unchanged.",
+    "url_date_rule": "(19|20)\\d{2}\\/(0[1-9]|1[0-2])\\/(0[1-9]|[12]\\d|3[01])(\\/|$)",
+    "url_date_rule_note": "The byte-locked strict path-only RegExp source the KS-enrichment layer (eval/lz-eval-trap-assembler.mjs extractUrlDate) uses; range-checked through the FROZEN safeParse. An archive-wrapped URL yields the INNER publication date (the 14-digit wrapper timestamp has no slash separators); a no-match / out-of-range / implausibly-future date returns null (fail closed, DROP only, never leak). The aggregate anti-drift test asserts this string equals URL_DATE_RULE.source byte-for-byte.",
+    "seed_selection": "Deterministic: ALL qualifying Supported AVeriTeC-dev seeds by ASCENDING claim_id (no hand-picking). A seed is qualifying iff its claim_date normalizes (single-digit-day zero-pad at the assembly layer; the FROZEN parseAvtDate stays frozen and still throws on a raw single-digit day) AND >= 5 strictly-pre-cutoff dated docs survive the frozen dateFilter.",
+    "scoring_reconciliation": "The SCORED quantity is the MODEL voter's free-text vote.verdict over the date-filtered KS text (persisted in {unrefuted,refuted}, read by countFalseUpholds). searchAndStop's flag-driven mechanical verdict enum {judge-result,'refuted-default','insufficient'} is the TRACE + the mechanical minimums ONLY and NEVER overrides the recorded vote; the decisive/disconfirmer/verdict flags drive ONLY searchAndStop's trace + classifySeed's stratum assignment (T-19-19).",
+    "no_abstention_rule": "The offline-read dispatch prompt REQUIRES a definite refuted/unrefuted verdict (the gating read measures the BINARY false-uphold). A null/abstain/unparseable vote is NOT persisted (persistVote rejects non-{unrefuted,refuted}) and is RE-CAST until a definite vote lands, so each seat's pool completes only with definite votes and readDelta proceeds only at a complete exactly-nPooled pool.",
+    "survivor_rule": ">= 5 strictly-pre-cutoff dated surviving docs per seed (else the seed is excluded -- min-not-met must not silently change the trap); >= 3 distinct surviving claims per stratum (so nPooled >= reliableTrials=15 at k=5).",
+    "cutoff_rule": "STRICT cutoff -- NO date-shift, NO claimDate-1 imputation (rejected by all three reviewers). Undated + same-day (== claimDate) docs are DROPPED by the strict `<` in the frozen dateFilter.",
+    "buried_ranks": {
+      "note": "Per-seed decisive/disconfirmer ranks are recorded at assembly time in the gitignored run artifact under eval/.cache/ (recipe-not-text; the buried decisive refuter sits at the deepest strictly-pre-cutoff surviving rank, >= the BURIED_RANK_FLOOR of 20). The EXAMPLE buried rows below (averitec-dev-0013/0025) are the seed claim_ids; their realized ranks are set deterministically by the assembler over the enriched KS and logged in the run artifact, never the committed manifest (no NC text)."
+    }
+  },
   "strata": {
     "supported": {
       "expected_verdict": "unrefuted",
@@ -16,7 +29,7 @@
     },
     "open-book": {
       "expected_verdict": "varies",
-      "note": "AVeriTeC open-book + leakage-test arm; revised KS post-2024-11-15, per-claim date cutoff (D-05). Conflicting/Cherry-picking EXCLUDED from the hard gate. Split into three RETRIEVAL-DIFFICULTY strata (buried / evidence-absent / date-sensitive) so the offline read stresses retrieval orchestration, NOT claim subtlety (19-RESEARCH.md lines 319-360)."
+      "note": "AVeriTeC open-book + leakage-test arm; revised KS post-2024-11-15, per-claim date cutoff (D-05). Conflicting/Cherry-picking EXCLUDED from the hard gate. Split into two offline RETRIEVAL-DIFFICULTY strata (buried + evidence-absent) + date-sensitive DEFERRED to Phase-20 live so the offline read stresses retrieval orchestration, NOT claim subtlety (19-RESEARCH.md lines 319-360; re-planned per 19-04-REPLAN-DECISION-2)."
     },
     "buried": {
       "expected_verdict": "refuted",
@@ -28,7 +41,7 @@
     },
     "date-sensitive": {
       "expected_verdict": "refuted",
-      "note": "AVeriTeC open-book: the decisive disconfirmer is date-gated (post-cutoff docs EXCLUDED by the per-claim cutoff, or a pre-cutoff disconfirmer easy to miss). The axis the prior pilots NEVER tested (the cutoff was not enforced)."
+      "note": "DEFERRED to the Phase-20 live phase (post-cutoff-leak arm unobservable offline -- the static KS adapter applies dateFilter before any voter sees a doc, so a post-cutoff leak is dropped identically for both seats and neither can false-uphold from it; 19-04-REPLAN-DECISION-2 item 1). The stratum DEFINITION is retained here for Phase-20; NO date-sensitive example rows are assembled in the offline gate. AVeriTeC open-book: the decisive disconfirmer is date-gated (post-cutoff docs EXCLUDED by the per-claim cutoff, or a pre-cutoff disconfirmer easy to miss). The axis the prior pilots NEVER tested (the cutoff was not enforced)."
     },
     "stress": {
       "expected_verdict": "varies",
@@ -864,36 +877,6 @@
         "uid_seed": 25,
         "transform": "certainty",
         "seed": 4,
-        "source_label": "Supported",
-        "generator": "out-of-family (non-voter); recipe-not-text (D-07)"
-      }
-    },
-    {
-      "uid": "averitec-dev-0031",
-      "source": "averitec",
-      "source_label": "Supported",
-      "stratum": "date-sensitive",
-      "book": "open",
-      "expected_verdict": "refuted",
-      "recipe": {
-        "uid_seed": 31,
-        "transform": "scope",
-        "seed": 5,
-        "source_label": "Supported",
-        "generator": "out-of-family (non-voter); recipe-not-text (D-07)"
-      }
-    },
-    {
-      "uid": "averitec-dev-0032",
-      "source": "averitec",
-      "source_label": "Supported",
-      "stratum": "date-sensitive",
-      "book": "open",
-      "expected_verdict": "refuted",
-      "recipe": {
-        "uid_seed": 32,
-        "transform": "magnitude",
-        "seed": 6,
         "source_label": "Supported",
         "generator": "out-of-family (non-voter); recipe-not-text (D-07)"
       }

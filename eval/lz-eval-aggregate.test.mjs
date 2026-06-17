@@ -44,6 +44,10 @@ import {
   lockRuleVerdict,
 } from './lz-eval-aggregate.mjs';
 
+// The KS-enrichment layer's byte-locked URL_DATE_RULE (Plan 19-04, Task 1). The Task-3 anti-drift
+// assertion below pins the manifest's recorded rule string == this RegExp's source byte-for-byte.
+import { URL_DATE_RULE } from './lz-eval-trap-assembler.mjs';
+
 const { jStat } = jStatPkg;
 
 // Resolve __fixtures__ test-file-relative (NEVER process.cwd() -- cwd drifts under GSD worktrees and
@@ -378,6 +382,67 @@ test('EVAL-04 the lock rule is strictly ASCII (committed bytes, CLAUDE.md)', () 
   for (let i = 0; i < buf.length; i += 1) {
     assert.ok(buf[i] <= 0x7f, 'lock-rule byte at offset ' + i + ' must be ASCII (<= 0x7F), got 0x' + buf[i].toString(16));
   }
+});
+
+// ---------------------------------------------------------------------------
+// Plan 19-04 / Task 3 / T-19-15 pre-registration anti-drift: the manifest's recorded URL_DATE_RULE
+// string is BYTE-LOCKED to the KS-enrichment layer's RegExp source. The manifest carries the rule the
+// offline read uses; the assembler owns the RegExp. If either drifts, the gate fails -- a drifted rule
+// (e.g. a looser/tighter regex) could silently re-populate the strata after the zero-votes window.
+// ---------------------------------------------------------------------------
+
+const MANIFEST = path.join(HERE, '__fixtures__', 'lz-eval-manifest.json');
+
+test('Task-3 anti-drift: the manifest URL_DATE_RULE string equals URL_DATE_RULE.source byte-for-byte', () => {
+  const m = JSON.parse(fs.readFileSync(MANIFEST, 'utf8'));
+  const recorded = m.stage1_pre_registration && m.stage1_pre_registration.url_date_rule;
+
+  assert.equal(typeof recorded, 'string', 'the manifest records a stage1_pre_registration.url_date_rule string');
+  assert.equal(
+    recorded,
+    URL_DATE_RULE.source,
+    'the manifest URL_DATE_RULE must equal the assembler RegExp source byte-for-byte (anti-drift, T-19-15)',
+  );
+
+  // DISCRIMINATING: the recorded string is the EXACT strict path-only rule (not a vacuous empty/looser
+  // pattern). A drifted manifest (e.g. dropping the day range bound) would no longer equal the source.
+  assert.equal(
+    recorded,
+    '(19|20)\\d{2}\\/(0[1-9]|1[0-2])\\/(0[1-9]|[12]\\d|3[01])(\\/|$)',
+    'the byte-locked strict path-only rule is recorded verbatim',
+  );
+});
+
+test('Task-3 pre-registration: EVAL_THRESHOLDS numbers are byte-UNCHANGED (the re-plan adds only assembly-layer rules)', () => {
+  // The re-plan (two offline strata + scoring reconciliation + no-abstention) touches the manifest +
+  // lock rule as PRE-REGISTRATION only; the frozen engine thresholds are byte-identical. Pin every
+  // value so a sneaky threshold change during the re-plan would fail.
+  assert.equal(EVAL_THRESHOLDS.ALPHA, 0.05);
+  assert.equal(EVAL_THRESHOLDS.RELIABLE_TRIALS, 15);
+  assert.equal(EVAL_THRESHOLDS.MIN_K, 5);
+  assert.equal(EVAL_THRESHOLDS.DELTA_UPPER_MAX, 0.25);
+  assert.equal(EVAL_THRESHOLDS.ESCALATION_KILL_LOW, 0.4);
+  assert.equal(EVAL_THRESHOLDS.ESCALATION_KILL_HIGH, 0.5);
+  assert.equal(Object.isFrozen(EVAL_THRESHOLDS), true, 'EVAL_THRESHOLDS stays frozen');
+});
+
+test('Task-3 lock rule documents the two offline strata + scoring reconciliation + no-abstention (re-plan pre-registration)', () => {
+  const prose = fs.readFileSync(LOCK_RULE, 'utf8');
+
+  // Two offline strata (date-sensitive deferred).
+  assert.ok(/Two offline retrieval-difficulty strata/i.test(prose), 'the lock rule states two offline strata');
+  assert.ok(/date-sensitive is DEFERRED to the Phase-20 live phase/i.test(prose), 'date-sensitive deferral is recorded');
+
+  // The scoring reconciliation + the no-abstention rule (T-19-19 / W1).
+  assert.ok(/SCORING RECONCILIATION/.test(prose), 'the lock rule carries a SCORING RECONCILIATION section');
+  assert.ok(/NO-ABSTENTION rule/i.test(prose), 'the lock rule carries the NO-ABSTENTION rule');
+
+  // The byte-locked URL_DATE_RULE appears verbatim in the lock-rule prose.
+  assert.ok(prose.includes('(19|20)\\d{2}\\/(0[1-9]|1[0-2])\\/(0[1-9]|[12]\\d|3[01])(\\/|$)'), 'the byte-locked URL_DATE_RULE is recorded in the lock rule');
+
+  // The strict-cutoff / no-date-shift / >=5-survivor rules.
+  assert.ok(/no-date-shift|NO date-shift/i.test(prose), 'the no-date-shift rule is recorded');
+  assert.ok(/>=5 strictly-pre-cutoff|>= ?5 strictly-pre-cutoff/i.test(prose) || />=5 strictly-pre-cutoff surviving/i.test(prose), 'the >=5-survivor rule is recorded');
 });
 
 // ---------------------------------------------------------------------------
