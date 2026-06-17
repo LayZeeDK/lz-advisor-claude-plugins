@@ -25,7 +25,6 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { createHash } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 
 import { aggregate, normalize, CEILINGS, listJson, safeId } from './lz-deep-research-aggregate.mjs';
@@ -972,10 +971,13 @@ test('L-2 boundary: worker with exactly 120 claims (= ceiling) does NOT throw ce
 // PIPE-04/05 + AGG-03: the producer (Phase-19 extract worker) output round-trips
 // through the FROZEN aggregator with zero dropped claims. The committed
 // __fixtures__/worker-output-roundtrip/ run dir is shaped EXACTLY as the extract
-// worker emits it: claims/w1.json + excerpts/e1.txt + sources/<sha-256-hex>.json,
-// where the source filename is the real sourceFilename() hex of the canonical key.
-// This proves the contract against the real consumer (not a mock) without touching
-// the frozen aggregator source.
+// worker emits it: claims/w1.json + excerpts/e1.txt + sources/<percent-encoded-key>.json,
+// where the source filename is the PERCENT-ENCODED canonical key (the panel-resolved
+// LLM-executable encoding; the worker is an LLM with no hash tool). The claim `text` is a
+// PARAPHRASE distinct from the verbatim `quote`, so a verified survivor proves the
+// quote-vs-excerpt check fired -- not a text==quote coincidence (the prior tautological
+// fixture could not tell them apart). This proves the contract against the real consumer
+// (not a mock) without touching the frozen aggregator source.
 // ---------------------------------------------------------------------------
 
 test('PIPE-04/05 worker output round-trips through the frozen aggregator (zero drops, verified survivor)', () => {
@@ -991,10 +993,23 @@ test('PIPE-04/05 worker output round-trips through the frozen aggregator (zero d
     'expected a survivor with quote_fidelity === verified from the producer round-trip',
   );
 
+  // Assert on the aggregate() OUTPUT (not just the on-disk files): the canonical source key
+  // flows through into a survivor's sources[] (D-08 corroboration is keyed on the source field).
+  assert.ok(
+    r.survivors.some(
+      (s) => Array.isArray(s.sources) && s.sources.includes('https://example.org/a/study'),
+    ),
+    'the canonical source key must appear in a survivor.sources[] (round-trips through aggregate)',
+  );
+  // Non-tautological: the survivor claim is the PARAPHRASED text, distinct from the verbatim quote.
+  assert.ok(
+    r.survivors.some((s) => s.claim === 'X reduces Y by thirty percent'),
+    'the survivor claim is the paraphrased text (distinct from the verbatim quote)',
+  );
+
   // T-19-08 (spoofing guard): the canonical source key is IDENTICAL across the claim
-  // record's claims[].source and the source-record `id` inside sources/<sha>.json
-  // (D-08). A mismatch would silently under-count corroboration. Read both files and
-  // assert equality, and prove the filename is the REAL sourceFilename() hex of that key.
+  // record's claims[].source and the source-record `id` inside sources/<percent-encoded-key>.json
+  // (D-08). A mismatch would silently under-count corroboration.
   const runDir = fx('worker-output-roundtrip');
   const claim = JSON.parse(fs.readFileSync(path.join(runDir, 'claims', 'w1.json'), 'utf8'));
   const sourcesDir = path.join(runDir, 'sources');
@@ -1006,24 +1021,32 @@ test('PIPE-04/05 worker output round-trips through the frozen aggregator (zero d
     sourceRecord.id,
     'claims[].source must equal the source record id (D-08 canonical-key identity)',
   );
-  // The fixture filename must be the SHA-256 hex of the canonical key + .json (the
-  // Phase-19 filename-safety rule; the basename the extract worker would write).
-  const expectedFilename =
-    createHash('sha256').update(sourceRecord.id, 'utf8').digest('hex') + '.json';
+  // The filename must be the PERCENT-ENCODED canonical key + .json (the panel-resolved Phase-19
+  // filename-safety rule -- an LLM-executable substitution, NOT a hash). Encode every byte whose
+  // char is not an ASCII letter, digit, '.', '_', or '-'.
+  const pctEncode = (key) =>
+    [...Buffer.from(key, 'utf8')]
+      .map((b) => {
+        const c = String.fromCharCode(b);
+        return /[A-Za-z0-9._-]/.test(c) ? c : '%' + b.toString(16).toUpperCase().padStart(2, '0');
+      })
+      .join('');
   assert.equal(
     sourceFiles[0],
-    expectedFilename,
-    'the source filename must be the real SHA-256-hex of the canonical key',
+    pctEncode(sourceRecord.id) + '.json',
+    'the source filename must be the percent-encoded canonical key (not a SHA-256 hash)',
   );
 });
 
-test('AGG-03 / D-14 receipt is one line, <= 200 chars, counts-only, no newline, no raw quote text', () => {
-  // The worker receipt contract (D-14): one line, at most ~200 chars, counts-only,
-  // matching `worker=... source=... excerpts=N claims=M status=...`, carrying NO raw
-  // source text. A sample receipt in the extract worker's documented form is asserted
-  // here so a contract drift (multi-line / over-cap / raw-text receipt) fails the suite.
+test('AGG-03 / D-14 receipt FORMAT conforms (one line, <= 200 chars, counts-only, no raw quote) -- doc-conformance, not behavioral', () => {
+  // FORMAT / DOC-CONFORMANCE check (NOT a behavioral round-trip): the worker is not run here, so
+  // this asserts the DOCUMENTED receipt shape (D-14) -- one line, at most ~200 chars, counts-only,
+  // matching `worker=... source=... excerpts=N claims=M status=...`, no raw source text -- against a
+  // sample receipt in the extract worker's documented form. It catches a FORMAT drift (multi-line /
+  // over-cap / raw-text), but cannot catch a wrong COUNT or a missing receipt (that needs a live
+  // worker run). The `source` field uses the short-label form the worker emits for length safety.
   const receipt =
-    'ok worker=w1 source=https://example.org/a/study excerpts=1 claims=3 status=stored';
+    'ok worker=w1 source=example.org excerpts=1 claims=2 status=stored';
 
   // One line: no embedded newline (CR or LF).
   assert.ok(!/[\r\n]/.test(receipt), 'receipt must be a single line (no CR/LF)');

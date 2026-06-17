@@ -41,3 +41,4 @@ jobs:
           eval/lz-eval-aggregate.test.mjs
           eval/lz-eval-dataset.test.mjs
           eval/lz-eval-packaging-boundary.test.mjs
+          eval/lz-eval-worker-contract.test.mjs
