@@ -210,7 +210,7 @@ Phases execute in numeric order: 16 -> 17 -> 17.1 -> 18 -> 19 -> 20
 | 17. Schema + contract | v2.1.0 | 2/2 | Complete    | 2026-06-15 |
 | 17.1. Address Phase 16/17 review findings (INSERTED) | v2.1.0 | 3/3 | Complete    | 2026-06-15 |
 | 18. Haiku research + voter + early eval | v2.1.0 | 5/5 | Complete    | 2026-06-16 |
-| 19. Search + extract workers | v2.1.0 | 3/4 | In Progress|  |
+| 19. Search + extract workers | v2.1.0 | 3/5 | In Progress|  |
 | 20. Orchestrator + scale | v2.1.0 | 0/TBD | Not started | - |
 
 v1.0 + v1.0.1 + v2.0.0 shipped (plugin 2.0.0). **Active milestone: v2.1.0 (lz-deep-research skill)** -- Phases 16-20, roadmap revised 2026-06-15 (gating eval moved EARLY to Phase 18; EVAL-05 added -- Haiku prompt-engineering research must precede authoring any Haiku agent; the search worker's model tier follows the Phase-18 outcome). Release/publication (REL-01..03) is handled during `/gsd-complete-milestone` after `/gsd-audit-milestone` passes, not as a build phase. See `.planning/MILESTONES.md` for shipped-milestone summaries and `milestones/` for full detail.

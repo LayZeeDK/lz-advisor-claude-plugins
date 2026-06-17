@@ -37,10 +37,10 @@ Items deferred across milestones (v1.0.1 close 2026-06-11; v2.0.0 additions tagg
 
 ## Current Position
 
-Phase: 19 (search-extract-worker-agents) — PAUSED post-execution (review-gate tooling ready)
-Plan: 4 of 4 executed + merged + green; phase NOT complete
-Status: Review-gate tooling design-resolved + hardened + committed (c66590a); paused BEFORE running the gate on the real Phase-19 modules (Step 1)
-Last activity: 2026-06-16 -- review-gate design resolved + implemented + dogfood-verified (c66590a); review/verify arc remaining
+Phase: 19 (search-extract-worker-agents) — IN PROGRESS; 19-04 RE-PLANNED (staged) 2026-06-17, ready to execute Stage 1
+Plan: 5 plans (19-01/02/03 complete; 19-04 re-planned Stage-1 build+calibrator; 19-05 new conditional Stage-2 Haiku read); phase NOT complete
+Status: lz-review gate COMPLETE + gsd-code-review 19 probe COMPLETE (10 fixes, HEAD c654362) + deferred input-coherence guards built. 19-04 re-planned to staged calibrator-first (Opus panel UNANIMOUS, commit 8921d59) + plan-checker PASS. Next: execute Stage 1.
+Last activity: 2026-06-17 -- gsd-code-review 19 probe (11 findings, 10 fixed) -> implemented deferred guards -> Opus advisor+adversary panel resolved the 19-04 scope (staged-B) -> re-planned 19-04 + added 19-05 (plan-checker PASS)
 
 ### Milestone v2.1.0 roadmap (REVISED 2026-06-15)
 
