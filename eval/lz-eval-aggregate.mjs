@@ -90,7 +90,15 @@ export const EVAL_THRESHOLDS = Object.freeze({
 // x === n -> 1 (the upper bound is certain).
 export function clopperPearsonUpper(x, n, alpha = EVAL_THRESHOLDS.ALPHA) {
   if (n === 0) {
-    return 1;
+    return 1; // zero trials -> no information -> 1, regardless of x (CP(x,0) === 1).
+  }
+
+  // n > 0: x > n is impossible (more excess events than trials). Fail closed -- left unguarded,
+  // n - x < 0 feeds jStat.beta.inv a negative shape parameter and returns a silent NaN into a frozen
+  // output object (the stated degenerate-boundary handling above stops at n===0 / x===n; this
+  // completes it). NOT reachable via the consumers (x in {0,1}, n >= 1) -- defense in depth.
+  if (x > n) {
+    throw new ContractError('clopperPearsonUpper requires x <= n when n > 0: x=' + JSON.stringify(x) + ' n=' + JSON.stringify(n), 'clopperPearsonUpper');
   }
 
   if (x === n) {
@@ -105,6 +113,12 @@ export function clopperPearsonUpper(x, n, alpha = EVAL_THRESHOLDS.ALPHA) {
 export function wilsonUpper(x, n, conf = 1 - EVAL_THRESHOLDS.ALPHA) {
   if (n === 0) {
     return 1;
+  }
+
+  // n > 0: x > n is impossible -> p = x/n > 1 would silently corrupt the interval. Fail closed (same
+  // rationale as clopperPearsonUpper; unreachable via the consumers, defense in depth).
+  if (x > n) {
+    throw new ContractError('wilsonUpper requires x <= n when n > 0: x=' + JSON.stringify(x) + ' n=' + JSON.stringify(n), 'wilsonUpper');
   }
 
   const z = jStat.normal.inv(1 - (1 - conf) / 2, 0, 1); // ~1.95996 for 95%
@@ -131,11 +145,19 @@ function comb(a, k) {
 // Pass@k (optimistic: at least one of k samples passes) via the library's combinatorics
 // (D-07 prefers the library comb over a hand-rolled one). n < k is undefined -> NaN.
 export function passAtK(n, c, k) {
+  if (c < 0 || c > n) {
+    throw new ContractError('passAtK requires 0 <= c <= n: c=' + JSON.stringify(c) + ' n=' + JSON.stringify(n), 'passAtK');
+  }
+
   return n < k ? NaN : 1 - comb(n - c, k) / comb(n, k);
 }
 
 // Pass^k (conservative: all k samples pass) via the library's combinatorics. n < k -> NaN.
 export function passHatK(n, c, k) {
+  if (c < 0 || c > n) {
+    throw new ContractError('passHatK requires 0 <= c <= n: c=' + JSON.stringify(c) + ' n=' + JSON.stringify(n), 'passHatK');
+  }
+
   return n < k ? NaN : comb(c, k) / comb(n, k);
 }
 
@@ -195,9 +217,9 @@ export function countFalseUpholds(voteDir, goldLabels) {
     }
 
     // Route the content-derived id through the runtime safeId (T-18-TRAVERSE): a crafted id (e.g.
-    // '../evil') must be rejected before it can index gold or reach any path. The return value is
-    // discarded -- this is a validating side-effect at the read boundary (mirrors the runtime
-    // aggregator's read-time safeId discipline).
+    // '../evil') must be rejected before it can index gold or reach any path. The VALIDATED id it
+    // returns is used as the goldLabels lookup key below (mirrors the runtime aggregator's read-time
+    // safeId discipline) -- it is NOT discarded.
     const id = safeId(String(rec.id), votePath);
 
     const verdict = rec.verdict;

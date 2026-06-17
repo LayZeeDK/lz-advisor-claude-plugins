@@ -116,6 +116,19 @@ test('EVAL-02 Pass@k / Pass^k use jStat.combination (combination(15,3)===455; c=
   assert.ok(Number.isNaN(passHatK(3, 1, 5)), 'passHatK(n<k) -> NaN');
 });
 
+test('hardening: the stats helpers fail closed on degenerate-arithmetic inputs x>n / c>n (no silent NaN/1.0 -- F1/F2)', () => {
+  // n > 0 with x > n is impossible; the guard throws rather than feeding jStat a negative shape (NaN).
+  assert.throws(() => clopperPearsonUpper(5, 3), (e) => e.name === 'ContractError', 'clopperPearsonUpper(x>n) fails closed');
+  assert.throws(() => wilsonUpper(5, 3), (e) => e.name === 'ContractError', 'wilsonUpper(x>n) fails closed');
+  // c > n is impossible (more correct than trials); the guard throws rather than returning a corrupted 1.0.
+  assert.throws(() => passAtK(3, 5, 1), (e) => e.name === 'ContractError', 'passAtK(c>n) fails closed');
+  assert.throws(() => passHatK(3, 5, 1), (e) => e.name === 'ContractError', 'passHatK(c>n) fails closed');
+  // DISCRIMINATING: the degenerate-but-VALID boundaries still return their defined values (the guard is
+  // x>n / c>n only, it does not over-fire on n===0 or c===n).
+  assert.equal(clopperPearsonUpper(3, 0), 1, 'CP(x,0)=1 preserved (n===0 short-circuits before the x>n guard)');
+  assert.equal(passAtK(15, 15, 5), 1, 'passAtK(n,n,k)=1 preserved (c===n is valid)');
+});
+
 // ---------------------------------------------------------------------------
 // EVAL-02 / D-01: per-stratum false-uphold counting is deterministic, off-model (verdict vs gold),
 // and DISCRIMINATING -- it flips between a present fixture and an absent sibling.
