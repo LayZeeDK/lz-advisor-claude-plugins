@@ -16,7 +16,7 @@ Run PACED, one coupling group per dispatch.
 |-------|----------------|-------|--------|
 | A | search-loop API surface | `lz-eval-search-loop.mjs` + `lz-eval-offline-read.mjs` + `lz-eval-traps.mjs` | REVIEWED + fixed |
 | B | safeId guard + aggregate->offline-read | `lz-eval-aggregate.mjs` + `lz-eval-offline-read.mjs` + `lz-eval-dataset.mjs` | REVIEWED + fixed (F3/F4 deferred to gating-read harness) |
-| C | 19-02 shipped worker agents + round-trip test | `agents/research-extract-worker.md` + `agents/research-search-worker.md` + `lz-deep-research-aggregate.test.mjs` | REVIEWED (INCOMPLETE/4 rounds; triaged below; fixes pending design decisions) |
+| C | 19-02 shipped worker agents + round-trip test | `agents/research-extract-worker.md` + `agents/research-search-worker.md` + `lz-deep-research-aggregate.test.mjs` | REVIEWED + design clusters RESOLVED (3-round panel consensus); fix set decided, ready to apply |
 | D | eval validation suites + lock-rule contract | 5x `lz-eval-*.test.mjs` + `eval/lz-eval-lock-rule.md` | PENDING |
 
 > SCOPE (user directive 2026-06-17): the lz-review gate MUST cover ALL Phase-19 plans/waves implemented,
@@ -295,5 +295,42 @@ The findings consolidate (across the 4 rounds) into two design clusters + clear 
 COVERAGE: INCOMPLETE (did not converge in 4 rounds; major themes captured; re-run not auto-triggered to
 avoid another ~500k-token pass for diminishing returns -- flagged for the user).
 
-Group C fixes are NOT yet applied -- the two design clusters need a decision first, and the clear
-prompt-fixes are coupled to them (e.g., the denylist-inlining fix depends on the no-Read/SSOT decision).
+### Group C design clusters -- RESOLVED (3-round advisor panel, unanimous)
+
+The two design clusters were resolved by a 3-round advisor panel (Opus agent + Copilot GPT-5.5 + Copilot
+Gemini 3.1 Pro Preview), executor-driven with neutral facts-only briefs, converging to UNANIMOUS consensus
+(round-1 positions -> round-2 narrowing -> round-3 full accept; transcripts in the gitignored
+`eval/.cache/panel/r{1,2,3}-{gpt,gemini}.txt` + the Opus agent task output). Resolution:
+
+**Cluster 1 (deterministic mechanics vs LLM capability) -- ship PROMPT-ONLY now; no new tool grants:**
+- `sources/` filename: SHA-256 -> **percent-encoding** (`/`->`%2F`, `:`->`%3A`, ...). LLM-executable; the
+  filename is not a lookup key (aggregator dedups by the `id`/`source` field), so a hash buys nothing.
+- Delete the self-contradictory "consult the schema / do not inline" lines from BOTH prompts; the inlined
+  contract IS the runtime contract (no Read tool). REJECT granting Read or Bash.
+- Truncation: store the fetched content **VERBATIM**, drop the LLM `~50 KB` cap; add NO off-model
+  truncator now (WebFetch returns bounded content, so oversize is uncommon). A deterministic truncator
+  arrives later WITH the normalizer.
+
+**Cluster 2 (canonical-key ownership + consistency):**
+- The EXTRACT worker is the **sole `sources/` writer and sole authoritative canonical-key owner**. The
+  SEARCH worker writes no `sources/` and publishes no authoritative ids; it canonicalizes ONLY for its
+  own source-independence dedup (non-authoritative), using the SAME recipe.
+- ONE **case-insensitive** canonicalize recipe (11-key denylist + `utm_` prefix), inlined IDENTICALLY in
+  both prompts.
+- SSOT-sync: a **dev-time build/test** asserts the inlined prompt rules match the schema doc (no runtime
+  Read; lives in the dev-only eval tree, zero-dep). Converts D-12 from convention to a gate.
+- The deterministic **stdlib-Node normalizer** is the agreed eventual home for canonicalization +
+  filename + truncation; it **supersedes** the prompt recipe when it lands WITH the Phase-20 orchestrator
+  (deferred -- the orchestrator does not exist yet; building it now is dead code with no caller). No
+  permanent prompt+Node coexistence.
+- Round-trip test: feed a dirty/mixed-case URL (`?UTM_Source=x&Fbclid=y` + fragment + trailing slash) and
+  assert search writes no `sources/`, the canonical key strips the params, and the quote is checked
+  against the actually-stored excerpt.
+
+**Actionable fix set (now DECIDED, ready to apply on request):** both worker prompts (percent-encoding
+filename; delete schema-consult contradiction; verbatim store / drop the cap; one shared case-insensitive
+canonicalize block; search stops writing `sources/`); + the clear prompt fixes (search query floor,
+extract `maxTurns` 4->5/6, `excerpt_id`/quote-fidelity clarity); + the test fixes (dirty-URL +
+non-tautological round-trip fixture, assert via `aggregate()`, AGG-03 relabel); + a new dev-time
+build/test asserting the inlined recipe matches the schema. DEFERRED to Phase 20: the deterministic
+normalizer.
