@@ -27,6 +27,11 @@ const read = (rel) => fs.readFileSync(new URL(rel, import.meta.url), 'utf8');
 
 const EXTRACT = read('../plugins/lz-advisor/agents/research-extract-worker.md');
 const SEARCH = read('../plugins/lz-advisor/agents/research-search-worker.md');
+// The schema reference is the human-maintainer home of the canonical-URL recipe; its own anti-drift
+// clause claims the recipe is "kept byte-identical ... by a dev-time test", so this gate must actually
+// read it (F#10: pre-fix the recipe was pinned only transitively via the two prompts, never the schema
+// -- a schema-only edit would have gone uncaught despite the stated guarantee).
+const SCHEMA = read('../plugins/lz-advisor/references/lz-deep-research-schema.md');
 void HERE;
 
 // ===========================================================================
@@ -35,20 +40,23 @@ void HERE;
 // clause) fails the gate -- this is the drift the F3 bug + the Group-C review surfaced.
 // ===========================================================================
 
-test('SSOT: both worker prompts inline EVERY TRACKING_PARAMS denylist key (no drift from the eval set)', () => {
+test('SSOT: both worker prompts AND the schema reference inline EVERY TRACKING_PARAMS denylist key (no drift from the eval set)', () => {
   const keys = [...TRACKING_PARAMS];
   assert.ok(keys.length >= 11, 'TRACKING_PARAMS carries the full denylist (>= 11 keys)');
 
   for (const key of keys) {
     assert.ok(EXTRACT.includes(key), 'extract-worker prompt inlines denylist key: ' + key);
     assert.ok(SEARCH.includes(key), 'search-worker prompt inlines denylist key: ' + key);
+    // F#10: pin the schema reference directly so a schema-only edit (e.g. dropping a key) fails the
+    // gate -- making the schema's own "kept byte-identical ... by a dev-time test" claim honest.
+    assert.ok(SCHEMA.includes(key), 'schema reference inlines denylist key: ' + key);
   }
 });
 
-test('SSOT: both prompts strip the utm_ prefix and match CASE-INSENSITIVELY (the F3 fix, mirrored)', () => {
-  for (const [name, text] of [['extract', EXTRACT], ['search', SEARCH]]) {
-    assert.ok(/utm_/.test(text), name + ' prompt mentions the utm_ prefix');
-    assert.ok(/case-insensitiv/i.test(text), name + ' prompt requires case-insensitive matching');
+test('SSOT: both prompts AND the schema strip the utm_ prefix and match CASE-INSENSITIVELY (the F3 fix, mirrored)', () => {
+  for (const [name, text] of [['extract', EXTRACT], ['search', SEARCH], ['schema', SCHEMA]]) {
+    assert.ok(/utm_/.test(text), name + ' mentions the utm_ prefix');
+    assert.ok(/case-insensitiv/i.test(text), name + ' requires case-insensitive matching');
   }
 });
 
@@ -112,6 +120,11 @@ test('SSOT: no STALE design references survive in the frontmatter/examples (the 
   // missed: SHA-256 / sources/<sha> filenames and a "(capped)" excerpt. The WHOLE prompt (frontmatter
   // + examples + body) must be free of the superseded design, or the routing-surface description lies.
   assert.ok(!/sha-?256/i.test(SEARCH), 'search prompt carries no SHA-256 reference anywhere (incl. examples)');
+  // F#8: EXTRACT owns the sources/ filename rule, so a re-introduced SHA-256 filename instruction is
+  // most likely to land here. The narrow /sha-?256[ -]?hex/i check (the "hex"-adjacent form, above)
+  // misses a bare "SHA-256" without the word "hex"; assert the broad form against EXTRACT too. Extract
+  // legitimately needs no SHA-256 token now that percent-encoding is settled.
+  assert.ok(!/sha-?256/i.test(EXTRACT), 'extract prompt carries no SHA-256 reference anywhere (incl. description + examples)');
   assert.ok(!/sources\/<sha/i.test(SEARCH), 'search prompt carries no stale sources/<sha> reference');
   assert.ok(!/sources\/<sha/i.test(EXTRACT), 'extract prompt carries no stale sources/<sha> reference');
   assert.ok(!/\(capped\)/i.test(EXTRACT), 'extract prompt carries no stale "(capped)" excerpt reference');
