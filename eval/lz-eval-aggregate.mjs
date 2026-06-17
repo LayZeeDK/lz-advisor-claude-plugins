@@ -210,11 +210,17 @@ export function countFalseUpholds(voteDir, goldLabels) {
       );
     }
 
-    const expected = goldLabels[id];
-
-    if (expected == null) {
+    // Use an OWN-property check (not `goldLabels[id] == null`): an id equal to an Object.prototype
+    // member name ('__proto__', 'toString', 'valueOf', 'constructor', 'hasOwnProperty', ...) resolves
+    // via the prototype chain to the inherited member -- which is NOT null -- so a bare null-check
+    // would NOT fire and the record would be SILENTLY skipped instead of failing the "no gold for vote
+    // id" contract. safeId() lets these ids through (no path separator / '.' / '..'), so the guard
+    // must be here. Object.hasOwn ignores the prototype chain.
+    if (!Object.hasOwn(goldLabels, id)) {
       throw new ContractError('no gold label for vote id: ' + JSON.stringify(id), votePath);
     }
+
+    const expected = goldLabels[id];
 
     if (expected === 'refuted' && verdict === 'unrefuted') {
       falseUpholds += 1;

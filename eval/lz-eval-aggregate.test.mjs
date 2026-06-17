@@ -487,6 +487,30 @@ test('D2 countFalseUpholds: vote record whose id is absent from goldLabels throw
   }
 });
 
+test('D2 countFalseUpholds: a vote id equal to an Object.prototype member name (__proto__/toString) throws ContractError (own-property gold guard)', () => {
+  // The missing-gold guard must fail closed even when the vote id is a prototype-chain key. With a
+  // bare `goldLabels[id] == null` check, id '__proto__' / 'toString' resolve to inherited members
+  // (NOT null) and the record would be SILENTLY skipped, defeating the fail-closed-on-missing-gold
+  // contract. The Object.hasOwn check rejects them. DISCRIMINATING: a plain absent id already throws
+  // (the test above); these prototype keys are exactly the subset that bypassed the pre-fix guard.
+  const runDir = fs.mkdtempSync(path.join(os.tmpdir(), 'lz-eval-protokey-'));
+  const votesDir = path.join(runDir, 'votes');
+  fs.mkdirSync(votesDir, { recursive: true });
+
+  try {
+    for (const protoId of ['__proto__', 'toString']) {
+      fs.writeFileSync(path.join(votesDir, 'v.json'), JSON.stringify({ id: protoId, verdict: 'unrefuted' }), 'utf8');
+      assert.throws(
+        () => countFalseUpholds(votesDir, { 'c-real': 'refuted' }),
+        (e) => e.name === 'ContractError' && /no gold label/i.test(e.message),
+        'vote id ' + protoId + ' (a prototype-chain key) must throw ContractError, not be silently skipped',
+      );
+    }
+  } finally {
+    fs.rmSync(runDir, { recursive: true, force: true });
+  }
+});
+
 test('D2 passHatK(15, 0, 5) === 0 (all-fail: no k-subset of zero correct trials can pass)', () => {
   // Symmetric to the passAtK(n,0,k)===0 assertion. passHatK(n,c,k) = C(c,k)/C(n,k).
   // C(0,5) === 0 (cannot choose 5 from 0), so the result is 0/C(15,5) = 0. Pins all-fail symmetry.
