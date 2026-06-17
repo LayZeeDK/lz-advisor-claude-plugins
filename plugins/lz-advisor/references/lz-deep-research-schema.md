@@ -69,10 +69,11 @@ forward-declared for the synthesis citation join (the aggregator does not read
 it).
 
 ```
+<run-dir>/candidates/<worker-id>.json -> {"worker","candidates":[{"url","title"}]}  (NEW; Phase-19 SEARCH worker; orchestrator-consumed; aggregator does NOT read it)
 <run-dir>/claims/<worker-id>.json   -> {"worker","source","claims":[{"id","text","quote","excerpt_id"}]}
 <run-dir>/excerpts/<excerpt-id>.txt -> plain UTF-8 (CRLF or LF; BOM tolerated)
 <run-dir>/votes/<id>-<seat>.json    -> {"verdict":"unrefuted"|"refuted"}  (missing seat -> "insufficient")
-<run-dir>/sources/<source-id>.json  -> {"id","url","title","fetched_at",...}  (NEW; D-07; aggregator does NOT read it)
+<run-dir>/sources/<source-id>.json  -> {"id","url","title","fetched_at",...}  (NEW; D-07; Phase-19 EXTRACT worker is the SOLE writer; aggregator does NOT read it)
 <run-dir>/survivors.json            -> the output array (<= SYNTH_CAP)
 ```
 
@@ -112,22 +113,33 @@ unknown fields.
 
 **Canonical-URL key rule (D-08, VERIF-03 source-independence).** The
 `source-id` is a canonicalized source key so that N syndicated copies of one
-source count as ONE distinct source. The Phase-19 extract worker computes the
-canonical key (e.g. lowercase scheme + host, strip default ports, strip tracking
-query parameters, strip a trailing slash and URL fragment) and uses that
-identical key everywhere it writes the source: in `claims[].source`, and as the
-`sources/<id>.json` `id`. This reference fixes the rule at the contract level;
-the extract worker implements the exact canonicalization (Phase 19).
+source count as ONE distinct source. The canonical key is computed by: lowercase
+scheme + host; strip default ports (`:80`/`:443`); strip tracking query
+parameters, matching each parameter NAME CASE-INSENSITIVELY -- drop any key whose
+lowercased name begins with `utm_`, plus the lowercased-name denylist `fbclid`,
+`gclid`, `gclsrc`, `dclid`, `msclkid`, `mc_eid`, `igshid`, `ref`, `ref_src`,
+`_hsenc`, `_hsmi`; strip the URL fragment and a single trailing slash. The EXTRACT
+worker is the SOLE authoritative owner: it computes this key and uses it
+identically in `claims[].source` and as the `sources/<id>.json` `id`. The SEARCH
+worker applies the SAME recipe ONLY to dedup its own candidate list
+(non-authoritative -- it writes `candidates/`, never `sources/`). The recipe is
+mirrored verbatim into both worker prompts (the agents have no Read tool to open
+this doc at run time) and kept byte-identical to the deterministic implementation
+(the eval `canonicalizeUrl`'s frozen `TRACKING_PARAMS` set) by a dev-time test.
 
 **Phase 19 filename-safety rule.** The raw canonical key MUST NOT be used verbatim as the
 `sources/<source-id>.json` basename because a canonical URL legitimately contains path
-separators in its URL path component (e.g. `https://example.org/a/study`). Phase 19 MUST
-encode the canonical key to a safe basename before writing `sources/<id>.json` -- for example,
-by percent-encoding (replacing `/` with `%2F`, `:` with `%3A`, etc.) or by computing a stable
-hash of the key (e.g. SHA-256 hex). The `id` field INSIDE the JSON file always carries the raw
-canonical key; only the filename uses the encoded form. This encoding is NOT required of the
-aggregator (which never reads `sources/`) but IS required of Phase 19 extract workers and Phase
-20 synthesis.
+separators in its URL path component (e.g. `https://example.org/a/study`). Phase 19 encodes the
+canonical key to a safe basename by PERCENT-ENCODING: replace every character that is not an
+ASCII letter, digit, `-`, `_`, or `.` with `%` + its byte value as two uppercase hex digits
+(`/` -> `%2F`, `:` -> `%3A`). Percent-encoding is chosen over a hash (SHA-256) because the extract
+worker is an LLM with no compute tool: it CAN perform a deterministic substitution but CANNOT
+reliably compute a hash. The filename is not a lookup key (the aggregator never reads `sources/`),
+so collision-resistance is unnecessary -- only filename-safety + invertibility. The `id` field
+INSIDE the JSON always carries the raw canonical key; only the filename is encoded. (Edge: a very
+long key could exceed the filesystem name-length limit; the write then fails loudly -- a rare case
+deferred to the Phase-20 normalizer.) Required of the Phase-19 extract worker and Phase-20
+synthesis, not the aggregator.
 
 ## The claim record (claims/<worker-id>.json)
 
@@ -525,7 +537,8 @@ Who writes, reads, and owns each contract element:
 | `claim_support` | Voter / synthesis (Phase 18/20) | report | Judgment; Assurance 2; NEW. |
 | `verdict` (vote consumed core) | Voter writes / aggregator reads | vote / aggregate | Frozen-hard consumed shape (D-09). |
 | `attack_mode` / `disconfirming_query` / source-independence note | Voter (Phase 18) | vote | Reserved envelope; additive-only (D-10). |
-| Source record + canonical-URL key | Extract worker writes (Phase 19) / synthesis joins (Phase 20) | source / report | Aggregator does NOT read it; citation join (D-07/D-08). |
+| Candidate records (`candidates/`) | Search worker writes (Phase 19) / orchestrator dispatches (Phase 20) | search | NON-authoritative `{url,title}` list; deduped by the shared recipe; aggregator does NOT read it. |
+| Source record + canonical-URL key | EXTRACT worker is sole writer (Phase 19) / synthesis joins (Phase 20) | source / report | Aggregator does NOT read it; citation join (D-07/D-08). Filename is percent-encoded (LLM-executable). |
 | `citation` (inline) | Synthesis (Phase 20) | report | Joined from the source record. |
 | `MAX_VERIFY_CLAIMS` / `VOTES_PER_CLAIM` / `SYNTH_CAP` | Aggregator | aggregate | Actively enforced, observable caps. |
 | `ANGLES` / `MAX_FETCH` | Phase-20 orchestrator | dispatch | Carried by the aggregator; enforced at wave dispatch. |
