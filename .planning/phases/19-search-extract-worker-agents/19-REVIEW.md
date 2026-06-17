@@ -18,8 +18,8 @@ Run PACED, one coupling group per dispatch.
 | B | safeId guard + aggregate->offline-read | `lz-eval-aggregate.mjs` + `lz-eval-offline-read.mjs` + `lz-eval-dataset.mjs` | REVIEWED + fixed (F3/F4 deferred to gating-read harness) |
 | C | 19-02 shipped worker agents + round-trip test | `agents/research-extract-worker.md` + `agents/research-search-worker.md` + `lz-deep-research-aggregate.test.mjs` | CLOSED -- reviewed + panel-resolved + fixed (prompts/schema/SSOT-test/round-trip) + re-gated (findings fixed) |
 | C-re | 19-02 worker agents post-fix re-review | `agents/research-extract-worker.md` + `agents/research-search-worker.md` | DONE (wf_c529d5c6-a0a, 1 round): caught stale frontmatter/examples (SHA-256/sources/(capped)); FIXED + SSOT gate strengthened to bar recurrence |
-| D1 | search-loop-surface eval test suites | `lz-eval-search-loop.test.mjs` + `lz-eval-traps.test.mjs` + `lz-eval-offline-read.test.mjs` | REVIEWED (test-coverage gaps; D1-5 fixed; D1-17/D1-10 deferred to gating-read author; ~30 gaps pending consolidated decision) |
-| D2 | aggregate-surface eval test suites + lock-rule | `lz-eval-aggregate.test.mjs` + `lz-eval-dataset.test.mjs` + `eval/lz-eval-lock-rule.md` | REVIEWED (converged; 0 source bugs; 2 Important + 4 Suggestion test/doc gaps) |
+| D1 | search-loop-surface eval test suites | `lz-eval-search-loop.test.mjs` + `lz-eval-traps.test.mjs` + `lz-eval-offline-read.test.mjs` | REVIEWED + HARDENED (all gaps fixed; D1-17/D1-10 source guards deferred to gating-read author) |
+| D2 | aggregate-surface eval test suites + lock-rule | `lz-eval-aggregate.test.mjs` + `lz-eval-dataset.test.mjs` + `eval/lz-eval-lock-rule.md` | REVIEWED + HARDENED (all gaps fixed; lock-rule doc fixes applied) |
 
 > SCOPE (user directive 2026-06-17): the lz-review gate MUST cover ALL Phase-19 plans/waves implemented,
 > not just the eval-import-coupling source the manifest scoped. Groups A+B covered the eval source;
@@ -408,12 +408,13 @@ Group C (shipped worker agents) reviewed + panel-resolved + fixed + re-gated; Gr
 suites + the lock-rule contract) reviewed. **No Critical findings anywhere; no source bugs in D1/D2.**
 
 Outstanding (consolidated):
-- **Test-hardening (D1+D2): ~19 Important + ~18 Suggestion gaps**, all the "constant-stub-survives" /
-  boundary-not-tested / fail-closed-branch-untested class on ALREADY-CORRECT, already-reviewed source.
-  Real regression-resilience, but high-volume + low-stakes (no bugs). INVESTMENT DECISION PENDING (user to
-  set the level: high-value subset / all / accept-as-documented-test-debt).
-- **Quick doc/prose fixes (do regardless):** D2-3 (decorative assert), D2-6 (lock-rule "legacy" label),
-  D2-1 prose (kill threshold = 0.50 high edge).
+- **Test-hardening (D1+D2): DONE (user chose "fix all").** A 5-subagent fan-out added ~35 discriminating
+  assertions closing the whole "constant-stub-survives" class (search-loop 31->35, traps 15->28,
+  offline-read 21->31, aggregate 21->29, dataset's vacuous coverage-assert replaced). 161 eval tests
+  green; aggregate anti-drift intact; no source modules touched; all ASCII.
+- **Quick doc/prose fixes: DONE.** D2-3 (vacuous AVeriTeC coverage assert replaced), D2-6 (lock-rule
+  "legacy" -> "engine-enforced scalar anchor"), D2-1 prose (cost-gate kill threshold = the 0.50 HIGH
+  edge; 0.40 is context-only).
 - **Deferred source-coherence guards -> the 19-04 gating-read author:** F3/F4 (cross-validate
   nPooled/reliableTrials vs the realized vote files), D1-17 (`nPooled>=reliableTrials`), D1-10 (`persistVote`
   stop_reason enum).
