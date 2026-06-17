@@ -3,9 +3,9 @@ gsd_state_version: 1.0
 milestone: v2.1.0
 milestone_name: lz-deep-research skill
 status: executing
-stopped_at: Phase 19 REVIEW GATE FULLY COMPLETE -- all groups (A/B/C/D1/D2) reviewed + ALL confirmed fixes applied: Group C design clusters (panel-resolved: percent-encoding, candidates/, case-insensitive recipe, SSOT gate) + Group D test-hardening (~35 discriminating assertions, "fix all" per user) + lock-rule doc fixes. 161 eval tests green; no source modules touched in D; all ASCII. Deferred: F3/F4 + D1-17 + D1-10 (input-coherence guards) -> 19-04 gating-read author; the deterministic normalizer -> Phase 20. Next: gsd-code-review 19 -> 19-04 Task-2 gating read (BLOCKING human) -> verify -> secure -> validate -> extract-learnings -> complete.
+stopped_at: Phase 19 -- 19-04 + 19-05 RE-PLANNED-2 (consult-driven, 2026-06-17) after a blind 3-lineage panel (Opus native Agent + Copilot GPT-5.5 + Gemini-3.1-pro-preview, 2 rounds to consensus) + direct code/corpus verification found three construct-validity defects the prior plans missed: (1) the static-KS retrieval is degenerate without a KS-ENRICHMENT layer (raw dev KS docs have no dates/flags -> the frozen dateFilter empties staticKsAdapter for every claim); (2) the date-sensitive stratum is NOT constructible offline (staticKsAdapter applies dateFilter before any voter sees a doc) -> DROPPED offline, deferred to the Phase-20 live phase; (3) the scored vote must be the MODEL's free-text verdict, NOT searchAndStop's mechanical flag-verdict (pre-registered + harness-test-guarded, T-19-19). gsd-planner re-planned 19-04 (4 tasks) + 19-05 (2 tasks); gsd-plan-checker PASS-WITH-WARNINGS (0 blockers, 5 warnings -- all folded via a planner refinement pass). Decision record: 19-04-REPLAN-DECISION-2.md. NEXT (PAUSED before execution per user): execute 19-04 Stage 1 (Tasks 1-3 auto-build: KS-enrichment + 2-strata assembler + D-08 dispatch + pre-registration; then Task-4 BLOCKING Sonnet-calibrator checkpoint).
 last_updated: "2026-06-17"
-last_activity: 2026-06-17 -- ran a 3-round advisor panel (Opus + Copilot GPT-5.5 + Gemini 3.1 Pro Preview, unanimous) to resolve the Group-C worker-agent design clusters, then applied the resolved fixes (prompts + schema + dev-time SSOT gate + round-trip fixes; all green) and dispatched a single-round re-gate
+last_activity: 2026-06-17 -- iterated blind cross-family advisor panel (Opus + Copilot GPT-5.5 + Gemini-3.1-pro-preview, 2 rounds to consensus, ~40 AI Credits) on the offline-eval construct validity -> re-planned 19-04 + 19-05 via gsd-planner from the decision record -> gsd-plan-checker PASS-WITH-WARNINGS (5 warnings folded via a planner refinement pass); paused before execution per user
 progress:
   total_phases: 8
   completed_phases: 6
@@ -37,10 +37,10 @@ Items deferred across milestones (v1.0.1 close 2026-06-11; v2.0.0 additions tagg
 
 ## Current Position
 
-Phase: 19 (search-extract-worker-agents) — IN PROGRESS; 19-04 RE-PLANNED (staged) 2026-06-17, ready to execute Stage 1
-Plan: 5 plans (19-01/02/03 complete; 19-04 re-planned Stage-1 build+calibrator; 19-05 new conditional Stage-2 Haiku read); phase NOT complete
-Status: lz-review gate COMPLETE + gsd-code-review 19 probe COMPLETE (10 fixes, HEAD c654362) + deferred input-coherence guards built. 19-04 re-planned to staged calibrator-first (Opus panel UNANIMOUS, commit 8921d59) + plan-checker PASS. Next: execute Stage 1.
-Last activity: 2026-06-17 -- gsd-code-review 19 probe (11 findings, 10 fixed) -> implemented deferred guards -> Opus advisor+adversary panel resolved the 19-04 scope (staged-B) -> re-planned 19-04 + added 19-05 (plan-checker PASS)
+Phase: 19 (search-extract-worker-agents) — IN PROGRESS; 19-04 + 19-05 RE-PLANNED-2 (consult-driven: KS-enrichment + 2 strata + scoring reconciliation) 2026-06-17, ready to execute Stage 1 (PAUSED before execution per user)
+Plan: 5 plans (19-01/02/03 complete; 19-04 re-planned Stage-1 build [KS-enrichment + 2-strata assembler buried/evidence-absent + D-08 dispatch + manifest/lock-rule pre-registration] + Sonnet calibrator; 19-05 conditional Stage-2 Haiku read); phase NOT complete
+Status: 19-04/19-05 re-planned via gsd-planner from 19-04-REPLAN-DECISION-2 (blind 3-lineage panel consensus: Opus + GPT-5.5 + Gemini); gsd-plan-checker PASS-WITH-WARNINGS (0 blockers; 5 warnings folded via a planner refinement pass). Date-sensitive DROPPED offline (deferred to Phase-20 live); scored vote = MODEL verdict (T-19-19). Next: execute Stage 1.
+Last activity: 2026-06-17 -- consult panel (2 rounds to consensus, ~40 AI Credits) + re-plan via gsd-planner + gsd-plan-checker PASS-WITH-WARNINGS (warnings folded); paused before execution per user (see stopped_at)
 
 ### Milestone v2.1.0 roadmap (REVISED 2026-06-15)
 
