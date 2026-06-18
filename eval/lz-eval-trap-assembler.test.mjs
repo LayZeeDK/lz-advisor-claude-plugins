@@ -255,6 +255,16 @@ function evidenceAbsentKs() {
 const acceptGenerate = async (claim) => 'MUTATED: ' + String(claim);
 const acceptProbe = async () => ({ accepted: true, reason: 'stub-accept' });
 
+// RE-PLAN-5 multi-probe helpers. A probe that AGREES the entailment matches the expectation (so a
+// refuted-gold trap is retained, expectedEntailment='false' -> entails:false; a positive control,
+// expectedEntailment='true' -> entails:true). DISCRIMINATING: it returns the entails read that MATCHES
+// the expectation, so an all-agree set retains and a probe that returns the opposite entails SPLITS.
+const agreeProbe = async ({ expectedEntailment }) => ({
+  accepted: true,
+  reason: 'agree',
+  entails: expectedEntailment,
+});
+
 function buildEvidenceAbsentCorpus(count = 6) {
   // `count` evidence-absent seeds (>= the per-stratum floor of 3, with margin). All Supported, all dated
   // 15-05-2020 (cutoff), all with a two-digit day so no normalizer skip. RE-PLAN-4: every qualifying
@@ -270,8 +280,11 @@ function buildEvidenceAbsentCorpus(count = 6) {
   return { seeds, ksByClaim };
 }
 
-test('assembler: builds ONE stratum (evidence-absent) -- NO buried key, NO date-sensitive (RE-PLAN-4 single-stratum)', async () => {
-  const root = writeCache(buildEvidenceAbsentCorpus(6));
+test('assembler: builds EXACTLY {evidence-absent, positive-control} -- NO buried key, NO date-sensitive (RE-PLAN-5 two-arm)', async () => {
+  // RE-PLAN-5: a HEALTHY corpus carries BOTH arms -- a refuted-trap arm (evidence-absent) AND an
+  // interleaved gold=unrefuted positive-control arm. 9 seeds: the trailing 3 are positive controls, the
+  // leading 6 are refuted traps. The multi-probe consensus (one agreeProbe) accepts both arms.
+  const root = writeCache(buildEvidenceAbsentCorpus(9));
 
   try {
     const cacheDir = path.join(root, 'out');
@@ -279,25 +292,248 @@ test('assembler: builds ONE stratum (evidence-absent) -- NO buried key, NO date-
       cacheRoot: root,
       cacheDir,
       generate: acceptGenerate,
-      validityProbe: acceptProbe,
+      probes: [agreeProbe],
+      nControls: 3,
     });
 
-    // DISCRIMINATING: exactly the single evidence-absent key. A regression that re-introduces buried
-    // adds a second key and fails deepEqual.
-    assert.deepEqual(Object.keys(res.strata), ['evidence-absent'], 'EXACTLY the single evidence-absent stratum (no buried key)');
+    // DISCRIMINATING: EXACTLY {evidence-absent, positive-control}. A regression that re-introduces buried
+    // adds a third key and fails deepEqual; a regression that drops the control arm fails it too.
+    assert.deepEqual(
+      Object.keys(res.strata).sort(),
+      ['evidence-absent', 'positive-control'],
+      'EXACTLY {evidence-absent, positive-control} (no buried key)',
+    );
     assert.equal('buried' in res.strata, false, 'there is NO buried stratum (dropped -- construct-invalid offline, D-RP4-1)');
     assert.equal('date-sensitive' in res.strata, false, 'no date-sensitive stratum is ever assembled (deferred to Phase-20)');
 
-    // Every assembled row is tagged evidence-absent (DISCRIMINATING: never buried, never date-sensitive).
-    const allRows = res.strata['evidence-absent'];
-    assert.ok(allRows.length >= 3, 'the evidence-absent stratum reached the floor');
+    const trapRows = res.strata['evidence-absent'];
+    const controlRows = res.strata['positive-control'];
+    assert.ok(trapRows.length >= 3, 'the evidence-absent stratum reached the trap floor');
+    assert.ok(controlRows.length >= 3, 'the positive-control stratum reached the control floor');
 
-    for (const row of allRows) {
-      assert.equal(row.stratum, 'evidence-absent', 'every row is tagged evidence-absent (the sole arm)');
+    for (const row of trapRows) {
+      assert.equal(row.stratum, 'evidence-absent', 'every trap row is tagged evidence-absent');
+      assert.equal(row.expected_verdict, 'refuted', 'every trap row is refuted-gold');
     }
 
-    // The probe accepted every packet, so probeDropped is 0 here (the dedicated counter exists + is 0).
-    assert.equal(res.attrition.probeDropped, 0, 'the gold-blind probe dropped nothing (all-accept stub)');
+    for (const row of controlRows) {
+      assert.equal(row.stratum, 'positive-control', 'every control row is tagged positive-control');
+      assert.equal(row.expected_verdict, 'unrefuted', 'every control row is unrefuted-gold');
+    }
+
+    // The consensus accepted every packet, so probeDropped is 0 here (the dedicated counters exist + 0).
+    assert.equal(res.attrition.probeDropped, 0, 'the multi-probe consensus dropped no trap (all-agree stub)');
+    assert.equal(res.attrition.probeSplitDropped, 0, 'no inter-judge split (single all-agree probe)');
+    assert.equal(res.attrition.controlProbeDropped, 0, 'the consensus dropped no control (all-agree stub)');
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('assembler: MULTI-PROBE ALL-AGREE-RETAIN -- a packet ANY probe splits on is DROPPED + counted in probeSplitDropped (DISCRIMINATING vs majority + vs single-probe, RE-PLAN-5 Finding 2)', async () => {
+  // 8 refuted-trap candidates, 3 probes. probe #2 (the "out-of-family" probe) SPLITS on packets 3 and 6
+  // (reads the survivors as ENTAILING the overreach -- entails:true, the opposite of the expected 'false')
+  // while probes #1 and #3 agree. ALL-AGREE-RETAIN: those 2 packets are DROPPED (the OOF probe disagrees);
+  // exactly 6 are retained. DISCRIMINATING: a MAJORITY-vote regression (2-of-3 retains a split packet)
+  // would retain 8 and fail; a SINGLE-probe regression (ignores probes 2+3) would retain 8 and fail.
+  const { seeds, ksByClaim } = buildEvidenceAbsentCorpus(8);
+  const root = writeCache({ seeds, ksByClaim });
+
+  try {
+    const fixtureCutoff = parseAvtDate('15-05-2020');
+    const inFamily = async ({ expectedEntailment, enrichedKs }) => {
+      // C-RP4-1 closed-book mirroring: every probe sees ONLY the date-filtered survivors -- a re-filter is
+      // idempotent. A regression to the unfiltered datedKs would include undated docs and trip this.
+      assert.equal(
+        dateFilter(enrichedKs, fixtureCutoff).length,
+        enrichedKs.length,
+        'the in-family probe sees ONLY the date-filtered survivors (closed-book mirroring, C-RP4-1)',
+      );
+      return { accepted: true, reason: 'in-family agrees', entails: expectedEntailment };
+    };
+
+    let oofSeen = 0;
+    const outOfFamily = async ({ expectedEntailment }) => {
+      oofSeen += 1;
+
+      // SPLIT on the 3rd and 6th trap candidate: the OOF probe reads the survivors as ENTAILING the
+      // overreach (entails:true) when the expectation was 'false' -- a genuine inter-judge disagreement
+      // (the seed-75-class leniency the OOF probe catches). accepted:true so it is a SPLIT, not a reject.
+      if (oofSeen === 3 || oofSeen === 6) {
+        return { accepted: true, reason: 'OOF reads survivors as entailing the overreach -> split', entails: 'true' };
+      }
+
+      return { accepted: true, reason: 'OOF agrees', entails: expectedEntailment };
+    };
+
+    const thirdProbe = async ({ expectedEntailment }) => ({ accepted: true, reason: 'third agrees', entails: expectedEntailment });
+
+    const res = await assembleStage1Traps({
+      cacheRoot: root,
+      cacheDir: path.join(root, 'out'),
+      generate: acceptGenerate,
+      probes: [inFamily, outOfFamily, thirdProbe],
+    });
+
+    assert.equal(res.strata['evidence-absent'].length, 6, '8 candidates minus 2 split-drops = 6 retained (ALL-AGREE-RETAIN, not majority)');
+    assert.equal(res.attrition.probeDropped, 2, 'the 2 split packets are counted in probeDropped');
+    assert.equal(res.attrition.probeSplitDropped, 2, 'both drops are inter-judge SPLITs (probeSplitDropped), not unanimous rejects');
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('assembler: back-compat single-probe degenerate case -- the CARRIED validityProbe path is wrapped as a one-element consensus (RE-PLAN-5)', async () => {
+  // When `probes` is absent the CARRIED single `validityProbe` is wrapped as a one-element consensus
+  // (consensus-over-one == that one judge). DISCRIMINATING: a one-probe reject still drops the packet.
+  const { seeds, ksByClaim } = buildEvidenceAbsentCorpus(8);
+  const root = writeCache({ seeds, ksByClaim });
+
+  try {
+    let seen = 0;
+    const dropTwoProbe = async () => {
+      seen += 1;
+
+      if (seen === 4 || seen === 7) {
+        return { accepted: false, reason: 'survivors entail the overreach -> disqualify' };
+      }
+
+      return { accepted: true, reason: 'retain' };
+    };
+
+    const res = await assembleStage1Traps({
+      cacheRoot: root,
+      cacheDir: path.join(root, 'out'),
+      generate: acceptGenerate,
+      validityProbe: dropTwoProbe, // the CARRIED single-probe path (no `probes` array)
+    });
+
+    assert.equal(res.strata['evidence-absent'].length, 6, '8 candidates minus 2 single-probe rejects = 6 (one-element consensus)');
+    assert.equal(res.attrition.probeDropped, 2, 'the single-probe rejects are counted in probeDropped');
+    // A unanimous-style reject (accepted:false), NOT an inter-judge split -> probeSplitDropped stays 0.
+    assert.equal(res.attrition.probeSplitDropped, 0, 'an accepted:false reject is NOT a split (probeSplitDropped=0)');
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('assembler: interleaved POSITIVE CONTROLS -- native unmutated Supported seeds reach `positive-control` with goldLabels=unrefuted + NO recipe + expected_verdict unrefuted (RE-PLAN-5 Finding 1)', async () => {
+  // 9 seeds: trailing 3 are positive controls. A control is RETAINED only if ALL probes agree
+  // entails=true (the survivors entail the ORIGINAL claim). DISCRIMINATING: a control row carries
+  // expected_verdict 'unrefuted' (vs the trap's 'refuted'), goldLabels='unrefuted', and NO overreach
+  // recipe (native, NOT mutated).
+  const root = writeCache(buildEvidenceAbsentCorpus(9));
+
+  try {
+    const res = await assembleStage1Traps({
+      cacheRoot: root,
+      cacheDir: path.join(root, 'out'),
+      generate: acceptGenerate,
+      probes: [agreeProbe],
+      nControls: 3,
+    });
+
+    const controlRows = res.strata['positive-control'];
+    assert.equal(controlRows.length, 3, 'exactly the 3 trailing seeds become positive controls');
+
+    for (const row of controlRows) {
+      assert.equal(row.stratum, 'positive-control', 'the control row is tagged positive-control');
+      assert.equal(row.expected_verdict, 'unrefuted', 'a control is unrefuted-gold (vs the trap refuted)');
+      // NO overreach recipe -- the control is native (NOT mutateOverreach). writeTrap records recipe:null.
+      assert.equal(row.recipe, null, 'a native positive-control row carries NO overreach recipe (recipe:null)');
+      assert.equal('text' in row, false, 'a control row carries NO text field (recipe-not-text)');
+      assert.equal(res.goldLabels[row.uid], 'unrefuted', 'goldLabels marks the control uid unrefuted');
+    }
+
+    // DISCRIMINATING: the trap arm is refuted-gold (the inverse) -- proving the two arms are distinct gold.
+    for (const row of res.strata['evidence-absent']) {
+      assert.equal(res.goldLabels[row.uid], 'refuted', 'a trap uid stays refuted-gold (the inverse of a control)');
+    }
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('assembler: a probe that says entails=false on a control candidate DROPS it (it is NOT a valid positive control -- survivors do not entail the claim, RE-PLAN-5)', async () => {
+  // A control is valid ONLY if the survivors ENTAIL the original claim (all probes agree entails=true). A
+  // probe that reads entails=false (the survivors do NOT entail the claim) DROPS that candidate ->
+  // controlProbeDropped. DISCRIMINATING vs agreeProbe (which retains all). With 4 control candidates and 2
+  // dropped, only 2 retained -> below the control floor of 3 -> VOID-on-control-floor THROW.
+  const root = writeCache(buildEvidenceAbsentCorpus(10));
+
+  try {
+    let controlSeen = 0;
+    const dropSomeControls = async ({ expectedEntailment, stratum }) => {
+      if (stratum === 'positive-control') {
+        controlSeen += 1;
+
+        if (controlSeen <= 2) {
+          // The survivors do NOT entail the original claim -> not a valid positive control -> drop.
+          return { accepted: true, reason: 'survivors do not entail the claim', entails: 'false' };
+        }
+      }
+
+      return { accepted: true, reason: 'agree', entails: expectedEntailment };
+    };
+
+    await assert.rejects(
+      () =>
+        assembleStage1Traps({
+          cacheRoot: root,
+          cacheDir: path.join(root, 'out'),
+          generate: acceptGenerate,
+          probes: [dropSomeControls],
+          nControls: 4,
+        }),
+      (e) =>
+        e.name === 'ContractError' &&
+        /positiveControlFloor/.test(e.message) &&
+        /positive-control/.test(e.message) &&
+        e.attrition &&
+        e.attrition.controlProbeDropped === 2 &&
+        e.attrition.controlBelowFloor === true,
+      'a control whose survivors do not entail the claim is dropped; below-floor controls fail closed (VOID-on-control-floor)',
+    );
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('assembler: the positive-control floor FAILS CLOSED -- fewer than positiveControlFloor (3) retained controls throws /positiveControlFloor/ naming positive-control (RE-PLAN-5 Finding 1 power check)', async () => {
+  // A corpus that supplies only 2 control candidates (nControls=2) cannot reach the control floor of 3 ->
+  // the assembler FAILS CLOSED with a documented VOID-on-control-floor (the read cannot prove the voter
+  // CAN uphold). DISCRIMINATING: the trap arm has plenty of seeds (so the throw is the CONTROL floor, not
+  // the trap floor) -- the throw message names positive-control + positiveControlFloor.
+  const root = writeCache(buildEvidenceAbsentCorpus(10));
+
+  try {
+    let thrown = null;
+    await assert.rejects(
+      () =>
+        assembleStage1Traps({
+          cacheRoot: root,
+          cacheDir: path.join(root, 'out'),
+          generate: acceptGenerate,
+          probes: [agreeProbe],
+          nControls: 2, // below the control floor of 3
+        }),
+      (e) => {
+        thrown = e;
+
+        return (
+          e.name === 'ContractError' &&
+          /positiveControlFloor/.test(e.message) &&
+          /positive-control/.test(e.message) &&
+          !/evidence-absent/.test(e.message) // the throw is the CONTROL floor, not the trap floor
+        );
+      },
+      'fewer than positiveControlFloor retained controls fails closed (VOID-on-control-floor)',
+    );
+
+    assert.ok(thrown && thrown.attrition, 'the thrown VOID carries the realized attrition');
+    assert.equal(thrown.attrition.controlBelowFloor, true, 'controlBelowFloor is the documented VOID-on-control-floor flag');
+    assert.equal(typeof thrown.attrition.voidReason, 'string', 'a VOID reason is recorded');
+    assert.match(thrown.attrition.voidReason, /control|uphold|Finding 1/, 'the VOID reason names the control floor / uphold check');
   } finally {
     fs.rmSync(root, { recursive: true, force: true });
   }

@@ -86,7 +86,7 @@
 //
 // VALIDITY SCREENING (two screens): every trap is screened by SCREEN 1 validityGate (the
 // deliberately-weak-verifier flip -- a too-easy trap the weak verifier already catches is rejected) PLUS
-// SCREEN 2 the injected GOLD-BLIND entailment validityProbe (the mandatory mitigation, load-bearing --
+// SCREEN 2 the injected GOLD-BLIND entailment probe(s) (the mandatory mitigation, load-bearing --
 // FATAL if omitted; board guardrails 1+2+4+6). The probe is a GOLD-BLIND model judge (NO AVeriTeC label,
 // NO mutation knowledge) that reads ONLY the date-filtered surviving SUPPORTING docs + the mutated
 // OVERREACH claim and answers: "do these docs explicitly state OR directly entail the one-step OVERREACH,
@@ -98,6 +98,41 @@
 // contradicted -- exactly resist-uphold-on-absence). The probe runs BEFORE any verify-vote and is
 // gold-blind so it does not bootstrap the gold it validates. The flags (absent for evidence-absent) are
 // NOT text-derivable -- they do not leak the gold label into the doc text the model reads.
+//
+// RE-PLAN-5 MULTI-PROBE ALL-AGREE-RETAIN CONSENSUS (Finding 2 -- the OUT-OF-FAMILY second probe is the
+// single highest-leverage de-confounder; board r1-synthesis Critical-Finding-2). The in-family gold-blind
+// probe is SAME-FAMILY with the voter (Opus GENERATEs, Opus PROBEs, Sonnet VOTES) and was DEMONSTRABLY
+// TOO LENIENT -- PROVEN on the committed pilot seed 75 (overreach "income DOUBLED"; survivor #3
+// "$200K -> millions" EXCEEDS 2x, so the survivors plausibly ENTAIL "doubled"; the in-family probe
+// RETAINED it ONLY by a strict-literal "no explicit 2x ratio" reading; a Sonnet voter reading it loosely
+// would CORRECTLY vote unrefuted -> a FAKE false-uphold, the T-19-17 defect). MANDATORY: a SECOND,
+// OUT-OF-FAMILY gold-blind probe pass (GPT-5.5 + Gemini via the copilot CLI, brokered at run time, Task 4).
+// The assembler now consumes an injected `probes` ARRAY of gold-blind judges, each with the signature
+// `await probe({ trap, enrichedKs, stratum, expectedEntailment }) -> { accepted, reason, entails }`. A
+// packet is RETAINED only if EVERY probe agrees the entailment matches `expectedEntailment` ('false' for
+// a refuted-gold TRAP -- the survivors must NOT entail the overreach; 'true' for an unrefuted-gold
+// POSITIVE CONTROL -- the survivors MUST entail the original claim). ANY split (the first probe that
+// disagrees) DISQUALIFIES the packet -- counted in attrition.probeDropped AND a NET-NEW
+// attrition.probeSplitDropped (the split-drop count, distinct from a unanimous reject). BACK-COMPAT: when
+// `probes` is absent but the CARRIED single `validityProbe` is injected, it is wrapped as a one-element
+// consensus (consensus-over-one == that one judge), so every RE-PLAN-4 test passes UNCHANGED. A probe stub
+// that returns no `entails` field (the RE-PLAN-4 accept/reject-only stub) is treated as
+// entails-matching-the-expectation on accepted:true (back-compat).
+//
+// RE-PLAN-5 INTERLEAVED POSITIVE CONTROLS (Finding 1 -- a 0-false-uphold result is CONFOUNDED without them;
+// board r1-synthesis Critical-Finding-1). With EVERY retained trap gold=refuted, "Sonnet saturates" is
+// observationally identical to a DEGENERATE ALWAYS-REFUTE prior (a voter that refutes everything on thin
+// evidence scores a perfect 0 for the WRONG reason and measures nothing). The assembler interleaves
+// gold=unrefuted POSITIVE CONTROLS -- native UNMUTATED Supported seeds (NO mutateOverreach; the claim is
+// the ORIGINAL Supported claim, gold=unrefuted by construction) whose date-filtered survivors GENUINELY
+// ENTAIL the claim (ALL probes agree entails=true -- the inverse of the trap screen). The voter SHOULD
+// vote unrefuted on these; if Sonnet REFUTES them too the saturation read is an always-refute artifact
+// (VOID/uninterpretable, NOT PASS -- scored downstream by scorePositiveControls). Controls are returned
+// under a SEPARATE `positive-control` strata key with their OWN floor (positiveControlFloor, default 3),
+// carry NO overreach recipe (native), and set goldLabels[uid]='unrefuted'. The trap arm and the control
+// arm have TWO INDEPENDENT floors (both load-bearing; below either = a documented VOID, never tuned).
+// OUT-OF-FAMILY GENERATE is DEFERRED (board guardrail 7): generation is gold-aware and inspection already
+// found real one-step overreaches; the bigger same-family risk is the PROBE, which IS moved out-of-family.
 //
 // RECIPE-NOT-TEXT (D-07): the mutated CC-BY-NC prose + the enriched KS are written via writeTrap to
 // the gitignored eval/.cache/ ONLY; the returned row carries uid + stratum + recipe + sha256, NEVER a
@@ -293,53 +328,112 @@ export function enrichKsForClaim(ksDocs, { decisiveRank = -1, disconfirmerRank =
 }
 
 // ---------------------------------------------------------------------------
-// assembleStage1Traps({ cacheRoot, generate, validityProbe, cacheDir, perStratumFloor=3,
-//   minSurvivors=5, weakVerifier }): the deterministic SINGLE-STRATUM (evidence-absent) Stage-1
-//   assembler (RE-PLAN-4 OPTION A -- buried dropped, D-RP4-1).
+// runProbeConsensus(probes, { trap, enrichedKs, stratum, decisiveRank, expectedEntailment }):
+// the RE-PLAN-5 ALL-AGREE-RETAIN consensus over an ARRAY of gold-blind judges (Finding 2). Each probe is
+// `await probe({ trap, enrichedKs, stratum, expectedEntailment }) -> { accepted, reason, entails }`. The
+// packet is RETAINED only if EVERY probe agrees: a probe AGREES when it returns accepted:true AND (its
+// `entails` field, when present, matches `expectedEntailment`). The FIRST disagreeing probe (a SPLIT)
+// short-circuits a drop. BACK-COMPAT: a probe stub that returns no `entails` field (the RE-PLAN-4
+// accept/reject-only stub) is treated as entails-matching on accepted:true, so the carried single-probe
+// stubs still drive the consensus unchanged. Returns { retained:boolean, split:boolean, splitProbeIndex,
+// reason }: split=true means a probe returned accepted:true but entails did NOT match the expectation (a
+// genuine inter-judge disagreement), distinct from a unanimous-style accepted:false reject (split=false).
+// EVERY probe receives ONLY the date-filtered survivors (enrichedKs -- closed-book mirroring, C-RP4-1).
+// ---------------------------------------------------------------------------
+async function runProbeConsensus(probes, { trap, enrichedKs, stratum, decisiveRank, expectedEntailment }) {
+  for (let i = 0; i < probes.length; i += 1) {
+    const probe = probes[i];
+    const verdict = await probe({ trap, enrichedKs, stratum, decisiveRank, expectedEntailment });
+
+    if (verdict == null || verdict.accepted !== true) {
+      // A unanimous-style reject (the probe declines to retain) -- NOT an inter-judge split.
+      return {
+        retained: false,
+        split: false,
+        splitProbeIndex: i,
+        reason: (verdict && verdict.reason) || 'probe-rejected',
+      };
+    }
+
+    // When a probe reports its `entails` read, it MUST match the expectation. A mismatch is a SPLIT (the
+    // probe accepted overall but disagrees on entailment -- a genuine inter-judge disagreement, e.g. the
+    // OOF probe reading seed-75's survivors as entailing the overreach). A probe with NO `entails` field
+    // (the RE-PLAN-4 stub) is treated as entails-matching on accepted:true (back-compat).
+    if (verdict.entails !== undefined && String(verdict.entails) !== String(expectedEntailment)) {
+      return {
+        retained: false,
+        split: true,
+        splitProbeIndex: i,
+        reason: (verdict && verdict.reason) || 'probe-split (entails != expectation)',
+      };
+    }
+  }
+
+  return { retained: true, split: false, splitProbeIndex: -1, reason: 'all-probes-agree' };
+}
+
+// ---------------------------------------------------------------------------
+// assembleStage1Traps({ cacheRoot, generate, validityProbe, probes, cacheDir, perStratumFloor=3,
+//   positiveControlFloor=3, minSurvivors=5, weakVerifier }): the deterministic Stage-1 assembler. RE-PLAN-5
+//   carries a refuted-trap arm (evidence-absent, RE-PLAN-4 OPTION A -- buried dropped, D-RP4-1) AND adds
+//   an interleaved gold=unrefuted POSITIVE-CONTROL arm (Finding 1), both screened by a MULTI-PROBE
+//   ALL-AGREE-RETAIN consensus (Finding 2).
 //
 //   - generate(seedClaim, recipe) -> Promise<string>: the INJECTED async generator that produces the
 //     mutated trap prose. An Opus-subagent generator is acceptable at Stage 1 (only Sonnet runs the
-//     calibrator; the truly-out-of-family paid generator is reserved for Stage-2 / 19-05).
+//     calibrator; out-of-family generate is DEFERRED -- board guardrail 7).
+//   - probes: an ARRAY of INJECTED GOLD-BLIND entailment judges (in-family Opus + GPT-5.5 + Gemini --
+//     Finding 2). Each `await probe({ trap, enrichedKs, stratum, expectedEntailment }) ->
+//     { accepted, reason, entails }`. ALL-AGREE-RETAIN: a packet is RETAINED only if EVERY probe agrees
+//     the entailment matches the expectation ('false' for a refuted-gold TRAP, 'true' for an
+//     unrefuted-gold POSITIVE CONTROL); ANY split DISQUALIFIES (drop, counted in probeDropped +
+//     probeSplitDropped). Each probe sees ONLY the date-filtered survivors (closed-book mirroring,
+//     C-RP4-1).
 //   - validityProbe({ trap, enrichedKs, stratum, decisiveRank }) -> Promise<{ accepted, reason }>: the
-//     INJECTED GOLD-BLIND entailment probe (the mandatory mitigation, load-bearing). A gold-blind model
-//     judge (NO AVeriTeC label, NO mutation knowledge) reads ONLY the date-filtered surviving SUPPORTING
-//     docs + the mutated OVERREACH claim and answers whether the survivors explicitly state OR directly
-//     entail the one-step OVERREACH, or only the weaker ORIGINAL Supported claim. accepted:false
-//     DISQUALIFIES (drop) any packet whose survivors plausibly entail/license the overreach (gold=refuted
-//     is indefensible there); accepted:true RETAINS as valid gold=refuted ONLY packets whose survivors
-//     support the original but do NOT entail the overreach (resist-uphold-on-absence). Since the stratum
-//     is always 'evidence-absent' and decisiveRank is always -1, the rubric is uniform. Runs at lock
-//     time, BEFORE any vote; gold-blind so it does not bootstrap the gold. The drop count is REPORTED in
-//     attrition.probeDropped (board guardrail 4), never silently absorbed.
+//     CARRIED single GOLD-BLIND entailment probe (RE-PLAN-4). BACK-COMPAT: when `probes` is absent, this
+//     single probe is wrapped as a one-element consensus (consensus-over-one == that one judge). The drop
+//     count is REPORTED in attrition.probeDropped (board guardrail 4), never silently absorbed.
 //   - weakVerifier({ trap, enrichedKs }) -> 'unrefuted' | 'refuted': the INJECTED deliberately-weak
-//     reference verifier whose FLIP validityGate screens on (default: a weak verifier that always
-//     upholds -> always flips on a refuted-gold trap -- the unit suite injects discriminating stubs).
+//     reference verifier whose FLIP validityGate screens on (default: always upholds -- the unit suite
+//     injects discriminating stubs). Applied to the refuted-trap arm only (SCREEN 1).
 //
-// DETERMINISTIC seed selection: ALL qualifying Supported seeds by ASCENDING claim_id. For each:
+// DETERMINISTIC seed selection: ALL qualifying Supported seeds by ASCENDING claim_id. The seeds are
+// PARTITIONED -- the FIRST contiguous run becomes refuted TRAPS, the remaining qualifying seeds become
+// native POSITIVE CONTROLS (a seed used as a trap is NEVER reused as a control). For each TRAP candidate:
 // normalizeClaimDate (skip on null); enrich (dates only) + dateFilter to the strictly-pre-cutoff
-// survivors; EXCLUDE the seed if fewer than minSurvivors survive; mutateOverreach to record the recipe;
-// generate the mutated prose; SCREEN 1 validityGate (weak-verifier flip) THEN SCREEN 2 the GOLD-BLIND
-// entailment validityProbe; writeTrap cache-only. Every surviving seed is `evidence-absent` (NO
-// decisive/disconfirmer flag: decisiveRank=-1, disconfirmerRank=-1; the packet = the date-filtered
+// survivors; EXCLUDE if fewer than minSurvivors survive; mutateOverreach to record the recipe; generate
+// the mutated prose; SCREEN 1 validityGate (weak-verifier flip) THEN SCREEN 2 the MULTI-PROBE consensus
+// with expectedEntailment='false'; writeTrap cache-only. For each POSITIVE-CONTROL candidate: the SAME
+// date enrichment + dateFilter + >=minSurvivors floor; NO mutateOverreach (the claim is the ORIGINAL
+// Supported claim -- gold=unrefuted); SCREEN 2 the SAME consensus with expectedEntailment='true' (the
+// survivors MUST entail the original claim); writeTrap cache-only with stratum='positive-control' + NO
+// overreach recipe. Every trap is `evidence-absent` (decisiveRank=-1; the packet = the date-filtered
 // ORIGINAL supporting docs). There is NO buried stratum and NO date-sensitive stratum offline.
 //
-// Returns { strata: { 'evidence-absent':[row] }, goldLabels:{uid->'refuted'},
-//   attrition:{ scanned, skippedNoDate, skippedFewSurvivors, screenedOut, probeDropped, perStratumCount,
-//     retainedBelowFloor:boolean, voidReason:string|null },
-//   runConfig:{ minSurvivors, perStratumFloor } }. attrition.probeDropped is the number of packets the
-// GOLD-BLIND entailment probe (SCREEN 2) disqualified, distinct from the aggregate screenedOut (SCREEN 1
-// + SCREEN 2). The SINGLE evidence-absent floor FAILS CLOSED below perStratumFloor: when the RETAINED
-// (post-probe) set is below the floor the assembler THROWS /perStratumFloor/ naming evidence-absent, and
-// the throw records the realized probeDropped count + sets attrition.retainedBelowFloor=true +
-// attrition.voidReason (the documented VOID condition -- the corpus cannot honestly build the PRIMARY
-// arm; board guardrail 5: the floor is load-bearing, NOT a knob to relax toward a desired N).
+// Returns { strata: { 'evidence-absent':[row], 'positive-control':[row] }, goldLabels:{uid->'refuted'|
+//   'unrefuted'}, attrition:{ scanned, skippedNoDate, skippedFewSurvivors, screenedOut, probeDropped,
+//   probeSplitDropped, perStratumCount, retainedBelowFloor, voidReason, controlScanned,
+//   controlSkippedNoDate, controlSkippedFewSurvivors, controlProbeDropped, controlBelowFloor },
+//   runConfig:{ minSurvivors, perStratumFloor, positiveControlFloor } }. attrition.probeDropped is the
+// number of TRAP packets the multi-probe consensus disqualified (SCREEN 2); attrition.probeSplitDropped
+// is the subset of those that were dropped by an inter-judge SPLIT (a probe accepted but disagreed on
+// entailment), distinct from a unanimous-style reject. The TWO floors are INDEPENDENT: the evidence-absent
+// TRAP floor (>= perStratumFloor over the post-consensus trap set) THROWS /perStratumFloor/ naming
+// evidence-absent on a below-floor set (the documented VOID-on-trap-floor; board guardrail 5); the
+// positive-control floor (>= positiveControlFloor over the post-consensus control set) THROWS
+// /positiveControlFloor/ naming positive-control on a below-floor set (the documented
+// VOID-on-control-floor -- the read cannot prove the voter can uphold). NEITHER floor is ever tuned
+// toward a desired N (result-shopping).
 // ---------------------------------------------------------------------------
 export async function assembleStage1Traps({
   cacheRoot,
   generate,
   validityProbe,
+  probes,
   cacheDir,
   perStratumFloor = 3,
+  positiveControlFloor = 3,
+  nControls = 0,
   minSurvivors = 5,
   weakVerifier,
 } = {}) {
@@ -355,8 +449,21 @@ export async function assembleStage1Traps({
     throw new ContractError('assembleStage1Traps requires an injected async generate(seedClaim, recipe)', 'assembleStage1Traps');
   }
 
-  if (typeof validityProbe !== 'function') {
-    throw new ContractError('assembleStage1Traps requires an injected async validityProbe({...})', 'assembleStage1Traps');
+  // RE-PLAN-5: SCREEN 2 is a MULTI-PROBE ALL-AGREE-RETAIN consensus (Finding 2). The caller injects a
+  // `probes` ARRAY of gold-blind judges (in-family Opus + GPT-5.5 + Gemini). BACK-COMPAT: if `probes` is
+  // absent but the CARRIED single `validityProbe` is injected, wrap it as a one-element consensus
+  // (consensus-over-one == that one judge) so every RE-PLAN-4 test passes UNCHANGED.
+  const PROBES = Array.isArray(probes) && probes.length > 0
+    ? probes
+    : typeof validityProbe === 'function'
+      ? [validityProbe]
+      : null;
+
+  if (PROBES == null || PROBES.some((p) => typeof p !== 'function')) {
+    throw new ContractError(
+      'assembleStage1Traps requires an injected `probes` array of gold-blind judges (or a single validityProbe for back-compat)',
+      'assembleStage1Traps',
+    );
   }
 
   // The weak verifier defaults to "always upholds" (always FLIPS on a refuted-gold trap -> validityGate
@@ -370,32 +477,58 @@ export async function assembleStage1Traps({
     .filter((s) => s != null && s.label === 'Supported')
     .sort((a, b) => a.claim_id - b.claim_id);
 
-  // ONE stratum (RE-PLAN-4): evidence-absent is the SOLE offline arm. No buried key (D-RP4-1).
-  const strata = { 'evidence-absent': [] };
+  // RE-PLAN-5 SEED PARTITION (Finding 1): the qualifying Supported seeds are split into a refuted-TRAP
+  // arm and a native POSITIVE-CONTROL arm so a seed used as a trap is NEVER reused as a control. The LAST
+  // `nControls` qualifying seeds (the tail, ascending claim_id) are reserved as POSITIVE-CONTROL
+  // candidates; the leading run feeds the refuted-trap arm. nControls defaults to 0 (the trap-only path:
+  // no controls assembled, the control floor is not enforced -- back-compat with the RE-PLAN-4 tests).
+  // The partition is recorded in runConfig (deterministic, anti result-shopping); both the trap count and
+  // nControls are chosen at call time (Task 4 passes them), never tuned after a vote.
+  const N_CONTROLS = Number.isInteger(nControls) && nControls > 0 ? nControls : 0;
+  const controlSeeds = N_CONTROLS > 0 ? supported.slice(Math.max(0, supported.length - N_CONTROLS)) : [];
+  const controlSeedIds = new Set(controlSeeds.map((s) => s.claim_id));
+  const trapSeeds = supported.filter((s) => !controlSeedIds.has(s.claim_id));
+
+  // TWO arms (RE-PLAN-5): evidence-absent is the refuted-trap arm; positive-control is the interleaved
+  // gold=unrefuted arm. No buried key (D-RP4-1). date-sensitive deferred (Phase-20).
+  const strata = { 'evidence-absent': [], 'positive-control': [] };
   const goldLabels = {};
   const attrition = {
     scanned: 0,
     skippedNoDate: 0,
     skippedFewSurvivors: 0,
-    // screenedOut counts BOTH SCREEN-1 (validityGate flip) + SCREEN-2 (gold-blind probe) drops.
+    // screenedOut counts BOTH SCREEN-1 (validityGate flip) + SCREEN-2 (multi-probe consensus) drops.
     screenedOut: 0,
-    // probeDropped is the dedicated SCREEN-2 GOLD-BLIND entailment-probe drop count (board guardrail 4:
-    // the probe's disqualifications are REPORTED, distinct from the SCREEN-1 weak-verifier rejections).
+    // probeDropped is the dedicated SCREEN-2 multi-probe consensus drop count over the TRAP arm (board
+    // guardrail 4: the probe's disqualifications are REPORTED, distinct from the SCREEN-1 rejections).
     probeDropped: 0,
-    perStratumCount: { 'evidence-absent': 0 },
-    // The documented VOID signal (board guardrail 5): set when the RETAINED (post-probe) evidence-absent
-    // set falls below perStratumFloor. The assembler THROWS in that case (the corpus cannot honestly
+    // probeSplitDropped (RE-PLAN-5 Finding 2): the subset of probeDropped caused by an inter-judge SPLIT
+    // (a probe accepted overall but disagreed on entailment), distinct from a unanimous-style reject. The
+    // OOF probe disagreeing with the in-family probe (e.g. seed-75-class) lands here.
+    probeSplitDropped: 0,
+    perStratumCount: { 'evidence-absent': 0, 'positive-control': 0 },
+    // The documented VOID signal (board guardrail 5): set when the RETAINED (post-consensus) evidence-absent
+    // TRAP set falls below perStratumFloor. The assembler THROWS in that case (the corpus cannot honestly
     // build the PRIMARY arm), but these fields are populated on the attrition the throw carries so the
     // realized probeDropped count + the VOID reason are reported, never silently absorbed.
     retainedBelowFloor: false,
     voidReason: null,
+    // RE-PLAN-5 positive-control attrition + the SEPARATE control floor (Finding 1): controlScanned /
+    // controlSkippedNoDate / controlSkippedFewSurvivors / controlProbeDropped account the control arm;
+    // controlBelowFloor is the documented VOID-on-control-floor flag (set on the THROW).
+    controlScanned: 0,
+    controlSkippedNoDate: 0,
+    controlSkippedFewSurvivors: 0,
+    controlProbeDropped: 0,
+    controlBelowFloor: false,
   };
 
   // A deterministic recipe-seed counter (the recipe { transform, seed } must carry an integer seed).
   let recipeSeed = 0;
   const TRANSFORMS = ['scope', 'causation', 'magnitude', 'certainty'];
 
-  for (const seed of supported) {
+  // ===== REFUTED-TRAP ARM (evidence-absent) =====
+  for (const seed of trapSeeds) {
     attrition.scanned += 1;
 
     // The SET-ASSEMBLY normalizer (single-digit day). Skip a seed whose date is unsalvageable.
@@ -454,20 +587,31 @@ export async function assembleStage1Traps({
       continue;
     }
 
-    // SCREEN 2 -- the GOLD-BLIND entailment validity probe (the mandatory mitigation, load-bearing). A
-    // gold-blind judge (NO AVeriTeC label, NO mutation knowledge) reads ONLY the date-filtered surviving
-    // SUPPORTING docs (enrichedKs) + the mutated OVERREACH claim (mutatedText) and answers whether the
-    // survivors explicitly state OR directly ENTAIL the one-step overreach, or only the weaker ORIGINAL
-    // Supported claim. accepted:false DISQUALIFIES a packet whose survivors plausibly entail/license the
-    // overreach (there `unrefuted` is a legitimate read and gold=refuted is indefensible -- the defect
-    // that killed buried); accepted:true RETAINS only survivors-support-original-but-not-overreach
-    // (resist-uphold-on-absence). The drop is counted in BOTH screenedOut + the dedicated probeDropped
-    // (board guardrail 4 -- the probe's disqualifications are reported, never silently absorbed).
-    const probe = await validityProbe({ trap: mutatedText, enrichedKs, stratum, decisiveRank });
+    // SCREEN 2 -- the MULTI-PROBE ALL-AGREE-RETAIN consensus (RE-PLAN-5 Finding 2; the mandatory
+    // mitigation, load-bearing). EVERY gold-blind judge (in-family Opus + GPT-5.5 + Gemini) reads ONLY the
+    // date-filtered surviving SUPPORTING docs (enrichedKs) + the mutated OVERREACH claim (mutatedText) and
+    // answers whether the survivors explicitly state OR directly ENTAIL the one-step overreach. For a
+    // refuted-gold TRAP the expected entailment is 'false': the packet is RETAINED only if ALL probes
+    // agree entails=false (survivors-support-original-but-not-overreach -- resist-uphold-on-absence). ANY
+    // split (a probe that reads the survivors as entailing the overreach -- e.g. seed-75-class) or a
+    // unanimous-style reject DISQUALIFIES; the drop is counted in screenedOut + probeDropped, and a SPLIT
+    // additionally in probeSplitDropped (board guardrail 4 -- the disqualifications are reported).
+    const consensus = await runProbeConsensus(PROBES, {
+      trap: mutatedText,
+      enrichedKs,
+      stratum,
+      decisiveRank,
+      expectedEntailment: 'false',
+    });
 
-    if (probe == null || probe.accepted !== true) {
+    if (!consensus.retained) {
       attrition.screenedOut += 1;
       attrition.probeDropped += 1;
+
+      if (consensus.split) {
+        attrition.probeSplitDropped += 1;
+      }
+
       continue;
     }
 
@@ -490,19 +634,95 @@ export async function assembleStage1Traps({
     attrition.perStratumCount[stratum] += 1;
   }
 
-  // THE SINGLE EVIDENCE-ABSENT FLOOR (RE-PLAN-4, board guardrail 5 -- the floor is load-bearing, NOT a
-  // knob): evidence-absent is the SOLE arm and MUST reach perStratumFloor. The RETAINED count is the
-  // POST-PROBE survivor count (the gold-blind probe SCREEN 2 has already dropped invalid packets), so a
-  // below-floor RETAINED set IS the documented VOID condition -- the corpus cannot honestly build the
-  // PRIMARY arm. The assembler FAILS CLOSED (THROWS /perStratumFloor/ naming evidence-absent); the throw
-  // RECORDS the realized probeDropped count (board guardrail 4) + sets attrition.retainedBelowFloor +
-  // attrition.voidReason so the VOID signal is REPORTED, never silently absorbed and never relaxed
-  // toward a desired N (that would be result-shopping).
+  // ===== INTERLEAVED POSITIVE-CONTROL ARM (RE-PLAN-5 Finding 1) =====
+  // Native UNMUTATED Supported seeds whose date-filtered survivors GENUINELY ENTAIL the claim (the inverse
+  // of the trap screen -- ALL probes agree entails=true). NO mutateOverreach: the claim is the ORIGINAL
+  // Supported claim, gold=unrefuted by construction. The voter SHOULD vote unrefuted on these; if Sonnet
+  // refutes them too the saturation read is an always-refute artifact (scored downstream). Each control
+  // row carries NO overreach recipe (native) and stratum='positive-control'.
+  for (const seed of controlSeeds) {
+    attrition.controlScanned += 1;
+
+    const normalized = normalizeClaimDate(seed.claim_date);
+
+    if (normalized == null) {
+      attrition.controlSkippedNoDate += 1;
+      continue;
+    }
+
+    const claimDate = parseAvtDate(normalized);
+    const rawKs = Array.isArray(ksByClaim[seed.claim_id]) ? ksByClaim[seed.claim_id] : [];
+
+    // ENRICH dates only (NO refuter flag) + dateFilter to the strictly-pre-cutoff survivors -- EXACTLY the
+    // closed-book mirroring discipline (C-RP4-1): the probe sees ONLY what the voter judges.
+    const datedKs = enrichKsForClaim(rawKs, {});
+    const survivors = dateFilter(datedKs, claimDate);
+
+    if (survivors.length < minSurvivors) {
+      attrition.controlSkippedFewSurvivors += 1;
+      continue;
+    }
+
+    const enrichedKs = survivors;
+    const stratum = 'positive-control';
+
+    // SCREEN 2 -- the SAME multi-probe consensus, but with expectedEntailment='true': the survivors MUST
+    // ENTAIL the ORIGINAL claim for a valid positive control (ALL probes agree entails=true). A control
+    // whose survivors do NOT entail the claim is DROPPED -- it is not a valid positive control (counted in
+    // controlProbeDropped + probeSplitDropped on a split). NO mutateOverreach + NO SCREEN-1 weak-verifier:
+    // there is no overreach to catch; the control is the unmutated supported claim.
+    const consensus = await runProbeConsensus(PROBES, {
+      trap: seed.claim,
+      enrichedKs,
+      stratum,
+      decisiveRank: -1,
+      expectedEntailment: 'true',
+    });
+
+    if (!consensus.retained) {
+      attrition.controlProbeDropped += 1;
+
+      if (consensus.split) {
+        attrition.probeSplitDropped += 1;
+      }
+
+      continue;
+    }
+
+    // The control prose IS the original Supported claim (native, gold=unrefuted). writeTrap records the
+    // recipe-not-text row with NO overreach recipe + stratum='positive-control'. The mutatedText passed to
+    // writeTrap is the native claim text (cache-only; never committed).
+    const uid = 'averitec-dev-' + String(seed.claim_id).padStart(4, '0');
+    const written = writeTrap(
+      {
+        uid,
+        expected_verdict: 'unrefuted',
+        stratum,
+        mutatedText: 'POSITIVE-CONTROL (native, unmutated): ' + String(seed.claim),
+        // recipe omitted -> writeTrap records recipe:null; the control carries NO overreach recipe.
+      },
+      { cacheDir },
+    );
+
+    strata[stratum].push(written.row);
+    goldLabels[uid] = 'unrefuted';
+    attrition.perStratumCount[stratum] += 1;
+  }
+
+  // THE TWO INDEPENDENT FLOORS (board guardrail 5 -- both load-bearing, NEITHER a knob). The
+  // evidence-absent TRAP floor and the positive-control floor are checked separately; below either is a
+  // documented VOID (the corpus cannot honestly build that arm), never relaxed toward a desired N.
+
+  // (1) THE EVIDENCE-ABSENT TRAP FLOOR (CARRIED RE-PLAN-4). The RETAINED count is the POST-CONSENSUS
+  // survivor count (SCREEN 2 has already dropped invalid packets), so a below-floor RETAINED set IS the
+  // documented VOID-on-trap-floor. The assembler FAILS CLOSED (THROWS /perStratumFloor/ naming
+  // evidence-absent); the throw RECORDS the realized probeDropped count (board guardrail 4) + sets
+  // attrition.retainedBelowFloor + attrition.voidReason so the VOID signal is REPORTED.
   if (strata['evidence-absent'].length < perStratumFloor) {
     attrition.retainedBelowFloor = true;
     attrition.voidReason =
       'RETAINED evidence-absent < perStratumFloor (' + perStratumFloor + '): got ' +
-      strata['evidence-absent'].length + ' after the gold-blind entailment probe dropped ' +
+      strata['evidence-absent'].length + ' after the gold-blind entailment probe(s) dropped ' +
       attrition.probeDropped + ' packet(s) (probeDropped) and SCREEN-1+SCREEN-2 dropped ' +
       attrition.screenedOut + ' total (screenedOut). Documented VOID -- the corpus cannot honestly build ' +
       'the PRIMARY evidence-absent arm (board guardrail 5: the floor is load-bearing, not a knob; ' +
@@ -515,8 +735,31 @@ export async function assembleStage1Traps({
         '; documented VOID -- the corpus cannot honestly build the PRIMARY evidence-absent arm)',
       'assembleStage1Traps',
     );
-    // Attach the realized attrition (probeDropped + the VOID reason) to the thrown error so the
-    // below-floor VOID signal is inspectable by the caller (board guardrail 4: REPORT the drops).
+    err.attrition = attrition;
+    throw err;
+  }
+
+  // (2) THE POSITIVE-CONTROL FLOOR (RE-PLAN-5 Finding 1). Enforced ONLY when controls were requested
+  // (nControls > 0). A RETAINED control set below positiveControlFloor IS the documented
+  // VOID-on-control-floor -- the read cannot prove the voter CAN uphold when warranted (the power/plumbing
+  // check). The assembler FAILS CLOSED (THROWS /positiveControlFloor/ naming positive-control); the throw
+  // RECORDS the realized controlProbeDropped count + sets attrition.controlBelowFloor + voidReason.
+  if (N_CONTROLS > 0 && strata['positive-control'].length < positiveControlFloor) {
+    attrition.controlBelowFloor = true;
+    attrition.voidReason =
+      'RETAINED positive-control < positiveControlFloor (' + positiveControlFloor + '): got ' +
+      strata['positive-control'].length + ' after the gold-blind entailment probe(s) dropped ' +
+      attrition.controlProbeDropped + ' control candidate(s) (controlProbeDropped). Documented VOID -- ' +
+      'the read cannot prove the voter CAN uphold when warranted (Finding 1: a 0-false-uphold result ' +
+      'is confounded without the positive controls; the floor is load-bearing, not a knob).';
+
+    const err = new ContractError(
+      'assembleStage1Traps: the positive-control stratum has fewer than positiveControlFloor (' +
+        positiveControlFloor + ') RETAINED distinct controls: got ' + strata['positive-control'].length +
+        ' (after the gold-blind probe dropped controlProbeDropped=' + attrition.controlProbeDropped +
+        '; documented VOID-on-control-floor -- the read cannot prove the voter can uphold)',
+      'assembleStage1Traps',
+    );
     err.attrition = attrition;
     throw err;
   }
@@ -525,7 +768,7 @@ export async function assembleStage1Traps({
     strata,
     goldLabels,
     attrition,
-    runConfig: { minSurvivors, perStratumFloor },
+    runConfig: { minSurvivors, perStratumFloor, positiveControlFloor, nControls: N_CONTROLS },
   };
 }
 
