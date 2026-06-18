@@ -1,45 +1,43 @@
 {
   "version": "1.0",
-  "timestamp": "2026-06-17T23:24:44.922Z",
+  "timestamp": "2026-06-18T07:09:53.649Z",
   "phase": "19",
   "phase_name": "search-extract-worker-agents",
   "phase_dir": ".planning/phases/19-search-extract-worker-agents",
   "plan": 4,
-  "task": 0,
+  "task": 4,
   "total_tasks": 4,
   "status": "paused",
-  "summary": "19-04 + 19-05 RE-PLANNED-3 (board-driven CLOSED-BOOK design) and committed. Paused before execution per user. A pre-calibrator artifact review found the RE-PLAN-2 dispatch cannot drive a valid run (C1) + I1-I4; three consult rounds (in-family Opus panel; in-family reconciliation after a claude-code-guide capability consult REFUTED 'closed-book is the only leak-safe option'; a cross-family board = Opus + Copilot GPT-5.5 + Gemini, 2 rounds to EXPLICIT consensus, ~28.6 AI Credits) all converged: closed-book judgment (evidence-absent primary; buried auto-gated); no MCP+index build; retrieval defers to the Phase-20 live shadow; Haiku-ON needs offline-pass AND live shadow/canary; VOID first-class; Sonnet-default ships regardless. gsd-plan-checker PASS-WITH-WARNINGS (0 blockers, 3 folded).",
+  "summary": "19-04 RE-PLAN-4 (board-converged: single evidence-absent stratum + a load-bearing GOLD-BLIND entailment validity probe; buried DROPPED as construct-invalid offline). Tasks 1-3 EXECUTED + committed AND review-cleared by an adversarial cross-lens review that caught + fixed a real closed-book-mirroring defect (the probe was reading the unfiltered datedKs instead of the date-filtered survivors). 294 tests green; frozen primitives + EVAL_THRESHOLDS/URL_DATE_RULE byte-identical. PAUSED before Task 4 (the Sonnet calibrator -- it SPENDS the capped usage pool) per the user, to resume in a new session.",
   "completed_tasks": [
     {"id": "19-01", "name": "search-and-stop spine + adapters + date primitives", "status": "done"},
     {"id": "19-02", "name": "search + extract worker agents", "status": "done"},
     {"id": "19-03", "name": "trap recipe + validity/leakage gates + manifest", "status": "done"},
-    {"id": "19-04-replan2-build", "name": "RE-PLAN-2 Tasks 1-3 BUILT + committed (assembler c253431, dispatch e5fa8d6, pre-registration 5f05121, SUMMARY e9b37f7; 284 tests green)", "status": "done", "note": "superseded-in-part by RE-PLAN-3: the dispatch is reworked to closed-book; Task 1 + Task 3 are amended"},
-    {"id": "artifact-review", "name": "pre-calibrator artifact review (2 independent Opus reviewers + source verify)", "status": "done", "artifact": "19-04-ARTIFACT-REVIEW.md"},
-    {"id": "board-consensus", "name": "cross-family board of advisors -> RE-PLAN-3 via gsd-planner + gsd-plan-checker", "status": "done", "artifact": "19-04-REPLAN-DECISION-3.md"}
+    {"id": "19-04-T1", "name": "RE-PLAN-4: assembler -> evidence-absent-ONLY (buried/isBuried/auto-drop removed); single floor>=3; attrition.probeDropped; below-floor documented-VOID; gold-blind entailment probe consumption", "status": "done", "commit": "943ee2b"},
+    {"id": "19-04-T2", "name": "closed-book 3-part dispatch -- CARRIED unchanged (stratum-agnostic); green-sanity verify", "status": "done", "note": "no commit (no-op carry)"},
+    {"id": "19-04-T3", "name": "RE-PLAN-4: re-pre-register single evidence-absent stratum + gold-blind probe rubric + floor/VOID + count-vs-rank correction; anti-drift {buried,evidence-absent}->{evidence-absent}", "status": "done", "commit": "65b13d3"},
+    {"id": "19-04-SUMMARY", "name": "SUMMARY rewritten to the single-stratum end-state", "status": "done", "commit": "1378314"},
+    {"id": "19-04-REVIEW", "name": "adversarial cross-lens review of Tasks 1-3 (3 lenses x review->verify); 12 findings (11 confirmed [8 positive verifications], 1 refuted); the ONE real defect cluster C-RP4-1/2/3 FIXED + mutation-proven", "status": "done", "commit": "ee45e9e"}
   ],
   "remaining_tasks": [
-    {"id": "19-04-T1", "name": "assembler amendments: I3 (drop tautological classifySeed guard) + I4 (exactly-5 KEEP test) + explicit buried-auto-drop + re-point the >=3/stratum throw test to evidence-absent-short", "status": "not_started", "type": "auto"},
-    {"id": "19-04-T2", "name": "closed-book 3-part dispatch rework (Node searchAndStop pre-pass -> Workflow judge-only TEXT verdict over inlined evidence -> Node persist/reduce + ANY-UPHOLD k->1) fixing C1/I1/I2 + resolve maxInFlight; rework the harness (real string return + integration smoke)", "status": "not_started", "type": "auto"},
-    {"id": "19-04-T3", "name": "pre-registration adds (k->1 ANY-UPHOLD rule, construct-scope boundary, buried-auto-drop, no-MCP, Haiku-ON preconditions) + W-1 stale-prose correction in lockstep (lock-rule + manifest + aggregate.test + dataset.test)", "status": "not_started", "type": "auto"},
-    {"id": "19-04-T4", "name": "run the Sonnet CLOSED-BOOK calibrator over evidence-absent (+ buried if self-qualified); settle VOID vs PROCEED", "status": "not_started", "type": "checkpoint:human-verify", "gate": "blocking", "spends_usage_pool": true},
-    {"id": "19-05", "name": "CONDITIONAL: Haiku CLOSED-BOOK read on the surviving stratum -> PASS/FAIL-RAISE/VOID", "status": "not_started", "conditional_on": "19-04 Task 4 == PROCEED", "gate": "blocking"},
+    {"id": "19-04-T4", "name": "BLOCKING human-verify Sonnet CLOSED-BOOK calibrator over the SINGLE evidence-absent stratum -> settle VOID vs PROCEED", "status": "not_started", "type": "checkpoint:human-verify", "gate": "blocking", "spends_usage_pool": true},
+    {"id": "19-05", "name": "CONDITIONAL (only if Task 4 == PROCEED): Haiku CLOSED-BOOK read on the surviving stratum -> PASS/FAIL-RAISE/VOID", "status": "not_started", "conditional_on": "19-04 Task 4 == PROCEED", "gate": "blocking"},
     {"id": "close-out", "name": "verify_phase_goal -> secure-phase -> validate-phase -> extract-learnings -> phase.complete", "status": "not_started"}
   ],
   "blockers": [
-    {"description": "19-04 Task 4 + 19-05 Task 2 are blocking human-verify checkpoints (settle-OR-raise); outcome must be raised to the user, never auto-resolved", "type": "human_action", "workaround": "none -- by design"},
-    {"description": "A closed-book PASS alone keeps the Haiku-first flag OFF; retrieval orchestration (the Phase-20 live shadow) is the named precondition for any flip", "type": "design", "workaround": "none -- by design"}
+    {"description": "19-04 Task 4 is a blocking human-verify checkpoint; the calibrator outcome (VOID vs PROCEED) must be raised to the user, never auto-resolved", "type": "human_action", "workaround": "none -- by design"},
+    {"description": "Node cannot call Claude models; the orchestrator must broker the 3 model roles (generate / gold-blind entailment probe / Sonnet voter). The voter dispatch is eval/lz-eval-voter-dispatch.workflow.mjs run via the Workflow tool; the gold-blind probe + the Opus generate are also brokered (Workflow agent() or Agent tool); persistence/reduce/gate run in Node", "type": "technical", "workaround": "see the Task-4 runbook in .continue-here.md"}
   ],
   "human_actions_pending": [
-    {"action": "Resume execution (user paused before executing the re-planned plans)", "context": "RE-PLAN-3 complete + committed; execution not started", "blocking": true},
-    {"action": "Approve the 19-04 Task-4 calibrator outcome (VOID vs PROCEED)", "context": "blocking human-verify checkpoint; spends the capped usage pool", "blocking": true}
+    {"action": "Authorize + run the 19-04 Task-4 Sonnet calibrator (SPENDS the capped 5-hour usage pool)", "context": "the blocking spend boundary the user paused at", "blocking": true},
+    {"action": "Approve the Task-4 outcome (VOID vs PROCEED) after the run", "context": "settle-OR-raise; never auto-resolved", "blocking": true}
   ],
   "decisions": [
-    {"decision": "Offline gate = CLOSED-BOOK judgment (Option A); do NOT build the dev MCP + ranked-retrieval index (Option B)", "rationale": "frozen staticKsAdapter ignores the query (MCP inert); a new ranked index is low-fidelity to live web; corpus collapses to median-5 surviving docs; OFF-by-default bounded downside; board + 2 in-family rounds converged", "phase": "19"},
-    {"decision": "evidence-absent PRIMARY; buried AUTO-GATED (auto-drops at median-5, explicit + logged)", "rationale": "evidence-absent is the resist-uphold-on-absence failure mode Phase-18 never tested; buried is unconstructible at median-5 (rank-20 burial impossible)", "phase": "19"},
-    {"decision": "Retrieval orchestration DEFERS to the Phase-20 LIVE operational shadow", "rationale": "not cleanly + leak-safely offline-measurable; Phase-20 live web reaches the published gold, so it is a shadow not a clean eval -- recorded so retrieval is never silently assumed-covered", "phase": "19"},
-    {"decision": "Haiku-ON requires an offline closed-book PASS AND live shadow/canary; closed-book PASS alone keeps the flag OFF; VOID first-class; Sonnet-default ships regardless", "rationale": "a closed-book PASS does not certify retrieval (the lone dissent, reconciled); EVAL-03 raise-to-user", "phase": "19"}
+    {"decision": "Offline gate = a SINGLE evidence-absent stratum; buried DROPPED entirely (construct-invalid offline: the synthetic disconfirmer flag is text-unverified)", "rationale": "2nd cross-family board (3 Opus lenses + GPT-5.5 + Gemini), UNANIMOUS; see 19-04-REPLAN-DECISION-4.md", "phase": "19"},
+    {"decision": "A load-bearing GOLD-BLIND entailment validity probe screens every candidate packet BEFORE any vote; the probe reads ONLY the date-filtered survivors (closed-book mirroring -- NOT the unfiltered datedKs, fixed in ee45e9e) + the mutated overreach, and DISQUALIFIES packets whose survivors entail the overreach; retained < floor 3 => documented VOID", "rationale": "the evidence-absent validity trap (a voter legitimately reading survivors as upholding the overreach makes gold invalid); FATAL if omitted", "phase": "19"},
+    {"decision": "Re-pre-registration in the zero-votes window is sound (corrects a provably-false count-vs-rank predicate); the floor is load-bearing not a tunable knob", "rationale": "anti-result-shopping; board guardrails", "phase": "19"}
   ],
   "uncommitted_files": [".claude/settings.json (pre-existing, unrelated -- do NOT bundle)"],
-  "next_action": "On user go: execute the re-planned 19-04 via /gsd-execute-phase 19 (Tasks 1-3 amend the committed RE-PLAN-2 artifacts -> closed-book design, gated by FILE-form node --test, NO model spend; then the Task-4 BLOCKING Sonnet closed-book calibrator -> raise VOID/PROCEED to the user). Read 19-04-REPLAN-DECISION-3.md + 19-04-PLAN.md first; do NOT re-open the design or rebuild the committed artifacts.",
-  "context_notes": "RE-PLAN-3 is triangulated (in-family panel + reconciliation + cross-family board, all converged) + plan-checker-clean (3 warnings folded). PAUSED at the execution boundary per user. The likely Task-4 outcome is VOID (re-saturation, per Phase-18) -> Sonnet-default ships, 19-05 skipped. AMEND the committed RE-PLAN-2 artifacts (do not rebuild); frozen primitives byte-unchanged; pre-registration (Task 3) commits before any vote (Task 4); the model's verdict is the scored value; k->1 = ANY-UPHOLD. Board transcripts in gitignored eval/.cache/board/."
+  "next_action": "On user go in a new session: execute RE-PLAN-4 Task 4 -- assemble over ALL qualifying Supported seeds (~62) with an Opus generate + the gold-blind entailment probe; run the Node searchAndStopPrePass per retained claim; dispatch the Sonnet voter at k>=5 via eval/lz-eval-voter-dispatch.workflow.mjs (Workflow tool); persist + reduce k->1 (any-uphold); feed pooled sonnetFalseUpholds to calibratorGate; resolveOutcome; settle VOID vs PROCEED and RAISE to the user. Read 19-04-REPLAN-DECISION-4.md + 19-04-PLAN.md first.",
+  "context_notes": "RE-PLAN-4 is board-converged + plan-checker-clean (W1 folded) + Tasks 1-3 review-cleared (the C-RP4-1 closed-book-mirroring fix was the key catch -- the probe now mirrors exactly what the voter sees). The likely Task-4 outcome is VOID (saturation per the Phase-18 0/30==0/30 precedent, OR the gold-blind probe drops the retained set below floor 3). VOID is first-class: Sonnet-default ships, 19-05 is skipped, Haiku-first defers to the Phase-20 live shadow. A closed-book PASS alone still keeps the Haiku flag OFF. Two unmeasured numbers decide it: N_retained after the probe, and Sonnet's resist-uphold-on-absence rate. Board transcripts: eval/.cache/board2/ (gitignored). Run scaffolding: eval/.cache/run-stage1/ (gitignored: enumerate.mjs/sizing.mjs)."
 }
