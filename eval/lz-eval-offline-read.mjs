@@ -39,6 +39,7 @@ import {
   countFalseUpholds,
   delta,
   clopperPearsonUpper,
+  clopperPearsonUpperOneSided,
   passAtK,
   passHatK,
   lockRuleVerdict,
@@ -344,11 +345,261 @@ export function classifyCalibration({ sonnetFalseUpholds, trials, positiveContro
 
   // (4) 0 false-upholds + positive-controls UPHELD on clean traces -> a LEGITIMATE evidence-justified
   // SATURATED-VOID (the gate CAN register a non-zero AND the voter CAN uphold when warranted).
+  //
+  // RE-PLAN-7 NOTE: this SATURATED-VOID label is the CARRIED RE-PLAN-5 RELATIVE-read framing, kept for
+  // back-compat ONLY. It is NO LONGER the decision path: the RE-PLAN-7 ABSOLUTE per-model path
+  // (certifyModel below) reads the SAME clean earned 0 -- on a difficulty-floor-met, covariate-matched
+  // set with the controls upheld + the CI tight -- as WORKS (the PIVOT). A clean EARNED 0 is PROOF the
+  // model works, NOT a VOID.
   return Object.freeze({
     label: 'SATURATED-VOID',
     calibration,
     anyUpholdOnMinNotMet,
     reason: '0 false-upholds + positive-controls upheld on clean traces -> LEGITIMATE evidence-justified saturation -> VOID (a closed-book PASS never flips Haiku ON)',
+  });
+}
+
+// ---------------------------------------------------------------------------
+// certifyModel({ model, falseUpholds, nTrap, overRefusals, nCtrl, traceAudit, difficultyFloorMet,
+//   covariateOverlapMet, evidenceAbsentStratumMet }) -- the RE-PLAN-7 ABSOLUTE PER-MODEL verdict (THE
+// PIVOT). The relative Haiku-MINUS-Sonnet delta + the SATURATED-VOID framing are SUPERSEDED: this
+// proves, for a SINGLE model M in voter role, WHETHER it WORKS as the lz-deep-research verify-voter.
+// Sonnet is a SUBJECT on trial, NOT the yardstick.
+//
+// TWO estimands, pooled PER-CLAIM (denominator N_claims, NEVER N*k -- the k=9 votes share one packet,
+// positively correlated; the per-claim pooling happens upstream via reducePooledVerdict):
+//   - ESTIMAND A -- FALSE-UPHOLD rate over the retained refuted-gold traps; statistic =
+//     clopperPearsonUpperOneSided(falseUpholds, nTrap) (the F2-pinned ONE-SIDED 95% upper); PASS_A iff
+//     CP1s <= TAU_FU (0.10). The catastrophic arm: silently shipped bad research.
+//   - ESTIMAND B -- OVER-REFUSAL rate over the gold=unrefuted positive controls (the F1 always-refute
+//     detector, REUSING scorePositiveControls' over-refusal count); CP1s(overRefusals, nCtrl); PASS_B
+//     iff CP1s <= TAU_OR (0.15).
+//
+// THE PIVOT (SATURATION-as-PASS): a clean EARNED 0 certifies WORKS only when ALL THREE hold JOINTLY:
+//   (a) the difficulty floor is met (the set is hard+representative -- including the F5 subject-specific
+//       Claude held-out check + the covariate-overlap check; difficultyFloorMet AND covariateOverlapMet),
+//   (b) the CI upper bound is tight (CP1s <= TAU at the realized N -- both estimands pass),
+//   (c) the positive-control arm passes (the 0 is EARNED, not an always-refuse artifact -- PASS_B).
+//
+// VERDICT(M):
+//   - 'VOID-on-power'    : nTrap < N_TRAP_FLOOR OR nCtrl < N_CTRL_FLOOR OR evidenceAbsentStratumMet false
+//                          (the read lacks power; certifyModel is the AUTHORITATIVE power gate, W3 --
+//                          the 36/24 adequacy floor, distinct from the assembler's build-floor of 3).
+//   - 'VOID-difficulty'  : difficultyFloorMet === false (the F5 Claude held-out reference aced the set).
+//   - 'VOID-covariate'   : covariateOverlapMet === false (the F5 trap/control distributions diverge).
+//   - 'VOID-artifact'    : an always-refute control collapse (PASS_B fails AND every control refuted) OR
+//                          an uphold on a min-not-met / truncated / quota-killed trace (the W-3 derived
+//                          min-not-met OR the caller-supplied truncated/quota-killed flag).
+//   - 'WORKS'            : PASS_A AND PASS_B (with the floors met).
+//   - 'DOES-NOT-WORK'    : otherwise (a CI exceeds its TAU).
+//
+// W-3: anyUpholdOnMinNotMet is DERIVED MECHANICALLY from traceAudit.upheldRecords' trace stop_reason
+// (NOT a passed boolean -- the carried derivation from classifyCalibration); only
+// anyUpholdOnTruncatedOrQuotaKilled stays caller-supplied. certifyModel consumes the FROZEN engine
+// (clopperPearsonUpperOneSided + the 2 TAU + N floors) UNCHANGED; it edits no engine number. Returns
+// { verdict, estimandA:{cpUpper, pass}, estimandB:{cpUpper, pass}, anyUpholdOnMinNotMet, reason }.
+// ---------------------------------------------------------------------------
+export function certifyModel({
+  model,
+  falseUpholds,
+  nTrap,
+  overRefusals,
+  nCtrl,
+  traceAudit,
+  difficultyFloorMet,
+  covariateOverlapMet,
+  evidenceAbsentStratumMet,
+} = {}) {
+  if (typeof model !== 'string' || model.length === 0) {
+    throw new ContractError('certifyModel requires a non-empty model string', 'certifyModel');
+  }
+
+  for (const [name, v] of [['falseUpholds', falseUpholds], ['nTrap', nTrap], ['overRefusals', overRefusals], ['nCtrl', nCtrl]]) {
+    if (!Number.isInteger(v) || v < 0) {
+      throw new ContractError('certifyModel requires a non-negative integer ' + name + ': ' + JSON.stringify(v), 'certifyModel');
+    }
+  }
+
+  if (falseUpholds > nTrap) {
+    throw new ContractError('certifyModel: falseUpholds (' + falseUpholds + ') cannot exceed nTrap (' + nTrap + ')', 'certifyModel');
+  }
+
+  if (overRefusals > nCtrl) {
+    throw new ContractError('certifyModel: overRefusals (' + overRefusals + ') cannot exceed nCtrl (' + nCtrl + ')', 'certifyModel');
+  }
+
+  // The F5/F7 floor flags are REQUIRED booleans -- the read is CONFOUNDED without them (mirroring
+  // classifyCalibration's confounded-without-positiveControl guard). A missing flag fails closed.
+  for (const [name, v] of [['difficultyFloorMet', difficultyFloorMet], ['covariateOverlapMet', covariateOverlapMet], ['evidenceAbsentStratumMet', evidenceAbsentStratumMet]]) {
+    if (typeof v !== 'boolean') {
+      throw new ContractError('certifyModel requires a boolean ' + name + ' (the read is confounded without the F5/F7 floors): ' + JSON.stringify(v), 'certifyModel');
+    }
+  }
+
+  if (traceAudit == null || typeof traceAudit !== 'object' || !Array.isArray(traceAudit.upheldRecords) ||
+    typeof traceAudit.anyUpholdOnTruncatedOrQuotaKilled !== 'boolean') {
+    throw new ContractError(
+      'certifyModel requires a traceAudit { upheldRecords:[pooledRecord...], anyUpholdOnTruncatedOrQuotaKilled:boolean }',
+      'certifyModel',
+    );
+  }
+
+  // The audited upheld set MUST match the false-uphold count (every false-uphold pooled record is audited
+  // -- mirrors classifyCalibration). Without this an uphold's bad trace could be hidden from the W-3 scan.
+  if (traceAudit.upheldRecords.length !== falseUpholds) {
+    throw new ContractError(
+      'certifyModel: traceAudit.upheldRecords count (' + traceAudit.upheldRecords.length +
+        ') must equal falseUpholds (' + falseUpholds + ') -- the audited set must match the false-uphold count',
+      'certifyModel',
+    );
+  }
+
+  // W-3: DERIVE anyUpholdOnMinNotMet MECHANICALLY from the upheld pooled records' traces (carried from
+  // classifyCalibration). An uphold cast on a min-not-met trace is an artifact, not capability.
+  const anyUpholdOnMinNotMet = traceAudit.upheldRecords.some(
+    (r) => r != null && r.trace != null && r.trace.stop_reason === 'min-not-met',
+  );
+
+  // The two estimands via the FROZEN engine's ONE-SIDED CP (F2). Computed up front so the WORKS reason
+  // can cite them; the VOID gates below short-circuit before reading them as a verdict.
+  const estimandA = Object.freeze({
+    cpUpper: clopperPearsonUpperOneSided(falseUpholds, nTrap),
+    pass: clopperPearsonUpperOneSided(falseUpholds, nTrap) <= EVAL_THRESHOLDS.TAU_FU,
+  });
+  const estimandB = Object.freeze({
+    cpUpper: clopperPearsonUpperOneSided(overRefusals, nCtrl),
+    pass: clopperPearsonUpperOneSided(overRefusals, nCtrl) <= EVAL_THRESHOLDS.TAU_OR,
+  });
+
+  // The control arm is an always-refute artifact when EVERY control was refuted (overRefusals === nCtrl)
+  // -- a degenerate always-refute prior, mirroring scorePositiveControls' alwaysRefuteArtifact (tolerance
+  // ZERO collapses to this only at a full sweep; PASS_B already catches lesser over-refusal as a CI miss).
+  const alwaysRefuteArtifact = nCtrl > 0 && overRefusals === nCtrl;
+
+  const out = (verdict, reason) => Object.freeze({ verdict, estimandA, estimandB, anyUpholdOnMinNotMet, reason });
+
+  // --- The PRE-REGISTERED verdict order (never tuned) ---
+
+  // (1) VOID-on-power FIRST: the read lacks power below a load-bearing floor (W3 -- certifyModel is the
+  // AUTHORITATIVE power gate; the 36/24 adequacy floor is distinct from the assembler build-floor of 3).
+  if (nTrap < EVAL_THRESHOLDS.N_TRAP_FLOOR || nCtrl < EVAL_THRESHOLDS.N_CTRL_FLOOR) {
+    return out('VOID-on-power', 'below the adequacy floor (N_TRAP_FLOOR=' + EVAL_THRESHOLDS.N_TRAP_FLOOR + ' / N_CTRL_FLOOR=' + EVAL_THRESHOLDS.N_CTRL_FLOOR + ') -- the one-sided CP cannot bind (the authoritative power gate, W3); never tuned');
+  }
+
+  // (1b) F7: an unmet evidence-absent stratum floor is VOID-on-power SCOPED to evidence-absent -- NOT a
+  // silent WORKS over a sub-construct WiCE cannot supply (do not launder WiCE power into evidence-absent).
+  if (evidenceAbsentStratumMet === false) {
+    return out('VOID-on-power', 'the evidence-absent stratum floor is unmet (F7) -> VOID-on-power scoped to evidence-absent -- never a silent WORKS over a sub-construct WiCE cannot supply');
+  }
+
+  // (2) The F5 floors: difficulty (the Claude held-out reference must NOT ace the set) + covariate overlap
+  // (the trap/control distributions must overlap -- no STYLE bypass).
+  if (difficultyFloorMet === false) {
+    return out('VOID-difficulty', 'the F5 subject-specific difficulty floor is unmet (the Claude held-out reference aced the retained set -> too easy to certify capability)');
+  }
+
+  if (covariateOverlapMet === false) {
+    return out('VOID-covariate', 'the F5 trap/control covariate distributions diverge beyond tolerance -> a model could pass by STYLE not judgment');
+  }
+
+  // (3) VOID-artifact: an always-refute control collapse (PASS_B fails AND the control arm is an
+  // always-refute artifact) OR an uphold on a bad trace (min-not-met derived, or truncated/quota-killed).
+  if (alwaysRefuteArtifact && !estimandB.pass) {
+    return out('VOID-artifact', 'the control arm collapsed to an always-refute artifact (every control refuted, PASS_B fails) -- not capability; the WHOLE POINT of F1');
+  }
+
+  if (falseUpholds >= 1 && (anyUpholdOnMinNotMet || traceAudit.anyUpholdOnTruncatedOrQuotaKilled)) {
+    return out('VOID-artifact', 'a false-uphold landed on a min-not-met / truncated / quota-killed trace -> ARTIFACT (not capability), never a WORKS (W-3 mechanical min-not-met derivation)');
+  }
+
+  // (4) WORKS iff PASS_A AND PASS_B (the floors above already met). The PIVOT: a clean EARNED 0 with the
+  // floors met + the CI tight + the controls upheld certifies WORKS -- the SATURATED-VOID label is RETIRED.
+  if (estimandA.pass && estimandB.pass) {
+    return out('WORKS', 'PASS_A (CP1s false-uphold <= TAU_FU) AND PASS_B (CP1s over-refusal <= TAU_OR) on a difficulty-floor-met, covariate-matched set with the controls upheld + the CI tight -> WORKS (the PIVOT; a clean earned 0 is PROOF, the SATURATED-VOID framing is RETIRED). Clears the closed-book SCREEN, NOT a ship certificate -- Phase-20 is the real gate.');
+  }
+
+  // (5) Otherwise a CI exceeds its TAU -> DOES-NOT-WORK.
+  return out('DOES-NOT-WORK', 'a CI exceeds its TAU (PASS_A=' + estimandA.pass + ', PASS_B=' + estimandB.pass + ') -> DOES-NOT-WORK under its own best prompt');
+}
+
+// ---------------------------------------------------------------------------
+// decisionMatrix({ haiku, sonnet, opus }) (each a certifyModel result) -- the RE-PLAN-7 cross-product
+// of the INDEPENDENT per-model verdicts encoding the FOUR Opus-voter nuances.
+//   - cell = the Haiku x Sonnet cross-product (nuance i -- the SHIP matrix is the cheap tiers ONLY):
+//     'both' / 'only-sonnet' / 'only-haiku' / 'neither'; if either subject is a VOID flavor the cell
+//     surfaces 'VOID' naming which subject + which flavor (Opus is NEVER a ship cell).
+//   - opusReference = { verdict, opusFailsBar } (nuance ii -- Opus is the reference ROW; opusFailsBar is
+//     the NEW first-class MAJOR finding: the quality anchor the plugin leans on is below its own gate).
+//   - nearOpusDiagnostic = { meaningful, value } (nuance iii -- CONDITIONAL on Opus clearing the bar;
+//     tracking a model that is itself wrong is not reassurance, so value is null + meaningful false when
+//     Opus does NOT WORK). The actual Haiku/Sonnet-tracks-Opus number is computed at the Task-4 settle
+//     from the shared-set agreement; here it is a placeholder 'computed-at-settle' marker when meaningful.
+//   - raiseToUser = true ALWAYS (settle-OR-raise; never auto-resolve) -- explicitly true on opusFailsBar
+//     and on any subject VOID.
+//   - framing = 'clears-the-closed-book-SCREEN' (F4 -- never 'production-safe'; a closed-book WORKS does
+//     NOT flip Haiku ON; the Phase-20 live shadow is the named precondition for the flip).
+// Returns { cell, opusReference, nearOpusDiagnostic, raiseToUser, framing }.
+// ---------------------------------------------------------------------------
+export function decisionMatrix({ haiku, sonnet, opus } = {}) {
+  for (const [name, r] of [['haiku', haiku], ['sonnet', sonnet], ['opus', opus]]) {
+    if (r == null || typeof r !== 'object' || typeof r.verdict !== 'string') {
+      throw new ContractError('decisionMatrix requires a ' + name + ' certifyModel result (with a verdict string)', 'decisionMatrix');
+    }
+  }
+
+  const isVoid = (v) => v.startsWith('VOID');
+  const haikuWorks = haiku.verdict === 'WORKS';
+  const sonnetWorks = sonnet.verdict === 'WORKS';
+
+  // The SHIP cell is the Haiku x Sonnet cross-product ONLY (nuance i -- Opus is never a ship cell). A
+  // subject VOID surfaces explicitly (which subject + which flavor) so it is never silently read as
+  // 'neither' (a VOID is a power/validity failure, NOT a DOES-NOT-WORK capability verdict).
+  let cell;
+
+  if (isVoid(haiku.verdict) || isVoid(sonnet.verdict)) {
+    const voids = [];
+
+    if (isVoid(haiku.verdict)) {
+      voids.push('haiku:' + haiku.verdict);
+    }
+
+    if (isVoid(sonnet.verdict)) {
+      voids.push('sonnet:' + sonnet.verdict);
+    }
+
+    cell = 'VOID(' + voids.join(',') + ')';
+  } else if (haikuWorks && sonnetWorks) {
+    cell = 'both';
+  } else if (sonnetWorks) {
+    cell = 'only-sonnet';
+  } else if (haikuWorks) {
+    cell = 'only-haiku';
+  } else {
+    cell = 'neither';
+  }
+
+  const opusFailsBar = opus.verdict !== 'WORKS';
+
+  const opusReference = Object.freeze({
+    verdict: opus.verdict,
+    opusFailsBar,
+  });
+
+  // nuance iii: the near-Opus diagnostic is CONDITIONAL on Opus clearing the bar. The actual
+  // tracks-Opus number is computed at the Task-4 settle over the shared set; suppressed when Opus fails.
+  const nearOpusDiagnostic = Object.freeze({
+    meaningful: !opusFailsBar,
+    value: opusFailsBar ? null : 'computed-at-settle',
+  });
+
+  return Object.freeze({
+    cell,
+    opusReference,
+    nearOpusDiagnostic,
+    // settle-OR-raise: ALWAYS raise (a both-WORKS cell still does not auto-flip Haiku ON). Explicitly
+    // true on opusFailsBar (the MAJOR finding) and on any subject VOID -- covered by the always-true.
+    raiseToUser: true,
+    framing: 'clears-the-closed-book-SCREEN',
   });
 }
 

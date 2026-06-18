@@ -49,9 +49,11 @@ import {
   persistVote,
   scorePositiveControls,
   classifyCalibration,
+  certifyModel,
+  decisionMatrix,
 } from './lz-eval-offline-read.mjs';
 
-import { EVAL_THRESHOLDS, clopperPearsonUpper } from './lz-eval-aggregate.mjs';
+import { EVAL_THRESHOLDS, clopperPearsonUpper, clopperPearsonUpperOneSided } from './lz-eval-aggregate.mjs';
 
 // Resolve fixtures test-file-relative (NEVER process.cwd() -- cwd drifts under GSD worktrees and
 // headless `claude -p`). Vote fixtures are written to a per-test tmpdir, not under HERE, so no
@@ -858,6 +860,332 @@ test('classifyCalibration consumes calibratorGate BYTE-IDENTICAL (it still enfor
     (e) => e.name === 'ContractError' && /MIN_K/.test(e.message),
     'classifyCalibration surfaces calibratorGate trials < MIN_K (calibratorGate is consumed unchanged)',
   );
+});
+
+// ===========================================================================
+// certifyModel + decisionMatrix (Plan 19-04, Task 2; RE-PLAN-7 -- THE PIVOT). The ABSOLUTE per-model
+// verdict (the relative Haiku-MINUS-Sonnet delta + the SATURATED-VOID framing are RETIRED). A clean
+// EARNED 0 on a hard, covariate-matched set with the controls upheld + the CI tight certifies WORKS.
+// Every assertion is DISCRIMINATING (the four labels are distinct; the one-sided CP is proven wired;
+// the four Opus-voter nuances flip on the Opus verdict).
+// ===========================================================================
+
+// A pooled upheld-claim record carrying a representative trace (the shape certifyModel audits via W-3).
+function upheldTrapRecord(id, stopReason) {
+  return { id, seat: 'sonnet', verdict: 'unrefuted', trace: { queries: ['q0', 'q1', 'q2'], depth: 6, stop_reason: stopReason } };
+}
+
+// A WORKS-clean traceAudit: the upheld set matches the false-uphold count, no min-not-met / truncation.
+function cleanTraceAudit(falseUpholds) {
+  const upheldRecords = [];
+
+  for (let i = 0; i < falseUpholds; i += 1) {
+    upheldRecords.push(upheldTrapRecord('t' + i, 'exhausted'));
+  }
+
+  return { upheldRecords, anyUpholdOnTruncatedOrQuotaKilled: false };
+}
+
+test('certifyModel: a clean EARNED 0/36 trap arm + a passing 0/24 control arm + floors met -> WORKS (the PIVOT, NOT the retired SATURATED-VOID)', () => {
+  const res = certifyModel({
+    model: 'haiku',
+    falseUpholds: 0,
+    nTrap: 36,
+    overRefusals: 0,
+    nCtrl: 24,
+    traceAudit: cleanTraceAudit(0),
+    difficultyFloorMet: true,
+    covariateOverlapMet: true,
+    evidenceAbsentStratumMet: true,
+  });
+
+  assert.equal(res.verdict, 'WORKS', 'a clean earned 0 with the floors met + the CI tight + the controls upheld -> WORKS (the PIVOT)');
+  assert.equal(res.estimandA.pass, true, 'PASS_A: CP1s(0,36)=0.0798 <= TAU_FU (0.10)');
+  assert.equal(res.estimandB.pass, true, 'PASS_B: CP1s(0,24)=0.1173 <= TAU_OR (0.15)');
+  assert.ok(Math.abs(res.estimandA.cpUpper - clopperPearsonUpperOneSided(0, 36)) < 1e-12, 'estimandA.cpUpper is the ONE-SIDED CP at (0,36)');
+  assert.ok(Math.abs(res.estimandB.cpUpper - clopperPearsonUpperOneSided(0, 24)) < 1e-12, 'estimandB.cpUpper is the ONE-SIDED CP at (0,24)');
+  assert.equal(res.anyUpholdOnMinNotMet, false, 'no min-not-met derived from a clean (empty) upheld set');
+});
+
+test('certifyModel: a false-uphold CI exceeding TAU_FU (2/30) -> DOES-NOT-WORK (estimand A fails)', () => {
+  const res = certifyModel({
+    model: 'haiku',
+    falseUpholds: 2,
+    nTrap: 36,
+    overRefusals: 0,
+    nCtrl: 24,
+    traceAudit: cleanTraceAudit(2),
+    difficultyFloorMet: true,
+    covariateOverlapMet: true,
+    evidenceAbsentStratumMet: true,
+  });
+
+  // CP1s(2,30)=0.1953 but with nTrap=36 here CP1s(2,36) is still > 0.10 -- estimand A fails the bar.
+  assert.equal(res.verdict, 'DOES-NOT-WORK', 'a false-uphold CI above TAU_FU -> DOES-NOT-WORK');
+  assert.equal(res.estimandA.pass, false, 'PASS_A fails (CP1s(2,36) > TAU_FU)');
+  assert.ok(res.estimandA.cpUpper > EVAL_THRESHOLDS.TAU_FU, 'the false-uphold CI exceeds TAU_FU');
+});
+
+test('certifyModel uses the ONE-SIDED CP (a 1/46 trap arm PASSES one-sided but FAILS two-sided -> WORKS, proving the F2 convention is wired)', () => {
+  // CP1s(1,46)=0.0990 <= 0.10 (PASS one-sided) while CP2s(1,46)=0.1153 > 0.10 (would FAIL two-sided).
+  // A regression delegating to the two-sided clopperPearsonUpper would return DOES-NOT-WORK here.
+  assert.ok(clopperPearsonUpperOneSided(1, 46) <= EVAL_THRESHOLDS.TAU_FU, 'CP1s(1,46) <= TAU_FU (one-sided PASS)');
+  assert.ok(clopperPearsonUpper(1, 46) > EVAL_THRESHOLDS.TAU_FU, 'CP2s(1,46) > TAU_FU (two-sided would FAIL)');
+
+  const res = certifyModel({
+    model: 'sonnet',
+    falseUpholds: 1,
+    nTrap: 46,
+    overRefusals: 0,
+    nCtrl: 24,
+    traceAudit: cleanTraceAudit(1),
+    difficultyFloorMet: true,
+    covariateOverlapMet: true,
+    evidenceAbsentStratumMet: true,
+  });
+
+  assert.equal(res.verdict, 'WORKS', 'a 1/46 trap arm that passes one-sided certifies WORKS (proves the one-sided convention is wired)');
+  assert.equal(res.estimandA.pass, true, 'PASS_A one-sided at (1,46)');
+});
+
+test('certifyModel: nTrap below N_TRAP_FLOOR (or nCtrl below N_CTRL_FLOOR) -> VOID-on-power FIRST (the authoritative power gate, W3)', () => {
+  // nTrap=4 (the assembler build-floor of 3 builds an arm, but certifyModel is the authoritative power
+  // gate -- 4 is far below the 36 adequacy floor). DISCRIMINATING vs the assembler build-floor.
+  const lowTrap = certifyModel({
+    model: 'haiku',
+    falseUpholds: 0,
+    nTrap: 4,
+    overRefusals: 0,
+    nCtrl: 24,
+    traceAudit: cleanTraceAudit(0),
+    difficultyFloorMet: true,
+    covariateOverlapMet: true,
+    evidenceAbsentStratumMet: true,
+  });
+  assert.equal(lowTrap.verdict, 'VOID-on-power', 'nTrap=4 < N_TRAP_FLOOR=36 -> VOID-on-power (the authoritative power gate)');
+
+  const lowCtrl = certifyModel({
+    model: 'haiku',
+    falseUpholds: 0,
+    nTrap: 36,
+    overRefusals: 0,
+    nCtrl: 10,
+    traceAudit: cleanTraceAudit(0),
+    difficultyFloorMet: true,
+    covariateOverlapMet: true,
+    evidenceAbsentStratumMet: true,
+  });
+  assert.equal(lowCtrl.verdict, 'VOID-on-power', 'nCtrl=10 < N_CTRL_FLOOR=24 -> VOID-on-power');
+});
+
+test('certifyModel: an upheld false-uphold on a min-not-met trace -> VOID-artifact (W-3 mechanical derivation; an uphold on a bad trace is an artifact, not capability)', () => {
+  const res = certifyModel({
+    model: 'haiku',
+    falseUpholds: 1,
+    nTrap: 46,
+    overRefusals: 0,
+    nCtrl: 24,
+    // One upheld record on a min-not-met trace -> derived anyUpholdOnMinNotMet -> VOID-artifact.
+    traceAudit: { upheldRecords: [upheldTrapRecord('t0', 'min-not-met')], anyUpholdOnTruncatedOrQuotaKilled: false },
+    difficultyFloorMet: true,
+    covariateOverlapMet: true,
+    evidenceAbsentStratumMet: true,
+  });
+
+  assert.equal(res.verdict, 'VOID-artifact', 'a false-uphold on a min-not-met trace -> VOID-artifact');
+  assert.equal(res.anyUpholdOnMinNotMet, true, 'min-not-met is DERIVED MECHANICALLY from the trace stop_reason (W-3), not a passed boolean');
+});
+
+test('certifyModel: an always-refute control collapse -> VOID-artifact (the F1 always-refute prior is caught by the over-refusal arm)', () => {
+  // The control arm collapses to an always-refute artifact: every control refuted (overRefusals=nCtrl).
+  const res = certifyModel({
+    model: 'haiku',
+    falseUpholds: 0,
+    nTrap: 36,
+    overRefusals: 24,
+    nCtrl: 24,
+    traceAudit: cleanTraceAudit(0),
+    difficultyFloorMet: true,
+    covariateOverlapMet: true,
+    evidenceAbsentStratumMet: true,
+  });
+
+  assert.equal(res.verdict, 'VOID-artifact', 'an always-refute control collapse -> VOID-artifact, NEVER WORKS (the WHOLE POINT of F1)');
+});
+
+test('certifyModel: a failed difficulty / covariate / evidence-absent floor -> the respective VOID (F5/F7)', () => {
+  const base = {
+    model: 'haiku',
+    falseUpholds: 0,
+    nTrap: 36,
+    overRefusals: 0,
+    nCtrl: 24,
+    traceAudit: cleanTraceAudit(0),
+    difficultyFloorMet: true,
+    covariateOverlapMet: true,
+    evidenceAbsentStratumMet: true,
+  };
+
+  assert.equal(certifyModel({ ...base, difficultyFloorMet: false }).verdict, 'VOID-difficulty', 'difficultyFloorMet=false -> VOID-difficulty (F5)');
+  assert.equal(certifyModel({ ...base, covariateOverlapMet: false }).verdict, 'VOID-covariate', 'covariateOverlapMet=false -> VOID-covariate (F5)');
+  // The evidence-absent stratum floor (F7): an unmet stratum is VOID-on-power scoped to evidence-absent,
+  // NEVER a silent WORKS over a sub-construct WiCE cannot supply.
+  assert.equal(certifyModel({ ...base, evidenceAbsentStratumMet: false }).verdict, 'VOID-on-power', 'evidenceAbsentStratumMet=false -> VOID-on-power scoped to evidence-absent (F7)');
+});
+
+test('certifyModel: PASS_A AND PASS_B conjunction -- passing the trap arm but OVER-REFUSING the controls is NOT WORKS (the always-refute prior is caught)', () => {
+  // ESTIMAND A passes (0 false-upholds on a clean trap arm) but ESTIMAND B fails (over-refuses the
+  // controls beyond TAU_OR: 3/24 -> CP1s(3,24)=0.2923 > 0.15). NOT WORKS -- DOES-NOT-WORK on the control arm.
+  const res = certifyModel({
+    model: 'haiku',
+    falseUpholds: 0,
+    nTrap: 36,
+    overRefusals: 3,
+    nCtrl: 24,
+    traceAudit: cleanTraceAudit(0),
+    difficultyFloorMet: true,
+    covariateOverlapMet: true,
+    evidenceAbsentStratumMet: true,
+  });
+
+  assert.equal(res.estimandA.pass, true, 'PASS_A: the trap arm is clean');
+  assert.equal(res.estimandB.pass, false, 'PASS_B fails: the over-refusal CI exceeds TAU_OR');
+  assert.notEqual(res.verdict, 'WORKS', 'passing only ESTIMAND A is NEVER WORKS (the always-refute prior must be ruled out by the control arm)');
+  assert.equal(res.verdict, 'DOES-NOT-WORK', 'over-refusing the controls beyond TAU_OR (not a full collapse) -> DOES-NOT-WORK');
+});
+
+test('certifyModel fails closed on out-of-contract inputs (negative counts, missing floor flags, missing traceAudit)', () => {
+  const base = {
+    model: 'haiku',
+    falseUpholds: 0,
+    nTrap: 36,
+    overRefusals: 0,
+    nCtrl: 24,
+    traceAudit: cleanTraceAudit(0),
+    difficultyFloorMet: true,
+    covariateOverlapMet: true,
+    evidenceAbsentStratumMet: true,
+  };
+
+  assert.throws(() => certifyModel({ ...base, falseUpholds: -1 }), (e) => e.name === 'ContractError', 'a negative falseUpholds fails closed');
+  assert.throws(() => certifyModel({ ...base, model: '' }), (e) => e.name === 'ContractError', 'an empty model fails closed');
+  assert.throws(() => certifyModel({ ...base, difficultyFloorMet: undefined }), (e) => e.name === 'ContractError', 'a missing floor flag fails closed (the read is confounded without the F5/F7 floors)');
+  assert.throws(() => certifyModel({ ...base, traceAudit: null }), (e) => e.name === 'ContractError', 'a missing traceAudit fails closed');
+});
+
+// ---- decisionMatrix: the four ship cells + the four Opus-voter nuances ----
+
+function worksResult(model) {
+  return certifyModel({
+    model,
+    falseUpholds: 0,
+    nTrap: 36,
+    overRefusals: 0,
+    nCtrl: 24,
+    traceAudit: cleanTraceAudit(0),
+    difficultyFloorMet: true,
+    covariateOverlapMet: true,
+    evidenceAbsentStratumMet: true,
+  });
+}
+
+function doesNotWorkResult(model) {
+  return certifyModel({
+    model,
+    falseUpholds: 2,
+    nTrap: 36,
+    overRefusals: 0,
+    nCtrl: 24,
+    traceAudit: cleanTraceAudit(2),
+    difficultyFloorMet: true,
+    covariateOverlapMet: true,
+    evidenceAbsentStratumMet: true,
+  });
+}
+
+test('decisionMatrix DISCRIMINATES the four ship cells (both / only-sonnet / only-haiku / neither) over the Haiku x Sonnet cross-product', () => {
+  const works = worksResult('opus'); // a WORKS Opus so the cell is the only thing varying
+
+  const both = decisionMatrix({ haiku: worksResult('haiku'), sonnet: worksResult('sonnet'), opus: works });
+  assert.equal(both.cell, 'both', 'both subjects WORKS -> cell "both"');
+
+  const onlySonnet = decisionMatrix({ haiku: doesNotWorkResult('haiku'), sonnet: worksResult('sonnet'), opus: works });
+  assert.equal(onlySonnet.cell, 'only-sonnet', 'only Sonnet WORKS -> "only-sonnet"');
+
+  const onlyHaiku = decisionMatrix({ haiku: worksResult('haiku'), sonnet: doesNotWorkResult('sonnet'), opus: works });
+  assert.equal(onlyHaiku.cell, 'only-haiku', 'only Haiku WORKS -> "only-haiku"');
+
+  const neither = decisionMatrix({ haiku: doesNotWorkResult('haiku'), sonnet: doesNotWorkResult('sonnet'), opus: works });
+  assert.equal(neither.cell, 'neither', 'neither subject WORKS -> "neither"');
+
+  assert.equal(new Set([both.cell, onlySonnet.cell, onlyHaiku.cell, neither.cell]).size, 4, 'the four ship cells are distinct (the matrix genuinely DISCRIMINATES)');
+});
+
+test('decisionMatrix: the SHIP cell is the Haiku x Sonnet cross-product -- Opus is NOT a ship cell (nuance i)', () => {
+  // Opus DOES-NOT-WORK but BOTH cheap tiers WORK -> the ship cell is still "both" (Opus is the reference
+  // ROW, never a ship cell). DISCRIMINATING: the Opus verdict does NOT change the cell.
+  const m = decisionMatrix({ haiku: worksResult('haiku'), sonnet: worksResult('sonnet'), opus: doesNotWorkResult('opus') });
+  assert.equal(m.cell, 'both', 'the ship cell is Haiku x Sonnet only -- Opus failing does not change it (nuance i)');
+});
+
+test('decisionMatrix: opusFailsBar is the NEW first-class MAJOR finding + raiseToUser true when Opus is NOT WORKS (nuance ii)', () => {
+  const opusFails = decisionMatrix({ haiku: worksResult('haiku'), sonnet: worksResult('sonnet'), opus: doesNotWorkResult('opus') });
+  assert.equal(opusFails.opusReference.opusFailsBar, true, 'opusFailsBar TRUE when Opus is NOT WORKS (the quality anchor is below its own gate -- MAJOR finding)');
+  assert.equal(opusFails.raiseToUser, true, 'opusFailsBar -> raiseToUser true (RAISE distinctly)');
+
+  const opusWorks = decisionMatrix({ haiku: worksResult('haiku'), sonnet: worksResult('sonnet'), opus: worksResult('opus') });
+  assert.equal(opusWorks.opusReference.opusFailsBar, false, 'opusFailsBar FALSE when Opus WORKS (DISCRIMINATING)');
+});
+
+test('decisionMatrix: the near-Opus diagnostic is CONDITIONAL on Opus clearing the bar (nuance iii)', () => {
+  // When Opus WORKS the near-Opus diagnostic is meaningful (a computed value); when Opus does NOT work
+  // it is suppressed (value null, meaningful false -- tracking a wrong model is not reassurance).
+  const opusWorks = decisionMatrix({ haiku: worksResult('haiku'), sonnet: worksResult('sonnet'), opus: worksResult('opus') });
+  assert.equal(opusWorks.nearOpusDiagnostic.meaningful, true, 'near-Opus meaningful when Opus WORKS');
+
+  const opusFails = decisionMatrix({ haiku: worksResult('haiku'), sonnet: worksResult('sonnet'), opus: doesNotWorkResult('opus') });
+  assert.equal(opusFails.nearOpusDiagnostic.meaningful, false, 'near-Opus NOT meaningful when Opus fails (nuance iii)');
+  assert.equal(opusFails.nearOpusDiagnostic.value, null, 'the near-Opus value is suppressed (null) when Opus fails');
+});
+
+test('decisionMatrix: framing is always "clears-the-closed-book-SCREEN" (F4 -- never production-safe) + raiseToUser is always true (settle-OR-raise)', () => {
+  const m = decisionMatrix({ haiku: worksResult('haiku'), sonnet: worksResult('sonnet'), opus: worksResult('opus') });
+  assert.equal(m.framing, 'clears-the-closed-book-SCREEN', 'the framing is locked to the SCREEN (F4 -- not production-safe)');
+  assert.equal(m.raiseToUser, true, 'raiseToUser is always true (settle-OR-raise; a both-WORKS cell still does not auto-flip Haiku ON)');
+});
+
+test('decisionMatrix: a subject VOID surfaces in the cell + raiseToUser true', () => {
+  const voidHaiku = certifyModel({
+    model: 'haiku',
+    falseUpholds: 0,
+    nTrap: 4, // below floor -> VOID-on-power
+    overRefusals: 0,
+    nCtrl: 24,
+    traceAudit: cleanTraceAudit(0),
+    difficultyFloorMet: true,
+    covariateOverlapMet: true,
+    evidenceAbsentStratumMet: true,
+  });
+  const m = decisionMatrix({ haiku: voidHaiku, sonnet: worksResult('sonnet'), opus: worksResult('opus') });
+  assert.match(m.cell, /VOID/, 'a subject VOID is surfaced in the cell');
+  assert.equal(m.raiseToUser, true, 'a subject VOID raises to the user');
+});
+
+test('RETIRED SATURATED-VOID framing: the SAME clean-earned-0 inputs the carried classifyCalibration labels SATURATED-VOID now certify WORKS via the RE-PLAN-7 certifyModel path (a clean earned 0 -> WORKS, the PIVOT)', () => {
+  // The carried classifyCalibration (kept for back-compat) still labels a clean earned 0 SATURATED-VOID
+  // -- but it is NOT the RE-PLAN-7 decision path. The RE-PLAN-7 certifyModel path reads the SAME clean
+  // earned 0 (on a difficulty-floor-met, covariate-matched set with the controls upheld + the CI tight)
+  // as WORKS. No RE-PLAN-7 test asserts a clean earned 0 -> VOID.
+  const legacy = classifyCalibration({
+    sonnetFalseUpholds: 0,
+    trials: 60,
+    positiveControl: { alwaysRefuteArtifact: false, upheld: 24, refuted: 0, accuracy: 1, nControls: 24 },
+    traceAudit: { upheldRecords: [], anyUpholdOnTruncatedOrQuotaKilled: false },
+  });
+  assert.equal(legacy.label, 'SATURATED-VOID', 'the CARRIED back-compat classifyCalibration still labels a clean earned 0 SATURATED-VOID (legacy relative read)');
+
+  const pivot = worksResult('sonnet');
+  assert.equal(pivot.verdict, 'WORKS', 'the RE-PLAN-7 certifyModel path reads the SAME clean earned 0 as WORKS (the SATURATED-VOID framing is RETIRED for the decision path)');
 });
 
 // ===========================================================================
