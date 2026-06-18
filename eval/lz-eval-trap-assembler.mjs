@@ -340,7 +340,7 @@ export function enrichKsForClaim(ksDocs, { decisiveRank = -1, disconfirmerRank =
 // genuine inter-judge disagreement), distinct from a unanimous-style accepted:false reject (split=false).
 // EVERY probe receives ONLY the date-filtered survivors (enrichedKs -- closed-book mirroring, C-RP4-1).
 // ---------------------------------------------------------------------------
-async function runProbeConsensus(probes, { trap, enrichedKs, stratum, decisiveRank, expectedEntailment }) {
+export async function runProbeConsensus(probes, { trap, enrichedKs, stratum, decisiveRank, expectedEntailment }) {
   for (let i = 0; i < probes.length; i += 1) {
     const probe = probes[i];
     const verdict = await probe({ trap, enrichedKs, stratum, decisiveRank, expectedEntailment });
@@ -430,6 +430,11 @@ export async function assembleStage1Traps({
   generate,
   validityProbe,
   probes,
+  inFamilyAnnotationProbe,
+  subjectDifficultyProbe,
+  subjectDifficultyMaxCatchRate = 0.5,
+  covariateOverlapTolerance = 0.5,
+  clusterIndependence = false,
   cacheDir,
   perStratumFloor = 3,
   positiveControlFloor = 3,
@@ -469,6 +474,14 @@ export async function assembleStage1Traps({
   // The weak verifier defaults to "always upholds" (always FLIPS on a refuted-gold trap -> validityGate
   // accepts). The unit suite injects discriminating stubs (a verifier that catches a trap -> rejected).
   const weak = typeof weakVerifier === 'function' ? weakVerifier : () => 'unrefuted';
+
+  // RE-PLAN-7 #3/F3 (OUT-OF-FAMILY-ONLY retain predicate): the injected `probes` array is the OUT-OF-FAMILY
+  // retain decider (GPT-5.5 + Gemini). The OPTIONAL `inFamilyAnnotationProbe` is run per packet for the run
+  // artifact ANNOTATION ONLY -- it is NEVER added to runProbeConsensus's AND (it does NOT gate). F3 framing
+  // correction (recorded): dropping the in-family conjunct LOOSENS the all-agree AND -> retains MORE ->
+  // higher N + purer (family-independent) gold; the 'drop Opus = lower N' framing was backwards. The
+  // OOF-vs-in-family agreement count is recorded in attrition (a diagnostic, never a gate).
+  const inFamilyAnnotate = typeof inFamilyAnnotationProbe === 'function' ? inFamilyAnnotationProbe : null;
 
   const { seeds, ksByClaim } = loadDevSeedsAndKs(cacheRoot);
 
@@ -521,6 +534,47 @@ export async function assembleStage1Traps({
     controlSkippedFewSurvivors: 0,
     controlProbeDropped: 0,
     controlBelowFloor: false,
+    // RE-PLAN-7 #3/F3: the OUT-OF-FAMILY-vs-in-family agreement count (a DIAGNOSTIC, never a gate). The
+    // in-family annotation probe (if injected) is run per packet but does NOT enter the retain AND.
+    inFamilyAgreement: 0,
+    // RE-PLAN-7 F6: the count of retained sub-claims collapsed because their source/seed cluster already
+    // had a retained primary claim (one per cluster -- the per-claim CP denominator is not anti-conservative).
+    clusterCollapsed: 0,
+    // RE-PLAN-7 F5 floor flags: difficultyFloorMet (the held-out Claude reference did NOT ace the retained
+    // traps) + covariateOverlapMet (the trap/control covariate distributions overlap within tolerance).
+    // Both default true; a failed floor sets the flag false + a voidReason and surfaces a documented VOID.
+    difficultyFloorMet: true,
+    covariateOverlapMet: true,
+  };
+
+  // RE-PLAN-7 F6: the source/seed clusters already holding a retained primary claim (one per cluster when
+  // clusterIndependence is on). The cluster key is seed.cluster when present, else the seed claim_id.
+  const seenClusters = new Set();
+  // RE-PLAN-7 F5: the retained seed records (trap + control) so the subjectDifficultyProbe + the
+  // covariate-overlap check run over the EXACT retained set (the same survivors the voter judges).
+  const retainedTrapRecords = [];
+  const retainedControlRecords = [];
+
+  // RE-PLAN-7 F6: the source/seed cluster key. AVeriTeC seeds derived from the SAME fact-check share a
+  // source URL (cached_original_claim_url / original_claim_url) -- those sub-claims are positively
+  // correlated, so one primary claim per source cluster is retained. Order: an explicit seed.cluster
+  // (tests / future tagging), else the source URL, else the claim_id (a singleton cluster).
+  const clusterKeyFor = (seed) => {
+    if (seed == null) {
+      return 'cid-undefined';
+    }
+
+    if (seed.cluster != null) {
+      return 'cl-' + String(seed.cluster);
+    }
+
+    const src = seed.cached_original_claim_url || seed.original_claim_url || seed.fact_checking_article;
+
+    if (typeof src === 'string' && src.length > 0) {
+      return 'src-' + src;
+    }
+
+    return 'cid-' + String(seed.claim_id);
   };
 
   // A deterministic recipe-seed counter (the recipe { transform, seed } must carry an integer seed).
@@ -604,6 +658,16 @@ export async function assembleStage1Traps({
       expectedEntailment: 'false',
     });
 
+    // RE-PLAN-7 #3/F3: the in-family annotation probe (if injected) is run per packet for the OOF-vs-in
+    // -family agreement DIAGNOSTIC ONLY -- it does NOT enter the retain AND (the gold is family-independent).
+    if (inFamilyAnnotate != null) {
+      const ann = await inFamilyAnnotate({ trap: mutatedText, enrichedKs, stratum, decisiveRank, expectedEntailment: 'false' });
+
+      if (ann && ann.entails !== undefined && String(ann.entails) === 'false') {
+        attrition.inFamilyAgreement += 1;
+      }
+    }
+
     if (!consensus.retained) {
       attrition.screenedOut += 1;
       attrition.probeDropped += 1;
@@ -613,6 +677,20 @@ export async function assembleStage1Traps({
       }
 
       continue;
+    }
+
+    // RE-PLAN-7 F6 cluster independence: keep ONE retained primary claim per source/seed cluster (the
+    // first surviving claim by ascending claim_id). A later claim from the same cluster collapses to the
+    // already-retained one (positively-correlated -- the per-claim CP denominator must not double-count).
+    const cluster = clusterKeyFor(seed);
+
+    if (clusterIndependence && seenClusters.has(cluster)) {
+      attrition.clusterCollapsed += 1;
+      continue;
+    }
+
+    if (clusterIndependence) {
+      seenClusters.add(cluster);
     }
 
     // WRITE the surviving trap (recipe-not-text): mutated prose + enriched KS to the gitignored cache;
@@ -632,6 +710,9 @@ export async function assembleStage1Traps({
     strata[stratum].push(written.row);
     goldLabels[uid] = 'refuted';
     attrition.perStratumCount[stratum] += 1;
+    // RE-PLAN-7 F5: track the retained trap record (claim + the date-filtered survivors) so the
+    // subjectDifficultyProbe + the covariate-overlap check run over the EXACT retained set.
+    retainedTrapRecords.push({ claim: mutatedText, enrichedKs });
   }
 
   // ===== INTERLEAVED POSITIVE-CONTROL ARM (RE-PLAN-5 Finding 1) =====
@@ -679,6 +760,15 @@ export async function assembleStage1Traps({
       expectedEntailment: 'true',
     });
 
+    // RE-PLAN-7 #3/F3: the in-family annotation (if injected) is a non-gating diagnostic here too.
+    if (inFamilyAnnotate != null) {
+      const ann = await inFamilyAnnotate({ trap: seed.claim, enrichedKs, stratum, decisiveRank: -1, expectedEntailment: 'true' });
+
+      if (ann && ann.entails !== undefined && String(ann.entails) === 'true') {
+        attrition.inFamilyAgreement += 1;
+      }
+    }
+
     if (!consensus.retained) {
       attrition.controlProbeDropped += 1;
 
@@ -687,6 +777,18 @@ export async function assembleStage1Traps({
       }
 
       continue;
+    }
+
+    // RE-PLAN-7 F6 cluster independence on the control arm too (one primary claim per source/seed cluster).
+    const cluster = clusterKeyFor(seed);
+
+    if (clusterIndependence && seenClusters.has(cluster)) {
+      attrition.clusterCollapsed += 1;
+      continue;
+    }
+
+    if (clusterIndependence) {
+      seenClusters.add(cluster);
     }
 
     // The control prose IS the original Supported claim (native, gold=unrefuted). writeTrap records the
@@ -707,11 +809,86 @@ export async function assembleStage1Traps({
     strata[stratum].push(written.row);
     goldLabels[uid] = 'unrefuted';
     attrition.perStratumCount[stratum] += 1;
+    // RE-PLAN-7 F5: track the retained control record (the native claim + its survivors) for the
+    // covariate-overlap check (the trap-arm vs control-arm length/complexity distributions must overlap).
+    retainedControlRecords.push({ claim: seed.claim, enrichedKs });
+  }
+
+  // RE-PLAN-7 THE F5 FLOORS (load-bearing, NEVER tuned toward a desired N) -- checked BEFORE the
+  // build-floors so a too-easy/style-bypassable corpus surfaces the DIFFICULTY/COVARIATE VOID first.
+
+  // (F5-1) The SUBJECT-SPECIFIC difficulty floor: a held-out Claude reference verifier (subjectDifficultyProbe)
+  // run over the RETAINED refuted-trap set must NOT ACE it. If its catch-rate (the fraction it correctly
+  // REFUTES) exceeds subjectDifficultyMaxCatchRate the set is too easy for the subject family to certify
+  // capability -> a documented VOID-difficulty. Optional (only when a subjectDifficultyProbe is injected).
+  if (typeof subjectDifficultyProbe === 'function' && retainedTrapRecords.length > 0) {
+    let caught = 0;
+
+    for (const rec of retainedTrapRecords) {
+      const verdict = await subjectDifficultyProbe({ trap: rec.claim, enrichedKs: rec.enrichedKs, stratum: 'evidence-absent' });
+
+      if (verdict === 'refuted') {
+        caught += 1;
+      }
+    }
+
+    const catchRate = caught / retainedTrapRecords.length;
+
+    if (catchRate > subjectDifficultyMaxCatchRate) {
+      attrition.difficultyFloorMet = false;
+      attrition.voidReason =
+        'VOID-difficulty: the held-out Claude reference verifier caught ' + caught + '/' + retainedTrapRecords.length +
+        ' retained traps (catch-rate ' + catchRate.toFixed(3) + ' > subjectDifficultyMaxCatchRate ' +
+        subjectDifficultyMaxCatchRate + ') -- the retained set is too easy for the subject family to certify ' +
+        'capability (F5). The floor is load-bearing, never tuned toward a desired N.';
+
+      const err = new ContractError(
+        'assembleStage1Traps: VOID-difficulty -- the F5 subject-specific difficulty floor is unmet (the Claude ' +
+          'reference aced the retained traps: catch-rate ' + catchRate.toFixed(3) + ' > ' + subjectDifficultyMaxCatchRate + ')',
+        'assembleStage1Traps',
+      );
+      err.attrition = attrition;
+      throw err;
+    }
+  }
+
+  // (F5-2) The trap/control COVARIATE-OVERLAP check: the trap-arm vs control-arm claim-length /
+  // token-complexity distributions must OVERLAP within covariateOverlapTolerance (a relative mean
+  // difference), so a model cannot pass by STYLE (systematically longer/more-complex traps) rather than
+  // judgment. Below tolerance -> a documented VOID-covariate. Checked only when BOTH arms have members.
+  if (retainedTrapRecords.length > 0 && retainedControlRecords.length > 0) {
+    const tokenLen = (rec) => String(rec.claim || '').trim().split(/\s+/).filter(Boolean).length;
+    const meanOf = (xs) => (xs.length === 0 ? 0 : xs.reduce((a, b) => a + b, 0) / xs.length);
+    const trapMean = meanOf(retainedTrapRecords.map(tokenLen));
+    const ctrlMean = meanOf(retainedControlRecords.map(tokenLen));
+    const denom = Math.max(trapMean, ctrlMean, 1);
+    const relDiff = Math.abs(trapMean - ctrlMean) / denom;
+
+    if (relDiff > covariateOverlapTolerance) {
+      attrition.covariateOverlapMet = false;
+      attrition.voidReason =
+        'VOID-covariate: the trap-arm vs control-arm claim-length means diverge (relDiff ' + relDiff.toFixed(3) +
+        ' > covariateOverlapTolerance ' + covariateOverlapTolerance + ') -- a model could pass by STYLE not ' +
+        'judgment (F5). The floor is load-bearing, never tuned.';
+
+      const err = new ContractError(
+        'assembleStage1Traps: VOID-covariate -- the F5 trap/control covariate-overlap check failed (relDiff ' +
+          relDiff.toFixed(3) + ' > ' + covariateOverlapTolerance + ')',
+        'assembleStage1Traps',
+      );
+      err.attrition = attrition;
+      throw err;
+    }
   }
 
   // THE TWO INDEPENDENT FLOORS (board guardrail 5 -- both load-bearing, NEITHER a knob). The
   // evidence-absent TRAP floor and the positive-control floor are checked separately; below either is a
   // documented VOID (the corpus cannot honestly build that arm), never relaxed toward a desired N.
+  // W2/W3 (RE-PLAN-7): these build-floor DEFAULTS STAY 3/3 ("can we even build an arm"). The 36/24
+  // adequacy POWER-floor (N_TRAP_FLOOR / N_CTRL_FLOOR) is enforced ONLY at certifyModel's VOID-on-power
+  // gate (Task 2) + the Task-4 N-freeze, NEVER as the assembler default -- the two sites are intentionally
+  // different magnitudes (build-floor 3 = buildability; power-floor 36/24 = adequacy; certifyModel is
+  // the authoritative power gate).
 
   // (1) THE EVIDENCE-ABSENT TRAP FLOOR (CARRIED RE-PLAN-4). The RETAINED count is the POST-CONSENSUS
   // survivor count (SCREEN 2 has already dropped invalid packets), so a below-floor RETAINED set IS the
@@ -768,7 +945,16 @@ export async function assembleStage1Traps({
     strata,
     goldLabels,
     attrition,
-    runConfig: { minSurvivors, perStratumFloor, positiveControlFloor, nControls: N_CONTROLS },
+    runConfig: {
+      minSurvivors,
+      perStratumFloor,
+      positiveControlFloor,
+      nControls: N_CONTROLS,
+      // RE-PLAN-7: the F5/F6 knobs recorded in the run artifact (the floors are load-bearing, never tuned).
+      clusterIndependence,
+      subjectDifficultyMaxCatchRate,
+      covariateOverlapTolerance,
+    },
   };
 }
 

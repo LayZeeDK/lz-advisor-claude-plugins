@@ -44,6 +44,9 @@ import {
   assembleStage1Traps,
 } from './lz-eval-trap-assembler.mjs';
 
+import { EVAL_THRESHOLDS, clopperPearsonUpperOneSided } from './lz-eval-aggregate.mjs';
+import { certifyModel } from './lz-eval-offline-read.mjs';
+
 import { parseAvtDate, dateFilter } from './lz-eval-search-loop.mjs';
 
 // ===========================================================================
@@ -888,6 +891,236 @@ test('assembler: attrition reports the single-stratum count + probeDropped + the
   } finally {
     fs.rmSync(root, { recursive: true, force: true });
   }
+});
+
+// ===========================================================================
+// RE-PLAN-7 (Task 3): OUT-OF-FAMILY-only retain (in-family annotation is non-gating, #3/F3) + the F5
+// subjectDifficultyProbe + covariate-overlap floors + F6 cluster independence + the TWO floor sites
+// (the assembler build-floor stays 3/3; the 36/24 power-floor lives at certifyModel).
+// ===========================================================================
+
+test('RE-PLAN-7 OUT-OF-FAMILY-only retain (#3/F3): an in-family annotation probe that DISAGREES does NOT drop a packet the OOF probes agree on; it is recorded as a non-gating annotation', async () => {
+  // The retain decider is the injected `probes` array (OUT-OF-FAMILY: GPT-5.5 + Gemini). An optional
+  // `inFamilyAnnotationProbe` is run per packet for the diagnostic but is NEVER in the retain AND.
+  // DISCRIMINATING: with the OOF probes all agreeing, a packet is RETAINED even when the in-family
+  // annotation DIFFERS -- a regression that re-added the in-family probe to the retain AND would DROP it.
+  const root = writeCache(buildEvidenceAbsentCorpus(6));
+
+  try {
+    let inFamilySeen = 0;
+    // The in-family annotation DISAGREES on every trap (reads the survivors as entailing the overreach).
+    const inFamilyDisagrees = async () => {
+      inFamilySeen += 1;
+
+      return { accepted: true, reason: 'in-family reads survivors as entailing the overreach', entails: 'true' };
+    };
+
+    const res = await assembleStage1Traps({
+      cacheRoot: root,
+      cacheDir: path.join(root, 'out'),
+      generate: acceptGenerate,
+      probes: [agreeProbe], // the OUT-OF-FAMILY retain decider (agrees -> retains)
+      inFamilyAnnotationProbe: inFamilyDisagrees,
+    });
+
+    // The OOF consensus retained every trap DESPITE the in-family disagreement (the in-family probe does
+    // NOT gate). A re-added-conjunct regression would have dropped them all (probeDropped > 0).
+    assert.ok(res.strata['evidence-absent'].length >= 3, 'the OOF-agreed packets are retained despite the in-family disagreement');
+    assert.equal(res.attrition.probeDropped, 0, 'the in-family annotation did NOT drop any OOF-agreed packet (non-gating, #3/F3)');
+    assert.ok(inFamilySeen >= 3, 'the in-family annotation probe WAS run (per packet) for the diagnostic');
+    // The OOF-vs-in-family agreement diagnostic is recorded (a count, not a gate).
+    assert.equal(typeof res.attrition.inFamilyAgreement, 'number', 'the OOF-vs-in-family agreement count is recorded in attrition (a diagnostic)');
+    assert.equal(res.attrition.inFamilyAgreement, 0, 'the in-family disagreed on every packet (agreement 0) -- yet retention is unaffected');
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('RE-PLAN-7 F5 subject-specific difficulty floor: a held-out Claude reference that ACES the retained traps surfaces VOID-difficulty (DISCRIMINATING vs a fooled reference below the cap)', async () => {
+  const root = writeCache(buildEvidenceAbsentCorpus(6));
+
+  try {
+    // A subjectDifficultyProbe that CORRECTLY refutes (catches) every retained trap -> catch-rate 1.0 ->
+    // the set is too easy for the subject family to certify capability -> VOID-difficulty.
+    const acingSubject = async () => 'refuted';
+
+    await assert.rejects(
+      () =>
+        assembleStage1Traps({
+          cacheRoot: root,
+          cacheDir: path.join(root, 'out'),
+          generate: acceptGenerate,
+          probes: [agreeProbe],
+          subjectDifficultyProbe: acingSubject,
+          subjectDifficultyMaxCatchRate: 0.5,
+        }),
+      (e) => e.name === 'ContractError' && /difficulty/i.test(e.message) && e.attrition && e.attrition.difficultyFloorMet === false,
+      'a Claude reference that aces the retained traps -> VOID-difficulty (F5)',
+    );
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+
+  // DISCRIMINATING: the SAME corpus with a FOOLED reference (catch-rate 0) keeps the floor MET (no throw).
+  const root2 = writeCache(buildEvidenceAbsentCorpus(6));
+
+  try {
+    const fooledSubject = async () => 'unrefuted';
+    const ok = await assembleStage1Traps({
+      cacheRoot: root2,
+      cacheDir: path.join(root2, 'out'),
+      generate: acceptGenerate,
+      probes: [agreeProbe],
+      subjectDifficultyProbe: fooledSubject,
+      subjectDifficultyMaxCatchRate: 0.5,
+    });
+    assert.equal(ok.attrition.difficultyFloorMet, true, 'a fooled reference (below the cap) -> the difficulty floor is MET');
+  } finally {
+    fs.rmSync(root2, { recursive: true, force: true });
+  }
+});
+
+test('RE-PLAN-7 F5 covariate-overlap: a trap arm whose claim-length distribution diverges from the control arm beyond tolerance surfaces VOID-covariate (DISCRIMINATING vs a matched corpus)', async () => {
+  // Build a corpus where the TRAP claims are systematically much longer than the CONTROL claims -- a
+  // model could pass by STYLE not judgment. The covariate-overlap check must surface VOID-covariate.
+  const seeds = [];
+  const ksByClaim = {};
+
+  // 6 trap seeds with SHORT claims; 3 control seeds (the trailing nControls) with VERY LONG claims.
+  for (let id = 0; id < 6; id += 1) {
+    seeds.push({ claim: 'short', label: 'Supported', claim_date: '15-05-2020' });
+    ksByClaim[id] = evidenceAbsentKs();
+  }
+
+  for (let id = 6; id < 9; id += 1) {
+    seeds.push({ claim: 'a very long control claim with many many many many many many words indeed yes', label: 'Supported', claim_date: '15-05-2020' });
+    ksByClaim[id] = evidenceAbsentKs();
+  }
+
+  const root = writeCache({ seeds, ksByClaim });
+
+  try {
+    await assert.rejects(
+      () =>
+        assembleStage1Traps({
+          cacheRoot: root,
+          cacheDir: path.join(root, 'out'),
+          generate: acceptGenerate,
+          probes: [agreeProbe],
+          nControls: 3,
+          covariateOverlapTolerance: 0.3,
+        }),
+      (e) => e.name === 'ContractError' && /covariate/i.test(e.message) && e.attrition && e.attrition.covariateOverlapMet === false,
+      'a trap arm whose claim-length distribution diverges from the control arm -> VOID-covariate (F5)',
+    );
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+
+  // DISCRIMINATING: a matched corpus (trap + control claims similar length) clears the covariate check.
+  const root2 = writeCache(buildEvidenceAbsentCorpus(9));
+
+  try {
+    const ok = await assembleStage1Traps({
+      cacheRoot: root2,
+      cacheDir: path.join(root2, 'out'),
+      generate: acceptGenerate,
+      probes: [agreeProbe],
+      nControls: 3,
+      covariateOverlapTolerance: 0.3,
+    });
+    assert.equal(ok.attrition.covariateOverlapMet, true, 'a matched corpus (similar lengths) -> the covariate-overlap floor is MET');
+  } finally {
+    fs.rmSync(root2, { recursive: true, force: true });
+  }
+});
+
+test('RE-PLAN-7 F6 cluster independence: two trap seeds sharing a source/seed cluster collapse to ONE retained primary claim (DISCRIMINATING vs naive per-claim retention)', async () => {
+  // Build a corpus where several seeds share the SAME source/seed cluster (the AVeriTeC fact-check source
+  // URL -- the loader preserves cached_original_claim_url). With clusterIndependence on, only ONE retained
+  // primary claim per cluster survives so the per-claim CP denominator is not anti-conservative.
+  // DISCRIMINATING: naive per-claim retention keeps more.
+  const seeds = [];
+  const ksByClaim = {};
+
+  // 6 seeds, but seeds share clusters in pairs (source 'A','A','B','B','C','C'): 3 distinct clusters.
+  const clusters = ['https://src/A', 'https://src/A', 'https://src/B', 'https://src/B', 'https://src/C', 'https://src/C'];
+
+  for (let id = 0; id < 6; id += 1) {
+    seeds.push({ claim: 'claim ' + id, label: 'Supported', claim_date: '15-05-2020', cached_original_claim_url: clusters[id] });
+    ksByClaim[id] = evidenceAbsentKs();
+  }
+
+  const root = writeCache({ seeds, ksByClaim });
+
+  try {
+    const withCluster = await assembleStage1Traps({
+      cacheRoot: root,
+      cacheDir: path.join(root, 'out'),
+      generate: acceptGenerate,
+      probes: [agreeProbe],
+      clusterIndependence: true,
+    });
+
+    // One retained primary claim per distinct cluster (3 clusters -> 3 retained traps).
+    assert.equal(withCluster.strata['evidence-absent'].length, 3, 'one retained primary claim per source/seed cluster (3 distinct clusters)');
+    assert.ok(withCluster.attrition.clusterCollapsed >= 3, 'the duplicate-cluster sub-claims collapsed (clusterCollapsed counted)');
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+
+  // DISCRIMINATING: without cluster independence the SAME corpus retains all 6 (no collapse).
+  const root2 = writeCache({ seeds: seeds.map((s) => ({ ...s })), ksByClaim });
+
+  try {
+    const naive = await assembleStage1Traps({
+      cacheRoot: root2,
+      cacheDir: path.join(root2, 'out'),
+      generate: acceptGenerate,
+      probes: [agreeProbe],
+      clusterIndependence: false,
+    });
+    assert.equal(naive.strata['evidence-absent'].length, 6, 'naive per-claim retention keeps all 6 (no cluster collapse)');
+    assert.ok(naive.strata['evidence-absent'].length > 3, 'naive retains MORE than one-per-cluster (F6 collapse is real)');
+  } finally {
+    fs.rmSync(root2, { recursive: true, force: true });
+  }
+});
+
+test('RE-PLAN-7 W2/W3 the TWO floor sites: the assembler build-floor DEFAULT stays 3/3 (a 3-trap arm builds) while certifyModel is the AUTHORITATIVE 36/24 power gate (nTrap=4 -> VOID-on-power)', async () => {
+  // The assembler build-floor default is 3 -- a 3-trap arm builds green (NOT raised to 36).
+  const root = writeCache(buildEvidenceAbsentCorpus(3));
+
+  try {
+    const res = await assembleStage1Traps({
+      cacheRoot: root,
+      cacheDir: path.join(root, 'out'),
+      generate: acceptGenerate,
+      probes: [agreeProbe],
+    });
+    assert.equal(res.runConfig.perStratumFloor, 3, 'the assembler build-floor DEFAULT is 3 (NOT raised to 36 -- W2)');
+    assert.ok(res.strata['evidence-absent'].length >= 3, 'a 3-trap arm builds at the build-floor');
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+
+  // certifyModel is the AUTHORITATIVE power gate: nTrap=4 (above the build-floor of 3 but far below the
+  // 36 adequacy floor) -> VOID-on-power. The two sites are intentionally DIFFERENT magnitudes (W3).
+  const lowPower = certifyModel({
+    model: 'sonnet',
+    falseUpholds: 0,
+    nTrap: 4,
+    overRefusals: 0,
+    nCtrl: 24,
+    traceAudit: { upheldRecords: [], anyUpholdOnTruncatedOrQuotaKilled: false },
+    difficultyFloorMet: true,
+    covariateOverlapMet: true,
+    evidenceAbsentStratumMet: true,
+  });
+  assert.equal(lowPower.verdict, 'VOID-on-power', 'certifyModel(nTrap=4) -> VOID-on-power (the 36 adequacy floor; W3, distinct from the build-floor of 3)');
+  // The N floors live in EVAL_THRESHOLDS (engine), the one-sided CP confirms the bracket.
+  assert.equal(EVAL_THRESHOLDS.N_TRAP_FLOOR, 36, 'the adequacy power-floor (36) is an EVAL_THRESHOLDS key, not the assembler default');
+  assert.ok(clopperPearsonUpperOneSided(0, EVAL_THRESHOLDS.N_TRAP_FLOOR) <= EVAL_THRESHOLDS.TAU_FU, 'CP1s(0,36) <= TAU_FU confirms the 36 floor is the bracket');
 });
 
 // ===========================================================================

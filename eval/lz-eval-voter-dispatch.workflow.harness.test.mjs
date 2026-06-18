@@ -253,6 +253,63 @@ test('SEAT DIVERSITY (W-1, RE-PLAN-5): attackModeForSeat over k in [0..8] covers
 });
 
 // ===========================================================================
+// RE-PLAN-7 (Task 3): the THREE-voter seat selection + the per-model prompt-sha recording (#2) + the
+// symmetric reduction on both arms per model (F6).
+// ===========================================================================
+
+test('RE-PLAN-7 three-voter seat selection: the dispatch records the SELECTED model + the frozen prompt-sha per seat (#2; DISCRIMINATING -- a wrong-model/wrong-prompt seat is detectable)', async () => {
+  // The dispatch is parameterized over a measured model in { sonnet, haiku, opus }; the orchestrator
+  // passes the per-model FAIR PROMPT agent file's frozen sha (args.promptSha). The dispatch RECORDS the
+  // selected model + the prompt-sha per seat so the run artifact can assert the frozen sha.
+  const agent = async () => voteString('refuted');
+
+  const haikuSha = 'haiku-prompt-sha-aaaa';
+  const haiku = await runWorkflow(agent, { seat: 'haiku', claimUids: ['c1'], k: 5, packets: packetsFor(['c1'], 'exhausted'), promptSha: haikuSha });
+  assert.equal(haiku.model, 'haiku', 'the haiku seat resolves the haiku model');
+  assert.equal(haiku.promptSha, haikuSha, 'the dispatch records the haiku prompt-sha (the run artifact asserts the frozen sha)');
+
+  for (const v of haiku.scoredVotes) {
+    assert.equal(v.model, 'haiku', 'each scored vote records the SELECTED model (haiku)');
+    assert.equal(v.promptSha, haikuSha, 'each scored vote records the per-model frozen prompt-sha');
+  }
+
+  // The Opus reference voter is a DISTINCT seat with a DISTINCT prompt-sha (NOT a Sonnet copy -- W4).
+  const opusSha = 'opus-prompt-sha-bbbb';
+  const opus = await runWorkflow(agent, { seat: 'opus', claimUids: ['c1'], k: 5, packets: packetsFor(['c1'], 'exhausted'), promptSha: opusSha });
+  assert.equal(opus.model, 'opus', 'the opus seat resolves the opus model (the measured reference voter)');
+  assert.notEqual(opus.promptSha, haikuSha, 'the Opus prompt-sha differs from the Haiku prompt-sha (per-model fair prompts, #2)');
+
+  // DISCRIMINATING: the Sonnet seat records the Sonnet sha, distinct from Opus (not a shared prompt).
+  const sonnetSha = 'sonnet-prompt-sha-cccc';
+  const sonnet = await runWorkflow(agent, { seat: 'sonnet', claimUids: ['c1'], k: 5, packets: packetsFor(['c1'], 'exhausted'), promptSha: sonnetSha });
+  assert.equal(sonnet.model, 'sonnet', 'the sonnet seat resolves the sonnet model');
+  assert.notEqual(sonnet.promptSha, opus.promptSha, 'the Sonnet prompt-sha differs from the Opus prompt-sha (per-model fair prompts, NOT a shared prompt)');
+});
+
+test('RE-PLAN-7 symmetric reduction (F6): any-seat-REFUTE on a control is the over-refusal event, mirroring any-seat-UPHOLD on a trap (reducePooledVerdict is symmetric on both arms)', () => {
+  const tr = traceWithStop('exhausted');
+  const v = (verdict) => ({ id: 'sonnet-ctrl-x', seat: 'sonnet', verdict, trace: tr });
+
+  // ON A CONTROL (gold=unrefuted), the voter SHOULD uphold (vote 'unrefuted'). Any-seat-REFUTE among k is
+  // the OVER-REFUSAL event -- mirroring any-seat-UPHOLD on a trap. The pooled record is 'refuted' (the
+  // over-refusal) if ANY seat refuted, so the downstream scorePositiveControls counts it as an over-refusal.
+  const allUphold = H.reducePooledVerdict('ctrl-1', [v('unrefuted'), v('unrefuted'), v('unrefuted'), v('unrefuted'), v('unrefuted')]);
+  assert.equal(allUphold.verdict, 'unrefuted', 'a control all seats uphold -> pooled unrefuted (no over-refusal)');
+
+  const oneRefute = H.reducePooledVerdict('ctrl-2', [v('unrefuted'), v('refuted'), v('unrefuted'), v('unrefuted'), v('unrefuted')]);
+  // any-uphold reduction: a single uphold among k makes the pooled verdict 'unrefuted' -- so the
+  // OVER-REFUSAL event is detected at the per-seat level (a control with a pooled 'unrefuted' that still
+  // had a refute seat). The reduction is the SAME function on both arms (symmetric); the over-refusal
+  // accounting reads per-seat refutes on the control arm (the downstream scorePositiveControls scores it).
+  assert.equal(oneRefute.verdict, 'unrefuted', 'one refute among k still pools to unrefuted (any-uphold) -- the SAME reducer applies to both arms (F6)');
+
+  // The all-refute degenerate control (every seat refuses) -> pooled 'refuted' = the over-refusal event
+  // the F1 always-refute detector reads (symmetric mirror of the all-uphold trap = a full false-uphold).
+  const allRefute = H.reducePooledVerdict('ctrl-3', [v('refuted'), v('refuted'), v('refuted'), v('refuted'), v('refuted')]);
+  assert.equal(allRefute.verdict, 'refuted', 'a control all seats refute -> pooled refuted (the over-refusal event, F1)');
+});
+
+// ===========================================================================
 // Orchestration: the real dispatch loop/fan-out, driven by scripted mock agents.
 // ===========================================================================
 

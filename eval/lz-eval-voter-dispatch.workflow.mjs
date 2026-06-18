@@ -331,10 +331,20 @@ const DONE_IDS = Array.isArray(A.doneIds) ? A.doneIds : [];
 // pipelining each chunk in sequence (so no more than MAX_IN_FLIGHT agents run concurrently) -- the
 // pace-able claim is real, not a phantom arg.
 const MAX_IN_FLIGHT = Number.isInteger(A.maxInFlight) && A.maxInFlight > 0 ? A.maxInFlight : 4;
-// The seat is parameterized so 19-05 (Haiku Stage 2) reuses this exact Workflow: Stage 1 = Sonnet
-// (model:'sonnet', effort:'medium'); Stage 2 = Haiku (model:'haiku').
-const MODEL = typeof A.model === 'string' && A.model.length > 0 ? A.model : (SEAT === 'haiku' ? 'haiku' : 'sonnet');
+// The seat is parameterized over THREE measured voters so 19-05 + the RE-PLAN-7 three-voter run reuse
+// this exact Workflow: Sonnet (model:'sonnet'), Haiku (model:'haiku'), and the Opus REFERENCE voter
+// (model:'opus'). The default model follows the seat name when args.model is unset.
+const MODEL = typeof A.model === 'string' && A.model.length > 0
+  ? A.model
+  : (SEAT === 'haiku' ? 'haiku' : SEAT === 'opus' ? 'opus' : 'sonnet');
 const EFFORT = typeof A.effort === 'string' && A.effort.length > 0 ? A.effort : 'medium';
+// RE-PLAN-7 #2 (PER-MODEL FAIR PROMPTS): the orchestrator passes the SELECTED per-model FAIR PROMPT agent
+// file's FROZEN sha256 (research-verify-voter-{sonnet,haiku,opus}.md). The dispatch RECORDS it per seat +
+// on each scored vote so the run artifact can assert the frozen prompt sha (a wrong-model/wrong-prompt
+// seat is detectable). The Opus prompt is best-effort-engineered (NOT a Sonnet copy -- W4), so its sha
+// differs from the Sonnet sha. A null/absent promptSha is recorded as null (the orchestrator supplies it
+// at run time after computing the agent-file sha; the harness asserts it round-trips).
+const PROMPT_SHA = typeof A.promptSha === 'string' && A.promptSha.length > 0 ? A.promptSha : null;
 
 if (CLAIM_UIDS.length === 0) {
   log('No claimUids passed (args.claimUids is empty) -- nothing to dispatch.');
@@ -397,6 +407,12 @@ const judgeVote = async (item) => {
     return null;
   }
 
+  // RE-PLAN-7 #2: record the SELECTED model + the per-model FROZEN prompt-sha on the scored vote (in
+  // addition to the seat) so the run artifact can assert the frozen prompt sha per seat. The scored
+  // quantity (verdict) + the trace are UNCHANGED (T-19-19); these are diagnostic provenance fields.
+  scored.model = MODEL;
+  scored.promptSha = PROMPT_SHA;
+
   return scored;
 };
 
@@ -421,6 +437,7 @@ log(`Voter dispatch done: seat=${SEAT} ${scoredVotes.length} definite vote(s) ca
 return {
   seat: SEAT,
   model: MODEL,
+  promptSha: PROMPT_SHA,
   k: K,
   maxInFlight: MAX_IN_FLIGHT,
   claims: CLAIM_UIDS.length,

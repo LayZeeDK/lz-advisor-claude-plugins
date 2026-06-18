@@ -29,6 +29,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import crypto from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 
 import jStatPkg from 'jstat';
@@ -615,6 +616,81 @@ test('Task-3 RE-PLAN-5 re-pre-registration: the lock rule + manifest record the 
 
   // The byte-locked URL_DATE_RULE is UNCHANGED in the manifest (manifest string == URL_DATE_RULE.source).
   assert.equal(m.stage1_pre_registration.url_date_rule, URL_DATE_RULE.source, 'the URL_DATE_RULE byte-lock holds through the RE-PLAN-5 re-registration');
+});
+
+test('Task-3 RE-PLAN-7 re-pre-registration: the lock rule + manifest record the ABSOLUTE per-model design + the 2 TAU + N floors (one-sided, prose==code) + decisionMatrix + the OOF-only retain + the F5/F6/F7 floors + the per-model prompt shas + the SCREEN framing', () => {
+  const prose = fs.readFileSync(LOCK_RULE, 'utf8');
+
+  // The ABSOLUTE per-model PIVOT (the relative-delta + SATURATED-VOID framing RETIRED for the decision path).
+  assert.ok(/ABSOLUTE per-model/i.test(prose), 'the lock rule records the ABSOLUTE per-model design (the PIVOT)');
+  assert.ok(/RETIRED/i.test(prose) && /SATURATED-VOID/.test(prose), 'the SATURATED-VOID framing is recorded as RETIRED for the decision path');
+  assert.ok(/Sonnet is a SUBJECT on trial/i.test(prose), 'Sonnet is recorded as a SUBJECT on trial (not the yardstick)');
+  assert.ok(/certifyModel/.test(prose) && /decisionMatrix/.test(prose), 'certifyModel + decisionMatrix are recorded');
+
+  // F2 prose == code: the prose TAU/floor numbers match EVAL_THRESHOLDS byte-for-byte.
+  assert.ok(prose.includes('`TAU_FU` | ' + EVAL_THRESHOLDS.TAU_FU + ' '), 'the lock rule records TAU_FU = ' + EVAL_THRESHOLDS.TAU_FU + ' (prose==code)');
+  assert.ok(prose.includes('`TAU_OR` | ' + EVAL_THRESHOLDS.TAU_OR + ' '), 'the lock rule records TAU_OR = ' + EVAL_THRESHOLDS.TAU_OR + ' (prose==code)');
+  assert.ok(prose.includes('`N_TRAP_FLOOR` | ' + EVAL_THRESHOLDS.N_TRAP_FLOOR + ' '), 'the lock rule records N_TRAP_FLOOR = ' + EVAL_THRESHOLDS.N_TRAP_FLOOR);
+  assert.ok(prose.includes('`N_CTRL_FLOOR` | ' + EVAL_THRESHOLDS.N_CTRL_FLOOR + ' '), 'the lock rule records N_CTRL_FLOOR = ' + EVAL_THRESHOLDS.N_CTRL_FLOOR);
+
+  // F2 prose == code: the recorded one-sided-CI anchors match clopperPearsonUpperOneSided byte-for-byte.
+  const cp1s = (x, n) => clopperPearsonUpperOneSided(x, n, EVAL_THRESHOLDS.ALPHA);
+  assert.ok(prose.includes('CP1s(0,36)=' + cp1s(0, 36).toFixed(4)), 'the recorded CP1s(0,36) matches the engine (' + cp1s(0, 36).toFixed(4) + ')');
+  assert.ok(prose.includes('CP1s(0,24)=' + cp1s(0, 24).toFixed(4)), 'the recorded CP1s(0,24) matches the engine (' + cp1s(0, 24).toFixed(4) + ')');
+  assert.ok(prose.includes('CP1s(0,18)=' + cp1s(0, 18).toFixed(4)), 'the recorded CP1s(0,18) matches the engine (' + cp1s(0, 18).toFixed(4) + ' > TAU_OR, F1)');
+  assert.ok(prose.includes('CP1s(1,46)=' + cp1s(1, 46).toFixed(4)), 'the recorded CP1s(1,46) matches the engine (' + cp1s(1, 46).toFixed(4) + ')');
+
+  // The OUT-OF-FAMILY-only retain + Opus-as-measured-voter (#3/F3).
+  assert.ok(/OUT-OF-FAMILY-only retain/i.test(prose) || /OUT-OF-FAMILY all-probes-agree consensus.*ONLY/i.test(prose), 'the OUT-OF-FAMILY-only retain predicate is recorded (#3/F3)');
+  assert.ok(/non-gating annotation/i.test(prose), 'the in-family Opus probe is recorded as a non-gating annotation');
+  assert.ok(/THIRD MEASURED VOTER/i.test(prose), 'Opus is recorded as a third measured voter');
+
+  // The F5/F6/F7 floors.
+  assert.ok(/subjectDifficultyProbe/i.test(prose) && /VOID-difficulty/.test(prose), 'the F5 subject-specific difficulty floor is recorded');
+  assert.ok(/covariate-overlap/i.test(prose) && /VOID-covariate/.test(prose), 'the F5 covariate-overlap check is recorded');
+  assert.ok(/cluster independence/i.test(prose) || /one PRIMARY claim per source\/seed cluster/i.test(prose), 'F6 cluster independence is recorded');
+  assert.ok(/evidence-absent stratum floor/i.test(prose) && /\bF7\b/.test(prose), 'the F7 evidence-absent stratum floor is recorded');
+
+  // The per-model prompt shas + the SCREEN framing.
+  assert.ok(/per-model fair prompts/i.test(prose) || /Per-model FAIR PROMPTS/.test(prose), 'the per-model fair prompts (#2/F8) are recorded');
+  assert.ok(/prompt shas|sha256'd/i.test(prose), 'the frozen per-model prompt shas are recorded');
+  assert.ok(/clears the closed-book SCREEN/i.test(prose) && /never.*production-safe|NEVER 'production-safe'/i.test(prose), 'the SCREEN-not-certificate framing is recorded (F4/F9)');
+
+  // The manifest records the RE-PLAN-7 stage1_pre_registration blocks (anti-drift) including the prompt
+  // shas matching the agent files byte-for-byte.
+  const m = JSON.parse(fs.readFileSync(MANIFEST, 'utf8'));
+  const pre = m.stage1_pre_registration;
+  assert.ok(typeof pre.absolute_per_model_design === 'string' && /certifyModel/.test(pre.absolute_per_model_design), 'the manifest records absolute_per_model_design');
+  assert.equal(pre.tau_fu, EVAL_THRESHOLDS.TAU_FU, 'the manifest tau_fu matches EVAL_THRESHOLDS');
+  assert.equal(pre.tau_or, EVAL_THRESHOLDS.TAU_OR, 'the manifest tau_or matches EVAL_THRESHOLDS');
+  assert.equal(pre.n_trap_floor, EVAL_THRESHOLDS.N_TRAP_FLOOR, 'the manifest n_trap_floor matches EVAL_THRESHOLDS');
+  assert.equal(pre.n_ctrl_floor, EVAL_THRESHOLDS.N_CTRL_FLOOR, 'the manifest n_ctrl_floor matches EVAL_THRESHOLDS');
+  assert.ok(/one-sided/i.test(pre.ci_convention), 'the manifest records the one-sided CI convention (F2)');
+  assert.ok(typeof pre.decision_matrix === 'string' && /opusFailsBar/.test(pre.decision_matrix), 'the manifest records decision_matrix (the four Opus-voter nuances)');
+  assert.ok(typeof pre.out_of_family_only_retain === 'string' && /non-gating annotation/i.test(pre.out_of_family_only_retain), 'the manifest records out_of_family_only_retain');
+  assert.ok(typeof pre.subject_difficulty_floor === 'string', 'the manifest records subject_difficulty_floor (F5)');
+  assert.ok(typeof pre.covariate_overlap_check === 'string', 'the manifest records covariate_overlap_check (F5)');
+  assert.ok(typeof pre.cluster_independence === 'string', 'the manifest records cluster_independence (F6)');
+  assert.ok(typeof pre.evidence_absent_stratum_floor === 'string', 'the manifest records evidence_absent_stratum_floor (F7)');
+  assert.ok(typeof pre.wice_closed_book_trap_arm === 'string' && /assembleWiceTraps/.test(pre.wice_closed_book_trap_arm), 'the manifest records the WiCE closed-book trap arm (W1)');
+  assert.ok(typeof pre.screen_not_certificate_framing === 'string', 'the manifest records the SCREEN framing (F4/F9)');
+
+  // The per-model prompt shas match the agent files byte-for-byte (the anti-drift assertion -- a drifted
+  // prompt would no longer match its recorded sha).
+  const agentSha = (rel) => crypto.createHash('sha256').update(fs.readFileSync(path.join(HERE, '..', rel))).digest('hex');
+  assert.equal(pre.per_model_prompt_shas.sonnet, agentSha('plugins/lz-advisor/agents/research-verify-voter-sonnet.md'), 'the sonnet prompt sha matches the agent file');
+  assert.equal(pre.per_model_prompt_shas.haiku, agentSha('plugins/lz-advisor/agents/research-verify-voter-haiku.md'), 'the haiku prompt sha matches the agent file');
+  assert.equal(pre.per_model_prompt_shas.opus, agentSha('plugins/lz-advisor/agents/research-verify-voter-opus.md'), 'the opus prompt sha matches the agent file');
+  // DISCRIMINATING: the Opus prompt sha differs from the Sonnet prompt sha (NOT a thin mirror, W4).
+  assert.notEqual(pre.per_model_prompt_shas.opus, pre.per_model_prompt_shas.sonnet, 'the Opus prompt is NOT a verbatim Sonnet copy (distinct sha)');
+
+  // The EXISTING EVAL_THRESHOLDS numbers + URL_DATE_RULE byte-lock are UNCHANGED by the RE-PLAN-7 additions.
+  assert.equal(EVAL_THRESHOLDS.ALPHA, 0.05);
+  assert.equal(EVAL_THRESHOLDS.RELIABLE_TRIALS, 15);
+  assert.equal(EVAL_THRESHOLDS.MIN_K, 5);
+  assert.equal(EVAL_THRESHOLDS.DELTA_UPPER_MAX, 0.25);
+  assert.equal(EVAL_THRESHOLDS.ESCALATION_KILL_HIGH, 0.5);
+  assert.equal(m.stage1_pre_registration.url_date_rule, URL_DATE_RULE.source, 'the URL_DATE_RULE byte-lock holds through the RE-PLAN-7 re-registration');
 });
 
 // ---------------------------------------------------------------------------

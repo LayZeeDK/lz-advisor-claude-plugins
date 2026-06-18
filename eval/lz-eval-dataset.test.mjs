@@ -54,6 +54,11 @@ import {
   STRATA_FRACTIONS,
 } from './lz-eval-dataset.mjs';
 
+// RE-PLAN-7 W1/F7: the NET-NEW WiCE CLOSED-BOOK trap arm (the trap BULK). The WiCE-heavy assertion is
+// wired to THIS real WiCE-native path (assembleWiceTraps over the vendored records), NOT a non-existent
+// WiCE-through-AVeriTeC pipeline (WiCE has no dated-URL KS -- it is closed-book-native).
+import { assembleWiceTraps } from './lz-eval-wice-traps.mjs';
+
 // Resolve fixtures test-file-relative (NEVER process.cwd() -- cwd drifts under GSD worktrees and
 // headless `claude -p`).
 const HERE = path.dirname(fileURLToPath(import.meta.url));
@@ -570,6 +575,49 @@ test('D-12 the AVeriTeC source row is gated:false + repoType:model, distinct fro
   const wice = m.sources.find((s) => s.id === 'wice');
   assert.notEqual(avt.repoType || 'dataset', wice.repoType || 'dataset', 'AVeriTeC repoType differs from WiCE (per-source, not blanket)');
   assert.equal(wice.repoType || 'dataset', 'dataset', 'WiCE stays a dataset repo');
+});
+
+test('RE-PLAN-7 WiCE-heavy (W1/F7): the trap BULK is sourced from the WiCE CLOSED-BOOK arm (assembleWiceTraps over the vendored records), NOT a WiCE-through-AVeriTeC pipeline; the AVeriTeC evidence-absent stratum is DISTINCT', async () => {
+  // The trap arm is predominantly WiCE: the closed-book-native WiCE arm carries the BULK of the traps
+  // (de-risking the AVeriTeC median-5 collapse). DISCRIMINATING: the WiCE-native trap count strictly
+  // exceeds the AVeriTeC evidence-absent example-row count in the manifest (the WiCE arm is the majority).
+  const records = fs
+    .readdirSync(WICE_RECORDS)
+    .filter((f) => f.endsWith('.json'))
+    .sort()
+    .map((f) => JSON.parse(fs.readFileSync(path.join(WICE_RECORDS, f), 'utf8')));
+
+  const agreeProbe = async ({ expectedEntailment }) => ({ accepted: true, reason: 'agree', entails: expectedEntailment });
+  const fooledSubject = async () => 'unrefuted';
+
+  const wice = await assembleWiceTraps({
+    records,
+    probes: [agreeProbe],
+    subjectDifficultyProbe: fooledSubject,
+  });
+
+  const wiceTrapCount = wice.strata['evidence-absent'].length;
+  assert.ok(wiceTrapCount >= 3, 'the WiCE-native trap arm builds the trap BULK (>= 3 refuted traps; closed-book-native)');
+
+  // The WiCE arm does NOT route through the AVeriTeC dateFilter/survivor pipeline -- it builds from the
+  // GIVEN closed-book evidence. The AVeriTeC evidence-absent stratum (the manifest example rows) is a
+  // SEPARATE, distinct arm.
+  const m = loadManifest(MANIFEST);
+  const avtEvidenceAbsent = m.examples.filter((e) => e.source === 'averitec' && e.stratum === 'evidence-absent').length;
+
+  // DISCRIMINATING: the WiCE trap BULK exceeds the AVeriTeC evidence-absent example-row count (WiCE is the
+  // majority of the trap arm; the AVeriTeC evidence-absent stratum is the distinct, smaller separate arm).
+  assert.ok(
+    wiceTrapCount > avtEvidenceAbsent,
+    'the WiCE-native trap arm (' + wiceTrapCount + ') is the MAJORITY of the trap arm vs the distinct AVeriTeC evidence-absent stratum (' + avtEvidenceAbsent + ') -- WiCE-heavy (F7)',
+  );
+
+  // The WiCE rows are recipe-not-text + license-clean (ODC-BY/MIT): NO recipe, NO text field.
+  for (const row of wice.strata['evidence-absent']) {
+    assert.equal('recipe' in row, false, 'a WiCE trap row carries NO overreach recipe (native partially/not_supported claim)');
+    assert.equal('text' in row, false, 'a WiCE trap row carries NO text field (license-clean, the closed-book evidence stays out of the manifest)');
+    assert.equal(row.book, 'closed', 'a WiCE row is book:closed (closed-book-native)');
+  }
 });
 
 test('EVAL-01 the existing WiCE drift-gate assertions are UNCHANGED by the AVeriTeC extension', () => {

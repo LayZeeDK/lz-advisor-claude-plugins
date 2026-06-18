@@ -22,12 +22,134 @@ eval aggregator. Every threshold below MUST match that script's frozen `EVAL_THR
 ever disagrees with `EVAL_THRESHOLDS`, the code wins and this document is wrong and must be
 corrected to match. Do NOT change a threshold in one place without changing it in the other.
 
-## What the gate measures
+## THE PIVOT to the ABSOLUTE per-model eval (RE-PLAN-7, board-converged; re-registered in the ZERO-VOTES window)
 
-- The SOLE HARD GATE is the SUBTLE-/open-book, Haiku-MINUS-Sonnet false-uphold DELTA -- NEVER
-  Haiku's absolute false-uphold rate (D-06). Sonnet is run on the IDENTICAL sampled strata as the
-  calibration baseline; the gated quantity is the EXCESS (Haiku count minus Sonnet count) on the
-  shared trial pool.
+RE-PLAN-7 PIVOTS the offline READ from a RELATIVE Haiku-MINUS-Sonnet delta (Sonnet assumed-good
+baseline) to an ABSOLUTE per-model verdict. This is re-registered in the LEGITIMATE ZERO-VOTES window
+(BEFORE any model vote -- anti-result-shopping, mirroring RE-PLAN-3/4/5). The relative-delta + the
+RE-PLAN-5 SATURATED-VOID framing below are RETIRED for the DECISION PATH (the carried
+calibratorGate/readDelta/resolveOutcome/classifyCalibration STAY for back-compat but are NOT the
+RE-PLAN-7 decision path). A clean EARNED 0 is now PROOF the model WORKS, NOT a VOID.
+
+The board: an Opus design panel produced the ABSOLUTE per-model eval, validated by a cross-family board
+(GPT-5.5 + Gemini-3.1-pro out-of-family + an Opus peer, all BLIND, UNANIMOUS VALID-WITH-FIXES; the nine
+findings F1-F9 all applied). Decision record: 19-04-REPLAN-DECISION-7.md.
+
+### The ABSOLUTE per-model design (certifyModel + decisionMatrix)
+
+Prove, for BOTH Haiku 4.5 AND Sonnet 4.6 (AND Opus 4.6 as the measured REFERENCE), WHETHER each WORKS as
+the lz-deep-research verify-voter. Sonnet is a SUBJECT on trial, NOT the yardstick. Per model M, voter
+role, TWO estimands pooled PER-CLAIM (denominator N_claims, NEVER N*k -- the k=9 votes share one packet,
+positively correlated):
+
+- ESTIMAND A -- the FALSE-UPHOLD rate over the retained refuted-gold traps. Statistic =
+  `clopperPearsonUpperOneSided(x_FU, N_trap)` (the F2-pinned ONE-SIDED 95% upper). PASS_A iff
+  `CP1s <= TAU_FU` (`0.10`). The catastrophic arm: silently shipped bad research.
+- ESTIMAND B -- the OVER-REFUSAL rate over the gold=unrefuted positive controls (the F1 always-refute
+  detector, reusing `scorePositiveControls`' over-refusal count). `CP1s(x_OR, N_ctrl)`. PASS_B iff
+  `CP1s <= TAU_OR` (`0.15`). Symmetric any-uphold reduction on BOTH arms.
+
+VERDICT(M) = `WORKS` iff PASS_A AND PASS_B (with the floors met); `DOES-NOT-WORK` if either CI exceeds
+its TAU; `VOID-on-power` if N below its floor (N_TRAP_FLOOR=36 / N_CTRL_FLOOR=24) or the evidence-absent
+stratum floor is unmet (F7); `VOID-artifact` on an always-refute / min-not-met-trace collapse;
+`VOID-difficulty` / `VOID-covariate` from the F5 floors. SATURATION-as-PASS certifies WORKS only when ALL
+THREE hold JOINTLY: (a) the difficulty floor is met (hard+representative -- including the F5
+subject-specific Claude held-out check + the covariate-overlap check), (b) the CI upper bound is tight
+(CP1s <= TAU at the realized N), (c) the positive-control arm passes (the 0 is EARNED, not always-refuse).
+`certifyModel` + `decisionMatrix` (eval/lz-eval-offline-read.mjs, Task 2) encode this.
+
+### TAU_FU / TAU_OR + the N floors at one-sided 95% CI (F1/F2; verified engine anchors)
+
+Two NEW `EVAL_THRESHOLDS` keys + two N floors are ADDED (the EXISTING numbers are byte-unchanged):
+
+| Threshold | Value | Meaning |
+|-----------|-------|---------|
+| `TAU_FU` | 0.1 | The false-uphold SCREEN bar (decision #1; the literal frozen value is 0.10). The stricter 0.06 is NOT adopted (zero-tolerant + hostage to the feasibility risk); 0.10-as-SCREEN is honest given Sonnet-default ships + the Phase-20 live shadow is the REAL gate. |
+| `TAU_OR` | 0.15 | The over-refusal bar. |
+| `N_TRAP_FLOOR` | 36 | The 0-miss trap-arm floor where a CLEAN arm certifies WORKS at TAU_FU under the ONE-SIDED CP. A model with >=1 false-uphold needs N_trap >= 46. |
+| `N_CTRL_FLOOR` | 24 | The F1-corrected control floor. The OLD floor 18 was mathematically broken under one-sided CP. |
+
+VERIFIED against the actual engine, ONE-SIDED (`clopperPearsonUpperOneSided`, the 0.95 quantile):
+`CP1s(0,36)=0.0798 <= 0.10` (the 0-miss N_trap floor 36); `CP1s(1,46)=0.0990 <= 0.10` (a 1-miss arm needs
+N_trap >= 46); `CP1s(0,24)=0.1173 <= 0.15` (the corrected N_ctrl floor 24 holds); `CP1s(0,18)=0.1533 >
+0.15` (the OLD floor 18 mathematically FAILS, F1). The CI convention is ONE-SIDED 95% upper (F2 -- a
+one-directional ceiling); ALL TAU/floor brackets are recomputed against it; the anti-drift test asserts
+prose == code byte-for-byte AND the one-sided-CI anchors. NEVER relax a TAU to fit a realized N.
+
+### The decision matrix + the four Opus-voter nuances
+
+`decisionMatrix({haiku, sonnet, opus})`: the SHIP cell is the Haiku x Sonnet cross-product ONLY (nuance i
+-- Opus is NOT a ship cell): both / only-sonnet / only-haiku / neither, with a subject VOID surfaced.
+`opusReference.opusFailsBar` (opus.verdict !== WORKS) is the NEW first-class MAJOR finding (nuance ii --
+the quality anchor the plugin leans on is below its own gate -> the near-Opus thesis is in question ->
+RAISE TO USER). The near-Opus diagnostic is CONDITIONAL on Opus clearing the bar (nuance iii -- suppressed
+when Opus fails; tracking a wrong model is not reassurance). Opus-voter at k=9 is the priciest Claude-pool
+tier (nuance iv -- paced). `framing` is always `clears-the-closed-book-SCREEN` (F4 -- never
+'production-safe'); `raiseToUser` is always true (settle-OR-raise).
+
+### The OUT-OF-FAMILY-only retain predicate + Opus-as-measured-voter (#3/F3)
+
+The assembler RETAIN predicate is the OUT-OF-FAMILY all-probes-agree consensus (GPT-5.5 + Gemini) ONLY --
+the in-family Opus probe is recorded as a NON-GATING annotation per packet (the gold is INDEPENDENT of the
+family on trial; it cannot grade Claude on a curve drawn by Claude). F3 framing correction: dropping the
+in-family conjunct LOOSENS the all-agree AND -> retains MORE -> higher N + purer gold (the 'drop = lower N'
+framing was backwards). Opus is ADDED as a THIRD MEASURED VOTER on the same OUT-OF-FAMILY-screened gold (a
+clean cross-family measurement -- tested, not testing).
+
+### The subject-specific difficulty floor + the covariate-overlap check (F5)
+
+A held-out Claude reference verifier (subjectDifficultyProbe) run over the RETAINED refuted-trap set must
+NOT ACE it (above the pre-registered max catch-rate -> VOID-difficulty). The trap/control COVARIATE-OVERLAP
+check (claim length / survivor count / token-complexity within a pre-registered tolerance) prevents a model
+passing by STYLE not judgment (below tolerance -> VOID-covariate). Both floors are load-bearing, never
+tuned; `certifyModel` requires `difficultyFloorMet AND covariateOverlapMet` for WORKS.
+
+### Cluster independence (F6) + the evidence-absent stratum floor (F7)
+
+F6: one PRIMARY claim per source/seed cluster is retained (or the cluster fails as a unit), so the
+per-claim CP denominator is not anti-conservative; `reducePooledVerdict` applies any-uphold SYMMETRICALLY
+on both arms (any-seat-false-uphold on a trap = fail; any-seat-refute on a control = the over-refusal
+event). F7: the evidence-absent sub-construct has its own pre-registered per-stratum minimum
+(`evidenceAbsentStratumMet`); an unmet stratum is VOID-on-power scoped to evidence-absent, NOT a silent
+WORKS over a sub-construct WiCE cannot supply (or it is explicitly DEFERRED to Phase-20 by name).
+
+### Per-model fair prompts + the frozen prompt shas (#2/F8)
+
+Per-model FAIR PROMPTS, not a shared prompt (overrides the board's shared-prompt suggestion; re-aligns
+with EVAL-05/D-08): Haiku gets its own research-grounded prompt
+(`research-verify-voter-haiku.md` + `lz-haiku-prompt-engineering.md`); Sonnet
+(`research-verify-voter-sonnet.md`) and Opus (`research-verify-voter-opus.md`) each get their own. The
+Opus prompt is best-effort-engineered, NOT a verbatim Sonnet copy (a thin mirror would under-test Opus and
+corrupt the reference anchor, W4). Each prompt is FROZEN + sha256'd in the manifest
+(`per_model_prompt_shas`); the dispatch records the selected model + the frozen prompt-sha per seat, and
+the anti-drift test asserts each recorded sha matches the agent file. A per-model verdict is "works UNDER
+ITS OWN BEST PROMPT" (the deployment-realistic question; the principled resolution of ATTACK-7). The
+PROMPT-FAIRNESS gate (W4): a DOES-NOT-WORK verdict for ANY model cannot be finalized until a
+prompt-sensitivity check on a HELD-OUT TUNING SPLIT (disjoint from the scored set) clears.
+
+### The WiCE-heavy dataset
+
+WiCE carries the BULK of the traps (the closed-book-native WiCE arm, `assembleWiceTraps`) -- it de-risks
+the AVeriTeC median-5 collapse (F7-relevant). AVeriTeC supplies the SEPARATE evidence-absent trap stratum
++ native unmutated controls. WiCE is screened by the SAME OUT-OF-FAMILY all-agree consensus + the F5
+difficulty/covariate floors + F6 cluster independence; its rows are recipe-not-text + license-clean (WiCE
+ODC-BY/MIT, the only commit-safe corpus).
+
+### The SCREEN-not-certificate framing (F4/F9, load-bearing)
+
+This is a closed-book SCREEN feeding the Phase-20 live shadow, NOT a ship certificate. The decision-matrix
+cells read 'clears the closed-book SCREEN', NEVER 'WORKS=production-safe'. An offline PASS NEVER auto-flips
+Haiku ON; retrieval + end-to-end + the actual flip DEFER to Phase-20 by name; Sonnet-default ships in
+EVERY case. If the build team ever treats an offline 'both work' as a ship green-light the verdict flips to
+REDESIGN -- the framing is load-bearing.
+
+## What the gate measures (CARRIED relative read -- RETIRED for the RE-PLAN-7 decision path)
+
+- (CARRIED, back-compat) The relative read's SOLE HARD GATE was the SUBTLE-/open-book, Haiku-MINUS-Sonnet
+  false-uphold DELTA -- NEVER Haiku's absolute false-uphold rate (D-06). Sonnet was run on the IDENTICAL
+  sampled strata as the calibration baseline; the gated quantity was the EXCESS (Haiku count minus Sonnet
+  count) on the shared trial pool. RE-PLAN-7 RETIRES this relative delta for the decision path (the
+  ABSOLUTE per-model verdict above supersedes it); the function stays for back-compat.
 - A FALSE-UPHOLD event is deterministic: `expected_verdict === 'refuted' && verdict === 'unrefuted'`
   -- a bad / refuted-gold claim wrongly called `unrefuted`. There is NO LLM-as-judge variance in the
   hard gate (D-01); the harness mirrors the runtime aggregator's off-model verdict-vs-gold-label
