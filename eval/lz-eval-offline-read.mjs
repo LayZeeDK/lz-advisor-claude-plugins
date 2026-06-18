@@ -146,6 +146,213 @@ export function calibratorGate({ sonnetFalseUpholds, trials } = {}) {
 }
 
 // ---------------------------------------------------------------------------
+// scorePositiveControls({ voteDir, positiveControlGold, nControls }) -- the RE-PLAN-5 Finding-1 power
+// check. With EVERY retained trap gold=refuted, a 0-false-uphold result is CONFOUNDED -- observationally
+// identical to a DEGENERATE ALWAYS-REFUTE prior (a voter that refutes everything on thin evidence scores
+// a perfect 0 for the WRONG reason and measures nothing). The interleaved gold=unrefuted POSITIVE CONTROLS
+// (native unmutated Supported seeds whose date-filtered survivors GENUINELY ENTAIL the claim) are the
+// inverse check: the voter SHOULD vote unrefuted on them. This reads ONLY the 'unrefuted'-gold control
+// pooled records (one per control claim) and returns the voter's control accuracy + the
+// alwaysRefuteArtifact flag.
+//
+// W-2 (fail closed in TWO directions, mirroring readDelta's F3/F4 realized-count guard):
+//   1) the realized control vote count MUST equal nControls (a partial/stale control dir fails closed);
+//   2) EVERY control record's gold (from positiveControlGold[safeId(rec.id)]) MUST be 'unrefuted' -- a
+//      'refuted'-gold record in the control voteDir is a refuted-gold trap LEAKED into the control arm
+//      (an invariant violation), FAIL CLOSED with a ContractError. The function reads ONLY 'unrefuted'-gold
+//      records; a refuted-gold record is never silently scored.
+//
+// alwaysRefuteArtifact is true when the voter REFUTES the controls beyond the PRE-REGISTERED tolerance:
+// the default tolerance is ZERO -- ANY positive-control refute voids the saturation read (a
+// hyper-conservative collapsed decision boundary, NOT capability -- the read cannot interpret a clean
+// trap rate of 0 if the voter cannot uphold a control). Returns { upheld, refuted, accuracy,
+// alwaysRefuteArtifact, nControls }. Every control vote id is routed through safeId before any path
+// (CARRIED T-19-TRAVERSE discipline). EVAL_THRESHOLDS is byte-identical (this function does not touch it).
+// ---------------------------------------------------------------------------
+export function scorePositiveControls({ voteDir, positiveControlGold, nControls } = {}) {
+  if (typeof voteDir !== 'string' || voteDir.length === 0) {
+    throw new ContractError('scorePositiveControls requires a voteDir (gitignored eval/.cache/)', 'scorePositiveControls');
+  }
+
+  if (positiveControlGold == null || typeof positiveControlGold !== 'object') {
+    throw new ContractError('scorePositiveControls requires a positiveControlGold map', 'scorePositiveControls');
+  }
+
+  if (!Number.isInteger(nControls) || nControls <= 0) {
+    throw new ContractError('scorePositiveControls requires a positive integer nControls: ' + JSON.stringify(nControls), 'scorePositiveControls');
+  }
+
+  // W-2 part 1: the realized control vote count must equal nControls (a partial/interrupted or stale
+  // control dir fails closed -- mirrors readDelta's F3/F4 realized-count guard).
+  const files = listJson(voteDir);
+
+  if (files.length !== nControls) {
+    throw new ContractError(
+      'scorePositiveControls: realized control vote count != nControls (partial/stale control pool): got ' +
+        files.length + ' nControls=' + nControls,
+      'scorePositiveControls',
+    );
+  }
+
+  let upheld = 0;
+  let refuted = 0;
+
+  for (const f of files) {
+    // listJson returns BASENAMES (sorted, *.json-only) -- join the voteDir before reading (mirrors the
+    // engine's countFalseUpholds: path.join(voteDir, f) then readJson).
+    const votePath = path.join(voteDir, f);
+    const rec = readJson(votePath);
+
+    if (rec == null || typeof rec !== 'object') {
+      throw new ContractError('scorePositiveControls: malformed control vote record: ' + JSON.stringify(rec), votePath);
+    }
+
+    // Route the content-derived id through safeId (T-19-TRAVERSE) BEFORE the gold lookup -- the VALIDATED
+    // id is the goldLabels key (mirrors the engine's read-time safeId discipline).
+    const id = safeId(String(rec.id), votePath);
+    const gold = positiveControlGold[id];
+
+    // W-2 part 2: the control arm is gold-separated from the trap arm. A 'refuted'-gold record in the
+    // control voteDir is a refuted-gold trap leaked into the control arm -- an invariant violation, NEVER
+    // silently scored. FAIL CLOSED.
+    if (gold !== 'unrefuted') {
+      throw new ContractError(
+        'scorePositiveControls: a non-unrefuted-gold record appeared in the control voteDir (a refuted-gold ' +
+          'trap leaked into the control arm -- invariant violation): id=' + JSON.stringify(id) + ' gold=' + JSON.stringify(gold),
+        'scorePositiveControls',
+      );
+    }
+
+    if (rec.verdict === 'unrefuted') {
+      // The CORRECT vote on a control (the survivors entail the claim -> uphold).
+      upheld += 1;
+    } else if (rec.verdict === 'refuted') {
+      // A WRONG refute on an unrefuted-gold control.
+      refuted += 1;
+    } else {
+      throw new ContractError(
+        'scorePositiveControls: a control record carries a non-{unrefuted,refuted} verdict: id=' +
+          JSON.stringify(id) + ' verdict=' + JSON.stringify(rec.verdict),
+        'scorePositiveControls',
+      );
+    }
+  }
+
+  const accuracy = upheld / nControls;
+  // The PRE-REGISTERED tolerance is ZERO: ANY control refute voids the saturation read (always-refute
+  // artifact). This is a hyper-conservative collapsed decision boundary, NOT capability -- the read
+  // cannot prove the voter CAN uphold when warranted if it refutes even one control.
+  const alwaysRefuteArtifact = refuted >= 1;
+
+  return Object.freeze({ upheld, refuted, accuracy, alwaysRefuteArtifact, nControls });
+}
+
+// ---------------------------------------------------------------------------
+// classifyCalibration({ sonnetFalseUpholds, trials, positiveControl, traceAudit }) -- the RE-PLAN-5
+// Finding-3 pre-registered NON-ZERO decision rule. The frozen engine returns only saturated-vs-below-ceiling
+// and does NOT fix what "1 false-uphold over N" MEANS; without a written rule a single uphold could be
+// relabeled post hoc. classifyCalibration WRAPS calibratorGate (consumed BYTE-IDENTICAL) and LAYERS the
+// pre-registered rule, returning ONE of FOUR terminal labels:
+//   - 'SATURATED-VOID': 0 false-upholds + positive-controls UPHELD (not always-refute) + clean traces. A
+//     LEGITIMATE evidence-justified VOID (Sonnet aces resist-uphold-on-absence AND can uphold when
+//     warranted).
+//   - 'ALWAYS-REFUTE-ARTIFACT-VOID': positive-controls REFUTED (alwaysRefuteArtifact=true) -- decided
+//     FIRST, regardless of the trap rate. The saturation read is uninterpretable, NOT a clean saturation.
+//   - 'BELOW-CEILING-PROCEED': >= 1 false-uphold on a CLEAN min-met trace + positive-controls upheld -- a
+//     GENUINE below-ceiling signal -> PROCEED to 19-05.
+//   - 'ARTIFACT-VOID-REDO': >= 1 false-uphold but an upheld claim's trace is min-not-met / truncated /
+//     quota-killed -- a false-uphold on a bad trace is an artifact, not resistance; void/redo that vote,
+//     NEVER a below-ceiling PROCEED.
+//
+// W-3: anyUpholdOnMinNotMet is DERIVED MECHANICALLY here from the supplied upheld pooled records' traces
+// (stop_reason === 'min-not-met'), NOT taken as a human-supplied boolean. ONLY
+// anyUpholdOnTruncatedOrQuotaKilled stays a caller-supplied inspection flag (truncation/quota-kill is an
+// out-of-band run condition not recoverable from the persisted trace stop_reason enum). So traceAudit is
+// { upheldRecords: [pooledRecord...], anyUpholdOnTruncatedOrQuotaKilled: boolean }.
+//
+// calibratorGate is consumed UNCHANGED (classifyCalibration calls it with { sonnetFalseUpholds, trials }).
+// Fails closed on a missing positiveControl (the read is confounded without it -- the WHOLE POINT of
+// Finding 1), a missing traceAudit (a below-ceiling read is unaudited), or an upheldRecords whose count
+// != sonnetFalseUpholds (the audited set must match the false-uphold count). Returns
+// { label, calibration, reason, anyUpholdOnMinNotMet }.
+// ---------------------------------------------------------------------------
+export function classifyCalibration({ sonnetFalseUpholds, trials, positiveControl, traceAudit } = {}) {
+  if (positiveControl == null || typeof positiveControl !== 'object' || typeof positiveControl.alwaysRefuteArtifact !== 'boolean') {
+    throw new ContractError(
+      'classifyCalibration requires a positiveControl (scorePositiveControls output) -- the read is CONFOUNDED without it (Finding 1)',
+      'classifyCalibration',
+    );
+  }
+
+  if (traceAudit == null || typeof traceAudit !== 'object' || !Array.isArray(traceAudit.upheldRecords) ||
+    typeof traceAudit.anyUpholdOnTruncatedOrQuotaKilled !== 'boolean') {
+    throw new ContractError(
+      'classifyCalibration requires a traceAudit { upheldRecords:[pooledRecord...], anyUpholdOnTruncatedOrQuotaKilled:boolean }',
+      'classifyCalibration',
+    );
+  }
+
+  // calibratorGate consumed BYTE-IDENTICAL (it validates sonnetFalseUpholds + trials + the MIN_K floor).
+  const calibration = calibratorGate({ sonnetFalseUpholds, trials });
+
+  // The audited upheld set MUST match the false-uphold count (every false-uphold pooled record is audited).
+  if (traceAudit.upheldRecords.length !== sonnetFalseUpholds) {
+    throw new ContractError(
+      'classifyCalibration: traceAudit.upheldRecords count (' + traceAudit.upheldRecords.length +
+        ') must equal sonnetFalseUpholds (' + sonnetFalseUpholds + ') -- the audited set must match the false-uphold count',
+      'classifyCalibration',
+    );
+  }
+
+  // W-3: DERIVE anyUpholdOnMinNotMet MECHANICALLY from the upheld pooled records' traces (NOT a passed
+  // boolean). An uphold cast on a min-not-met trace is an artifact, not resistance below ceiling.
+  const anyUpholdOnMinNotMet = traceAudit.upheldRecords.some(
+    (r) => r != null && r.trace != null && r.trace.stop_reason === 'min-not-met',
+  );
+
+  // (1) A control collapse voids the read FIRST -- regardless of the trap rate (Finding 1: a degenerate
+  // always-refute prior would also score 0 false-upholds; the controls are the only de-confounder).
+  if (positiveControl.alwaysRefuteArtifact === true) {
+    return Object.freeze({
+      label: 'ALWAYS-REFUTE-ARTIFACT-VOID',
+      calibration,
+      anyUpholdOnMinNotMet,
+      reason: 'the voter REFUTED the positive controls -> always-refute artifact -> VOID/uninterpretable (Finding 1), NOT a clean saturation',
+    });
+  }
+
+  // (2) >= 1 false-uphold on a BAD trace (min-not-met derived, or truncated/quota-killed inspection) is an
+  // ARTIFACT, not resistance below ceiling -- void/redo that vote, NEVER a PROCEED.
+  if (sonnetFalseUpholds >= 1 && (anyUpholdOnMinNotMet || traceAudit.anyUpholdOnTruncatedOrQuotaKilled)) {
+    return Object.freeze({
+      label: 'ARTIFACT-VOID-REDO',
+      calibration,
+      anyUpholdOnMinNotMet,
+      reason: 'a false-uphold landed on a min-not-met / truncated / quota-killed trace -> ARTIFACT (void/redo that vote), never a below-ceiling PROCEED (Finding 3 (ii))',
+    });
+  }
+
+  // (3) >= 1 GENUINE false-uphold (clean min-met trace + controls upheld) -> a below-ceiling PROCEED.
+  if (sonnetFalseUpholds >= 1) {
+    return Object.freeze({
+      label: 'BELOW-CEILING-PROCEED',
+      calibration,
+      anyUpholdOnMinNotMet,
+      reason: 'a GENUINE below-ceiling false-uphold on a clean min-met probe-consensus-retained trace + positive-controls upheld -> PROCEED to 19-05',
+    });
+  }
+
+  // (4) 0 false-upholds + positive-controls UPHELD on clean traces -> a LEGITIMATE evidence-justified
+  // SATURATED-VOID (the gate CAN register a non-zero AND the voter CAN uphold when warranted).
+  return Object.freeze({
+    label: 'SATURATED-VOID',
+    calibration,
+    anyUpholdOnMinNotMet,
+    reason: '0 false-upholds + positive-controls upheld on clean traces -> LEGITIMATE evidence-justified saturation -> VOID (a closed-book PASS never flips Haiku ON)',
+  });
+}
+
+// ---------------------------------------------------------------------------
 // The pooled DELTA read (EVAL-02 / D-05). Given the per-seat vote directories (sonnet + haiku) over
 // the SHARED SUBTLE open-book pool and the gold labels, compute via the FROZEN engine:
 //   - the Sonnet + Haiku false-uphold counts (countFalseUpholds -- off-model verdict-vs-gold);

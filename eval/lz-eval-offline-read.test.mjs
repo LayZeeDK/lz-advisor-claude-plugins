@@ -47,6 +47,8 @@ import {
   votePath,
   votePersisted,
   persistVote,
+  scorePositiveControls,
+  classifyCalibration,
 } from './lz-eval-offline-read.mjs';
 
 import { EVAL_THRESHOLDS, clopperPearsonUpper } from './lz-eval-aggregate.mjs';
@@ -600,6 +602,262 @@ test('votePath routes the vote id through safeId (a traversal id is rejected, T-
   } finally {
     fs.rmSync(voteDir, { recursive: true, force: true });
   }
+});
+
+// ===========================================================================
+// scorePositiveControls (RE-PLAN-5 Finding 1): the positive-control accuracy + the always-refute artifact.
+// ===========================================================================
+
+// Write a control vote dir of { id, verdict } records (the shape scorePositiveControls reads) + the
+// matching positiveControlGold map (every id -> 'unrefuted'). Returns { dir, gold }.
+function writeControlVotes(votes) {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'lz-offline-controls-'));
+  const gold = {};
+
+  for (const v of votes) {
+    fs.writeFileSync(path.join(dir, v.id + '.json'), JSON.stringify({ id: v.id, verdict: v.verdict, seat: 'sonnet' }) + '\n', 'utf8');
+    gold[v.id] = 'unrefuted';
+  }
+
+  return { dir, gold };
+}
+
+test('scorePositiveControls DISCRIMINATES: an all-uphold control voter -> accuracy 1.0 + alwaysRefuteArtifact false; an all-refute voter -> alwaysRefuteArtifact true', () => {
+  // The voter UPHOLDS every positive control (the correct vote -- the survivors entail the original
+  // claim) -> accuracy 1.0, NOT an always-refute artifact.
+  const upholdVotes = [
+    { id: 'ctrl-000', verdict: 'unrefuted' },
+    { id: 'ctrl-001', verdict: 'unrefuted' },
+    { id: 'ctrl-002', verdict: 'unrefuted' },
+  ];
+  const up = writeControlVotes(upholdVotes);
+
+  // The voter REFUTES the controls (a degenerate always-refute prior) -> alwaysRefuteArtifact true (the
+  // saturation read is uninterpretable). DISCRIMINATING: the OPPOSITE alwaysRefuteArtifact value.
+  const refuteVotes = [
+    { id: 'ctrl-100', verdict: 'refuted' },
+    { id: 'ctrl-101', verdict: 'refuted' },
+    { id: 'ctrl-102', verdict: 'refuted' },
+  ];
+  const ref = writeControlVotes(refuteVotes);
+
+  try {
+    const upScore = scorePositiveControls({ voteDir: up.dir, positiveControlGold: up.gold, nControls: 3 });
+    assert.equal(upScore.upheld, 3, 'all 3 controls upheld');
+    assert.equal(upScore.refuted, 0, 'no control refuted');
+    assert.equal(upScore.accuracy, 1.0, 'accuracy 1.0 (the voter upholds every control)');
+    assert.equal(upScore.alwaysRefuteArtifact, false, 'an all-uphold voter is NOT an always-refute artifact');
+
+    const refScore = scorePositiveControls({ voteDir: ref.dir, positiveControlGold: ref.gold, nControls: 3 });
+    assert.equal(refScore.refuted, 3, 'all 3 controls refuted (degenerate always-refute prior)');
+    assert.equal(refScore.alwaysRefuteArtifact, true, 'an all-refute voter IS an always-refute artifact (the saturation read is VOID/uninterpretable)');
+
+    assert.notEqual(upScore.alwaysRefuteArtifact, refScore.alwaysRefuteArtifact, 'scorePositiveControls genuinely DISCRIMINATES uphold vs refute');
+  } finally {
+    fs.rmSync(up.dir, { recursive: true, force: true });
+    fs.rmSync(ref.dir, { recursive: true, force: true });
+  }
+});
+
+test('scorePositiveControls: ANY single control refute (tolerance ZERO) -> alwaysRefuteArtifact true', () => {
+  // 4 controls upheld, 1 refuted -> the PRE-REGISTERED tolerance is ZERO, so even one refute voids the
+  // saturation read. DISCRIMINATING: the all-uphold case above is false; this one refute flips it true.
+  const votes = [
+    { id: 'ctrl-200', verdict: 'unrefuted' },
+    { id: 'ctrl-201', verdict: 'unrefuted' },
+    { id: 'ctrl-202', verdict: 'refuted' }, // the single wrong refute
+    { id: 'ctrl-203', verdict: 'unrefuted' },
+    { id: 'ctrl-204', verdict: 'unrefuted' },
+  ];
+  const c = writeControlVotes(votes);
+
+  try {
+    const score = scorePositiveControls({ voteDir: c.dir, positiveControlGold: c.gold, nControls: 5 });
+    assert.equal(score.refuted, 1, 'exactly one control refuted');
+    assert.equal(score.alwaysRefuteArtifact, true, 'a single control refute (tolerance ZERO) -> always-refute artifact');
+  } finally {
+    fs.rmSync(c.dir, { recursive: true, force: true });
+  }
+});
+
+test('scorePositiveControls FAILS CLOSED on a realized-count mismatch (a partial/stale control pool -- W-2)', () => {
+  const votes = [
+    { id: 'ctrl-300', verdict: 'unrefuted' },
+    { id: 'ctrl-301', verdict: 'unrefuted' },
+  ];
+  const c = writeControlVotes(votes);
+
+  try {
+    // Only 2 control votes written but nControls declared 3 -> fail closed (mirrors readDelta's F3/F4).
+    assert.throws(
+      () => scorePositiveControls({ voteDir: c.dir, positiveControlGold: c.gold, nControls: 3 }),
+      (e) => e.name === 'ContractError' && /realized control vote count != nControls/.test(e.message),
+      'a partial control pool fails closed (W-2 realized-count guard)',
+    );
+  } finally {
+    fs.rmSync(c.dir, { recursive: true, force: true });
+  }
+});
+
+test('scorePositiveControls FAILS CLOSED on a refuted-gold record in the control voteDir (a trap leaked into the control arm -- W-2)', () => {
+  // The control arm is gold-separated from the trap arm. A 'refuted'-gold record in the control voteDir
+  // is a refuted-gold trap leaked into the control arm -- an invariant violation, NEVER silently scored.
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'lz-offline-controls-leak-'));
+
+  try {
+    fs.writeFileSync(path.join(dir, 'ctrl-400.json'), JSON.stringify({ id: 'ctrl-400', verdict: 'unrefuted' }) + '\n', 'utf8');
+    fs.writeFileSync(path.join(dir, 'trap-500.json'), JSON.stringify({ id: 'trap-500', verdict: 'refuted' }) + '\n', 'utf8');
+    fs.writeFileSync(path.join(dir, 'ctrl-401.json'), JSON.stringify({ id: 'ctrl-401', verdict: 'unrefuted' }) + '\n', 'utf8');
+
+    // The gold map marks the two ctrl-* records 'unrefuted' but the leaked trap 'refuted' -- the W-2 guard
+    // must FAIL CLOSED on the refuted-gold record (it reads ONLY 'unrefuted'-gold records).
+    const gold = { 'ctrl-400': 'unrefuted', 'trap-500': 'refuted', 'ctrl-401': 'unrefuted' };
+
+    assert.throws(
+      () => scorePositiveControls({ voteDir: dir, positiveControlGold: gold, nControls: 3 }),
+      (e) => e.name === 'ContractError' && /non-unrefuted-gold record appeared in the control voteDir/.test(e.message),
+      'a refuted-gold record in the control voteDir fails closed (W-2)',
+    );
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+// ===========================================================================
+// classifyCalibration (RE-PLAN-5 Finding 3): the pre-registered NON-ZERO decision rule -- the FOUR
+// terminal labels, with anyUpholdOnMinNotMet DERIVED MECHANICALLY from the supplied pooled traces (W-3).
+// ===========================================================================
+
+// A pooled upheld-claim record carrying a representative trace (the shape classifyCalibration audits).
+function upheldRecord(id, stopReason) {
+  return { id, seat: 'sonnet', verdict: 'unrefuted', trace: { queries: ['q0', 'q1', 'q2'], depth: 6, stop_reason: stopReason } };
+}
+
+test('classifyCalibration DISCRIMINATES the FOUR terminal labels (the pre-registered NON-ZERO decision rule)', () => {
+  // (1) 0 false-upholds + controls UPHELD (not always-refute) + clean traces -> SATURATED-VOID.
+  const saturated = classifyCalibration({
+    sonnetFalseUpholds: 0,
+    trials: 60,
+    positiveControl: { alwaysRefuteArtifact: false, upheld: 9, refuted: 0, accuracy: 1, nControls: 9 },
+    traceAudit: { upheldRecords: [], anyUpholdOnTruncatedOrQuotaKilled: false },
+  });
+  assert.equal(saturated.label, 'SATURATED-VOID', '0 false-upholds + controls upheld + clean -> SATURATED-VOID');
+
+  // (2) 0 false-upholds + controls REFUTED -> ALWAYS-REFUTE-ARTIFACT-VOID (decided FIRST, regardless of trap rate).
+  const artifact = classifyCalibration({
+    sonnetFalseUpholds: 0,
+    trials: 60,
+    positiveControl: { alwaysRefuteArtifact: true, upheld: 0, refuted: 9, accuracy: 0, nControls: 9 },
+    traceAudit: { upheldRecords: [], anyUpholdOnTruncatedOrQuotaKilled: false },
+  });
+  assert.equal(artifact.label, 'ALWAYS-REFUTE-ARTIFACT-VOID', '0 false-upholds + controls refuted -> ALWAYS-REFUTE-ARTIFACT-VOID');
+
+  // (3) >= 1 false-uphold + clean traces + controls upheld -> BELOW-CEILING-PROCEED.
+  const below = classifyCalibration({
+    sonnetFalseUpholds: 2,
+    trials: 60,
+    positiveControl: { alwaysRefuteArtifact: false, upheld: 9, refuted: 0, accuracy: 1, nControls: 9 },
+    traceAudit: { upheldRecords: [upheldRecord('t1', 'exhausted'), upheldRecord('t2', 'decisive-evidence')], anyUpholdOnTruncatedOrQuotaKilled: false },
+  });
+  assert.equal(below.label, 'BELOW-CEILING-PROCEED', '>=1 false-uphold on clean min-met traces + controls upheld -> BELOW-CEILING-PROCEED');
+
+  // (4) >= 1 false-uphold but an upheld claim's trace is min-not-met -> ARTIFACT-VOID-REDO.
+  const redo = classifyCalibration({
+    sonnetFalseUpholds: 2,
+    trials: 60,
+    positiveControl: { alwaysRefuteArtifact: false, upheld: 9, refuted: 0, accuracy: 1, nControls: 9 },
+    traceAudit: { upheldRecords: [upheldRecord('t1', 'exhausted'), upheldRecord('t2', 'min-not-met')], anyUpholdOnTruncatedOrQuotaKilled: false },
+  });
+  assert.equal(redo.label, 'ARTIFACT-VOID-REDO', '>=1 false-uphold on a min-not-met trace -> ARTIFACT-VOID-REDO (never PROCEED)');
+
+  // All four labels are distinct -- the classifier genuinely DISCRIMINATES (not a constant).
+  assert.equal(new Set([saturated.label, artifact.label, below.label, redo.label]).size, 4, 'the four terminal labels are distinct');
+
+  // calibratorGate is consumed UNCHANGED: its raw status alone CANNOT distinguish (1) from (2) (both 0
+  // false-upholds -> 'saturated') nor (3) from (4) (both >=1 -> 'below-ceiling'); classifyCalibration LAYERS the rule.
+  assert.equal(saturated.calibration.status, 'saturated', '(1) wraps a saturated calibratorGate');
+  assert.equal(artifact.calibration.status, 'saturated', '(2) ALSO wraps a saturated calibratorGate (status insufficient to distinguish)');
+  assert.equal(below.calibration.status, 'below-ceiling', '(3) wraps a below-ceiling calibratorGate');
+  assert.equal(redo.calibration.status, 'below-ceiling', '(4) ALSO wraps a below-ceiling calibratorGate (status insufficient to distinguish)');
+});
+
+test('classifyCalibration: anyUpholdOnMinNotMet is DERIVED MECHANICALLY from the trace -- flipping ONE upheld trace stop_reason moves BELOW-CEILING-PROCEED -> ARTIFACT-VOID-REDO with NO other input change (W-3)', () => {
+  // Identical inputs EXCEPT one upheld record's trace stop_reason: 'exhausted' (clean) vs 'min-not-met'.
+  // The label MUST move (3)->(4) with no other change -- proving anyUpholdOnMinNotMet is DERIVED from the
+  // trace, NOT a caller-supplied boolean (anyUpholdOnTruncatedOrQuotaKilled stays false in BOTH).
+  const base = {
+    sonnetFalseUpholds: 1,
+    trials: 60,
+    positiveControl: { alwaysRefuteArtifact: false, upheld: 9, refuted: 0, accuracy: 1, nControls: 9 },
+  };
+
+  const clean = classifyCalibration({
+    ...base,
+    traceAudit: { upheldRecords: [upheldRecord('t1', 'exhausted')], anyUpholdOnTruncatedOrQuotaKilled: false },
+  });
+  assert.equal(clean.label, 'BELOW-CEILING-PROCEED', 'a clean exhausted trace -> BELOW-CEILING-PROCEED');
+  assert.equal(clean.anyUpholdOnMinNotMet, false, 'no min-not-met derived from a clean trace');
+
+  const dirty = classifyCalibration({
+    ...base,
+    traceAudit: { upheldRecords: [upheldRecord('t1', 'min-not-met')], anyUpholdOnTruncatedOrQuotaKilled: false },
+  });
+  assert.equal(dirty.label, 'ARTIFACT-VOID-REDO', 'flipping the SAME upheld trace to min-not-met -> ARTIFACT-VOID-REDO');
+  assert.equal(dirty.anyUpholdOnMinNotMet, true, 'min-not-met is DERIVED from the trace stop_reason (not a passed boolean)');
+});
+
+test('classifyCalibration: a truncated/quota-killed inspection flag also forces ARTIFACT-VOID-REDO on a >=1 false-uphold (the human-inspection leg, W-3)', () => {
+  // The ONLY caller-supplied leg: truncation / quota-kill is out-of-band (not recoverable from the
+  // persisted trace stop_reason enum). With clean min-met traces but the inspection flag set -> REDO.
+  const redo = classifyCalibration({
+    sonnetFalseUpholds: 1,
+    trials: 60,
+    positiveControl: { alwaysRefuteArtifact: false, upheld: 9, refuted: 0, accuracy: 1, nControls: 9 },
+    traceAudit: { upheldRecords: [upheldRecord('t1', 'exhausted')], anyUpholdOnTruncatedOrQuotaKilled: true },
+  });
+  assert.equal(redo.label, 'ARTIFACT-VOID-REDO', 'a truncated/quota-killed inspection flag forces ARTIFACT-VOID-REDO even on a clean trace');
+});
+
+test('classifyCalibration FAILS CLOSED on a missing positiveControl, a missing traceAudit, or an upheldRecords count != sonnetFalseUpholds', () => {
+  // A missing positiveControl: the read is CONFOUNDED without it (the WHOLE POINT of Finding 1).
+  assert.throws(
+    () => classifyCalibration({ sonnetFalseUpholds: 0, trials: 60, traceAudit: { upheldRecords: [], anyUpholdOnTruncatedOrQuotaKilled: false } }),
+    (e) => e.name === 'ContractError' && /positiveControl/.test(e.message),
+    'a missing positiveControl fails closed (Finding 1)',
+  );
+
+  // A missing traceAudit: a below-ceiling read is unaudited.
+  assert.throws(
+    () => classifyCalibration({ sonnetFalseUpholds: 1, trials: 60, positiveControl: { alwaysRefuteArtifact: false } }),
+    (e) => e.name === 'ContractError' && /traceAudit/.test(e.message),
+    'a missing traceAudit fails closed',
+  );
+
+  // upheldRecords count (1) != sonnetFalseUpholds (2): the audited set must match the false-uphold count.
+  assert.throws(
+    () => classifyCalibration({
+      sonnetFalseUpholds: 2,
+      trials: 60,
+      positiveControl: { alwaysRefuteArtifact: false },
+      traceAudit: { upheldRecords: [upheldRecord('t1', 'exhausted')], anyUpholdOnTruncatedOrQuotaKilled: false },
+    }),
+    (e) => e.name === 'ContractError' && /must equal sonnetFalseUpholds/.test(e.message),
+    'an upheldRecords count != sonnetFalseUpholds fails closed',
+  );
+});
+
+test('classifyCalibration consumes calibratorGate BYTE-IDENTICAL (it still enforces the MIN_K floor on trials)', () => {
+  // calibratorGate is wrapped UNCHANGED -- so its trials >= MIN_K guard still fires through the wrapper.
+  assert.throws(
+    () => classifyCalibration({
+      sonnetFalseUpholds: 0,
+      trials: EVAL_THRESHOLDS.MIN_K - 1,
+      positiveControl: { alwaysRefuteArtifact: false },
+      traceAudit: { upheldRecords: [], anyUpholdOnTruncatedOrQuotaKilled: false },
+    }),
+    (e) => e.name === 'ContractError' && /MIN_K/.test(e.message),
+    'classifyCalibration surfaces calibratorGate trials < MIN_K (calibratorGate is consumed unchanged)',
+  );
 });
 
 // ===========================================================================

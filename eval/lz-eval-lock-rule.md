@@ -264,6 +264,97 @@ assembler consumes it via the injected `validityProbe({trap, enrichedKs, stratum
 Sonnet's resist-uphold-on-absence rate over the retained set) are UNMEASURED until the Task-4 calibrator
 runs; if N_retained < 3 -> VOID.
 
+## The interleaved POSITIVE CONTROLS (the mandatory power/plumbing check -- Finding 1, load-bearing, RE-PLAN-5)
+
+RE-REGISTERED in the ZERO-VOTES window (BEFORE any Sonnet vote -- anti result-shopping, mirroring
+RE-PLAN-3/4). With EVERY retained trap gold=refuted, a 0-false-uphold result is CONFOUNDED --
+observationally identical to a DEGENERATE ALWAYS-REFUTE prior (a voter that refutes everything on thin
+evidence scores a perfect 0 for the WRONG reason and measures nothing). The design MUST interleave
+gold=unrefuted POSITIVE CONTROLS -- native UNMUTATED AVeriTeC-Supported seeds whose date-filtered survivors
+GENUINELY ENTAIL the claim (the inverse of the trap screen: ALL probes agree entails=true) --
+indistinguishable to the voter. The voter SHOULD vote unrefuted on them. If Sonnet REFUTES them too -> an
+ALWAYS-REFUTE-ARTIFACT -> VOID/uninterpretable, NOT a clean saturation.
+
+- The positive-control floor is `>= 3` (its OWN floor, INDEPENDENT of the evidence-absent trap floor;
+  below-floor = VOID-on-control-floor -- the read cannot prove the voter CAN uphold).
+- Report the voter's positive-control accuracy ALONGSIDE the false-uphold rate.
+- `scorePositiveControls` reads ONLY 'unrefuted'-gold records and FAILS CLOSED on a 'refuted'-gold record
+  in the control voteDir (the control arm is gold-separated from the trap arm; W-2). The PRE-REGISTERED
+  tolerance is ZERO: ANY positive-control refute on a clean trace voids the saturation read.
+
+## The OUT-OF-FAMILY probe consensus (the highest-leverage de-confounder -- Finding 2, mandatory, all-agree-retain, RE-PLAN-5)
+
+The in-family gold-blind probe is SAME-FAMILY with the voter (Opus GENERATEs, Opus PROBEs, Sonnet VOTES)
+and is DEMONSTRABLY TOO LENIENT -- PROVEN on pilot seed 75: overreach "income DOUBLED"; survivors
+"$200K -> millions" EXCEED 2x, so the survivors plausibly ENTAIL "doubled"; the in-family probe RETAINED it
+ONLY by a strict-literal "no explicit 2x ratio" reading; a Sonnet voter reading it loosely would CORRECTLY
+vote unrefuted -> a FAKE false-uphold against gold=refuted (the exact T-19-17 defect the probe exists to
+prevent). MANDATORY: a SECOND, OUT-OF-FAMILY gold-blind probe pass (GPT-5.5 + Gemini) via
+`cat <prompt> | copilot --model {gpt-5.5|gemini-3.1-pro-preview} --effort high` (NO `-p`, NO
+`--allow-all-tools`; output captured to gitignored `eval/.cache/`). Each is a GOLD-BLIND judge reading ONLY
+the date-filtered survivors + the claim.
+
+- RETAIN a TRAP packet only if ALL probes (in-family Opus + GPT-5.5 + Gemini) agree entails=false.
+- RETAIN a positive CONTROL only if ALL probes agree entails=true.
+- ANY split DISQUALIFIES (drop, REPORT the count in `attrition.probeDropped` + `attrition.probeSplitDropped`).
+- OUT-OF-FAMILY GENERATE is DEFERRED with rationale (board guardrail 7): generation is gold-aware and
+  inspection already found real one-step overreaches; the bigger same-family risk is the PROBE, which IS
+  moved out-of-family. Out-of-family generate is a secondary nice-to-have.
+
+## The probe-strictness rubric (pre-registered BEFORE any vote, RE-PLAN-5)
+
+A packet whose survivors support MORE than the overreach (e.g. the survivors entail >2x when the overreach
+says "doubled") is DISQUALIFIED -- the survivors ENTAIL the overreach, so gold=refuted is indefensible
+there. RETAIN ONLY packets whose survivors support the ORIGINAL claim STRICTLY but do NOT entail the
+overreach. The seed-75 example ("income DOUBLED"; survivors "$200K -> millions" EXCEED 2x) is the canonical
+DISQUALIFY case.
+
+## k=9 attack-mode-diverse seats (pre-registered, picked ONCE, RE-PLAN-5)
+
+Raise k above the MIN_K=5 floor to k=9 (zone 9-11; k is AT-OR-ABOVE the frozen MIN_K floor, NOT a threshold
+change -- the DISPATCH DEFAULT becomes 9, kFloorAtLeast still admits any explicit k>=MIN_K). Under
+any-uphold each extra vote is one more independent opportunity to expose a false-uphold -> strictly MORE
+conservative for a saturation/accept-the-null gate; diminishing returns past ~11. The extra k is spent on
+SEAT DIVERSITY across distinct attack-modes (the ATTACK_MODES rotation: factual-contradiction /
+scope-causality-overclaim / source-provenance / absence-of-evidence / quantifier-scope / causality-certainty
+/ contradiction-vs-support), NOT identical re-draws. k is chosen ONCE here -- re-choosing after seeing
+Stage-1 would be result-shopping (it also pre-loads the Stage-2 Haiku delta's conservatism).
+
+## The NON-ZERO decision rule (pre-registered BEFORE vote 1 -- Finding 3, RE-PLAN-5)
+
+The engine returns only saturated-vs-below-ceiling and does NOT fix what "1 false-uphold over N" MEANS, so
+without a written rule a single uphold could be relabeled post hoc. The EXACT wording is locked here BEFORE
+any vote:
+
+> A Sonnet false-uphold over the retained N counts as a GENUINE below-ceiling PROCEED signal ONLY IF (i)
+> the packet survived the ALL-PROBES-AGREE consensus (in-family Opus + GPT-5.5 + Gemini all said
+> entails=false), (ii) the per-vote search trace is min-MET (minQueries+minDocs satisfied) and stop_reason
+> is exhausted or decisive-evidence (NEVER min-not-met / truncated / quota-killed), and (iii) the positive
+> controls were UPHELD (not an always-refute artifact). A false-uphold failing (i)/(ii) is an
+> ARTIFACT-to-investigate (void/redo that vote), never a below-ceiling PROCEED. 0 false-upholds with
+> positive-controls UPHELD on clean traces is a LEGITIMATE evidence-justified SATURATED->VOID; 0
+> false-upholds with positive-controls REFUTED is an ALWAYS-REFUTE-ARTIFACT->VOID/uninterpretable.
+
+`classifyCalibration` encodes this rule and returns ONE of FOUR terminal labels: SATURATED-VOID /
+ALWAYS-REFUTE-ARTIFACT-VOID / BELOW-CEILING-PROCEED / ARTIFACT-VOID-REDO. The min-not-met leg of (ii) is
+DERIVED MECHANICALLY by classifyCalibration from the pooled trace stop_reason over upheld claims (W-3);
+ONLY the truncated/quota-killed leg is human-inspection (an out-of-band run condition not recoverable from
+the persisted trace enum). `classifyCalibration` WRAPS `calibratorGate` byte-identical -- it never edits it.
+
+## The CP(0,N) gate statistic + per-vote-secondary + per-class + frozen N_retained (UNANIMOUS-3, RE-PLAN-5)
+
+The gate statistic is CP(0, N_claims) two-sided upper bound on the POOLED per-claim rate (matches the frozen
+engine -- `calibratorGate.trials` = N pooled claims; every CP value is a LABEL, never a clustered CI). Do
+NOT report CP over N*k as if independent (the k votes share one packet/claim/prompt -- positively
+correlated); per-vote 0/(N*k) is a LABELED SECONDARY diagnostic only. Report the PER-CLASS breakdown (~one
+per attack-mode, ~equal split of N_retained) so a globally-clean pooled rate cannot mask a single weak
+class. READ THE FULL retained N (RELIABLE_TRIALS=15 is a reportability FLOOR, not a stopping target;
+CP(0,60)~=0.05 vs CP(0,15)~=0.218 -- a ~4.6x tighter ceiling for free; a sub-full cap is a pure validity
+loss). FREEZE N_retained (the post-consensus denominator) the instant the consensus probe finishes, before
+vote 1; the run artifact records a partition checksum `calibratorGate.trials(traps) + nControls ==
+frozen N_retained(total)` (W-2). Audit the min-not-met trace on every uphold (board guardrail 4): a verdict
+on a min-not-met / truncated / quota-killed trace is an artifact, not resistance.
+
 ## The count-vs-rank predicate-error record (D-RP4-2) + the synthetic-disconfirmer finding (D-RP4-1)
 
 The RE-PLAN-3 assembler assigned the stratum by `isBuried = (INDEX of the deepest surviving doc in the

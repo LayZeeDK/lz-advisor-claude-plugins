@@ -457,6 +457,79 @@ test('Task-3 lock rule documents the SINGLE offline stratum + the gold-blind pro
   assert.ok(/>=5 strictly-pre-cutoff|>= ?5 strictly-pre-cutoff/i.test(prose) || />=5 strictly-pre-cutoff surviving/i.test(prose), 'the >=5-survivor rule is recorded');
 });
 
+test('Task-3 RE-PLAN-5 re-pre-registration: the lock rule + manifest record the positive controls + OOF probe consensus + the NON-ZERO decision rule + the probe-strictness rubric + k=9 + CP(0,N) (construct/measurement-validity prose, NOT threshold changes)', () => {
+  const prose = fs.readFileSync(LOCK_RULE, 'utf8');
+
+  // Finding 1 -- the interleaved positive controls (the mandatory power/plumbing check).
+  assert.ok(/interleaved POSITIVE CONTROLS/i.test(prose), 'the lock rule records the interleaved positive controls (Finding 1)');
+  assert.ok(/ALWAYS-REFUTE-ARTIFACT/i.test(prose), 'the lock rule records the always-refute-artifact VOID');
+  assert.ok(/positive-control floor/i.test(prose), 'the lock rule records the independent positive-control floor');
+
+  // Finding 2 -- the OUT-OF-FAMILY all-agree-retain probe consensus + the seed-75 proof + the copilot CLI.
+  assert.ok(/OUT-OF-FAMILY probe consensus/i.test(prose), 'the lock rule records the out-of-family probe consensus (Finding 2)');
+  assert.ok(/all-agree-retain/i.test(prose), 'the lock rule records the ALL-AGREE-RETAIN rule');
+  assert.ok(/seed 75/i.test(prose), 'the lock rule records the seed-75 leniency proof');
+  assert.ok(/copilot --model \{gpt-5\.5\|gemini-3\.1-pro-preview\}/.test(prose), 'the lock rule records the copilot CLI invocation (the OOF probe broker)');
+  assert.ok(/GENERATE is DEFERRED/i.test(prose), 'the lock rule records the out-of-family-generate deferral (board guardrail 7)');
+
+  // The probe-strictness rubric (the seed-75 DISQUALIFY example).
+  assert.ok(/probe-strictness rubric/i.test(prose), 'the lock rule records the probe-strictness rubric');
+  assert.ok(/DISQUALIF/i.test(prose) && /entail the overreach/i.test(prose), 'the rubric DISQUALIFIES survivors-entail-the-overreach packets');
+
+  // k=9 attack-mode-diverse seats (picked ONCE).
+  assert.ok(/k=9 attack-mode-diverse seats/i.test(prose), 'the lock rule records k=9 attack-mode-diverse seats');
+  assert.ok(/picked ONCE/i.test(prose), 'the lock rule records that k is picked ONCE (anti result-shopping)');
+  assert.ok(/ATTACK_MODES rotation/i.test(prose), 'the lock rule records the ATTACK_MODES rotation');
+
+  // The NON-ZERO decision rule (the exact wording + the four terminal labels + the W-3 derivation note).
+  assert.ok(/NON-ZERO decision rule/i.test(prose), 'the lock rule records the NON-ZERO decision rule (Finding 3)');
+  assert.ok(/ALL-PROBES-AGREE consensus/i.test(prose), 'the rule wording requires the all-probes-agree consensus (i)');
+  assert.ok(/min-MET/i.test(prose) && /min-not-met/i.test(prose), 'the rule wording requires a min-MET trace (ii)');
+  assert.ok(/SATURATED-VOID/.test(prose) && /BELOW-CEILING-PROCEED/.test(prose) && /ARTIFACT-VOID-REDO/.test(prose), 'the four terminal labels are recorded');
+  assert.ok(/DERIVED MECHANICALLY/i.test(prose), 'the min-not-met leg is recorded as DERIVED MECHANICALLY (W-3)');
+
+  // The CP(0,N) gate statistic + per-vote-secondary + per-class + frozen N_retained (UNANIMOUS-3).
+  assert.ok(/CP\(0, ?N/i.test(prose) || /CP\(0,N\)/i.test(prose), 'the lock rule records the CP(0,N) pooled gate statistic');
+  assert.ok(/LABELED SECONDARY/i.test(prose), 'per-vote 0/(N*k) is recorded as a LABELED SECONDARY only');
+  assert.ok(/PER-CLASS breakdown/i.test(prose), 'the per-class breakdown is recorded');
+  assert.ok(/FREEZE N_retained/i.test(prose), 'the frozen N_retained discipline is recorded');
+  assert.ok(/partition checksum/i.test(prose), 'the partition checksum (trials(traps)+nControls==N_retained) is recorded');
+
+  // The CARRIED RE-PLAN-4 sections STAND (additive, not replaced): the single-stratum-TRAP wording + the
+  // in-family probe + the count-vs-rank correction are still recorded.
+  assert.ok(/ONE offline CLOSED-BOOK JUDGMENT-difficulty stratum/i.test(prose), 'the carried single trap-stratum wording STANDS');
+  assert.ok(/gold-blind entailment validity probe/i.test(prose), 'the carried in-family gold-blind probe section STANDS');
+  assert.ok(/count-vs-rank/i.test(prose), 'the carried count-vs-rank correction STANDS');
+
+  // The manifest records the RE-PLAN-5 stage1_pre_registration blocks (anti-drift).
+  const m = JSON.parse(fs.readFileSync(MANIFEST, 'utf8'));
+  const pre = m.stage1_pre_registration;
+  assert.ok(typeof pre.positive_controls === 'string' && pre.positive_controls.length > 0, 'the manifest records positive_controls');
+  assert.ok(typeof pre.out_of_family_probe_consensus === 'string' && /all-agree-retain/i.test(pre.out_of_family_probe_consensus), 'the manifest records out_of_family_probe_consensus (all-agree-retain)');
+  assert.ok(typeof pre.probe_strictness_rubric === 'string' && /seed[- ]75/i.test(pre.probe_strictness_rubric), 'the manifest records the probe_strictness_rubric (the seed-75 example)');
+  assert.ok(typeof pre.k_and_seat_diversity === 'string' && /k=9/i.test(pre.k_and_seat_diversity), 'the manifest records k_and_seat_diversity (k=9)');
+  assert.ok(typeof pre.non_zero_decision_rule === 'string' && /ALWAYS-REFUTE-ARTIFACT-VOID/.test(pre.non_zero_decision_rule), 'the manifest records the non_zero_decision_rule (the four labels)');
+  assert.ok(typeof pre.cp_n_gate_statistic === 'string' && /partition checksum/i.test(pre.cp_n_gate_statistic), 'the manifest records cp_n_gate_statistic (the partition checksum)');
+
+  // The strata membership in the manifest definition is EXACTLY {evidence-absent, positive-control} for
+  // the offline gate (buried + date-sensitive defs are retained for Phase-20 but carry NO example rows).
+  const avtExamples = m.examples.filter((e) => e.source === 'averitec');
+  const avtStrata = new Set(avtExamples.map((e) => e.stratum));
+  assert.ok(avtStrata.has('evidence-absent') && avtStrata.has('positive-control'), 'the manifest AVeriTeC example rows span {evidence-absent, positive-control}');
+  assert.equal(avtStrata.size, 2, 'EXACTLY {evidence-absent, positive-control} example rows (buried + date-sensitive carry NO example rows)');
+
+  // EVAL_THRESHOLDS numbers are byte-UNCHANGED (the RE-PLAN-5 additions are construct/measurement-validity
+  // prose, NOT threshold changes -- re-pinned here so a sneaky threshold change would fail).
+  assert.equal(EVAL_THRESHOLDS.ALPHA, 0.05);
+  assert.equal(EVAL_THRESHOLDS.RELIABLE_TRIALS, 15);
+  assert.equal(EVAL_THRESHOLDS.MIN_K, 5);
+  assert.equal(EVAL_THRESHOLDS.DELTA_UPPER_MAX, 0.25);
+  assert.equal(EVAL_THRESHOLDS.ESCALATION_KILL_HIGH, 0.5);
+
+  // The byte-locked URL_DATE_RULE is UNCHANGED in the manifest (manifest string == URL_DATE_RULE.source).
+  assert.equal(m.stage1_pre_registration.url_date_rule, URL_DATE_RULE.source, 'the URL_DATE_RULE byte-lock holds through the RE-PLAN-5 re-registration');
+});
+
 // ---------------------------------------------------------------------------
 // D2 additions: lockRuleVerdict boundary pins + countFalseUpholds contract guards + passHatK all-fail
 // ---------------------------------------------------------------------------

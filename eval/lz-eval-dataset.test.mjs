@@ -490,34 +490,54 @@ test('EVAL-01 AVeriTeC open-book DRIFT GATE: every AVeriTeC uid is covered AND t
   // No duplicate AVeriTeC uids (loadManifest already fails closed on dupes; assert here too).
   assert.equal(new Set(avtUids).size, avtUids.length, 'AVeriTeC uids are unique');
 
-  // (b) THE SINGLE OFFLINE STRATUM (RE-PLAN-4): the open-book rows span EXACTLY the ONE offline
-  // CLOSED-BOOK JUDGMENT-difficulty stratum (evidence-absent). buried is DROPPED from the offline gate
-  // (construct-invalid offline, 19-04-REPLAN-DECISION-4 D-RP4-1) and date-sensitive is DEFERRED -- both
-  // to the Phase-20 live shadow, so NO buried + NO date-sensitive example rows are assembled. (The
-  // uid-coverage / no-text / recipe guards above + below are intact; only the membership flips.)
+  // (b) THE TWO OFFLINE ARMS (RE-PLAN-5): the open-book rows span EXACTLY {evidence-absent,
+  // positive-control} -- a refuted-trap arm AND an interleaved gold=unrefuted positive-control arm
+  // (Finding 1). buried is DROPPED from the offline gate (construct-invalid offline,
+  // 19-04-REPLAN-DECISION-4 D-RP4-1) and date-sensitive is DEFERRED -- both STILL absent (Phase-20 live).
+  // (The uid-coverage / no-text / recipe guards above + below are intact; only the membership flips.)
   const strata = new Set(avtRows.map((e) => e.stratum));
 
-  assert.ok(strata.has('evidence-absent'), 'the AVeriTeC open-book set includes the evidence-absent offline stratum');
-  assert.equal(strata.size, 1, 'EXACTLY the single offline stratum {evidence-absent}; buried DROPPED + date-sensitive DEFERRED to Phase-20 live');
+  assert.ok(strata.has('evidence-absent'), 'the AVeriTeC open-book set includes the evidence-absent (refuted-trap) offline stratum');
+  assert.ok(strata.has('positive-control'), 'the AVeriTeC open-book set includes the interleaved positive-control arm (RE-PLAN-5 Finding 1)');
+  assert.equal(strata.size, 2, 'EXACTLY {evidence-absent, positive-control} (two arms); buried DROPPED + date-sensitive DEFERRED to Phase-20 live');
   assert.equal(strata.has('buried'), false, 'no buried example row is assembled in the offline gate (DROPPED -- construct-invalid offline, D-RP4-1)');
-  assert.equal(strata.has('date-sensitive'), false, 'no date-sensitive example row is assembled in the offline gate (deferred to Phase-20)');
+  assert.equal(strata.has('date-sensitive'), false, 'no date-sensitive example row is assembled in the offline gate (still deferred to Phase-20)');
 });
 
-test('EVAL-01 license-clean: NO AVeriTeC row carries a `text` field (CC-BY-NC, D-07/Pitfall 5)', () => {
+test('EVAL-01 license-clean: NO AVeriTeC row carries a `text` field; the recipe assertion is SCOPED to non-positive-control rows (B-1, RE-PLAN-5)', () => {
   const m = loadManifest(MANIFEST);
   const avtRows = m.examples.filter((e) => e.source === 'averitec');
 
-  // The committed manifest carries uids + remapped labels + the mutation recipe/seed -- NEVER the
-  // mutated NC claim prose. A `text` field on any AVeriTeC row is a license violation.
+  // The no-NC-`text` assertion stays over ALL averitec rows (control rows are license-clean too): the
+  // committed manifest NEVER carries the mutated/native NC claim prose. A `text` field is a violation.
   for (const row of avtRows) {
     assert.equal('text' in row, false, 'AVeriTeC row ' + row.uid + ' must NOT carry a text field (NC license)');
-    // Each AVeriTeC trap row instead carries the mutation recipe (method, not text).
-    assert.ok(row.recipe && typeof row.recipe === 'object', 'AVeriTeC row ' + row.uid + ' carries the mutation recipe');
-    assert.equal(typeof row.recipe.transform, 'string', 'the recipe records the transform class');
-    assert.equal(typeof row.recipe.uid_seed, 'number', 'the recipe records the source seed claim_id');
   }
 
-  // DISCRIMINATING: a vacuous empty AVeriTeC set would pass the loop trivially -- assert non-empty.
+  // B-1: the recipe assertion is SCOPED to NON-positive-control averitec rows. The RE-PLAN-5 positive
+  // controls are NATIVE (NO mutateOverreach), so they carry NO recipe; an unscoped loop would THROW and
+  // red the suite that Task 4 gates on. The refuted-trap (non-positive-control) rows DO carry the recipe.
+  const trapRows = avtRows.filter((r) => r.stratum !== 'positive-control');
+  assert.ok(trapRows.length >= 1, 'the recipe assertion is non-vacuous (>= 1 non-positive-control AVeriTeC row)');
+
+  for (const row of trapRows) {
+    assert.ok(row.recipe && typeof row.recipe === 'object', 'AVeriTeC trap row ' + row.uid + ' carries the mutation recipe');
+    assert.equal(typeof row.recipe.transform, 'string', 'the recipe records the transform class');
+    assert.equal(typeof row.recipe.uid_seed, 'number', 'the recipe records the source seed claim_id');
+    assert.equal(row.expected_verdict, 'refuted', 'a refuted-trap row is refuted-gold');
+  }
+
+  // DISCRIMINATING (B-1, a real partition, not a blanket skip): the positive-control rows carry NO recipe
+  // (native, unmutated) AND expected_verdict 'unrefuted' (the inverse of the trap rows' 'refuted' + recipe).
+  const controlRows = avtRows.filter((r) => r.stratum === 'positive-control');
+  assert.ok(controlRows.length >= 1, 'there is at least one positive-control averitec row (RE-PLAN-5)');
+
+  for (const row of controlRows) {
+    assert.equal('recipe' in row, false, 'a positive-control row carries NO recipe (native, unmutated, RE-PLAN-5)');
+    assert.equal(row.expected_verdict, 'unrefuted', 'a positive-control row is unrefuted-gold (vs the trap refuted)');
+  }
+
+  // DISCRIMINATING: a vacuous empty AVeriTeC set would pass the loops trivially -- assert non-empty.
   assert.ok(avtRows.length >= 1, 'the no-text assertion is non-vacuous (>= 1 AVeriTeC row)');
 });
 
