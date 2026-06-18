@@ -529,8 +529,20 @@ test('assembler: the GOLD-BLIND entailment probe gates the set -- a probe that d
 
   try {
     // Reject 2 packets (survivors entail the overreach -> gold=refuted indefensible); accept the rest.
+    // C-RP4-3 (discriminating, closed-book mirroring): the GOLD-BLIND probe MUST receive ONLY the
+    // date-filtered survivors -- EXACTLY what the voter judges -- never the unfiltered datedKs (which
+    // includes the 10 undated docs evidenceAbsentKs seeds). dateFilter idempotence proves it: an
+    // already-filtered set is unchanged by a re-filter, so a regression to datedKs (C-RP4-1) would pass
+    // undated/post-cutoff docs here and trip the assertion.
+    const fixtureCutoff = parseAvtDate('15-05-2020'); // buildEvidenceAbsentCorpus seeds this claim_date
     let seen = 0;
-    const entailmentProbe = async () => {
+    const entailmentProbe = async ({ enrichedKs }) => {
+      assert.ok(Array.isArray(enrichedKs) && enrichedKs.length > 0, 'the probe receives a non-empty enrichedKs');
+      assert.equal(
+        dateFilter(enrichedKs, fixtureCutoff).length,
+        enrichedKs.length,
+        'the gold-blind probe sees ONLY the date-filtered survivors (closed-book mirroring) -- a regression to the unfiltered datedKs would include undated/post-cutoff docs and fail here (C-RP4-1)',
+      );
       seen += 1;
 
       if (seen === 3 || seen === 6) {

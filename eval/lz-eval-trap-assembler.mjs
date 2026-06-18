@@ -425,10 +425,13 @@ export async function assembleStage1Traps({
     // (isBuried) policy. EVERY qualifying seed is `evidence-absent`: the SOLE offline arm. The buried
     // stratum is dropped entirely (construct-invalid offline -- the synthetic disconfirmer flag is
     // text-unverified; the count-vs-rank predicate mis-classified all 62 seeds as buried). decisiveRank /
-    // disconfirmerRank are fixed at -1 (no refuter flag); the enriched KS is the dates-only datedKs.
+    // disconfirmerRank are fixed at -1 (no refuter flag). The enrichedKs passed to the screens is the
+    // DATE-FILTERED `survivors` -- EXACTLY the evidence the voter judges (closed-book mirroring, C-RP4-1):
+    // the GOLD-BLIND probe must NOT see the undated/post-cutoff docs the voter never sees, else it could
+    // screen on evidence outside the voter's window and manufacture a fake false-uphold (the buried defect).
     const stratum = 'evidence-absent';
     const decisiveRank = -1;
-    const enrichedKs = datedKs;
+    const enrichedKs = survivors;
 
     const transform = TRANSFORMS[recipeSeed % TRANSFORMS.length];
     const recipe = mutateOverreach(seed, { transform, seed: recipeSeed });
