@@ -1,11 +1,11 @@
 // lz-eval-trap-assembler.test.mjs
 //
-// FILE-form deterministic validation for the KS-enrichment layer + the 2-strata Stage-1 assembler
-// (Plan 19-04, Task 1; EVAL-01). Dev-only eval-tree test: imports the SCRIPT under test (which imports
-// the frozen spine + the built recipe machinery + the runtime ContractError across trees) plus node
-// stdlib only. NO network / NO real model calls -- the generate + validityProbe + weakVerifier hooks
-// are injected as deterministic stubs, and the seed/KS corpus is written to an os.tmpdir() cache (never
-// into the committed tree).
+// FILE-form deterministic validation for the KS-enrichment layer + the SINGLE-STRATUM (evidence-absent)
+// Stage-1 assembler (Plan 19-04, Task 1; EVAL-01; RE-PLAN-4). Dev-only eval-tree test: imports the
+// SCRIPT under test (which imports the frozen spine + the built recipe machinery + the runtime
+// ContractError across trees) plus node stdlib only. NO network / NO real model calls -- the generate +
+// validityProbe + weakVerifier hooks are injected as deterministic stubs, and the seed/KS corpus is
+// written to an os.tmpdir() cache (never into the committed tree).
 //
 // Asserts every Task-1 <behavior> with DISCRIMINATING checks (each proves the function actually
 // flips/decides, never a tautology):
@@ -15,9 +15,12 @@
 //     '9-10-2020' (the fix is at the assembly layer, not the parser); an unsalvageable date -> null;
 //   - enrichKsForClaim: returns NEW objects (shared-mutation guard) with a date on every doc + flags
 //     ONLY at the pre-registered ranks; a no-date doc gets date:null (-> dropped by the frozen filter);
-//   - the assembler builds buried + evidence-absent ONLY (never date-sensitive);
-//   - the >=5-survivor + >=3/stratum floors FAIL CLOSED (strict cutoff, same-day + undated excluded);
-//   - a trap that fails validityGate OR the BLIND content-grounding probe is REJECTED before it counts;
+//   - the assembler builds ONE stratum (evidence-absent) -- NO buried key, NO date-sensitive (RE-PLAN-4);
+//   - the >=5-survivor floor + the SINGLE evidence-absent >=3 floor FAIL CLOSED (strict cutoff, same-day
+//     + undated excluded);
+//   - a below-floor RETAINED set (after the GOLD-BLIND entailment probe drops invalid packets) surfaces
+//     the documented VOID signal + the reported probeDropped count (board guardrails 4 + 5);
+//   - a trap that fails validityGate OR the GOLD-BLIND entailment probe is REJECTED before it counts;
 //   - an evidence-absent trap's enriched KS carries the original unmutated supporting docs + NO refuter;
 //   - an assembled row carries NO `text` field (recipe-not-text); mutated prose lives in the tmpdir cache.
 //
@@ -190,12 +193,13 @@ test('enrichKsForClaim: with no ranks (default -1) NO doc is flagged (evidence-a
 });
 
 // ===========================================================================
-// The 2-strata assembler. A tmpdir cache holds a synthetic seed/KS corpus; the hooks are injected.
+// The SINGLE-STRATUM (evidence-absent) assembler (RE-PLAN-4). A tmpdir cache holds a synthetic seed/KS
+// corpus; the hooks are injected.
 // ===========================================================================
 
 // Build a synthetic AVeriTeC-shaped cache under os.tmpdir(). The KS docs are dated via their URL so the
-// frozen dateFilter + extractUrlDate operate over real (synthetic) dates. A "buried" seed has a deep
-// (>= rank 20) surviving doc; an "evidence-absent" seed has only shallow survivors.
+// frozen dateFilter + extractUrlDate operate over real (synthetic) dates. Every qualifying seed (>= 5
+// strictly-pre-cutoff survivors) becomes `evidence-absent` -- there is NO buried stratum (D-RP4-1).
 function writeCache({ seeds, ksByClaim }) {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'lz-eval-assembler-'));
   fs.mkdirSync(path.join(root, 'data'), { recursive: true });
@@ -230,19 +234,9 @@ function undatedDoc(i) {
   return { sentence: 'undated ' + i, url: 'https://src.example/no-date/' + i };
 }
 
-// Build a buried-shaped KS: >= 25 pre-cutoff survivors so the deepest survivor sits at rank >= 20.
-function buriedKs() {
-  const docs = [];
-
-  for (let i = 0; i < 25; i += 1) {
-    docs.push(preCutoffDoc(i));
-  }
-
-  return docs;
-}
-
-// Build an evidence-absent-shaped KS: fewer than 20 pre-cutoff survivors (so the deepest survivor is
-// shallow), padded with undated docs so retrieval is still plausible but there is no deep refuter.
+// Build an evidence-absent-shaped KS: enough pre-cutoff survivors to clear the >= 5 floor, padded with
+// undated docs so the packet is plausible supporting text with no in-corpus refuter (RE-PLAN-4: every
+// qualifying seed is evidence-absent; there is NO buried/deep-survivor policy).
 function evidenceAbsentKs() {
   const docs = [];
 
@@ -261,18 +255,14 @@ function evidenceAbsentKs() {
 const acceptGenerate = async (claim) => 'MUTATED: ' + String(claim);
 const acceptProbe = async () => ({ accepted: true, reason: 'stub-accept' });
 
-function buildBalancedCorpus() {
-  // 6 buried seeds + 6 evidence-absent seeds (>= the per-stratum floor of 3, with margin). All
-  // Supported, all dated 15-05-2020 (cutoff), all with a two-digit day so no normalizer skip.
+function buildEvidenceAbsentCorpus(count = 6) {
+  // `count` evidence-absent seeds (>= the per-stratum floor of 3, with margin). All Supported, all dated
+  // 15-05-2020 (cutoff), all with a two-digit day so no normalizer skip. RE-PLAN-4: every qualifying
+  // seed is evidence-absent (the SOLE arm) -- there is no buried/evidence-absent split.
   const seeds = [];
   const ksByClaim = {};
 
-  for (let id = 0; id < 6; id += 1) {
-    seeds.push({ claim: 'buried claim ' + id, label: 'Supported', claim_date: '15-05-2020' });
-    ksByClaim[id] = buriedKs();
-  }
-
-  for (let id = 6; id < 12; id += 1) {
+  for (let id = 0; id < count; id += 1) {
     seeds.push({ claim: 'absent claim ' + id, label: 'Supported', claim_date: '15-05-2020' });
     ksByClaim[id] = evidenceAbsentKs();
   }
@@ -280,8 +270,8 @@ function buildBalancedCorpus() {
   return { seeds, ksByClaim };
 }
 
-test('assembler: builds buried + evidence-absent ONLY and NEVER a date-sensitive stratum', async () => {
-  const root = writeCache(buildBalancedCorpus());
+test('assembler: builds ONE stratum (evidence-absent) -- NO buried key, NO date-sensitive (RE-PLAN-4 single-stratum)', async () => {
+  const root = writeCache(buildEvidenceAbsentCorpus(6));
 
   try {
     const cacheDir = path.join(root, 'out');
@@ -292,27 +282,29 @@ test('assembler: builds buried + evidence-absent ONLY and NEVER a date-sensitive
       validityProbe: acceptProbe,
     });
 
-    assert.deepEqual(Object.keys(res.strata).sort(), ['buried', 'evidence-absent'], 'exactly the two offline strata');
-    assert.equal('date-sensitive' in res.strata, false, 'no date-sensitive stratum is ever assembled');
+    // DISCRIMINATING: exactly the single evidence-absent key. A regression that re-introduces buried
+    // adds a second key and fails deepEqual.
+    assert.deepEqual(Object.keys(res.strata), ['evidence-absent'], 'EXACTLY the single evidence-absent stratum (no buried key)');
+    assert.equal('buried' in res.strata, false, 'there is NO buried stratum (dropped -- construct-invalid offline, D-RP4-1)');
+    assert.equal('date-sensitive' in res.strata, false, 'no date-sensitive stratum is ever assembled (deferred to Phase-20)');
 
-    // Every assembled row is tagged buried or evidence-absent (DISCRIMINATING: never date-sensitive).
-    const allRows = [...res.strata.buried, ...res.strata['evidence-absent']];
+    // Every assembled row is tagged evidence-absent (DISCRIMINATING: never buried, never date-sensitive).
+    const allRows = res.strata['evidence-absent'];
+    assert.ok(allRows.length >= 3, 'the evidence-absent stratum reached the floor');
 
     for (const row of allRows) {
-      assert.ok(row.stratum === 'buried' || row.stratum === 'evidence-absent', 'row stratum is one of the two offline strata');
-      assert.notEqual(row.stratum, 'date-sensitive', 'no row is tagged date-sensitive');
+      assert.equal(row.stratum, 'evidence-absent', 'every row is tagged evidence-absent (the sole arm)');
     }
 
-    // BOTH strata are populated (the buried/evidence-absent split actually fired -- not a single bucket).
-    assert.ok(res.strata.buried.length >= 3, 'the buried stratum reached the floor');
-    assert.ok(res.strata['evidence-absent'].length >= 3, 'the evidence-absent stratum reached the floor');
+    // The probe accepted every packet, so probeDropped is 0 here (the dedicated counter exists + is 0).
+    assert.equal(res.attrition.probeDropped, 0, 'the gold-blind probe dropped nothing (all-accept stub)');
   } finally {
     fs.rmSync(root, { recursive: true, force: true });
   }
 });
 
 test('assembler: an assembled row carries NO `text` field (recipe-not-text); the mutated prose lives in the tmpdir cache only', async () => {
-  const root = writeCache(buildBalancedCorpus());
+  const root = writeCache(buildEvidenceAbsentCorpus(6));
 
   try {
     const cacheDir = path.join(root, 'out');
@@ -323,7 +315,7 @@ test('assembler: an assembled row carries NO `text` field (recipe-not-text); the
       validityProbe: acceptProbe,
     });
 
-    const allRows = [...res.strata.buried, ...res.strata['evidence-absent']];
+    const allRows = res.strata['evidence-absent'];
     assert.ok(allRows.length >= 1, 'non-vacuous (>= 1 assembled row)');
 
     for (const row of allRows) {
@@ -359,10 +351,10 @@ test('assembler: an evidence-absent trap carries the original unmutated supporti
 });
 
 test('assembler: the >=5-survivor floor FAILS CLOSED -- a seed with too few strictly-pre-cutoff survivors is excluded (same-day + undated do NOT count)', async () => {
-  // A corpus where 6 buried + 6 evidence-absent are valid, plus ONE seed whose KS has only 4 pre-cutoff
+  // A corpus where 6 evidence-absent seeds are valid, plus ONE seed whose KS has only 4 pre-cutoff
   // survivors (the rest same-day/undated). That seed must be EXCLUDED (skippedFewSurvivors), and its uid
-  // must NOT appear in any stratum -- proving min-not-met cannot silently change the trap.
-  const { seeds, ksByClaim } = buildBalancedCorpus();
+  // must NOT appear in the stratum -- proving min-not-met cannot silently change the trap.
+  const { seeds, ksByClaim } = buildEvidenceAbsentCorpus(6);
   const shortId = seeds.length; // next claim_id
   seeds.push({ claim: 'short claim', label: 'Supported', claim_date: '15-05-2020' });
   const shortKs = [];
@@ -388,35 +380,19 @@ test('assembler: the >=5-survivor floor FAILS CLOSED -- a seed with too few stri
 
     assert.ok(res.attrition.skippedFewSurvivors >= 1, 'the short-survivor seed was excluded (fail closed)');
     const shortUid = 'averitec-dev-' + String(shortId).padStart(4, '0');
-    const allUids = [...res.strata.buried, ...res.strata['evidence-absent']].map((r) => r.uid);
-    assert.equal(allUids.includes(shortUid), false, 'the excluded seed never reaches any stratum');
+    const allUids = res.strata['evidence-absent'].map((r) => r.uid);
+    assert.equal(allUids.includes(shortUid), false, 'the excluded seed never reaches the stratum');
   } finally {
     fs.rmSync(root, { recursive: true, force: true });
   }
 });
 
-test('assembler: the >=3/stratum floor FAILS CLOSED on a degenerate corpus -- a SHORT PRIMARY (evidence-absent) stratum throws (W-2 re-pointed)', async () => {
-  // W-2 RE-POINT (19-04-REPLAN-DECISION-3): under the buried-auto-drop rule a buried-SHORT corpus no
-  // longer THROWS (it auto-drops -- see the dedicated auto-drop test below). The THROW path now fires
-  // only when the PRIMARY evidence-absent stratum is short: a degenerate corpus with no honest PRIMARY
-  // arm fails closed. Build only 2 evidence-absent-shaped seeds (below the per-stratum floor of 3) plus
-  // plenty of buried-shaped seeds (so buried is NOT the short stratum) -- the assembler must THROW
-  // /perStratumFloor/ on the missing PRIMARY arm.
-  const seeds = [];
-  const ksByClaim = {};
-
-  // 5 buried-shaped seeds (well above the floor) so buried is NOT the short stratum.
-  for (let id = 0; id < 5; id += 1) {
-    seeds.push({ claim: 'buried claim ' + id, label: 'Supported', claim_date: '15-05-2020' });
-    ksByClaim[id] = buriedKs();
-  }
-
-  // Only 2 evidence-absent-shaped seeds (below the per-stratum floor of 3) -- the PRIMARY arm is short.
-  for (let id = 5; id < 7; id += 1) {
-    seeds.push({ claim: 'absent claim ' + id, label: 'Supported', claim_date: '15-05-2020' });
-    ksByClaim[id] = evidenceAbsentKs();
-  }
-
+test('assembler: the SINGLE evidence-absent >=3 floor FAILS CLOSED on a degenerate corpus -- a short corpus throws /perStratumFloor/ (RE-PLAN-4)', async () => {
+  // RE-PLAN-4: there is ONE stratum (evidence-absent). The THROW path fires when the SOLE arm is below
+  // perStratumFloor (3) -- a degenerate corpus with no honest PRIMARY arm fails closed. Build only 2
+  // evidence-absent seeds (below the floor); the assembler must THROW /perStratumFloor/ naming
+  // evidence-absent (so the throw is the single-stratum floor, not a leftover buried path).
+  const { seeds, ksByClaim } = buildEvidenceAbsentCorpus(2);
   const root = writeCache({ seeds, ksByClaim });
 
   try {
@@ -429,7 +405,7 @@ test('assembler: the >=3/stratum floor FAILS CLOSED on a degenerate corpus -- a 
           validityProbe: acceptProbe,
         }),
       (e) => e.name === 'ContractError' && /perStratumFloor/.test(e.message) && /evidence-absent/.test(e.message),
-      'a SHORT PRIMARY evidence-absent stratum (degenerate corpus) fails closed',
+      'a SHORT evidence-absent SOLE arm (degenerate corpus) fails closed naming the single stratum',
     );
   } finally {
     fs.rmSync(root, { recursive: true, force: true });
@@ -439,10 +415,10 @@ test('assembler: the >=3/stratum floor FAILS CLOSED on a degenerate corpus -- a 
 test('assembler: I4 inclusive boundary -- a seed with EXACTLY 5 strictly-pre-cutoff survivors is KEPT (the floor is `<5`, not `<=5`)', async () => {
   // The COMPLEMENT of the 4-survivor exclusion test above: a seed whose KS has EXACTLY minSurvivors (5)
   // strictly-pre-cutoff dated survivors (plus same-day/undated docs that do NOT count) is KEPT -- its
-  // uid reaches a stratum. This proves the floor admits exactly 5 (an off-by-one `<` -> `<=` regression
+  // uid reaches the stratum. This proves the floor admits exactly 5 (an off-by-one `<` -> `<=` regression
   // would EXCLUDE this seed and fail the assertion). Both boundary directions are now exercised: 4 drops,
   // 5 keeps.
-  const { seeds, ksByClaim } = buildBalancedCorpus();
+  const { seeds, ksByClaim } = buildEvidenceAbsentCorpus(6);
   const exactId = seeds.length; // next claim_id
   seeds.push({ claim: 'exactly-5 claim', label: 'Supported', claim_date: '15-05-2020' });
   const exactKs = [];
@@ -466,116 +442,128 @@ test('assembler: I4 inclusive boundary -- a seed with EXACTLY 5 strictly-pre-cut
       validityProbe: acceptProbe,
     });
 
-    // The exactly-5-survivor seed was NOT excluded for too-few survivors.
+    // The exactly-5-survivor seed was NOT excluded for too-few survivors -- it lands in evidence-absent
+    // (the sole arm).
     const exactUid = 'averitec-dev-' + String(exactId).padStart(4, '0');
-    const allUids = [...res.strata.buried, ...res.strata['evidence-absent']].map((r) => r.uid);
+    const allUids = res.strata['evidence-absent'].map((r) => r.uid);
     assert.equal(allUids.includes(exactUid), true, 'the exactly-5-survivor seed is KEPT (floor admits 5)');
-    // It lands in evidence-absent (5 shallow survivors -> deepest survivor < BURIED_RANK_FLOOR).
     const exactRow = res.strata['evidence-absent'].find((r) => r.uid === exactUid);
-    assert.ok(exactRow, 'the exactly-5-survivor seed is an evidence-absent trap (shallow survivor pool)');
+    assert.ok(exactRow, 'the exactly-5-survivor seed is an evidence-absent trap');
   } finally {
     fs.rmSync(root, { recursive: true, force: true });
   }
 });
 
-test('assembler: buried AUTO-DROP -- a corpus that cannot build >=3 buried claims drops to evidence-absent-only (logged, no whole-run abort)', async () => {
-  // 19-04-REPLAN-DECISION-3 item 3: evidence-absent is the PRIMARY arm; buried is AUTO-GATED. A corpus
-  // with only 2 buried-shaped seeds (below the floor) but >= 3 evidence-absent seeds AUTO-DROPS buried
-  // to evidence-absent-only -- the assembler returns evidence-absent populated + buried EMPTY, records
-  // attrition.buriedAutoDropped=true with a why string, and does NOT throw the whole run closed.
-  // DISTINGUISH from the >=3/stratum THROW test above (which fires only on a SHORT PRIMARY arm).
-  const seeds = [];
-  const ksByClaim = {};
-
-  // Only 2 buried-shaped seeds (below the per-stratum floor of 3) -> buried cannot be honestly built.
-  for (let id = 0; id < 2; id += 1) {
-    seeds.push({ claim: 'buried claim ' + id, label: 'Supported', claim_date: '15-05-2020' });
-    ksByClaim[id] = buriedKs();
-  }
-
-  // 5 evidence-absent seeds (above the floor) so the PRIMARY arm carries the run.
-  for (let id = 2; id < 7; id += 1) {
-    seeds.push({ claim: 'absent claim ' + id, label: 'Supported', claim_date: '15-05-2020' });
-    ksByClaim[id] = evidenceAbsentKs();
-  }
-
+test('assembler: below-floor VOID -- when the GOLD-BLIND probe drops enough packets that the RETAINED set < floor, the documented VOID signal surfaces with the reported probeDropped count (RE-PLAN-4 board guardrails 4+5)', async () => {
+  // 19-04-REPLAN-DECISION-4 (board guardrails 4 + 5): the gold-blind entailment probe screens every
+  // candidate evidence-absent packet. When it DISQUALIFIES enough packets that the RETAINED (post-probe)
+  // set falls below the floor (>= 3), that IS the documented VOID condition -- NOT a silent pass and NOT
+  // an unhandled throw masquerading as success. The realized signal here: the assembler THROWS
+  // /perStratumFloor/ AND the thrown error carries the realized attrition (probeDropped > 0 +
+  // retainedBelowFloor=true + a voidReason). DISCRIMINATING: a probe that ACCEPTS the same corpus builds
+  // a full set (proven below in the all-accept paths), so this throw is caused by the probe drops, and
+  // the reported probeDropped count surfaces the drops (the floor is load-bearing, never relaxed).
+  //
+  // Build 5 evidence-absent seeds; a probe that accepts only the FIRST 2 (rejecting the rest) leaves a
+  // RETAINED set of 2 -- below the floor of 3 -- so the VOID throw must fire with probeDropped=3.
+  const { seeds, ksByClaim } = buildEvidenceAbsentCorpus(5);
   const root = writeCache({ seeds, ksByClaim });
 
   try {
-    const res = await assembleStage1Traps({
-      cacheRoot: root,
-      cacheDir: path.join(root, 'out'),
-      generate: acceptGenerate,
-      validityProbe: acceptProbe,
-    });
+    let seen = 0;
+    const dropMostProbe = async () => {
+      seen += 1;
 
-    // The whole run did NOT abort (it returned a result, not a throw).
-    assert.equal(res.strata.buried.length, 0, 'the buried stratum is empty after the auto-drop');
-    assert.ok(res.strata['evidence-absent'].length >= 3, 'the PRIMARY evidence-absent stratum carries the run');
+      if (seen <= 2) {
+        return { accepted: true, reason: 'survivors support original, not the overreach (retain)' };
+      }
 
-    // The drop is EXPLICIT + LOGGED (never silent).
-    assert.equal(res.attrition.buriedAutoDropped, true, 'the buried auto-drop is recorded');
-    assert.equal(typeof res.attrition.buriedAutoDropReason, 'string', 'a why string is recorded');
-    assert.match(res.attrition.buriedAutoDropReason, /perStratumFloor|buried/, 'the reason names the floor / buried');
-    assert.equal(res.attrition.perStratumCount.buried, 0, 'the buried per-stratum count is zeroed on drop');
+      return { accepted: false, reason: 'survivors plausibly entail the overreach (disqualify)' };
+    };
 
-    // The dropped buried gold labels were pruned (no orphan refuted labels for un-emitted buried traps).
-    const allUids = [...res.strata.buried, ...res.strata['evidence-absent']].map((r) => r.uid);
+    let thrown = null;
 
-    for (const uid of Object.keys(res.goldLabels)) {
-      assert.ok(allUids.includes(uid), 'goldLabels carries no uid that was dropped (' + uid + ')');
-    }
+    await assert.rejects(
+      () =>
+        assembleStage1Traps({
+          cacheRoot: root,
+          cacheDir: path.join(root, 'out'),
+          generate: acceptGenerate,
+          validityProbe: dropMostProbe,
+        }),
+      (e) => {
+        thrown = e;
+
+        return (
+          e.name === 'ContractError' &&
+          /perStratumFloor/.test(e.message) &&
+          /evidence-absent/.test(e.message) &&
+          // The realized probe-drop count is surfaced in the throw message (board guardrail 4).
+          /probeDropped=3/.test(e.message)
+        );
+      },
+      'a below-floor RETAINED set (after the gold-blind probe drops) fails closed as a documented VOID',
+    );
+
+    // The thrown error carries the realized attrition: the documented VOID signal is REPORTED, not
+    // silently absorbed (board guardrail 4) and the floor is honored as load-bearing (board guardrail 5).
+    assert.ok(thrown && thrown.attrition, 'the thrown VOID carries the realized attrition');
+    assert.equal(thrown.attrition.probeDropped, 3, 'the gold-blind probe dropped exactly 3 packets (reported)');
+    assert.equal(thrown.attrition.retainedBelowFloor, true, 'retainedBelowFloor is the documented VOID flag');
+    assert.equal(typeof thrown.attrition.voidReason, 'string', 'a VOID reason is recorded');
+    assert.match(thrown.attrition.voidReason, /probeDropped|gold-blind|VOID/, 'the VOID reason names the probe drop / VOID');
   } finally {
     fs.rmSync(root, { recursive: true, force: true });
   }
 });
 
-test('assembler: I3 removed-with-rationale -- the BLIND validityProbe is the load-bearing stratification guard (NOT a runtime classifySeed tautology)', async () => {
-  // 19-04-REPLAN-DECISION-3 / I3: the tautological classifySeed agreement guard was REMOVED. The
-  // stratification correctness now rests on the BLIND content-grounding validityProbe + the manifest
-  // ranks, NOT a runtime cross-check. This test proves the probe is load-bearing: a probe that REJECTS
-  // a (deliberately) mis-grounded construction fails the set closed, whereas an accepting probe lets it
-  // through -- a DISCRIMINATING guard (the removed tautology could never fire on a mis-flagged build).
-  const root = writeCache(buildBalancedCorpus());
+test('assembler: the GOLD-BLIND entailment probe gates the set -- a probe that disqualifies survivors-entail-overreach packets drops them (vs an accepting probe), counted in probeDropped (RE-PLAN-4)', async () => {
+  // RE-PLAN-4 (board guardrails 1+2+4+6): the stratification correctness rests on the GOLD-BLIND
+  // entailment validityProbe (NOT a runtime classifySeed tautology -- buried is dropped). The probe
+  // reads ONLY the survivors + the mutated overreach and DISQUALIFIES packets whose survivors
+  // plausibly entail the overreach. This test proves the probe is load-bearing + DISCRIMINATING: a
+  // probe that rejects SOME packets drops exactly those (counted in probeDropped), whereas the
+  // all-accept stub keeps them. A non-discriminating probe could never change the assembled set.
+  const { seeds, ksByClaim } = buildEvidenceAbsentCorpus(8);
+  const root = writeCache({ seeds, ksByClaim });
 
   try {
-    // The probe inspects the stratum + decisiveRank it is handed and REJECTS a buried construction whose
-    // decisiveRank is not genuinely a refuter (here: reject every buried trap as mis-grounded). With all
-    // buried rejected, only evidence-absent survives -- buried AUTO-DROPS, the run still completes, and
-    // the probe (not a runtime tautology) is what gated the buried construction out.
-    const rejectBuriedProbe = async ({ stratum }) => {
-      if (stratum === 'buried') {
-        return { accepted: false, reason: 'mis-grounded buried refuter (probe rejected)' };
+    // Reject 2 packets (survivors entail the overreach -> gold=refuted indefensible); accept the rest.
+    let seen = 0;
+    const entailmentProbe = async () => {
+      seen += 1;
+
+      if (seen === 3 || seen === 6) {
+        return { accepted: false, reason: 'survivors directly entail the overreach -> disqualify' };
       }
 
-      return { accepted: true, reason: 'evidence-absent grounded (no pre-cutoff refuter)' };
+      return { accepted: true, reason: 'survivors support original but do NOT entail the overreach -> retain' };
     };
 
     const res = await assembleStage1Traps({
       cacheRoot: root,
       cacheDir: path.join(root, 'out'),
       generate: acceptGenerate,
-      validityProbe: rejectBuriedProbe,
+      validityProbe: entailmentProbe,
     });
 
-    // The probe gated the buried construction out -> buried auto-dropped, evidence-absent carries the run.
-    assert.equal(res.strata.buried.length, 0, 'the probe rejected every buried construction -> none survive');
-    assert.equal(res.attrition.buriedAutoDropped, true, 'buried auto-dropped after the probe rejected it');
-    assert.ok(res.strata['evidence-absent'].length >= 3, 'the probe accepted the evidence-absent constructions');
-    // The probe screened-out the buried traps (DISCRIMINATING vs the all-accept probe, which keeps buried).
-    assert.ok(res.attrition.screenedOut >= 1, 'the blind probe screened out the mis-grounded buried constructions');
+    // The 2 entailing packets were dropped; the rest are retained (>= the floor of 3).
+    assert.equal(res.attrition.probeDropped, 2, 'the gold-blind probe dropped exactly the 2 entailing packets');
+    assert.equal(res.strata['evidence-absent'].length, 6, '8 candidates minus 2 probe-drops = 6 retained');
+    // DISCRIMINATING vs the all-accept probe, which would retain all 8.
+    assert.ok(res.attrition.probeDropped >= 1, 'the gold-blind entailment probe screened out >= 1 packet (load-bearing, not a rubber stamp)');
   } finally {
     fs.rmSync(root, { recursive: true, force: true });
   }
 });
 
 test('assembler: a trap that fails the validityGate (weak verifier CAUGHT it) is REJECTED before it counts', async () => {
-  const root = writeCache(buildBalancedCorpus());
+  const root = writeCache(buildEvidenceAbsentCorpus(6));
 
   try {
     // A weak verifier that CORRECTLY refutes every trap (returns 'refuted' on a refuted-gold trap) does
-    // NOT flip -> validityGate rejects ALL traps -> both strata fall below the floor -> the assembler
-    // throws (no trap survives). This proves the validityGate screen is load-bearing (not a no-op).
+    // NOT flip -> validityGate rejects ALL traps -> the evidence-absent stratum falls below the floor ->
+    // the assembler throws (no trap survives). This proves the validityGate screen is load-bearing.
     await assert.rejects(
       () =>
         assembleStage1Traps({
@@ -593,31 +581,40 @@ test('assembler: a trap that fails the validityGate (weak verifier CAUGHT it) is
   }
 });
 
-test('assembler: a trap that fails the BLIND content-grounding probe is REJECTED before it counts', async () => {
-  const root = writeCache(buildBalancedCorpus());
+test('assembler: a trap that fails the GOLD-BLIND entailment probe is REJECTED before it counts', async () => {
+  const root = writeCache(buildEvidenceAbsentCorpus(6));
 
   try {
     // A validity probe that rejects every trap -> none survive -> the assembler throws. DISCRIMINATING
-    // vs the always-accept probe (which produces a full set in the test above) -- proving the probe
-    // gates rather than rubber-stamps.
+    // vs the always-accept probe (which produces a full set elsewhere) -- proving the probe gates rather
+    // than rubber-stamps. The probeDropped count records every reject (board guardrail 4).
+    let thrown = null;
+
     await assert.rejects(
       () =>
         assembleStage1Traps({
           cacheRoot: root,
           cacheDir: path.join(root, 'out'),
           generate: acceptGenerate,
-          validityProbe: async () => ({ accepted: false, reason: 'probe-rejected' }),
+          validityProbe: async () => ({ accepted: false, reason: 'survivors entail the overreach -> disqualify' }),
         }),
-      (e) => e.name === 'ContractError' && /perStratumFloor/.test(e.message),
-      'when the blind content-grounding probe rejects every trap, none survive -> fail closed',
+      (e) => {
+        thrown = e;
+
+        return e.name === 'ContractError' && /perStratumFloor/.test(e.message);
+      },
+      'when the gold-blind entailment probe rejects every trap, none survive -> fail closed',
     );
+
+    // Every reject is counted in probeDropped (reported on the thrown attrition, board guardrail 4).
+    assert.ok(thrown.attrition && thrown.attrition.probeDropped >= 3, 'every probe reject is counted in probeDropped');
   } finally {
     fs.rmSync(root, { recursive: true, force: true });
   }
 });
 
-test('assembler: attrition reports per-stratum counts + the run config the dispatch consumes', async () => {
-  const root = writeCache(buildBalancedCorpus());
+test('assembler: attrition reports the single-stratum count + probeDropped + the run config the dispatch consumes', async () => {
+  const root = writeCache(buildEvidenceAbsentCorpus(6));
 
   try {
     const res = await assembleStage1Traps({
@@ -627,14 +624,15 @@ test('assembler: attrition reports per-stratum counts + the run config the dispa
       validityProbe: acceptProbe,
     });
 
-    assert.equal(res.attrition.scanned, 12, 'all 12 Supported seeds were scanned');
-    assert.equal(res.attrition.perStratumCount.buried, res.strata.buried.length, 'the buried count matches the stratum size');
-    assert.equal(res.attrition.perStratumCount['evidence-absent'], res.strata['evidence-absent'].length, 'the evidence-absent count matches');
+    assert.equal(res.attrition.scanned, 6, 'all 6 Supported seeds were scanned');
+    assert.equal('buried' in res.attrition.perStratumCount, false, 'there is NO buried per-stratum count (buried dropped)');
+    assert.equal(res.attrition.perStratumCount['evidence-absent'], res.strata['evidence-absent'].length, 'the evidence-absent count matches the stratum size');
+    assert.equal(res.attrition.probeDropped, 0, 'the dedicated probeDropped counter exists (0 on the all-accept stub)');
     assert.equal(res.runConfig.minSurvivors, 5, 'the >=5-survivor floor is the run config default');
     assert.equal(res.runConfig.perStratumFloor, 3, 'the >=3/stratum floor is the run config default');
 
     // goldLabels maps every assembled uid -> 'refuted'.
-    const allUids = [...res.strata.buried, ...res.strata['evidence-absent']].map((r) => r.uid);
+    const allUids = res.strata['evidence-absent'].map((r) => r.uid);
 
     for (const uid of allUids) {
       assert.equal(res.goldLabels[uid], 'refuted', 'every assembled trap is refuted-gold by construction');

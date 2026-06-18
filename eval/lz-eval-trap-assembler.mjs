@@ -1,29 +1,32 @@
 // lz-eval-trap-assembler.mjs
 //
-// The NET-NEW KS-ENRICHMENT layer + the 2-strata Stage-1 trap-set ASSEMBLER for the offline
-// known-gold Haiku-vs-Sonnet gating read (Plan 19-04, Task 1; EVAL-01). It is the construct-validity-
-// corrected Stage-1 replacement (19-04-REPLAN-DECISION-2): the raw AVeriTeC dev KS docs are
-// {sentence, url} with ZERO date fields and ZERO decisive/disconfirmer/verdict flags, so the FROZEN
-// dateFilter drops every doc and staticKsAdapter returns an EMPTY set for every claim -- the offline
-// read is degenerate without enrichment. This module attaches real publication dates (extracted from
-// the doc URL via a byte-locked strict path-only rule) plus the decisive/disconfirmer/verdict flags
-// (ONLY at the pre-registered ranks) so the BUILT search spine can run.
+// The NET-NEW KS-ENRICHMENT layer + the SINGLE-STRATUM (evidence-absent) Stage-1 trap-set ASSEMBLER for
+// the offline known-gold Haiku-vs-Sonnet gating read (Plan 19-04, Task 1; EVAL-01). It is the
+// construct-validity-corrected Stage-1 replacement (19-04-REPLAN-DECISION-4, AMENDING -3 / -2): the raw
+// AVeriTeC dev KS docs are {sentence, url} with ZERO date fields and ZERO decisive/disconfirmer/verdict
+// flags, so the FROZEN dateFilter drops every doc and staticKsAdapter returns an EMPTY set for every
+// claim -- the offline read is degenerate without enrichment. This module attaches real publication
+// dates (extracted from the doc URL via a byte-locked strict path-only rule) so the BUILT search spine
+// can run; for the SOLE offline arm (evidence-absent) NO decisive/disconfirmer/verdict flag is attached
+// (the packet is the date-filtered ORIGINAL supporting docs -- resist-uphold-on-absence).
 //
 // ASSEMBLY-LAYER DISCIPLINE (load-bearing): the FROZEN primitives parseAvtDate / safeParse /
 // dateFilter / staticKsAdapter / searchAndStop (eval/lz-eval-search-loop.mjs) and the BUILT recipe
 // machinery mutateOverreach / validityGate / writeTrap / loadDevSeedsAndKs (eval/lz-eval-traps.mjs;
-// classifySeed is no longer imported here -- the I3 fix removed its tautological in-assembler guard)
-// are IMPORTED and COMPOSED, never rewritten. ALL new logic (the dates + the
-// flags) lives here as an assembly layer over those primitives. The single-digit-day fix is the NEW
+// classifySeed + BURIED_RANK_FLOOR are NO LONGER imported here -- buried is dropped, RE-PLAN-4 D-RP4-1)
+// are IMPORTED and COMPOSED, never rewritten. ALL new logic (the dates only, for evidence-absent)
+// lives here as an assembly layer over those primitives. The single-digit-day fix is the NEW
 // normalizeClaimDate HERE -- the frozen parseAvtDate STILL throws on a single-digit day like
 // '9-10-2020' (it is byte-unchanged); the normalizer zero-pads at the assembly layer so a seed dated
 // 9-10-2020 becomes usable WITHOUT touching the parser.
 //
-// SCORING RECONCILIATION (T-19-19): the decisive/disconfirmer/verdict flags this layer attaches drive
-// ONLY searchAndStop's mechanical trace + classifySeed's stratum assignment. They are NOT the scored
-// quantity. The SCORED quantity is the MODEL voter's free-text vote.verdict over the date-filtered KS
-// text (the D-08 dispatch Workflow, Task 2). searchAndStop's flag-driven verdict enum
-// {judge-result,'refuted-default','insufficient'} is the TRACE + the mechanical minimums ONLY.
+// SCORING RECONCILIATION (T-19-19): for the SINGLE evidence-absent arm this layer attaches NO
+// decisive/disconfirmer/verdict flag (the enrichment is dates-only -- enrichKsForClaim is called with
+// decisiveRank=-1, disconfirmerRank=-1). The scored quantity is NEVER a layer-attached flag. The SCORED
+// quantity is the MODEL voter's free-text vote.verdict over the date-filtered KS text (the D-08 dispatch
+// Workflow, Task 2). searchAndStop's flag-driven verdict enum {judge-result,'refuted-default',
+// 'insufficient'} is the TRACE + the mechanical minimums ONLY (the flag seam stays in enrichKsForClaim
+// for shape parity, but the assembler never invokes it for evidence-absent).
 //
 // URL_DATE_RULE (byte-locked, pre-registered): the strict path-only RegExp
 //   /(19|20)\d{2}\/(0[1-9]|1[0-2])\/(0[1-9]|[12]\d|3[01])(\/|$)/
@@ -38,49 +41,63 @@
 // in the frozen dateFilter. NO date-shifting / NO claimDate-1 imputation (rejected by all three
 // reviewers; 19-04-REPLAN-DECISION-2 item 3).
 //
-// TWO STRATA ONLY (buried + evidence-absent): date-sensitive is DROPPED from the offline gate -- its
-// post-cutoff-leak arm is unobservable offline (staticKsAdapter applies dateFilter BEFORE any voter
-// sees a doc, so a post-cutoff "leak" is dropped identically for both seats). Date-sensitivity is
-// DEFERRED to the Phase-20 live phase (19-04-REPLAN-DECISION-2 item 1).
+// ONE STRATUM ONLY (evidence-absent): buried is DROPPED ENTIRELY from the offline gate and date-sensitive
+// is DEFERRED, both to the Phase-20 live shadow (19-04-REPLAN-DECISION-4, UNANIMOUS board OPTION A).
+//   - WHY BURIED IS DROPPED (D-RP4-1, construct-invalid offline): `buried` is NOT validly + leak-safely
+//     constructible offline. The synthetic disconfirmer=true flag on an arbitrary deep surviving doc is
+//     TEXT-UNVERIFIED -- the doc's text almost never refutes the SPECIFIC mutated overreach, so a blind
+//     probe would reject most synthetic-buried. It measures "is the voter fooled by a label with no real
+//     refuting evidence" -- a FAKE construct. Deep-refuter detection is retrieval-adjacent /
+//     context-attention, already deferred to the Phase-20 live shadow.
+//   - THE COUNT-VS-RANK PREDICATE ERROR (D-RP4-2, the principled basis for the amendment): the RE-PLAN-3
+//     `isBuried = (INDEX of the deepest surviving doc in the 0..99 KS list >= BURIED_RANK_FLOOR=20)`
+//     policy conflated survivor COUNT (median 5) with survivor RANK/position (0..99). The ~8.6% dated
+//     survivors scatter across positions 0..99 so the DEEPEST survivor index is almost always >= 20
+//     (measured 97/97/96/80/76) -> ALL 62 qualifying seeds classified `buried`, ZERO `evidence-absent`
+//     -> the assembler hard-threw on the PRIMARY floor and the calibrator could not run. The prior
+//     pre-registration's "rank-20 burial is impossible at median-5" claim is empirically FALSE. This is
+//     the SECOND construct defect on this instrument (C1 -- the dispatch object/text return -- was first).
+//   - date-sensitive remains DEFERRED to Phase-20 live (its post-cutoff-leak arm is unobservable offline:
+//     staticKsAdapter applies dateFilter BEFORE any voter sees a doc, so a post-cutoff "leak" is dropped
+//     identically for both seats; 19-04-REPLAN-DECISION-2 item 1).
 //
-// CONSTRUCT-SCOPE BOUNDARY (19-04-REPLAN-DECISION-3): the offline gate measures CLOSED-BOOK JUDGMENT
-// (resist-uphold-on-absence for evidence-absent; distractor-attention / refuter-detection for buried),
-// NOT retrieval orchestration. The frozen staticKsAdapter ignores the query, so a model cannot drive
-// query-formulation through this seam -- retrieval (query formulation / search depth / premature-stop)
-// is NOT cleanly + leak-safely measurable offline and DEFERS to the Phase-20 LIVE operational shadow.
-// `buried` offline is acknowledged a context-attention / refuter-detection JUDGMENT test, NOT retrieval.
+// CONSTRUCT-SCOPE BOUNDARY (19-04-REPLAN-DECISION-3/-4): the offline gate measures CLOSED-BOOK JUDGMENT
+// (resist-uphold-on-absence -- the SOLE arm, the one genuinely-new failure mode vs the saturated Phase-18
+// subtle arm), NOT retrieval orchestration. The frozen staticKsAdapter ignores the query, so a model
+// cannot drive query-formulation through this seam -- retrieval (query formulation / search depth /
+// premature-stop) is NOT cleanly + leak-safely measurable offline and DEFERS to the Phase-20 LIVE
+// operational shadow (alongside buried + date-sensitive). A closed-book PASS NEVER certifies retrieval.
 //
-// EVIDENCE-ABSENT IS THE PRIMARY ARM; BURIED IS AUTO-GATED (19-04-REPLAN-DECISION-3 item 3): at the
-// median-5 strictly-pre-cutoff docs/claim the deepest survivor almost never reaches BURIED_RANK_FLOOR
-// (20), so the buried stratum will not reach perStratumFloor. evidence-absent is the PRIMARY arm and
-// MUST reach perStratumFloor (else a degenerate corpus -- FAIL CLOSED); buried is AUTO-GATED -- if it
-// has fewer than perStratumFloor distinct claims it AUTO-DROPS to evidence-absent-only (the drop reason
-// is LOGGED in attrition.buriedAutoDropped + .buriedAutoDropReason -- never silently dropped). buried is
-// kept ONLY when it can be honestly built AND (Task 4) the calibrator shows it discriminates.
-//
-// I3 (19-04-ARTIFACT-REVIEW): the prior classifySeed agreement guard was a TAUTOLOGY -- isBuried set
-// BOTH the disconfirmer-flag rank (the flag classifySeed reads) AND the stratum, so classifySeed could
-// never disagree (the ContractError was dead code). It is REMOVED. Stratification correctness rests on
-// (i) the BLIND content-grounding validityProbe (it confirms a buried decisive refuter genuinely refutes
-// the MUTATED trap, and an evidence-absent seed carries NO pre-cutoff refuter -- it fails closed) and
-// (ii) the pre-registered manifest ranks -- NOT a runtime cross-check (the Phase-17 "fixture must
-// discriminate" lesson applied to a runtime guard: a tautological guard reads as assurance while
-// verifying nothing, which is worse than no guard). classifySeed is no longer imported in this module;
-// its dead in-assembler agreement assertion is removed. classifySeed itself is unchanged in
-// lz-eval-traps.mjs (it remains the built classifier the recipe machinery + manifest ranks use).
+// EVIDENCE-ABSENT IS THE SOLE ARM (19-04-REPLAN-DECISION-4 board OPTION A): ALL qualifying Supported
+// seeds (>= minSurvivors strictly-pre-cutoff survivors, ascending claim_id) become `evidence-absent`:
+// enrichKsForClaim with NO decisive/disconfirmer flag (decisiveRank=-1, disconfirmerRank=-1); the packet
+// is the date-filtered ORIGINAL supporting docs (plausible supporting text, no in-corpus refuter -- a
+// genuine text temptation to false-uphold). There is NO `buried` stratum and NO `isBuried` /
+// deepest-survivor-index policy. The single evidence-absent floor (>= perStratumFloor) is the only
+// per-stratum floor; below the floor AFTER the gold-blind probe drops invalid packets = a documented
+// VOID signal (the corpus cannot honestly build the PRIMARY arm), NOT a knob to relax.
 //
 // FAIL-CLOSED FLOORS: a seed with fewer than minSurvivors (5) strictly-pre-cutoff dated surviving docs
 // is EXCLUDED (else min-not-met silently changes the trap; the EXACTLY-5-survivor inclusive boundary
-// KEEPS the seed -- the floor is `< minSurvivors`, not `<=`); the PRIMARY evidence-absent stratum with
-// fewer than perStratumFloor (3) distinct surviving claims FAILS CLOSED (so nPooled >= reliableTrials=15
-// at k=5); the AUTO-GATED buried stratum AUTO-DROPS instead of failing the whole run (above).
+// KEEPS the seed -- the floor is `< minSurvivors`, not `<=`); the SINGLE evidence-absent stratum with
+// fewer than perStratumFloor (3) RETAINED surviving claims FAILS CLOSED (so nPooled >= reliableTrials=15
+// at k=5) -- the retained count is the POST-PROBE survivor count, so a below-floor retained set after the
+// gold-blind probe drops is the documented VOID condition (board guardrail 5: the floor is load-bearing).
 //
-// VALIDITY SCREENING: every trap is screened by validityGate (the deliberately-weak-verifier flip)
-// PLUS an injected BLIND content-grounding validityProbe (a competent out-of-the-gate judge confirms a
-// buried decisive refuter genuinely refutes the MUTATED trap, and that an evidence-absent seed carries
-// NO pre-cutoff refuter but DOES carry the original unmutated SUPPORTING docs as plausible text)
-// BEFORE the trap can count. The flags are NOT text-derivable -- they do not leak the gold label into
-// the doc text the model reads.
+// VALIDITY SCREENING (two screens): every trap is screened by SCREEN 1 validityGate (the
+// deliberately-weak-verifier flip -- a too-easy trap the weak verifier already catches is rejected) PLUS
+// SCREEN 2 the injected GOLD-BLIND entailment validityProbe (the mandatory mitigation, load-bearing --
+// FATAL if omitted; board guardrails 1+2+4+6). The probe is a GOLD-BLIND model judge (NO AVeriTeC label,
+// NO mutation knowledge) that reads ONLY the date-filtered surviving SUPPORTING docs + the mutated
+// OVERREACH claim and answers: "do these docs explicitly state OR directly entail the one-step OVERREACH,
+// or only the weaker ORIGINAL Supported claim?". It DISQUALIFIES (drops; the drop is REPORTED in
+// attrition.probeDropped, never silently absorbed) any packet where the survivors plausibly entail/license
+// the overreach (there `unrefuted` is a legitimate read and gold=refuted is indefensible -- the same
+// defect that killed buried). It RETAINS as valid gold=refuted ONLY packets whose survivors support the
+// ORIGINAL claim but do NOT entail the overreach (the overreach is unsupported-by-the-packet, not
+// contradicted -- exactly resist-uphold-on-absence). The probe runs BEFORE any verify-vote and is
+// gold-blind so it does not bootstrap the gold it validates. The flags (absent for evidence-absent) are
+// NOT text-derivable -- they do not leak the gold label into the doc text the model reads.
 //
 // RECIPE-NOT-TEXT (D-07): the mutated CC-BY-NC prose + the enriched KS are written via writeTrap to
 // the gitignored eval/.cache/ ONLY; the returned row carries uid + stratum + recipe + sha256, NEVER a
@@ -111,10 +128,11 @@ import { safeParse, dateFilter, parseAvtDate } from './lz-eval-search-loop.mjs';
 
 // The BUILT recipe machinery (CONSUMED, never rewritten): mutateOverreach records the gold->refuted
 // recipe; writeTrap writes the mutated prose to the cache and returns the recipe-not-text row;
-// loadDevSeedsAndKs loads the dev seeds + KS from the gitignored cache. classifySeed is NO LONGER
-// imported here: the I3 fix removed its tautological in-assembler agreement guard (see the header). The
-// stratum is decided by the deterministic survivor-depth policy; classifySeed (the built classifier)
-// stays available in lz-eval-traps.mjs for the recipe machinery + the manifest-rank pre-registration.
+// loadDevSeedsAndKs loads the dev seeds + KS from the gitignored cache. classifySeed + BURIED_RANK_FLOOR
+// are NO LONGER imported here (RE-PLAN-4, D-RP4-1): buried is DROPPED -- there is no stratum to classify
+// and no survivor-rank policy. There is ONE stratum (evidence-absent); every qualifying seed is it.
+// classifySeed + BURIED_RANK_FLOOR are UNCHANGED in lz-eval-traps.mjs (the built recipe machinery keeps
+// them); they are simply unused by this module.
 import {
   mutateOverreach,
   validityGate,
@@ -276,35 +294,45 @@ export function enrichKsForClaim(ksDocs, { decisiveRank = -1, disconfirmerRank =
 
 // ---------------------------------------------------------------------------
 // assembleStage1Traps({ cacheRoot, generate, validityProbe, cacheDir, perStratumFloor=3,
-//   minSurvivors=5, weakVerifier }): the deterministic 2-strata Stage-1 assembler.
+//   minSurvivors=5, weakVerifier }): the deterministic SINGLE-STRATUM (evidence-absent) Stage-1
+//   assembler (RE-PLAN-4 OPTION A -- buried dropped, D-RP4-1).
 //
 //   - generate(seedClaim, recipe) -> Promise<string>: the INJECTED async generator that produces the
 //     mutated trap prose. An Opus-subagent generator is acceptable at Stage 1 (only Sonnet runs the
 //     calibrator; the truly-out-of-family paid generator is reserved for Stage-2 / 19-05).
 //   - validityProbe({ trap, enrichedKs, stratum, decisiveRank }) -> Promise<{ accepted, reason }>: the
-//     INJECTED BLIND content-grounding probe (a competent out-of-the-gate judge). It confirms a buried
-//     decisive refuter genuinely refutes the MUTATED trap, and that an evidence-absent seed carries NO
-//     pre-cutoff refuter. NOT text-derivable; runs at lock time, not vote time.
+//     INJECTED GOLD-BLIND entailment probe (the mandatory mitigation, load-bearing). A gold-blind model
+//     judge (NO AVeriTeC label, NO mutation knowledge) reads ONLY the date-filtered surviving SUPPORTING
+//     docs + the mutated OVERREACH claim and answers whether the survivors explicitly state OR directly
+//     entail the one-step OVERREACH, or only the weaker ORIGINAL Supported claim. accepted:false
+//     DISQUALIFIES (drop) any packet whose survivors plausibly entail/license the overreach (gold=refuted
+//     is indefensible there); accepted:true RETAINS as valid gold=refuted ONLY packets whose survivors
+//     support the original but do NOT entail the overreach (resist-uphold-on-absence). Since the stratum
+//     is always 'evidence-absent' and decisiveRank is always -1, the rubric is uniform. Runs at lock
+//     time, BEFORE any vote; gold-blind so it does not bootstrap the gold. The drop count is REPORTED in
+//     attrition.probeDropped (board guardrail 4), never silently absorbed.
 //   - weakVerifier({ trap, enrichedKs }) -> 'unrefuted' | 'refuted': the INJECTED deliberately-weak
 //     reference verifier whose FLIP validityGate screens on (default: a weak verifier that always
 //     upholds -> always flips on a refuted-gold trap -- the unit suite injects discriminating stubs).
 //
 // DETERMINISTIC seed selection: ALL qualifying Supported seeds by ASCENDING claim_id. For each:
-// normalizeClaimDate (skip on null); enrich + dateFilter to the strictly-pre-cutoff survivors;
-// EXCLUDE the seed if fewer than minSurvivors survive; route buried vs evidence-absent by the
-// deterministic survivor-depth policy (deepest survivor >= BURIED_RANK_FLOOR -> buried; the I3 fix
-// removed the tautological classifySeed cross-check); mutateOverreach to record the recipe; generate
-// the mutated prose; screen via validityGate (weak-verifier flip) PLUS validityProbe; writeTrap
-// cache-only. DROP date-sensitive entirely. The PRIMARY evidence-absent stratum FAILS CLOSED below
-// perStratumFloor; the AUTO-GATED buried stratum AUTO-DROPS to evidence-absent-only below the floor
-// (logged in attrition.buriedAutoDropped + .buriedAutoDropReason).
+// normalizeClaimDate (skip on null); enrich (dates only) + dateFilter to the strictly-pre-cutoff
+// survivors; EXCLUDE the seed if fewer than minSurvivors survive; mutateOverreach to record the recipe;
+// generate the mutated prose; SCREEN 1 validityGate (weak-verifier flip) THEN SCREEN 2 the GOLD-BLIND
+// entailment validityProbe; writeTrap cache-only. Every surviving seed is `evidence-absent` (NO
+// decisive/disconfirmer flag: decisiveRank=-1, disconfirmerRank=-1; the packet = the date-filtered
+// ORIGINAL supporting docs). There is NO buried stratum and NO date-sensitive stratum offline.
 //
-// Returns { strata: { 'evidence-absent':[row], buried?:[row] }, goldLabels:{uid->'refuted'},
-//   attrition:{ scanned, skippedNoDate, skippedFewSurvivors, screenedOut, perStratumCount,
-//     buriedAutoDropped:boolean, buriedAutoDropReason:string|null },
-//   runConfig:{ minSurvivors, perStratumFloor } }. When buried AUTO-DROPS the returned strata holds an
-// EMPTY buried array (the stratum key is retained for shape stability) and attrition.buriedAutoDropped
-// is true with a why string; the PRIMARY evidence-absent stratum is always present + at the floor.
+// Returns { strata: { 'evidence-absent':[row] }, goldLabels:{uid->'refuted'},
+//   attrition:{ scanned, skippedNoDate, skippedFewSurvivors, screenedOut, probeDropped, perStratumCount,
+//     retainedBelowFloor:boolean, voidReason:string|null },
+//   runConfig:{ minSurvivors, perStratumFloor } }. attrition.probeDropped is the number of packets the
+// GOLD-BLIND entailment probe (SCREEN 2) disqualified, distinct from the aggregate screenedOut (SCREEN 1
+// + SCREEN 2). The SINGLE evidence-absent floor FAILS CLOSED below perStratumFloor: when the RETAINED
+// (post-probe) set is below the floor the assembler THROWS /perStratumFloor/ naming evidence-absent, and
+// the throw records the realized probeDropped count + sets attrition.retainedBelowFloor=true +
+// attrition.voidReason (the documented VOID condition -- the corpus cannot honestly build the PRIMARY
+// arm; board guardrail 5: the floor is load-bearing, NOT a knob to relax toward a desired N).
 // ---------------------------------------------------------------------------
 export async function assembleStage1Traps({
   cacheRoot,
@@ -342,19 +370,25 @@ export async function assembleStage1Traps({
     .filter((s) => s != null && s.label === 'Supported')
     .sort((a, b) => a.claim_id - b.claim_id);
 
-  const strata = { buried: [], 'evidence-absent': [] };
+  // ONE stratum (RE-PLAN-4): evidence-absent is the SOLE offline arm. No buried key (D-RP4-1).
+  const strata = { 'evidence-absent': [] };
   const goldLabels = {};
   const attrition = {
     scanned: 0,
     skippedNoDate: 0,
     skippedFewSurvivors: 0,
+    // screenedOut counts BOTH SCREEN-1 (validityGate flip) + SCREEN-2 (gold-blind probe) drops.
     screenedOut: 0,
-    perStratumCount: { buried: 0, 'evidence-absent': 0 },
-    // buried is AUTO-GATED (19-04-REPLAN-DECISION-3 item 3): at median-5 docs it almost never reaches
-    // the per-stratum floor and AUTO-DROPS to evidence-absent-only. These record WHETHER it dropped and
-    // WHY (never a silent drop). false + null when buried built at or above the floor.
-    buriedAutoDropped: false,
-    buriedAutoDropReason: null,
+    // probeDropped is the dedicated SCREEN-2 GOLD-BLIND entailment-probe drop count (board guardrail 4:
+    // the probe's disqualifications are REPORTED, distinct from the SCREEN-1 weak-verifier rejections).
+    probeDropped: 0,
+    perStratumCount: { 'evidence-absent': 0 },
+    // The documented VOID signal (board guardrail 5): set when the RETAINED (post-probe) evidence-absent
+    // set falls below perStratumFloor. The assembler THROWS in that case (the corpus cannot honestly
+    // build the PRIMARY arm), but these fields are populated on the attrition the throw carries so the
+    // realized probeDropped count + the VOID reason are reported, never silently absorbed.
+    retainedBelowFloor: false,
+    voidReason: null,
   };
 
   // A deterministic recipe-seed counter (the recipe { transform, seed } must carry an integer seed).
@@ -375,10 +409,9 @@ export async function assembleStage1Traps({
     const claimDate = parseAvtDate(normalized); // the frozen parser, fed a normalized two-digit date
     const rawKs = Array.isArray(ksByClaim[seed.claim_id]) ? ksByClaim[seed.claim_id] : [];
 
-    // ENRICH first WITHOUT any decisive/disconfirmer flag so classifySeed sees only the dates; the
-    // disconfirmer flag is then attached at the pre-registered rank below (a deterministic buried-rank
-    // policy). The buried disconfirmer is placed at the deepest surviving rank (>= BURIED_RANK_FLOOR
-    // when the survivor pool is deep enough); evidence-absent seeds get NO disconfirmer.
+    // ENRICH (dates only -- evidence-absent attaches NO decisive/disconfirmer flag). decisiveRank=-1 +
+    // disconfirmerRank=-1 are the enrichKsForClaim defaults, so the packet is the date-filtered ORIGINAL
+    // supporting docs (plausible supporting text, no in-corpus refuter -- resist-uphold-on-absence).
     const datedKs = enrichKsForClaim(rawKs, {});
     const survivors = dateFilter(datedKs, claimDate);
 
@@ -388,46 +421,18 @@ export async function assembleStage1Traps({
       continue;
     }
 
-    // Decide the stratum DETERMINISTICALLY from the survivor depth: a seed with a deep survivor pool
-    // (>= the buried floor + a disconfirmer slot) is a BURIED candidate (attach a disconfirmer at the
-    // deepest surviving rank); a shallower pool is an EVIDENCE-ABSENT candidate (no disconfirmer). The
-    // EXACT per-seed decisive/disconfirmer ranks are pre-registered in the manifest (Task 3); here the
-    // assembler uses a deterministic policy so the ENRICHED KS carries real flags classifySeed reads.
+    // RE-PLAN-4 (D-RP4-1 / D-RP4-2): there is NO buried/evidence-absent split and NO deepest-survivor-index
+    // (isBuried) policy. EVERY qualifying seed is `evidence-absent`: the SOLE offline arm. The buried
+    // stratum is dropped entirely (construct-invalid offline -- the synthetic disconfirmer flag is
+    // text-unverified; the count-vs-rank predicate mis-classified all 62 seeds as buried). decisiveRank /
+    // disconfirmerRank are fixed at -1 (no refuter flag); the enriched KS is the dates-only datedKs.
+    const stratum = 'evidence-absent';
+    const decisiveRank = -1;
+    const enrichedKs = datedKs;
+
     const transform = TRANSFORMS[recipeSeed % TRANSFORMS.length];
     const recipe = mutateOverreach(seed, { transform, seed: recipeSeed });
     recipeSeed += 1;
-
-    // Find the deepest surviving doc INDEX in the dated KS (the buried disconfirmer slot). A doc
-    // survives iff the frozen dateFilter keeps it (a parseable date strictly < claimDate). The
-    // disconfirmer + decisive refuter (for a buried trap) sit on that deep survivor; an evidence-absent
-    // trap places NEITHER (it keeps the original unmutated supporting docs as plausible text only).
-    let deepestSurvivor = -1;
-
-    for (let i = 0; i < datedKs.length; i += 1) {
-      if (dateFilter([datedKs[i]], claimDate).length === 1) {
-        deepestSurvivor = i;
-      }
-    }
-    // Buried iff the deepest survivor sits at or beyond the buried rank floor (20) -- enough depth for a
-    // genuinely-buried disconfirmer. Otherwise evidence-absent.
-    const isBuried = deepestSurvivor >= 20;
-    const stratum = isBuried ? 'buried' : 'evidence-absent';
-
-    // Re-enrich WITH the pre-registered flags: a buried trap flags the deep survivor as the decisive
-    // pre-cutoff disconfirmer (refuter); an evidence-absent trap attaches NO refuter flag (it carries
-    // only the original unmutated supporting docs as plausible text).
-    const decisiveRank = isBuried ? deepestSurvivor : -1;
-    const disconfirmerRank = isBuried ? deepestSurvivor : -1;
-    const enrichedKs = enrichKsForClaim(rawKs, { decisiveRank, disconfirmerRank, verdict: 'refuted' });
-
-    // I3 (19-04-ARTIFACT-REVIEW; 19-04-REPLAN-DECISION-3): the prior classifySeed agreement guard here
-    // was a TAUTOLOGY -- isBuried sets BOTH the disconfirmerRank (the flag classifySeed reads) AND the
-    // stratum, so classifySeed could never disagree, and the ContractError was dead code that read as a
-    // cross-check while verifying nothing. It is REMOVED. The stratification correctness rests on the
-    // BLIND content-grounding validityProbe (SCREEN 2 below -- it fails closed on a mis-grounded
-    // construction) and the pre-registered manifest ranks, NOT a runtime cross-check (the Phase-17
-    // "fixture must discriminate" lesson). classifySeed stays imported + consumed by the recipe
-    // machinery (loadDevSeedsAndKs / mutateOverreach); only the dead assertion is gone.
 
     // Generate the mutated trap prose (injected; recipe-not-text -- the prose lives in the cache only).
     const mutatedText = await generate(seed.claim, recipe);
@@ -446,14 +451,20 @@ export async function assembleStage1Traps({
       continue;
     }
 
-    // SCREEN 2 -- the BLIND content-grounding validity probe (a competent out-of-the-gate judge). It
-    // confirms a buried decisive refuter genuinely refutes the MUTATED trap, and that an evidence-absent
-    // seed carries NO pre-cutoff refuter (but DOES carry the unmutated supporting docs as plausible
-    // text). Runs at lock time; NOT text-derivable.
+    // SCREEN 2 -- the GOLD-BLIND entailment validity probe (the mandatory mitigation, load-bearing). A
+    // gold-blind judge (NO AVeriTeC label, NO mutation knowledge) reads ONLY the date-filtered surviving
+    // SUPPORTING docs (enrichedKs) + the mutated OVERREACH claim (mutatedText) and answers whether the
+    // survivors explicitly state OR directly ENTAIL the one-step overreach, or only the weaker ORIGINAL
+    // Supported claim. accepted:false DISQUALIFIES a packet whose survivors plausibly entail/license the
+    // overreach (there `unrefuted` is a legitimate read and gold=refuted is indefensible -- the defect
+    // that killed buried); accepted:true RETAINS only survivors-support-original-but-not-overreach
+    // (resist-uphold-on-absence). The drop is counted in BOTH screenedOut + the dedicated probeDropped
+    // (board guardrail 4 -- the probe's disqualifications are reported, never silently absorbed).
     const probe = await validityProbe({ trap: mutatedText, enrichedKs, stratum, decisiveRank });
 
     if (probe == null || probe.accepted !== true) {
       attrition.screenedOut += 1;
+      attrition.probeDropped += 1;
       continue;
     }
 
@@ -476,38 +487,35 @@ export async function assembleStage1Traps({
     attrition.perStratumCount[stratum] += 1;
   }
 
-  // FLOORS (19-04-REPLAN-DECISION-3 item 3): evidence-absent is the PRIMARY arm and MUST reach the
-  // per-stratum floor -- a corpus that cannot honestly build >= perStratumFloor evidence-absent claims
-  // is degenerate and FAILS CLOSED (the whole run aborts). The /perStratumFloor/ matcher is preserved
-  // for the throw-path test (W-2, re-pointed to an evidence-absent-short corpus).
+  // THE SINGLE EVIDENCE-ABSENT FLOOR (RE-PLAN-4, board guardrail 5 -- the floor is load-bearing, NOT a
+  // knob): evidence-absent is the SOLE arm and MUST reach perStratumFloor. The RETAINED count is the
+  // POST-PROBE survivor count (the gold-blind probe SCREEN 2 has already dropped invalid packets), so a
+  // below-floor RETAINED set IS the documented VOID condition -- the corpus cannot honestly build the
+  // PRIMARY arm. The assembler FAILS CLOSED (THROWS /perStratumFloor/ naming evidence-absent); the throw
+  // RECORDS the realized probeDropped count (board guardrail 4) + sets attrition.retainedBelowFloor +
+  // attrition.voidReason so the VOID signal is REPORTED, never silently absorbed and never relaxed
+  // toward a desired N (that would be result-shopping).
   if (strata['evidence-absent'].length < perStratumFloor) {
-    throw new ContractError(
+    attrition.retainedBelowFloor = true;
+    attrition.voidReason =
+      'RETAINED evidence-absent < perStratumFloor (' + perStratumFloor + '): got ' +
+      strata['evidence-absent'].length + ' after the gold-blind entailment probe dropped ' +
+      attrition.probeDropped + ' packet(s) (probeDropped) and SCREEN-1+SCREEN-2 dropped ' +
+      attrition.screenedOut + ' total (screenedOut). Documented VOID -- the corpus cannot honestly build ' +
+      'the PRIMARY evidence-absent arm (board guardrail 5: the floor is load-bearing, not a knob; ' +
+      '19-04-REPLAN-DECISION-4 D-RP4-3).';
+
+    const err = new ContractError(
       'assembleStage1Traps: the PRIMARY evidence-absent stratum has fewer than perStratumFloor (' +
-        perStratumFloor + ') surviving distinct claims: got ' + strata['evidence-absent'].length +
-        ' (degenerate corpus -- no honest PRIMARY stratum)',
+        perStratumFloor + ') RETAINED distinct claims: got ' + strata['evidence-absent'].length +
+        ' (after the gold-blind probe dropped probeDropped=' + attrition.probeDropped +
+        '; documented VOID -- the corpus cannot honestly build the PRIMARY evidence-absent arm)',
       'assembleStage1Traps',
     );
-  }
-
-  // buried is AUTO-GATED: if it cannot reach the per-stratum floor (the LIKELY median-5 outcome -- the
-  // deepest survivor rarely reaches BURIED_RANK_FLOOR), AUTO-DROP it to evidence-absent-only instead of
-  // aborting the whole run. The drop is EXPLICIT + LOGGED (never silent): the buried gold labels are
-  // pruned, the buried stratum is emptied, and attrition.buriedAutoDropped / .buriedAutoDropReason
-  // record WHY. The PRIMARY evidence-absent stratum (asserted at the floor above) carries the run.
-  if (strata.buried.length < perStratumFloor) {
-    const droppedCount = strata.buried.length;
-
-    for (const row of strata.buried) {
-      delete goldLabels[row.uid];
-    }
-
-    strata.buried = [];
-    attrition.perStratumCount.buried = 0;
-    attrition.buriedAutoDropped = true;
-    attrition.buriedAutoDropReason =
-      'buried < perStratumFloor (' + perStratumFloor + ') at median-5: only ' + droppedCount +
-      ' distinct buried claim(s) built; auto-dropped to evidence-absent-only (deferred-buried-judgment, ' +
-      '19-04-REPLAN-DECISION-3 item 3)';
+    // Attach the realized attrition (probeDropped + the VOID reason) to the thrown error so the
+    // below-floor VOID signal is inspectable by the caller (board guardrail 4: REPORT the drops).
+    err.attrition = attrition;
+    throw err;
   }
 
   return {
