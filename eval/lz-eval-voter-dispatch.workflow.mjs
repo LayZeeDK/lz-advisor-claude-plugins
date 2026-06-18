@@ -76,6 +76,33 @@ export const meta = {
 // (genuine parity vs both-stopped-early).
 const STOP_REASONS = ['decisive-evidence', 'exhausted', 'min-not-met'];
 
+// RE-PLAN-5 SEAT DIVERSITY (board r1-synthesis UNANIMOUS-2 + SHOULD-DO): the pre-registered ATTACK_MODES
+// rotation. At k=9 each of the k seats per claim is assigned a DISTINCT attack-mode from this rotation so
+// "all k resisted" means "resisted a BATTERY of distinct attacks", NOT k identical re-draws. The seven
+// modes cover the board's named seat-styles (factual-contradiction / scope-causality-overclaim /
+// source-provenance) plus the absence-of-evidence + quantifier/scope + causality/certainty +
+// contradiction-vs-support disciplines, so k=9 rotates with coverage (>= 7 distinct modes). The voter
+// agent (plugins/lz-advisor/agents/research-verify-voter-sonnet.md) knows these mode names.
+const ATTACK_MODES = [
+  'factual-contradiction',
+  'scope-causality-overclaim',
+  'source-provenance',
+  'absence-of-evidence',
+  'quantifier-scope',
+  'causality-certainty',
+  'contradiction-vs-support',
+];
+
+// attackModeForSeat(k): the deterministic seat-to-mode assignment (seat k -> ATTACK_MODES[k % len]). A
+// sliceable function (not an inline expression) so the harness slice can drive it directly and assert the
+// k=9 seats cover MULTIPLE distinct modes (DISCRIMINATING vs a constant). Picked ONCE here (re-choosing
+// after seeing Stage-1 would be result-shopping; k=9 is at-or-above the frozen MIN_K floor).
+function attackModeForSeat(k) {
+  const idx = Number.isInteger(k) && k >= 0 ? k % ATTACK_MODES.length : 0;
+
+  return ATTACK_MODES[idx];
+}
+
 // parseVoteVerdict(agentVote): extract the MODEL voter's definite verdict from its written vote JSON.
 // Returns 'unrefuted' | 'refuted' for a definite verdict, or null for a null/absent/abstain/
 // unparseable verdict (the no-abstention rule -- a null is NOT persisted and is re-cast). The agentVote
@@ -246,10 +273,16 @@ function reducePooledVerdict(claimUid, kVotesForOneClaim) {
 //
 // claimText is the (mutated) trap claim; evidenceText is the inlined date-filtered packet rendered as
 // numbered doc lines by the orchestrator (recipe-not-text discipline: the packet lives in gitignored
-// eval/.cache/; the prompt inlines it only at dispatch time, never committed).
+// eval/.cache/; the prompt inlines it only at dispatch time, never committed). attackMode (RE-PLAN-5) is
+// the per-seat attack-mode from the ATTACK_MODES rotation (attackModeForSeat(k)) -- the prompt STATES it
+// so each of the k seats frames its skepticism through a DISTINCT lens ("all k resisted" = resisted a
+// battery of distinct attacks). The closed-book / no-abstention / no-self-search / judge-only / TEXT-return
+// contract is otherwise UNCHANGED. The positive controls flow through this SAME prompt indistinguishably:
+// the gold is NEVER in the prompt, so the voter cannot tell a control from a trap.
 // ---------------------------------------------------------------------------
-function voterPrompt(claimUid, k, claimText, evidenceText) {
+function voterPrompt(claimUid, k, claimText, evidenceText, attackMode) {
   return `You are the verify-voter seat for the OFFLINE known-gold gating read, casting vote ${k} on trap claim ${claimUid}.
+ATTACK MODE: ${attackMode} -- frame your skepticism through this lens (this seat's assigned attack discipline).
 CLOSED-BOOK over a SUPPLIED window: judge the CLAIM against ONLY the evidence below. Do NOT use live web search, do NOT search for anything, and do NOT rely on any external fact-check article -- the only admissible evidence is the date-filtered packet inlined here (retrieving the published verdict defeats the test). The per-claim publication-date cutoff was already ENFORCED by the orchestrator when it built this packet.
 CLAIM: ${claimText}
 EVIDENCE (date-filtered, strictly pre-cutoff; the ONLY admissible evidence):
@@ -285,7 +318,13 @@ const A = typeof args === 'object' && args ? args : {};
 const SEAT = typeof A.seat === 'string' && A.seat.length > 0 ? A.seat : 'sonnet';
 const CLAIM_UIDS = Array.isArray(A.claimUids) ? A.claimUids : [];
 const PACKETS = A.packets && typeof A.packets === 'object' ? A.packets : {};
-const K = kFloorAtLeast(A.k, 5);
+// RE-PLAN-5: the DISPATCH DEFAULT k floor is RAISED to 9 (board UNANIMOUS-2; picked ONCE here). An
+// explicit A.k >= MIN_K is honored verbatim (kFloorAtLeast tightens-only); an UNSET A.k defaults to 9
+// (zone 9-11; under any-uphold each extra vote is one more chance to expose a false-uphold -> more
+// conservative for a saturation gate; the extra k is spent on SEAT DIVERSITY across distinct
+// attack-modes, NOT identical re-draws). This is a DEFAULT change, NOT a MIN_K threshold change -- the
+// frozen MIN_K floor in kFloorAtLeast STAYS 5.
+const K = kFloorAtLeast(Number.isInteger(A.k) ? A.k : 9, 5);
 const DONE_IDS = Array.isArray(A.doneIds) ? A.doneIds : [];
 // W-3: maxInFlight caps the concurrent fan-out. A positive-integer request is honored; otherwise the
 // default cap of 4. The cap is HONORED below by batching `todo` into chunks of MAX_IN_FLIGHT and
@@ -324,10 +363,15 @@ const judgeVote = async (item) => {
   // orchestrator-side -- never asked of the model.
   let raw;
 
+  // RE-PLAN-5: assign this seat its DISTINCT attack-mode from the pre-registered rotation (seat k ->
+  // ATTACK_MODES[k % len]) and state it in the prompt, so the k seats per claim resist a BATTERY of
+  // distinct attacks rather than k identical re-draws.
+  const attackMode = attackModeForSeat(item.k);
+
   try {
     raw = await agent(
-      voterPrompt(item.claimUid, item.k, packet.claimText, packet.evidenceText),
-      { model: MODEL, effort: EFFORT, phase: 'Dispatch', label: `vote ${SEAT} ${item.claimUid} k${item.k}` },
+      voterPrompt(item.claimUid, item.k, packet.claimText, packet.evidenceText, attackMode),
+      { model: MODEL, effort: EFFORT, phase: 'Dispatch', label: `vote ${SEAT} ${item.claimUid} k${item.k} ${attackMode}` },
     );
   } catch (e) {
     log(`Vote ${item.id}: agent error -- ${String((e && e.message) || e)}; re-cast on the next pass`);

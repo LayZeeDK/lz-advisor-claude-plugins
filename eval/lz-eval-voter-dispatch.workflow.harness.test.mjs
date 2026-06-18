@@ -110,7 +110,9 @@ function getHelpers() {
   assert.ok(startIdx > 0, 'shared-block START marker missing');
   assert.ok(endIdx > startIdx, 'shared-block END marker missing or precedes START');
   const headerOnly = deExport(SRC.slice(0, endIdx));
-  const exportTail = 'return { STOP_REASONS, parseVoteVerdict, toScoredVote, voteId, remainingVotes, kFloorAtLeast, reducePooledVerdict };';
+  // W-1 (RE-PLAN-5): the allow-list ADDS ATTACK_MODES + attackModeForSeat so the seat-diversity test can
+  // reach them from the SHARED block slice (they are NOT reachable as-is without this).
+  const exportTail = 'return { STOP_REASONS, parseVoteVerdict, toScoredVote, voteId, remainingVotes, kFloorAtLeast, reducePooledVerdict, ATTACK_MODES, attackModeForSeat };';
   // eslint-disable-next-line no-new-func
   return new Function(`"use strict";\n${headerOnly}\n${exportTail}`)();
 }
@@ -225,6 +227,31 @@ test('reducePooledVerdict (I2): k votes -> ONE pooled per-claim record; ANY upho
   assert.throws(() => H.reducePooledVerdict('c4', [v('refuted'), v(null)]), /definite/, 'an abstain in the pool throws');
 });
 
+test('SEAT DIVERSITY (W-1, RE-PLAN-5): attackModeForSeat over k in [0..8] covers MULTIPLE distinct attack-modes (DISCRIMINATING vs a constant)', () => {
+  // The k=9 seats per claim each get a DISTINCT attack-mode from the pre-registered rotation -- "all k
+  // resisted" means resisted a BATTERY of distinct attacks, NOT k identical re-draws. DISCRIMINATING: a
+  // regression returning a constant (or always seat 0) would collapse the set to size 1 and fail.
+  const modes = [];
+
+  for (let k = 0; k <= 8; k += 1) {
+    modes.push(H.attackModeForSeat(k));
+  }
+
+  const distinct = new Set(modes);
+  assert.ok(distinct.size > 1, 'the k=9 seats cover MULTIPLE distinct attack-modes (not a constant)');
+  // With 7 rotation entries, k in [0..8] covers ALL 7 (the first 7 are distinct, then it wraps).
+  assert.equal(distinct.size, H.ATTACK_MODES.length, 'k in [0..8] covers every distinct attack-mode in the rotation');
+  // Deterministic seat k -> ATTACK_MODES[k % len].
+  assert.equal(H.attackModeForSeat(0), H.ATTACK_MODES[0], 'seat 0 -> the first mode');
+  assert.equal(H.attackModeForSeat(7), H.ATTACK_MODES[0], 'seat 7 wraps to the first mode (k % len)');
+  assert.equal(H.attackModeForSeat(8), H.ATTACK_MODES[1], 'seat 8 wraps to the second mode');
+  // The rotation includes the board's named seat-styles.
+  assert.ok(H.ATTACK_MODES.includes('factual-contradiction'), 'the rotation includes factual-contradiction');
+  assert.ok(H.ATTACK_MODES.includes('scope-causality-overclaim'), 'the rotation includes scope-causality-overclaim');
+  assert.ok(H.ATTACK_MODES.includes('source-provenance'), 'the rotation includes source-provenance');
+  assert.ok(H.ATTACK_MODES.length >= 7, 'at least 7 distinct modes so k=9 rotates with coverage');
+});
+
 // ===========================================================================
 // Orchestration: the real dispatch loop/fan-out, driven by scripted mock agents.
 // ===========================================================================
@@ -281,6 +308,54 @@ test('orchestration: a requested k below MIN_K is raised to the floor (tighten-o
   const result = await runWorkflow(agent, { seat: 'sonnet', claimUids: ['c1'], k: 2, packets: packetsFor(['c1'], 'exhausted') });
   assert.equal(result.k, 5, 'k=2 was raised to the MIN_K floor of 5');
   assert.equal(result.dispatched, 5);
+});
+
+test('orchestration: the DISPATCH DEFAULT k is 9 when args.k is unset (RE-PLAN-5; a DEFAULT change, NOT a MIN_K threshold change)', async () => {
+  // RE-PLAN-5: an UNSET k defaults to 9 (the board UNANIMOUS-2 default; picked ONCE here). DISCRIMINATING:
+  // a full-workflow runWorkflow with NO args.k reports K=9 (a regression to the old 5-default fails here).
+  const agent = async () => voteString('refuted');
+  const result = await runWorkflow(agent, { seat: 'sonnet', claimUids: ['c1'], packets: packetsFor(['c1'], 'exhausted') });
+  assert.equal(result.k, 9, 'an unset k DEFAULTS to 9 (the RE-PLAN-5 dispatch default)');
+  assert.equal(result.dispatched, 9, '9 votes dispatched for the one claim at the k=9 default');
+
+  // The frozen MIN_K floor is UNCHANGED -- an explicit k >= MIN_K is honored verbatim (this is a DEFAULT
+  // change, NOT a threshold change). kFloorAtLeast still admits any explicit k >= 5.
+  assert.equal(H.kFloorAtLeast(5, 5), 5, 'kFloorAtLeast(5,5) still yields 5 (MIN_K floor unchanged)');
+  assert.equal(H.kFloorAtLeast(11, 5), 11, 'kFloorAtLeast(11,5) still yields 11 (tighten-only, MIN_K unchanged)');
+
+  // An EXPLICIT k=5 is still honored verbatim (it is not silently bumped to the 9 default).
+  const explicit5 = await runWorkflow(agent, { seat: 'sonnet', claimUids: ['c1'], k: 5, packets: packetsFor(['c1'], 'exhausted') });
+  assert.equal(explicit5.k, 5, 'an explicit k=5 is honored verbatim (only an UNSET k defaults to 9)');
+});
+
+test('orchestration: positive controls are dispatched INDISTINGUISHABLY through the SAME prompt (the gold is never in the prompt; RE-PLAN-5)', async () => {
+  // A positive-control claim flows through the SAME Workflow + SAME voterPrompt as a refuted trap -- the
+  // dispatch is stratum-agnostic (it consumes claimUids + packets, never a stratum name or gold). The
+  // voter cannot tell a control from a trap. DISCRIMINATING: the prompt the agent receives contains the
+  // claim + evidence + attack-mode but NEVER the words "positive-control", "gold", "unrefuted-gold", or
+  // "refuted-gold" -- the gold label is invisible to the judge.
+  const prompts = [];
+  const agent = async (p) => {
+    prompts.push(p);
+    return voteString('unrefuted'); // the voter SHOULD uphold a control (scored downstream)
+  };
+
+  // 'ctrl-1' is a positive control; the dispatch treats it identically to any trap claimUid.
+  const result = await runWorkflow(agent, { seat: 'sonnet', claimUids: ['ctrl-1'], k: 5, packets: packetsFor(['ctrl-1'], 'exhausted') });
+  assert.equal(result.cast, 5, 'all 5 votes on the control are scored (same dispatch path as a trap)');
+
+  for (const p of prompts) {
+    // The PER-CLAIM gold/stratum is NEVER in the prompt: no stratum name (the dispatch is
+    // stratum-agnostic) and no gold-label leak. ("known-gold" in the eval's NAME is the eval description,
+    // not this claim's gold -- the assertion targets the per-claim leak vectors.)
+    assert.equal(/positive-control|evidence-absent|unrefuted-gold|refuted-gold|gold[ -]?(label|verdict)/i.test(p), false, 'the per-claim gold/stratum is NEVER in the prompt (the voter judges indistinguishably)');
+    // The prompt DOES carry the per-seat attack-mode (seat diversity applies to BOTH arms).
+    assert.match(p, /ATTACK MODE:/, 'the control prompt carries the per-seat attack-mode (seat diversity, both arms)');
+  }
+
+  for (const v of result.scoredVotes) {
+    assert.equal(v.verdict, 'unrefuted', 'the MODEL verdict on the control is the scored quantity (the voter upheld)');
+  }
 });
 
 test('orchestration: skip-already-done -- a vote already in doneIds is NOT re-cast (the mock agent is not invoked for it)', async () => {
@@ -578,8 +653,15 @@ test('workflow structural contract: meta present, marker block present, no stati
   assert.match(codeOnlyB, /i \+= MAX_IN_FLIGHT/, 'the fan-out is chunked by MAX_IN_FLIGHT (the cap is honored, not a phantom arg)');
   assert.ok(!/'vote'\s+in\s+raw/.test(codeOnlyB), "the {vote,trace}-object destructuring is REMOVED (no \"'vote' in raw\" in code)");
   assert.ok(!/'trace'\s+in\s+raw/.test(codeOnlyB), "the model-returned-trace assumption is REMOVED (no \"'trace' in raw\" in code)");
-  // The judge prompt inlines the supplied evidence packet (closed-book, no self-search).
-  assert.match(SRC, /voterPrompt\(item\.claimUid, item\.k, packet\.claimText, packet\.evidenceText\)/);
+  // The judge prompt inlines the supplied evidence packet (closed-book, no self-search) + the per-seat
+  // attack-mode (RE-PLAN-5 seat diversity).
+  assert.match(SRC, /voterPrompt\(item\.claimUid, item\.k, packet\.claimText, packet\.evidenceText, attackMode\)/);
+  // RE-PLAN-5: the ATTACK_MODES rotation + attackModeForSeat helper live INSIDE the SHARED block; the
+  // dispatch default k is 9. Scope these to CODE (strip line comments) so header prose does not false-trip.
+  const codeOnlyC = SRC.split(/\r?\n/).filter((l) => !/^\s*\/\//.test(l)).join('\n');
+  assert.match(codeOnlyC, /const ATTACK_MODES = \[/, 'the ATTACK_MODES rotation is defined in code');
+  assert.match(codeOnlyC, /function attackModeForSeat\(/, 'the attackModeForSeat helper is defined in code');
+  assert.match(codeOnlyC, /kFloorAtLeast\(Number\.isInteger\(A\.k\) \? A\.k : 9, 5\)/, 'the dispatch DEFAULT k is 9 (an unset k defaults to 9; the frozen MIN_K floor stays 5)');
 });
 
 test('prepass module structural contract: the sibling pre-pass is importable + composes the FROZEN spine, strictly ASCII', () => {
