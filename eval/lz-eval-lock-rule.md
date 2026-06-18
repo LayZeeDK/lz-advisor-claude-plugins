@@ -119,21 +119,25 @@ ships Sonnet-default.
 The offline known-gold trap set is built by these rules (19-RESEARCH.md lines 319-360); they are
 locked in this pre-registration so the construction cannot be tuned after a vote:
 
-1. **Two offline CLOSED-BOOK JUDGMENT-difficulty strata** -- buried (a decisive pre-cutoff in-corpus
-   disconfirmer ranked DEEP behind distractors) + evidence-absent (a one-step-overreach mutation whose
-   refutation is NOT in the KS; it retains the original unmutated SUPPORTING docs as plausible text -- a
-   genuine text-based temptation to false-uphold). The difficulty lives in CLOSED-BOOK JUDGMENT
-   (resist-uphold-on-absence for evidence-absent; distractor-attention / refuter-detection for buried),
-   NEVER claim subtlety (the subtlety axis is empirically proven saturated -- Haiku 0/30 == Sonnet 0/30)
-   and NEVER retrieval orchestration (which is not cleanly + leak-safely measurable offline -- the frozen
-   staticKsAdapter ignores the query -- and defers to the Phase-20 live operational shadow; see the
-   construct-scope boundary below).
-   **date-sensitive is DEFERRED to the Phase-20 live phase** (re-plan 19-04-REPLAN-DECISION-2 item 1):
-   its STRONGER arm (post-cutoff-doc leakage) is NOT constructible offline -- the static KS adapter
-   applies the FROZEN dateFilter BEFORE any voter sees a doc, so a post-cutoff "leak" is dropped
-   identically for both seats and neither can false-uphold from it. True date-sensitivity (and its
-   qualifying seeds) migrate to Phase-20, where the model controls retrieval and can actually face a
-   post-cutoff doc.
+1. **ONE offline CLOSED-BOOK JUDGMENT-difficulty stratum** -- evidence-absent (a one-step-overreach
+   mutation whose refutation is NOT in the KS; it retains the original unmutated SUPPORTING docs as
+   plausible text -- a genuine text-based temptation to false-uphold). The difficulty lives in CLOSED-BOOK
+   JUDGMENT (resist-uphold-on-absence), NEVER claim subtlety (the subtlety axis is empirically proven
+   saturated -- Haiku 0/30 == Sonnet 0/30) and NEVER retrieval orchestration (which is not cleanly +
+   leak-safely measurable offline -- the frozen staticKsAdapter ignores the query -- and defers to the
+   Phase-20 live operational shadow; see the construct-scope boundary below). evidence-absent is the SOLE
+   offline arm: the one genuinely-new failure mode vs the saturated Phase-18 subtle arm.
+   **buried is DROPPED ENTIRELY from the offline gate** (re-plan 19-04-REPLAN-DECISION-4, UNANIMOUS board
+   OPTION A; see "The buried-DROPPED rule" below): it is NOT validly + leak-safely constructible offline
+   (D-RP4-1, the synthetic disconfirmer flag is text-unverified, a FAKE construct) and the count-vs-rank
+   predicate error (D-RP4-2) mis-classified ALL 62 qualifying seeds as buried. Deep-refuter detection is
+   retrieval-adjacent / context-attention, deferred to the Phase-20 live shadow.
+   **date-sensitive is DEFERRED to the Phase-20 live phase** (re-plan 19-04-REPLAN-DECISION-2 item 1, now
+   alongside buried as a Phase-20-deferred construct): its STRONGER arm (post-cutoff-doc leakage) is NOT
+   constructible offline -- the static KS adapter applies the FROZEN dateFilter BEFORE any voter sees a
+   doc, so a post-cutoff "leak" is dropped identically for both seats and neither can false-uphold from
+   it. True date-sensitivity (and its qualifying seeds) migrate to Phase-20, where the model controls
+   retrieval and can actually face a post-cutoff doc.
 2. **No hand-authoring.** Mutate EXISTING AVeriTeC-dev Supported seeds via a one-step-overreach recipe
    (scope / causation / magnitude / certainty) so the gold flips to refuted. The mutation PROSE is
    produced by a GENERATOR OUTSIDE the Haiku/Sonnet voter families (A3, generator hygiene) -- the
@@ -214,17 +218,66 @@ leak the offline gate exists to prevent). So retrieval is NEVER silently assumed
 closed-book PASS NEVER certifies retrieval. This boundary is recorded BOTH here and in the run artifact
 (19-04-REPLAN-DECISION-3 item 4 + the lone-dissent reconciliation).
 
-## The buried-auto-drop rule (pre-registered)
+## The buried-DROPPED rule (construct-invalid offline; pre-registered, RE-PLAN-4)
 
-`evidence-absent` is the PRIMARY arm (resist-uphold-on-absence -- the one genuinely-new failure mode vs
-the saturated Phase-18 subtle arm). `buried` is AUTO-GATED: it is kept ONLY IF the assembler builds
-`>= perStratumFloor` (3) distinct buried claims with a decisive refuter at the build-gate rank
-(`>= BURIED_RANK_FLOOR` = 20) AND the Sonnet calibrator shows it discriminates; otherwise it AUTO-DROPS to
-evidence-absent-only (LOGGED in the run artifact + `attrition.buriedAutoDropped` with the reason -- never
-silent). At median-5 strictly-pre-cutoff docs/claim the deepest survivor rarely reaches rank 20, so buried
-will almost certainly fail-closed and drop. `buried` offline is acknowledged a context-attention /
-refuter-detection JUDGMENT test, NOT retrieval. The PRIMARY evidence-absent stratum FAILS CLOSED below the
-floor (a degenerate corpus); only buried auto-drops.
+`buried` is DROPPED ENTIRELY from the offline gate (NOT auto-gated, NOT auto-dropped at run time -- it is
+removed from the strata definition). `evidence-absent` is the SOLE offline arm (resist-uphold-on-absence
+-- the one genuinely-new failure mode vs the saturated Phase-18 subtle arm).
+
+WHY buried is dropped (UNANIMOUS cross-family board, 5/5, 19-04-REPLAN-DECISION-4):
+
+- **D-RP4-1 (construct-invalid offline):** `buried` is NOT validly + leak-safely constructible offline. The
+  synthetic `disconfirmer=true` flag on an arbitrary deep surviving doc is TEXT-UNVERIFIED -- the doc's
+  text almost never refutes the SPECIFIC mutated overreach, so a blind probe would reject most
+  synthetic-buried. It measures "is the voter fooled by a label with no real refuting evidence" -- a FAKE
+  construct. Deep-refuter detection is a retrieval-adjacent / context-attention property already DEFERRED to
+  the Phase-20 live shadow. Dropping buried does NOT materially weaken the gate (evidence-absent is the one
+  genuinely-new arm; the offline gate's legitimate job is JUDGMENT).
+
+evidence-absent is the SOLE offline arm; it FAILS CLOSED below the floor (a degenerate corpus) -- see "The
+gold-blind entailment validity probe" + "The strict-cutoff / no-date-shift / >=5-survivor rules" below.
+
+## The gold-blind entailment validity probe (the mandatory mitigation, load-bearing -- FATAL if omitted)
+
+Before any verify-vote, screen every candidate evidence-absent packet with a PRE-REGISTERED, GOLD-BLIND
+model judge (NO AVeriTeC label, NO mutation knowledge). It reads ONLY the date-filtered surviving SUPPORTING
+docs + the mutated OVERREACH claim and answers:
+
+  "Do these docs explicitly state OR directly ENTAIL the one-step OVERREACH, or only the weaker ORIGINAL
+   Supported claim?"
+
+- **DISQUALIFY** (drop; REPORT the count in `attrition.probeDropped`, never silently absorb) any packet
+  where the survivors plausibly entail/license the overreach -- there `unrefuted` is a legitimate read and
+  gold=refuted is indefensible (the same defect that killed buried: a fake false-uphold would invalidate
+  the gate).
+- **RETAIN** as valid gold=refuted ONLY packets whose survivors support the ORIGINAL claim but do NOT entail
+  the overreach (the overreach is unsupported-by-the-packet, not contradicted) -- exactly
+  resist-uphold-on-absence.
+
+The probe is GOLD-BLIND so it does NOT bootstrap the gold it validates (else it breaks closed-book). The
+retained-gold floor is `>= perStratumFloor` (3, matching the assembler); the RETAINED set < floor (AFTER the
+probe drops invalid packets) = a documented VOID (the corpus cannot honestly build the PRIMARY arm). NEVER
+tune the probe threshold toward a desired N (result-shopping) -- the floor is LOAD-BEARING, NOT a knob (board
+guardrail 5; D-RP4-3). The probe is brokered at run time as a model role (like generate + the voter); the
+assembler consumes it via the injected `validityProbe({trap, enrichedKs, stratum, decisiveRank})` at SCREEN
+2 (after the SCREEN-1 weak-verifier flip). The two unmeasured numbers that decide the outcome (N_retained;
+Sonnet's resist-uphold-on-absence rate over the retained set) are UNMEASURED until the Task-4 calibrator
+runs; if N_retained < 3 -> VOID.
+
+## The count-vs-rank predicate-error record (D-RP4-2) + the synthetic-disconfirmer finding (D-RP4-1)
+
+The RE-PLAN-3 assembler assigned the stratum by `isBuried = (INDEX of the deepest surviving doc in the
+0..99 KS list >= BURIED_RANK_FLOOR=20)`. This conflated survivor COUNT (median 5) with survivor
+RANK/position (0..99). Measured: the ~8.6% dated survivors scatter across positions 0..99 so the DEEPEST
+survivor index is almost always >= 20 (measured 97/97/96/80/76) -> ALL 62 qualifying seeds classified
+`buried`, ZERO `evidence-absent` -> the assembler HARD-THREW on the PRIMARY evidence-absent floor and the
+calibrator could not run. The committed RE-PLAN-3 pre-registration's `rank-20 burial is impossible at
+median-5` claim is empirically FALSE. This is the principled, capability-irrelevant basis for the
+amendment (the SECOND construct defect on this instrument; C1 -- the dispatch object/text return -- was
+the first). The synthetic-disconfirmer finding (D-RP4-1, above) is the companion: even where a deep
+survivor existed, flagging it `disconfirmer=true` is TEXT-UNVERIFIED and a blind probe would reject it.
+Re-pre-registration timing guardrail: this amendment is SOUND in the ZERO-VOTES window (no votes -> no
+result to shop); the corrected spec locks BEFORE any vote (board guardrail 1).
 
 ## The no-MCP-build decision + rationale (pre-registered)
 
@@ -257,9 +310,11 @@ does NOT certify retrieval. OFF-by-default + pre-committed rollback throughout.
 - **>=5 strictly-pre-cutoff surviving docs per seed.** A seed with fewer than 5 surviving dated docs is
   EXCLUDED (else `min-not-met` silently changes the trap). Per-stratum attrition is recorded in the run
   artifact.
-- **>=3 distinct surviving claims per stratum.** Each offline stratum (buried + evidence-absent) must
-  reach at least 3 distinct claims so the pooled `nPooled >= reliableTrials = 15` holds at `k = 5`; the
-  assembler FAILS CLOSED otherwise.
+- **>=3 RETAINED distinct surviving claims (the SINGLE evidence-absent stratum).** The SOLE offline
+  stratum (evidence-absent) must reach at least 3 distinct claims AFTER the gold-blind entailment probe
+  drops invalid packets, so the pooled `nPooled >= reliableTrials = 15` holds at `k = 5`; the assembler
+  FAILS CLOSED otherwise (the RETAINED set < floor = the documented VOID condition, the floor is
+  load-bearing, never relaxed).
 - **Deterministic seed selection.** ALL qualifying Supported seeds by ASCENDING `claim_id` (no
   hand-picking -- anti result-shopping, T-19-15).
 

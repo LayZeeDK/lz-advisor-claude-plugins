@@ -490,19 +490,16 @@ test('EVAL-01 AVeriTeC open-book DRIFT GATE: every AVeriTeC uid is covered AND t
   // No duplicate AVeriTeC uids (loadManifest already fails closed on dupes; assert here too).
   assert.equal(new Set(avtUids).size, avtUids.length, 'AVeriTeC uids are unique');
 
-  // (b) STRATA DISCRIMINATE: the open-book rows span EXACTLY the two OFFLINE CLOSED-BOOK
-  // JUDGMENT-difficulty strata (buried + evidence-absent) so the set is not a single-stratum
-  // (non-discriminating) sample. date-sensitive is DEFERRED to the Phase-20 live phase (re-plan
-  // 19-04-REPLAN-DECISION-3 item 4): its post-cutoff-leak arm is unobservable offline, so NO
-  // date-sensitive example row is assembled. (W-1: the difficulty axis is closed-book judgment, NOT
-  // retrieval orchestration; the stratum NAMES are unchanged, so the guards below are intact.)
+  // (b) THE SINGLE OFFLINE STRATUM (RE-PLAN-4): the open-book rows span EXACTLY the ONE offline
+  // CLOSED-BOOK JUDGMENT-difficulty stratum (evidence-absent). buried is DROPPED from the offline gate
+  // (construct-invalid offline, 19-04-REPLAN-DECISION-4 D-RP4-1) and date-sensitive is DEFERRED -- both
+  // to the Phase-20 live shadow, so NO buried + NO date-sensitive example rows are assembled. (The
+  // uid-coverage / no-text / recipe guards above + below are intact; only the membership flips.)
   const strata = new Set(avtRows.map((e) => e.stratum));
 
-  for (const s of ['buried', 'evidence-absent']) {
-    assert.ok(strata.has(s), 'the AVeriTeC open-book set includes the ' + s + ' offline stratum');
-  }
-
-  assert.equal(strata.size, 2, 'EXACTLY the two offline strata {buried, evidence-absent}; date-sensitive deferred to Phase-20 live');
+  assert.ok(strata.has('evidence-absent'), 'the AVeriTeC open-book set includes the evidence-absent offline stratum');
+  assert.equal(strata.size, 1, 'EXACTLY the single offline stratum {evidence-absent}; buried DROPPED + date-sensitive DEFERRED to Phase-20 live');
+  assert.equal(strata.has('buried'), false, 'no buried example row is assembled in the offline gate (DROPPED -- construct-invalid offline, D-RP4-1)');
   assert.equal(strata.has('date-sensitive'), false, 'no date-sensitive example row is assembled in the offline gate (deferred to Phase-20)');
 });
 
