@@ -35,6 +35,7 @@ import jStatPkg from 'jstat';
 
 import {
   clopperPearsonUpper,
+  clopperPearsonUpperOneSided,
   wilsonUpper,
   passAtK,
   passHatK,
@@ -131,6 +132,92 @@ test('hardening: the stats helpers fail closed on degenerate-arithmetic inputs x
   // x>n / c>n only, it does not over-fire on n===0 or c===n).
   assert.equal(clopperPearsonUpper(3, 0), 1, 'CP(x,0)=1 preserved (n===0 short-circuits before the x>n guard)');
   assert.equal(passAtK(15, 15, 5), 1, 'passAtK(n,n,k)=1 preserved (c===n is valid)');
+});
+
+// ---------------------------------------------------------------------------
+// Plan 19-04 / Task 1 (RE-PLAN-7, F1+F2): the ONE-SIDED Clopper-Pearson upper helper +
+// the 2 new TAU keys + the N floors. The one-sided form is the F2-pinned 95% upper convention
+// (a one-directional ceiling) the ABSOLUTE per-model gate reads; the two-sided clopperPearsonUpper
+// stays byte-unchanged as the recorded run-artifact LABEL for the carried relative read.
+// ---------------------------------------------------------------------------
+
+test('Task-1 clopperPearsonUpperOneSided is library-wired ONE-SIDED 95% upper (DISCRIMINATING vs two-sided; verified anchors)', () => {
+  // The one-sided helper is jStat.beta.inv(1 - alpha, x+1, n-x) (the 0.95 quantile), NOT the
+  // two-sided 1 - alpha/2 (0.975) quantile. DISCRIMINATING: at (0,18) one-sided ~= 0.1533 while
+  // two-sided ~= 0.1853 -- a regression that delegates to clopperPearsonUpper (two-sided) FAILS here.
+  assert.ok(
+    Math.abs(clopperPearsonUpperOneSided(0, 18) - 0.15332) < 1e-4,
+    'CP1s(0,18) must be within 1e-4 of 0.15332 (verified one-sided)',
+  );
+  assert.ok(
+    Math.abs(clopperPearsonUpper(0, 18) - 0.18530) < 1e-4,
+    'CP2s(0,18) (the two-sided form) is ~0.18530 -- byte-unchanged',
+  );
+  assert.ok(
+    clopperPearsonUpperOneSided(0, 18) < clopperPearsonUpper(0, 18),
+    'the one-sided upper must be STRICTLY below the two-sided upper at the same (x,n) -- the conventions differ',
+  );
+
+  // The verified one-sided anchors used by the F1/F2 bracket check + the per-model gate.
+  assert.ok(Math.abs(clopperPearsonUpperOneSided(0, 24) - 0.11735) < 1e-4, 'CP1s(0,24) ~= 0.11735');
+  assert.ok(Math.abs(clopperPearsonUpperOneSided(0, 36) - 0.07985) < 1e-4, 'CP1s(0,36) ~= 0.07985');
+  assert.ok(Math.abs(clopperPearsonUpperOneSided(1, 46) - 0.09902) < 1e-4, 'CP1s(1,46) ~= 0.09902');
+});
+
+test('Task-1 clopperPearsonUpperOneSided degenerate boundaries match the two-sided form (n===0 -> 1; x===n -> 1; x>n THROWS)', () => {
+  assert.equal(clopperPearsonUpperOneSided(0, 0), 1, 'CP1s(x,0) === 1 (zero trials -> no information)');
+  assert.equal(clopperPearsonUpperOneSided(3, 0), 1, 'CP1s(x,0) === 1 regardless of x');
+  assert.equal(clopperPearsonUpperOneSided(15, 15), 1, 'CP1s(n,n) === 1');
+  assert.throws(
+    () => clopperPearsonUpperOneSided(5, 3),
+    (e) => e.name === 'ContractError',
+    'CP1s(x>n) fails closed (mirrors clopperPearsonUpper)',
+  );
+});
+
+test('Task-1 EVAL_THRESHOLDS gains TAU_FU/TAU_OR + N floors; the EXISTING numbers are byte-UNCHANGED', () => {
+  // The 4 new keys are present at their locked values.
+  assert.equal(EVAL_THRESHOLDS.TAU_FU, 0.10, 'TAU_FU pinned at 0.10 (decision #1, the false-uphold SCREEN bar)');
+  assert.equal(EVAL_THRESHOLDS.TAU_OR, 0.15, 'TAU_OR pinned at 0.15 (the over-refusal bar)');
+  assert.equal(EVAL_THRESHOLDS.N_TRAP_FLOOR, 36, 'N_TRAP_FLOOR pinned at 36 (the 0-miss TAU_FU floor)');
+  assert.equal(EVAL_THRESHOLDS.N_CTRL_FLOOR, 24, 'N_CTRL_FLOOR pinned at 24 (the F1-corrected control floor)');
+
+  // DISCRIMINATING: every EXISTING number is byte-unchanged (a regression altering any one fails).
+  assert.equal(EVAL_THRESHOLDS.ALPHA, 0.05, 'ALPHA byte-unchanged');
+  assert.equal(EVAL_THRESHOLDS.RELIABLE_TRIALS, 15, 'RELIABLE_TRIALS byte-unchanged');
+  assert.equal(EVAL_THRESHOLDS.MIN_K, 5, 'MIN_K byte-unchanged');
+  assert.equal(EVAL_THRESHOLDS.ESCALATION_KILL_LOW, 0.4, 'ESCALATION_KILL_LOW byte-unchanged');
+  assert.equal(EVAL_THRESHOLDS.ESCALATION_KILL_HIGH, 0.5, 'ESCALATION_KILL_HIGH byte-unchanged');
+  assert.equal(EVAL_THRESHOLDS.DELTA_UPPER_MAX, 0.25, 'DELTA_UPPER_MAX byte-unchanged');
+  assert.equal(EVAL_THRESHOLDS.STRATA.SUPPORTED_FRACTION, 0.4, 'STRATA.SUPPORTED_FRACTION byte-unchanged');
+  assert.equal(EVAL_THRESHOLDS.STRATA.BAD_FRACTION, 0.6, 'STRATA.BAD_FRACTION byte-unchanged');
+  assert.equal(EVAL_THRESHOLDS.STRATA.SUBTLE_FRACTION_OF_BAD, 0.5, 'STRATA.SUBTLE_FRACTION_OF_BAD byte-unchanged');
+  assert.equal(Object.isFrozen(EVAL_THRESHOLDS), true, 'EVAL_THRESHOLDS stays frozen');
+});
+
+test('Task-1 bracket anchors verified against the engine ONE-SIDED (F1: old floor 18 fails; 24 holds; F2: 0-miss trap floor 36 holds)', () => {
+  // F1 -- the corrected N_ctrl floor: CP1s(0,24) <= TAU_OR (0.1173 <= 0.15) holds; CP1s(0,18) > TAU_OR
+  // (0.1533 > 0.15) -- the OLD floor 18 is mathematically broken under one-sided (a PERFECT 0/18 arm fails).
+  assert.ok(
+    clopperPearsonUpperOneSided(0, EVAL_THRESHOLDS.N_CTRL_FLOOR) <= EVAL_THRESHOLDS.TAU_OR,
+    'CP1s(0, N_CTRL_FLOOR=24) <= TAU_OR (0.15) -- the corrected floor holds',
+  );
+  assert.ok(
+    clopperPearsonUpperOneSided(0, 18) > EVAL_THRESHOLDS.TAU_OR,
+    'CP1s(0,18) > TAU_OR (0.15) -- the OLD floor 18 mathematically FAILS (F1)',
+  );
+
+  // F2 -- the 0-miss trap floor: CP1s(0,36) <= TAU_FU (0.0798 <= 0.10) holds.
+  assert.ok(
+    clopperPearsonUpperOneSided(0, EVAL_THRESHOLDS.N_TRAP_FLOOR) <= EVAL_THRESHOLDS.TAU_FU,
+    'CP1s(0, N_TRAP_FLOOR=36) <= TAU_FU (0.10) -- the 0-miss trap floor holds',
+  );
+
+  // A 1-miss trap arm needs N_trap >= 46 to certify WORKS at TAU_FU (CP1s(1,46)=0.0990 <= 0.10).
+  assert.ok(
+    clopperPearsonUpperOneSided(1, 46) <= EVAL_THRESHOLDS.TAU_FU,
+    'CP1s(1,46) <= TAU_FU -- a 1-miss arm needs N_trap >= 46',
+  );
 });
 
 // ---------------------------------------------------------------------------

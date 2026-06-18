@@ -67,6 +67,22 @@ const { jStat } = jStatPkg;
 // STRATA             : the EVAL-01 sampling fractions (~40% supported / ~60% bad, ~half the bad
 //                      SUBTLE) -- carried here as the frozen contract; the loader (Plan 18-04)
 //                      stratifies to them.
+//
+// --- Plan 19-04 / Task 1 (RE-PLAN-7) ADD-ONLY keys (the EXISTING numbers above are byte-unchanged) ---
+// TAU_FU             : the ABSOLUTE per-model FALSE-UPHOLD SCREEN bar (decision #1). ESTIMAND A PASSES iff
+//                      clopperPearsonUpperOneSided(falseUpholds, N_trap) <= TAU_FU. The stricter 0.06 is
+//                      NOT adopted (zero-tolerant + hostage to the feasibility risk); 0.10-as-SCREEN is
+//                      honest given Sonnet-default ships + the Phase-20 live shadow is the REAL gate.
+// TAU_OR             : the ABSOLUTE per-model OVER-REFUSAL bar (the F1 always-refute detector). ESTIMAND B
+//                      PASSES iff clopperPearsonUpperOneSided(overRefusals, N_ctrl) <= TAU_OR.
+// N_TRAP_FLOOR       : the 0-miss trap-arm power floor where a CLEAN arm certifies WORKS at TAU_FU under the
+//                      ONE-SIDED CP -- CP1s(0,36)=0.0798 <= 0.10. A model with >=1 false-uphold needs
+//                      N_trap >= 46 to certify WORKS (CP1s(1,46)=0.0990 <= 0.10). Below this -> VOID-on-power.
+// N_CTRL_FLOOR       : the F1-corrected control-arm power floor -- CP1s(0,24)=0.1173 <= 0.15 holds, while the
+//                      OLD floor 18 is mathematically broken (CP1s(0,18)=0.1533 > 0.15 -- a PERFECT 0/18 arm
+//                      would FAIL). Target 30 for 1-miss slack (CP1s(1,30)=0.1486 <= 0.15). Below this ->
+//                      VOID-on-power. These floors are enforced at certifyModel's VOID-on-power gate, NEVER
+//                      as the assembler build-floor (which stays 3/3 -- the two sites differ by design, W2/W3).
 export const EVAL_THRESHOLDS = Object.freeze({
   ALPHA: 0.05,
   RELIABLE_TRIALS: 15,
@@ -79,6 +95,10 @@ export const EVAL_THRESHOLDS = Object.freeze({
     BAD_FRACTION: 0.6,
     SUBTLE_FRACTION_OF_BAD: 0.5,
   }),
+  TAU_FU: 0.10,
+  TAU_OR: 0.15,
+  N_TRAP_FLOOR: 36,
+  N_CTRL_FLOOR: 24,
 });
 
 // ---------------------------------------------------------------------------
@@ -107,6 +127,30 @@ export function clopperPearsonUpper(x, n, alpha = EVAL_THRESHOLDS.ALPHA) {
   }
 
   return jStat.beta.inv(1 - alpha / 2, x + 1, n - x);
+}
+
+// Plan 19-04 / Task 1 (RE-PLAN-7, F2): the ONE-SIDED Clopper-Pearson upper bound =
+// Beta^{-1}(1 - alpha ; x + 1, n - x) -- the F2-pinned 95% upper convention (the 0.95 quantile, NOT the
+// two-sided 0.975 quantile) for the ABSOLUTE per-model gate. A one-directional ceiling is the correct
+// convention for a one-sided "is the rate at or below TAU" decision: certifyModel reads PASS_A iff
+// CP1s(x_FU, N_trap) <= TAU_FU and PASS_B iff CP1s(x_OR, N_ctrl) <= TAU_OR. The TWO-SIDED
+// clopperPearsonUpper above stays byte-unchanged as the recorded run-artifact LABEL for the carried
+// relative read; both coexist -- the absolute gate uses THIS one-sided form. Same degenerate-boundary
+// guards as clopperPearsonUpper (n === 0 -> 1; x > n THROWS; x === n -> 1).
+export function clopperPearsonUpperOneSided(x, n, alpha = EVAL_THRESHOLDS.ALPHA) {
+  if (n === 0) {
+    return 1; // zero trials -> no information -> 1, regardless of x.
+  }
+
+  if (x > n) {
+    throw new ContractError('clopperPearsonUpperOneSided requires x <= n when n > 0: x=' + JSON.stringify(x) + ' n=' + JSON.stringify(n), 'clopperPearsonUpperOneSided');
+  }
+
+  if (x === n) {
+    return 1;
+  }
+
+  return jStat.beta.inv(1 - alpha, x + 1, n - x);
 }
 
 // Wilson score UPPER bound (the alternative interval per D-07), composed from jStat.normal.inv -- no
