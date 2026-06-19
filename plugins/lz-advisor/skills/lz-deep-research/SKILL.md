@@ -41,7 +41,8 @@ and the two assurances), see:
 
 @${CLAUDE_PLUGIN_ROOT}/references/lz-deep-research-schema.md
 
-The Anthropic first-party API is the platform FLOOR. Do not branch on any
+The first-party Claude Code runtime (Anthropic-backed) is the platform FLOOR; this
+skill orchestrates via the Agent tool, never direct API calls. Do not branch on any
 cloud-provider deployment and do not add provider-specific degradation paths
 anywhere in this workflow.
 

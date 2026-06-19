@@ -45,7 +45,7 @@ Requirements for the v2.1.0 milestone. Each maps to exactly one roadmap phase.
 - [ ] **COST-01**: The Opus `advisor` is consulted read-only at exactly two gates (ranking cut-line; final synthesis / calibration), over bounded curated JSON only.
 - [ ] **COST-02**: Verification voters default to Sonnet (inside the "Sonnet cost" budget); a Haiku-first Tier-1 voter exists as a config flag that is OFF until the gating eval (EVAL-*) clears it.
 - [ ] **COST-03**: Subagent fan-out is wave-batched at no more than five in-flight per wave (search, fetch, verify), to avoid the disk-I/O storm and the silent ~10-concurrent platform cap.
-- [ ] **COST-04**: The skill targets the Anthropic first-party API as its supported platform floor; Bedrock / Vertex / Foundry are out of scope (no degradation paths built).
+- [ ] **COST-04**: The skill targets the first-party Claude Code runtime (Anthropic-backed) as its supported platform floor -- it orchestrates via the Agent tool, not direct API calls; Bedrock / Vertex / Foundry are out of scope (no degradation paths built).
 
 ### Verifier gating eval (EVAL)
 
