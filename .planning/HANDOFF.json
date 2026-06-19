@@ -1,0 +1,37 @@
+{
+  "version": "1.0",
+  "timestamp": "2026-06-19T23:27:22.245Z",
+  "phase": "20",
+  "phase_name": "orchestrator-skill-headless-scale-confirmation",
+  "phase_dir": ".planning/phases/20-orchestrator-skill-headless-scale-confirmation",
+  "plan": 5,
+  "task": 1,
+  "total_tasks": 3,
+  "status": "paused",
+  "completed_tasks": [
+    {"id": "20-01", "name": "aggregator load_bearing/escalate extension", "status": "done", "commit": "72faf08"},
+    {"id": "20-02", "name": "live-cert harness no-spend build + lock rule", "status": "done", "commit": "c46cf86"},
+    {"id": "20-03", "name": "lz-deep-research orchestrator SKILL.md + reference", "status": "done", "commit": "a4e1b2d"},
+    {"id": "20-04", "name": "INTEG-01/02 + SC-5 headless spike (D-13 5/5 PASS)", "status": "done", "commit": "d849417"},
+    {"id": "20-05-wiring", "name": "no-spend transport wiring (scorer + callOof Copilot + driver protocol + 27/27 tests)", "status": "done", "commit": "c5ab2ff"}
+  ],
+  "remaining_tasks": [
+    {"id": "20-05-stage0", "name": "Stage 0 harvest feasibility probe (D-19): run shipping skill on curated questions, confirm >=30 dense/contested SUPPORTED claims across two un-pooled arms, else RAISE", "status": "not_started", "spend": "session pool (skill runs)"},
+    {"id": "20-05-stage1", "name": "Stage 1 [HUMAN BLOCK]: freeze N + commit lock rule BEFORE any scored vote, then user go/no-go (freeze-and-authorize OR defer-spend)", "status": "not_started", "spend": "authorization gate"},
+    {"id": "20-05-stage2-3", "name": "Stage 2/3 scored dual-run (CHEAP haiku + STRONG sonnet voters) + OOF adjudication + unanimous-uphold audit -> certifyModel/decisionMatrix verdict (WORKS or settle-OR-raise)", "status": "not_started", "spend": "session-pool Claude voters + metered Copilot OOF Credits"}
+  ],
+  "blockers": [
+    {"description": "20-05 is a real, staged, human-authorized BLOCKING spend; deliberately deferred to a fresh budget window (this session is a heavy consumer this rate window: $29 SC-5 spike + history)", "type": "external", "workaround": "resume in a fresh 5-hour window; Sonnet-default ships regardless (D-01/D-06)"}
+  ],
+  "human_actions_pending": [
+    {"action": "Stage 1 freeze-and-authorize go/no-go for the live-cert spend", "context": "session-pool Claude voter spend + metered Copilot AI Credits (OOF); the user must authorize directly -- relayed/coordinator auth is NOT honored", "blocking": true}
+  ],
+  "decisions": [
+    {"decision": "D-20: live-cert callVoter = Agent sub-agents (Phase-18 haiku CHEAP / sonnet STRONG voter agents); NEVER the Anthropic API, NEVER claude -p; callOof = Copilot CLI; node scorer reads persisted votes", "rationale": "user directives (never use the Anthropic API; the skill uses agents only); the Agent tool is unavailable to a bare node process so voting is session-driven and the node engine scores from disk", "phase": "20"},
+    {"decision": "Built the 20-05 transport wiring as a no-spend pre-step, then paused before any spend stage", "rationale": "front-load the no-spend scaffolding so the fresh-window spend run is turnkey; the plan had no discrete wiring task", "phase": "20"},
+    {"decision": "Defer the live-cert spend to a fresh budget window", "rationale": "heavy-consumer rate window; Sonnet-default ships regardless; defer is the plan's pre-sanctioned Stage-1 option", "phase": "20"}
+  ],
+  "uncommitted_files": [],
+  "next_action": "In a FRESH session/budget window, run 20-05 SESSION-DRIVEN: follow eval/lz-eval-live-cert-driver.md -- callVoter = Agent sub-agents (model haiku CHEAP / model sonnet STRONG), callOof = Copilot CLI, LZ_SPEND=1 gates each stage. Start with Stage 0 (harvest feasibility, D-19). Keep run-id slugs + cluster ids ':'-free (vote-store filename constraint). Stop at Stage 1 [HUMAN BLOCK] for the user's direct go/no-go.",
+  "context_notes": "Phase 20 is 4/5 complete + the 20-05 no-spend wiring is built and committed (27/27 tests, frozen seams byte-identical). Only the staged spend remains. Caveats to carry: (1) persistVote/safeId cannot store ':' in uids on Windows -- spend-time run-id slugs + cluster ids MUST be ':'-free. (2) Optional pending wording: COST-04 (REQUIREMENTS) + SKILL.md:44 say 'Anthropic first-party API is the platform FLOOR' -> reword 'API' to 'Claude Code runtime/platform' for Directive-1 consistency (behavior unchanged). (3) Minor unused-import LSP nits in eval/lz-eval-live-cert.mjs for the code-review gate to tidy. Spend authorization needs the USER's direct message -- both the executor and the auto-mode classifier refused relayed authorization this session (correctly)."
+}
