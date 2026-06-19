@@ -47,7 +47,51 @@
     "wice_closed_book_trap_arm": "RE-PLAN-7 W1/F7 (NET-NEW). The WiCE CLOSED-BOOK trap+control arm (eval/lz-eval-wice-traps.mjs, assembleWiceTraps) carries the trap BULK -- it is closed-book-NATIVE and CANNOT run the AVeriTeC dateFilter / >=5-survivor / staticKsAdapter pipeline (WiCE has no dated-URL KS; book:'closed'). It REUSES the committed Phase-18 vendored WiCE data (eval/__fixtures__/wice-vendored/records) + loader (remapLabel: supported->unrefuted / partially_supported|not_supported->refuted). A WiCE TRAP = { claim + its GIVEN closed-book evidence + the human partially_supported|not_supported label -> gold=refuted }; a WiCE CONTROL = { supported -> gold=unrefuted }. It is screened by the SAME OUT-OF-FAMILY all-agree consensus + the F5 difficulty/covariate floors + F6 cluster independence; its rows are recipe-not-text + license-clean (WiCE ODC-BY/MIT). The AVeriTeC date-filtered EVIDENCE-ABSENT trap stays a SEPARATE stratum with its own build-floor. The trap arm is predominantly WiCE (the dataset-test 'trap arm predominantly WiCE' assertion is wired to THIS real WiCE-native path, NOT a non-existent WiCE-through-AVeriTeC path).",
     "floor_site_split": "RE-PLAN-7 W2/W3. TWO floor sites of intentionally different magnitudes: (1) the assembler BUILD-FLOOR default stays perStratumFloor:3 / positiveControlFloor:3 ('can we even build an arm'); (2) the adequacy POWER-FLOOR (N_TRAP_FLOOR=36 / N_CTRL_FLOOR=24) is enforced ONLY at certifyModel's VOID-on-power gate (Task 2) + the Task-4 N-freeze, NEVER as the assembler default. certifyModel is the AUTHORITATIVE power gate. A regression that raised the assembler default to 36/24 would break the carried 3-trap build tests.",
     "prompt_fairness_gate": "RE-PLAN-7 W4 + the ATTACK-7 resolution (pre-registered BEFORE any vote, load-bearing for the Haiku verdict). A prompt-sensitivity step runs on a HELD-OUT TUNING SPLIT (a disjoint slice of the corpus that is NEVER scored -- carved BEFORE the N-freeze; the tuning-split uids are recorded here and are DISJOINT from the scored-set uids). For EACH model a 2nd reasonable prompt variant is run over the tuning split and compared to the primary prompt. LOCKED RULE: a DOES-NOT-WORK verdict for ANY model (load-bearing for Haiku) CANNOT be finalized until this fairness check clears -- i.e. confirms the failure is the MODEL, not the prompt (the primary prompt is not anomalously weak vs the 2nd variant on the tuning split). A NEW Haiku deep-research pass is triggered ONLY IF the check shows the current Haiku prompt is weak (the operator's 'exhaust all reasonable options before abandoning Haiku'). The fairness check is run at the Task-4 settle (T-spend-2) and NEVER touches the scored set (no contamination).",
-    "screen_not_certificate_framing": "RE-PLAN-7 F4/F9 (load-bearing). This is a closed-book SCREEN feeding the Phase-20 live shadow, NOT a ship certificate. The decision-matrix cells read 'clears the closed-book SCREEN', NEVER 'WORKS=production-safe'. An offline PASS NEVER auto-flips Haiku ON; retrieval + end-to-end + the actual flip DEFER to Phase-20 by name; Sonnet-default ships in EVERY case. If the build team ever treats an offline 'both work' as a ship green-light the verdict flips to REDESIGN -- the framing is load-bearing."
+    "screen_not_certificate_framing": "RE-PLAN-7 F4/F9 (load-bearing). This is a closed-book SCREEN feeding the Phase-20 live shadow, NOT a ship certificate. The decision-matrix cells read 'clears the closed-book SCREEN', NEVER 'WORKS=production-safe'. An offline PASS NEVER auto-flips Haiku ON; retrieval + end-to-end + the actual flip DEFER to Phase-20 by name; Sonnet-default ships in EVERY case. If the build team ever treats an offline 'both work' as a ship green-light the verdict flips to REDESIGN -- the framing is load-bearing.",
+    "oof_bulk_batching": {
+      "note": "RE-PLAN-8 DP1-DP3 (ADDITIVE, board-converged; UNFROZEN operational latitude -- no primitive amendment). The OUT-OF-FAMILY gold-screen consults are BULK-BATCHED to cut ~260-290 per-packet Copilot calls (dominated by a measured ~21k fixed input-token overhead per call) to ~35-40 batched calls (~85% off). The batched adapter (eval/lz-eval-oof-batch.mjs makeBatchedOofProbe) returns ONE element per OOF model for the EXISTING runProbeConsensus probes array -- the gating consensus logic is UNCHANGED. The OOF gold-decider identity (gpt-5.5 + gemini-3.1-pro-preview, --effort high) is byte-identical. The expected direction (trap=false/control=true) + the per-packet expectedEntailment stay in the parser/consensus, NEVER in the prompt (the prompt is the gold-blind entailment rubric).",
+      "batch_size": 8,
+      "hard_cap": 10,
+      "hard_near_boundary_batch": 6,
+      "opaque_non_ordinal_ids": true,
+      "per_call_per_model_order_reshuffle": true,
+      "recorded_seed": true,
+      "json_array_output_via_score_mjs_slice": true,
+      "fail_closed_to_drop": "a per-packet defect (missing/extra/duplicate id, non-boolean entails, truncation, or a batch-level summary) -> that packet UNRESOLVED = a probe-decline = counted in attrition.probeDropped; NEVER a fabricated retain",
+      "whole_batch_rerun_once_then_split": true
+    },
+    "contamination_gate": {
+      "note": "RE-PLAN-8 DP4 (ADDITIVE). Run ONCE at T-spend-1 BEFORE trusting bulk: exact single-vs-batched entails agreement PER MODEL on a 12-packet hardest slice, INCLUDING one reversed-order variant; record the agreement rate. 11/12=91.7% tolerates one benign near-determinism flip; 100% would false-trip. No separate distractor check (order robustness is otherwise covered by the pilot's k=5 reshuffles). runContaminationGate returns { agreement, pass, directive }.",
+      "threshold": "11/12",
+      "reversed_order_variant": true,
+      "on_fail": "batch size 5 + re-validate"
+    },
+    "cheaper_model_pilot": {
+      "note": "RE-PLAN-8 DP7-DP9 (ADDITIVE; operator decision 1 -- run it as PART of T-spend-1). A SEPARATE NON-GATING pilot (eval/lz-eval-cheaper-pilot.mjs runCheaperPilot) over the gold candidates; its output NEVER enters the retain AND. The reference label is the FROZEN-PAIR all-agree consensus on the sampled packets; k=5 by order reshuffle (the recorded seed). The pilot informs a future cost amendment; it does NOT change the gold (the gold N_trap/N_ctrl freeze is computed ONLY from the gating frozen-pair screen + the F5/F6 floors).",
+      "n": 66,
+      "n_trap": 36,
+      "n_ctrl": 30,
+      "hard_near_boundary_traps": ">=18 incl. more-than-doubled",
+      "k": 5,
+      "reshuffle": true,
+      "measured_models": ["gpt-5-mini", "gemini-3.5-flash", "gpt-5.4-mini"],
+      "frozen_pair_anchor": ["gpt-5.5", "gemini-3.1-pro-preview"],
+      "statistic": "one-sided CP per-arm packet counts (false-accepts/36 traps; false-vetoes/30 controls), NOT n*k (Pitfall 3)",
+      "thresholds": {
+        "diagnostic_annotator": "self-consistency >= 95% AND frozen-pair agreement >= 60/66",
+        "pre_filter": "frozen-pair agreement >= 62/66 AND zero false-accepts on the 36 traps (only if ever membership-neutral, DP5)",
+        "decider": "AMENDMENT-ONLY: 0 false-accepts on the 36 traps (CP1s(0,36)=0.0798<=0.10; one fails) AND control-arm CP1s(falseVetoes,30)<=0.15 AND <=1 k=5 self-split AND frozen-pair agreement >= 62/66"
+      },
+      "gating": false
+    },
+    "k1_stability_certificate": {
+      "note": "RE-PLAN-8 DP10 (ADDITIVE; operator decision 2 -- adopt the k=1 lever).",
+      "rule": "frozen-pair 100% self-consistent across the pilot k=5 -> main gold-screen k=1; gating-stability only; per-voter k=9 arm UNCHANGED"
+    },
+    "cheaper_as_decider_not_adopted": {
+      "value": true,
+      "note": "amendment-only -- DP6: the cheapest pair after batching saves only ~$2 vs the frozen pair batched at a family-independence/validity cost; the frozen pair (gpt-5.5 + gemini-3.1-pro-preview, --effort high) remains the SOLE gating retain decider; bulk-batching is the ONLY operational change."
+    }
   },
   "strata": {
     "supported": {

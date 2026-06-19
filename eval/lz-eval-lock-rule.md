@@ -584,3 +584,91 @@ outcome decided before this engine runs -- see the saturation pre-condition abov
 Abort the eval early ONLY on a clear FAIL (a non-zero excess false-uphold or escalation above the
 kill band at any stage). For any provisional PASS, escalate the SUBTLE subset to reliable = 15 before
 declaring PASS.
+
+## RE-PLAN-8 (board-converged; ADDITIVE, re-registered in the ZERO-VOTES window)
+
+RE-PLAN-8 is an ADDITIVE re-plan (a 4-round cross-family advisor board -- Opus in-family + GPT-5.5 +
+Gemini-3.1-pro-preview out-of-family via the Copilot CLI, all --effort high, UNANIMOUS on the 10 design
+decisions DP1-DP10, facts only; 19-04-REPLAN-DECISION-8.md). It CARRIES every RE-PLAN-7 section above
+BYTE-IDENTICAL and ADDS the sections below. NO FROZEN PRIMITIVE CHANGES: the OOF gold-decider identity
+(gpt-5.5 + gemini-3.1-pro-preview, --effort high), the all-agree retain rule, gold-blindness, the
+strictness rubric, the EXISTING EVAL_THRESHOLDS numbers, URL_DATE_RULE, the Phase-17 schema, and
+clopperPearsonUpperOneSided all stay BYTE-IDENTICAL. Bulk-batching (DP1-DP4) is UNFROZEN operational
+latitude (no primitive amendment); making a cheaper model the DECIDER stays amendment-only and is NOT
+adopted.
+
+### The OOF bulk-batching operational note (DP1-DP4)
+
+The OUT-OF-FAMILY gold-screen consults are BULK-BATCHED to cut the ~260-290 per-packet Copilot calls
+(dominated by a measured ~21k fixed input-token overhead per call) to ~35-40 batched calls (~85% off).
+The batched adapter (eval/lz-eval-oof-batch.mjs makeBatchedOofProbe) returns ONE element per OOF model
+for the EXISTING runProbeConsensus probes array -- the gating consensus logic is UNCHANGED.
+
+- DP1 BATCH SIZE: default 8 packets/call, hard cap 10; hard near-boundary trap packets (incl. the
+  unresolved "more than doubled" divergence item) ride in <=6-packet batches (false-accept is the
+  catastrophic direction; batch length is the only knob that trades against it; proven clean parse at
+  batch 6). The batch sizes 8 (default) / 6 (hard near-boundary) match the adapter byte-for-byte.
+- DP1 OPAQUE NON-ORDINAL ids + per-call-and-per-model order reshuffle with a RECORDED seed (a
+  deterministic PRNG keyed by seed+model+callIndex); an ordinal id would leak the trap/control
+  interleave or position, so the ids are non-ordinal hash tokens.
+- DP2 OUTPUT + PARSER: a JSON array `[{"id","entails","reason"}]` parsed by the REUSED
+  eval/.cache/oof-probe/score.mjs fence-strip + first-`[`/last-`]` slice + the byId { id -> entails }
+  extraction (already proven on cheap + frontier models; tolerates conversational filler). NOT XML.
+- DP3 FAIL-CLOSED-TO-DROP: a per-packet defect (missing/extra/duplicate id, non-boolean entails,
+  truncation, or a batch-level summary instead of an array) marks that packet UNRESOLVED = a
+  probe-decline = counted in attrition.probeDropped; runProbeConsensus already short-circuits a
+  declined judge. A WHOLE-BATCH JSON failure re-runs the batch ONCE then SPLITS it in half (recorded).
+  Dropping shrinks N but cannot fabricate gold; below-floor is a documented VOID. NEVER a fabricated
+  retain.
+
+The expected direction (trap=false / control=true) and the per-packet expectedEntailment stay in the
+parser/consensus, NEVER in the prompt (the prompt is the gold-blind entailment rubric).
+
+### The contamination gate (DP4)
+
+Run ONCE at T-spend-1 BEFORE trusting bulk: >=11/12 EXACT single-vs-batched entails agreement PER MODEL
+on a 12-packet HARDEST slice, INCLUDING one reversed-order variant; record the agreement rate. 11/12 =
+91.7% tolerates one benign near-determinism flip; 100% would false-trip. No separate distractor check
+(order robustness is otherwise covered by the pilot's k=5 reshuffles). On <11/12 for either model ->
+drop the batch size to 5 and re-validate (the runContaminationGate directive
+'batch-size-5-and-revalidate'). The gate is the precondition for trusting the bulk screen.
+
+### The non-gating cheaper-model pilot (DP7-DP9)
+
+A SEPARATE non-gating PILOT (eval/lz-eval-cheaper-pilot.mjs runCheaperPilot) informs the cheaper-model
+question + a future cost amendment; its output NEVER enters the retain AND.
+
+- DP7 SAMPLE: n=66 = 36 traps / 30 controls DRAWN FROM the gold candidates, weighted to hard
+  near-boundary (>=18 of the 36 traps hard near-boundary incl. the "more than doubled" divergence item);
+  the FROZEN-PAIR all-agree consensus on those packets is the REFERENCE label. 36 = N_TRAP_FLOOR
+  (CP1s(0,36)=0.0798 <= TAU_FU 0.10; CP1s(1,36)=0.1251 fails -> the trap arm is 0-miss-only); 30
+  controls tolerate one over-refusal (CP1s(1,30)=0.1486 <= TAU_OR 0.15) where 24 would not
+  (CP1s(1,24)=0.1829). k=5 by RESHUFFLING packet order across 5 batched runs (the recorded seed).
+- DP7 MEASURED MODELS: gpt-5-mini + gemini-3.5-flash + gpt-5.4-mini, with the frozen pair
+  (gpt-5.5 + gemini-3.1-pro-preview) as the comparison ANCHOR + its own self-consistency check.
+- DP8 STATISTIC: the one-sided Clopper-Pearson UPPER on the PER-ARM PACKET counts
+  (false-accepts/36 traps; false-vetoes/30 controls) via the FROZEN clopperPearsonUpperOneSided; the
+  k=5 self-consistency is reported SEPARATELY. NEVER pooled over n*k (Pitfall 3: the k votes on one
+  packet are positively correlated -> anti-conservative).
+- DP9 PRE-REGISTERED PROMOTION THRESHOLDS (fixed BEFORE the pilot runs): diagnostic-annotator (always
+  allowed, no gold impact) = self-consistency >= 95% AND frozen-pair agreement >= 60/66; pre-filter
+  (only if ever membership-neutral, per DP5) = agreement >= 62/66 AND zero false-accepts on the 36
+  traps; decider (AMENDMENT-ONLY) = 0 false-accepts on the 36 traps AND control-arm
+  CP1s(falseVetoes,30) <= TAU_OR (0 or 1 over-refusal clears) AND <=1 k=5 self-split AND agreement >=
+  62/66. These prose numbers (60/66, 62/66, 36, 30) match the pilot module byte-for-byte.
+
+### The k=1-stability-certificate (DP10)
+
+If the FROZEN pair is recorded 100% self-consistent across the pilot's k=5 reshuffles, the MAIN
+gold-screen runs at k=1 (one batched pass) with the certificate recorded. --effort high is
+near-deterministic; the prior reviewers' "need k>=5" concerned ESTIMATING a rate, which a one-time
+stability measurement addresses; this concerns GATING STABILITY ONLY -- it does NOT touch the
+downstream per-voter k=9 false-uphold rate (T-spend-2 keeps its k=9 votes UNCHANGED). If the pair is
+NOT 100% self-consistent the main screen falls back to k>1 (recorded).
+
+### Cheaper-as-decider is amendment-only and NOT adopted
+
+Making a cheaper model the gating DECIDER stays AMENDMENT-ONLY and is NOT adopted (DP6): the cheapest
+pair after batching saves only ~$2 vs the frozen pair batched, at a family-independence/validity cost.
+The frozen pair (gpt-5.5 + gemini-3.1-pro-preview, --effort high) remains the SOLE gating retain
+decider; bulk-batching is the ONLY operational change.

@@ -37,6 +37,10 @@
 
 import { sliceByIdEntails } from './lz-eval-oof-batch-parse.mjs';
 
+// DP1 batch-size defaults, exported so the RE-PLAN-8 anti-drift test pins prose == code (the lock-rule
+// + manifest record batch_size 8 / hard_near_boundary_batch 6 / hard_cap 10 byte-for-byte).
+export const BATCH_DEFAULTS = Object.freeze({ BATCH_SIZE: 8, HARD_BATCH_SIZE: 6, HARD_CAP: 10 });
+
 // ---------------------------------------------------------------------------
 // Deterministic PRNG keyed by seed + model + callIndex (DP1 -- per-call-and-per-model order
 // reshuffle with a RECORDED seed). A small xorshift-style mulberry32 fed a 32-bit hash of the

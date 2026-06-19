@@ -50,6 +50,11 @@ import {
 // assertion below pins the manifest's recorded rule string == this RegExp's source byte-for-byte.
 import { URL_DATE_RULE } from './lz-eval-trap-assembler.mjs';
 
+// RE-PLAN-8 (Task 5) anti-drift: the DP1 batch-size defaults + the DP9 pilot thresholds, pinned
+// prose == code byte-for-byte against the lock-rule + manifest.
+import { BATCH_DEFAULTS } from './lz-eval-oof-batch.mjs';
+import { PILOT_THRESHOLDS } from './lz-eval-cheaper-pilot.mjs';
+
 const { jStat } = jStatPkg;
 
 // Resolve __fixtures__ test-file-relative (NEVER process.cwd() -- cwd drifts under GSD worktrees and
@@ -691,6 +696,98 @@ test('Task-3 RE-PLAN-7 re-pre-registration: the lock rule + manifest record the 
   assert.equal(EVAL_THRESHOLDS.DELTA_UPPER_MAX, 0.25);
   assert.equal(EVAL_THRESHOLDS.ESCALATION_KILL_HIGH, 0.5);
   assert.equal(m.stage1_pre_registration.url_date_rule, URL_DATE_RULE.source, 'the URL_DATE_RULE byte-lock holds through the RE-PLAN-7 re-registration');
+});
+
+test('Task-5 RE-PLAN-8 re-pre-registration: the lock rule + manifest record the 5 ADDITIVE keys (bulk-batching + contamination gate + non-gating pilot + k=1 certificate + cheaper-as-decider-NOT-adopted), prose == code (DP1 8/6 + DP9 60/66/62/66/36/30); the RE-PLAN-7 keys + EVAL_THRESHOLDS + URL_DATE_RULE + the OOF decider identity byte-identical', () => {
+  const prose = fs.readFileSync(LOCK_RULE, 'utf8');
+
+  // The 5 ADDITIVE lock-rule sections are recorded.
+  assert.ok(/OOF bulk-batching operational note/i.test(prose), 'the lock rule records the OOF bulk-batching operational note (DP1-DP4)');
+  assert.ok(/UNFROZEN operational\s+latitude/i.test(prose), 'bulk-batching is recorded as UNFROZEN operational latitude (no primitive amendment)');
+  assert.ok(/contamination gate/i.test(prose) && /11\/12/.test(prose) && /reversed-order/i.test(prose), 'the lock rule records the contamination gate (>=11/12 incl. one reversed-order variant)');
+  assert.ok(/batch-size-5-and-revalidate|batch size to 5|batch size 5/i.test(prose), 'the contamination-gate on-fail directive (batch size 5 + re-validate) is recorded');
+  assert.ok(/non-gating cheaper-model pilot/i.test(prose), 'the lock rule records the non-gating cheaper-model pilot (DP7-DP9)');
+  assert.ok(/k=1-stability-certificate/i.test(prose), 'the lock rule records the k=1-stability-certificate (DP10)');
+  assert.ok(/per-voter k=9[\s\S]{0,80}UNCHANGED/i.test(prose), 'the DP10 note records the per-voter k=9 arm/votes are UNCHANGED (gating-stability only)');
+  assert.ok(/amendment-only and NOT adopted/i.test(prose), 'cheaper-as-decider is recorded amendment-only and NOT adopted (DP6)');
+
+  // DP1 prose == code: the batch sizes (8 default / 6 hard near-boundary) match the adapter byte-for-byte.
+  assert.equal(BATCH_DEFAULTS.BATCH_SIZE, 8, 'the adapter default batch size is 8');
+  assert.equal(BATCH_DEFAULTS.HARD_BATCH_SIZE, 6, 'the adapter hard near-boundary batch size is 6');
+  assert.ok(prose.includes('default ' + BATCH_DEFAULTS.BATCH_SIZE + ' packets/call'), 'the lock rule records the DP1 default batch size (8) prose == code');
+  assert.ok(prose.includes('<=' + BATCH_DEFAULTS.HARD_BATCH_SIZE + '-packet batches'), 'the lock rule records the DP1 hard near-boundary batch size (6) prose == code');
+
+  // DP9 prose == code: the pilot threshold numbers (60/66, 62/66, 36, 30) match the pilot module.
+  assert.equal(PILOT_THRESHOLDS.N_TRAP, 36, 'the pilot trap arm is 36');
+  assert.equal(PILOT_THRESHOLDS.N_CTRL, 30, 'the pilot control arm is 30');
+  assert.equal(PILOT_THRESHOLDS.ANNOTATOR_AGREEMENT, 60, 'the diagnostic-annotator agreement bar is 60/66');
+  assert.equal(PILOT_THRESHOLDS.PREFILTER_AGREEMENT, 62, 'the pre-filter agreement bar is 62/66');
+  assert.equal(PILOT_THRESHOLDS.DECIDER_AGREEMENT, 62, 'the decider agreement bar is 62/66');
+  assert.ok(prose.includes('>= ' + PILOT_THRESHOLDS.ANNOTATOR_AGREEMENT + '/' + PILOT_THRESHOLDS.AGREEMENT_DENOMINATOR), 'the lock rule records the 60/66 annotator bar prose == code');
+  assert.ok(prose.includes('>= ' + PILOT_THRESHOLDS.PREFILTER_AGREEMENT + '/' + PILOT_THRESHOLDS.AGREEMENT_DENOMINATOR), 'the lock rule records the 62/66 pre-filter/decider bar prose == code');
+  assert.ok(prose.includes(String(PILOT_THRESHOLDS.N_TRAP) + ' traps') || prose.includes('36 traps'), 'the lock rule records the 36-trap pilot arm');
+  assert.ok(prose.includes(String(PILOT_THRESHOLDS.N_CTRL) + ' controls') || prose.includes('30 controls') || prose.includes('30\n  controls'), 'the lock rule records the 30-control pilot arm');
+
+  // The manifest records the 5 ADDITIVE keys (anti-drift), prose == code for the DP1/DP9 numbers.
+  const m = JSON.parse(fs.readFileSync(MANIFEST, 'utf8'));
+  const pre = m.stage1_pre_registration;
+
+  assert.ok(pre.oof_bulk_batching && typeof pre.oof_bulk_batching === 'object', 'the manifest records oof_bulk_batching');
+  assert.equal(pre.oof_bulk_batching.batch_size, BATCH_DEFAULTS.BATCH_SIZE, 'manifest oof_bulk_batching.batch_size == the adapter default (8)');
+  assert.equal(pre.oof_bulk_batching.hard_cap, BATCH_DEFAULTS.HARD_CAP, 'manifest oof_bulk_batching.hard_cap == 10');
+  assert.equal(pre.oof_bulk_batching.hard_near_boundary_batch, BATCH_DEFAULTS.HARD_BATCH_SIZE, 'manifest oof_bulk_batching.hard_near_boundary_batch == the adapter (6)');
+  assert.equal(pre.oof_bulk_batching.opaque_non_ordinal_ids, true, 'manifest records opaque_non_ordinal_ids');
+  assert.equal(pre.oof_bulk_batching.per_call_per_model_order_reshuffle, true, 'manifest records per_call_per_model_order_reshuffle');
+  assert.equal(pre.oof_bulk_batching.whole_batch_rerun_once_then_split, true, 'manifest records whole_batch_rerun_once_then_split (DP3)');
+  assert.ok(/probeDropped/.test(pre.oof_bulk_batching.fail_closed_to_drop), 'manifest records fail-closed-to-DROP into probeDropped (DP3)');
+
+  assert.ok(pre.contamination_gate && typeof pre.contamination_gate === 'object', 'the manifest records contamination_gate');
+  assert.equal(pre.contamination_gate.threshold, '11/12', 'manifest contamination_gate.threshold == 11/12');
+  assert.equal(pre.contamination_gate.reversed_order_variant, true, 'manifest records the reversed-order variant');
+  assert.ok(/batch size 5/i.test(pre.contamination_gate.on_fail), 'manifest records the on-fail batch-size-5 directive');
+
+  assert.ok(pre.cheaper_model_pilot && typeof pre.cheaper_model_pilot === 'object', 'the manifest records cheaper_model_pilot');
+  assert.equal(pre.cheaper_model_pilot.n, 66, 'manifest pilot n == 66');
+  assert.equal(pre.cheaper_model_pilot.n_trap, PILOT_THRESHOLDS.N_TRAP, 'manifest pilot n_trap == the pilot module (36)');
+  assert.equal(pre.cheaper_model_pilot.n_ctrl, PILOT_THRESHOLDS.N_CTRL, 'manifest pilot n_ctrl == the pilot module (30)');
+  assert.equal(pre.cheaper_model_pilot.k, PILOT_THRESHOLDS.K, 'manifest pilot k == 5');
+  assert.deepEqual(pre.cheaper_model_pilot.measured_models, ['gpt-5-mini', 'gemini-3.5-flash', 'gpt-5.4-mini'], 'manifest records the measured models (incl. gpt-5.4-mini, operator decision 3)');
+  assert.deepEqual(pre.cheaper_model_pilot.frozen_pair_anchor, ['gpt-5.5', 'gemini-3.1-pro-preview'], 'manifest records the frozen-pair anchor (the OOF decider identity byte-identical)');
+  assert.ok(/NOT n\*k|not n\*k/i.test(pre.cheaper_model_pilot.statistic), 'manifest records the per-arm CP statistic (NOT n*k, DP8)');
+  assert.ok(/95%/.test(pre.cheaper_model_pilot.thresholds.diagnostic_annotator) && /60\/66/.test(pre.cheaper_model_pilot.thresholds.diagnostic_annotator), 'manifest records the DP9 diagnostic-annotator threshold (60/66)');
+  assert.ok(/62\/66/.test(pre.cheaper_model_pilot.thresholds.pre_filter), 'manifest records the DP9 pre-filter threshold (62/66)');
+  assert.ok(/62\/66/.test(pre.cheaper_model_pilot.thresholds.decider) && /amendment-only/i.test(pre.cheaper_model_pilot.thresholds.decider), 'manifest records the DP9 decider threshold (62/66, amendment-only)');
+  assert.equal(pre.cheaper_model_pilot.gating, false, 'manifest records the pilot is NON-GATING');
+
+  assert.ok(pre.k1_stability_certificate && /k=1/.test(pre.k1_stability_certificate.rule), 'the manifest records k1_stability_certificate (DP10)');
+  assert.ok(/k=9 arm UNCHANGED/i.test(pre.k1_stability_certificate.rule), 'the DP10 manifest rule records the per-voter k=9 arm is UNCHANGED');
+  assert.equal(pre.cheaper_as_decider_not_adopted.value, true, 'the manifest records cheaper_as_decider_not_adopted = true');
+  assert.ok(/amendment-only/i.test(pre.cheaper_as_decider_not_adopted.note), 'cheaper-as-decider is recorded amendment-only (DP6)');
+
+  // The RE-PLAN-7 keys are BYTE-UNCHANGED (a regression that altered one fails here).
+  assert.ok(typeof pre.absolute_per_model_design === 'string' && /certifyModel/.test(pre.absolute_per_model_design), 'the RE-PLAN-7 absolute_per_model_design key is UNCHANGED');
+  assert.equal(pre.tau_fu, EVAL_THRESHOLDS.TAU_FU, 'the RE-PLAN-7 tau_fu key is byte-identical');
+  assert.equal(pre.tau_or, EVAL_THRESHOLDS.TAU_OR, 'the RE-PLAN-7 tau_or key is byte-identical');
+  assert.equal(pre.n_trap_floor, EVAL_THRESHOLDS.N_TRAP_FLOOR, 'the RE-PLAN-7 n_trap_floor key is byte-identical');
+  assert.equal(pre.n_ctrl_floor, EVAL_THRESHOLDS.N_CTRL_FLOOR, 'the RE-PLAN-7 n_ctrl_floor key is byte-identical');
+  assert.ok(typeof pre.out_of_family_only_retain === 'string' && /non-gating annotation/i.test(pre.out_of_family_only_retain), 'the RE-PLAN-7 out_of_family_only_retain key is UNCHANGED');
+  assert.ok(typeof pre.decision_matrix === 'string' && /opusFailsBar/.test(pre.decision_matrix), 'the RE-PLAN-7 decision_matrix key is UNCHANGED');
+  assert.ok(typeof pre.screen_not_certificate_framing === 'string', 'the RE-PLAN-7 SCREEN framing key is UNCHANGED');
+
+  // The OOF gold-decider identity (gpt-5.5 + gemini-3.1-pro-preview) appears byte-identical wherever recorded.
+  assert.ok(/gpt-5\.5/.test(pre.out_of_family_probe_consensus) && /gemini-3\.1-pro-preview/.test(pre.out_of_family_probe_consensus), 'the OOF gold-decider identity is byte-identical in the carried consensus key');
+
+  // The EXISTING EVAL_THRESHOLDS numbers + URL_DATE_RULE byte-lock are UNCHANGED by the RE-PLAN-8 additions.
+  assert.equal(EVAL_THRESHOLDS.ALPHA, 0.05);
+  assert.equal(EVAL_THRESHOLDS.RELIABLE_TRIALS, 15);
+  assert.equal(EVAL_THRESHOLDS.MIN_K, 5);
+  assert.equal(EVAL_THRESHOLDS.DELTA_UPPER_MAX, 0.25);
+  assert.equal(EVAL_THRESHOLDS.ESCALATION_KILL_HIGH, 0.5);
+  assert.equal(EVAL_THRESHOLDS.TAU_FU, 0.10);
+  assert.equal(EVAL_THRESHOLDS.TAU_OR, 0.15);
+  assert.equal(EVAL_THRESHOLDS.N_TRAP_FLOOR, 36);
+  assert.equal(EVAL_THRESHOLDS.N_CTRL_FLOOR, 24);
+  assert.equal(m.stage1_pre_registration.url_date_rule, URL_DATE_RULE.source, 'the URL_DATE_RULE byte-lock holds through the RE-PLAN-8 re-registration');
 });
 
 // ---------------------------------------------------------------------------
