@@ -253,3 +253,139 @@ unrelated modification is left untouched). Execution halted cleanly at the board
 - FOUND commit dca8d43 (Task 2)
 - FOUND commit 8c97f01 (Task 3)
 - 308 eval-tree tests green; frozen primitives + EVAL_THRESHOLDS existing numbers + URL_DATE_RULE byte-identical.
+
+---
+
+# RE-PLAN-8 Tasks 4-5 (NET-NEW, NO-SPEND) -- bulk OOF batching + non-gating cheaper-model pilot + k=1 stability lever
+
+The sections ABOVE document the CARRIED RE-PLAN-7 Tasks 1-3 (committed c84e6d0 / dca8d43 / 8c97f01) and
+are PRESERVED byte-identical. This section documents the NET-NEW RE-PLAN-8 build for the RENUMBERED
+plan (19-04-PLAN.md as re-authored under 19-04-REPLAN-DECISION-8.md): Tasks 1-3 are the carried RE-PLAN-7
+work; Tasks 4-5 are the NET-NEW no-spend build below; Tasks 6-7 are the blocking SPEND checkpoints
+(T-spend-1 gold build + T-spend-2 three-voter k=9), still human-gated and NOT executed. (Note: the
+"Spend boundary" paragraph above used the OLD RE-PLAN-7 task numbering where "Tasks 4-5" were the spend
+checkpoints; under RE-PLAN-8 those became Tasks 6-7.)
+
+## Tasks completed (RE-PLAN-8, NO SPEND)
+
+### Task 4 (commit 5e048a3): the BATCHED OUT-OF-FAMILY probe adapter + the contamination gate (DP1-DP4)
+
+- `eval/lz-eval-oof-batch.mjs` (NET-NEW) exports `makeBatchedOofProbe({ callModel, model, batchSize=8,
+  hardBatchSize=6, hardNearBoundaryIds, seed, score })` -> a probe with the EXISTING runProbeConsensus
+  per-packet contract (`{ accepted, reason, entails }`), ONE element per OOF model. CHOSEN SHAPE
+  (documented in the module): the `prepareBatches(packets) -> resolverMap` PRE-PASS (avoids the
+  flush-boundary deadlock -- runProbeConsensus drives packets one-at-a-time and short-circuits on the
+  first decline, so a buffering-per-packet probe could hang; the pre-pass dispatches every batch up
+  front and the per-packet probe reads the resolved map). Packs <=8 packets/call; hard near-boundary ids
+  ride in <=6-packet batches (a 7-hard set splits 6+1). OPAQUE NON-ORDINAL per-call ids (hash tokens,
+  not c1/c2/.. -- no interleave/position leak). Per-call-and-per-model order reshuffle via a
+  deterministic PRNG keyed by seed+model+callIndex (recorded seed). Renders its OWN per-item
+  EVIDENCE+CLAIM block from the real packets' date-filtered survivors using the REUSED gold-blind rubric
+  PREAMBLE -- the expected direction (trap=false/control=true) + the per-packet expectedEntailment NEVER
+  enter the prompt.
+- `eval/lz-eval-oof-batch-parse.mjs` (NET-NEW) is the byte-faithful port of the
+  `eval/.cache/oof-probe/score.mjs` slice (fence-strip + first-`[`/last-`]` + `JSON.parse` + the byId
+  `{ id -> entails }` extraction); it REUSES ONLY the slice + byId (NOT score.mjs's hardcoded 6-case GT
+  / c1-c6 ITEMS). DP3-hardened: a non-boolean entails is PRESERVED (not coerced to false) so the adapter
+  fail-closed-DROPS it rather than fabricating a retain.
+- DP3 FAIL-CLOSED-TO-DROP: a per-packet defect (missing/extra/duplicate id, non-boolean entails,
+  batch-level summary) -> that packet `{ accepted:false }` (a probe-decline) -> counted in
+  `attrition.probeDropped` by runProbeConsensus (verified DISCRIMINATING -- the others resolve, the
+  defective one drops, NEVER a fabricated retain). A WHOLE-BATCH JSON failure -> re-run the batch ONCE,
+  then SPLIT it in half (both recorded in `batchEvents`).
+- `runContaminationGate({ singleResults, batchedResults, model })` -> `{ agreement, pass, directive }`:
+  >=11/12 exact single-vs-batched entails agreement PASSES (incl. one reversed-order variant in the
+  12-slice); <11/12 returns `directive:'batch-size-5-and-revalidate'` (11/12 tolerates one benign flip;
+  100% would false-trip).
+- `eval/lz-eval-oof-batch.test.mjs`: 11 DISCRIMINATING tests (de-mapping under a permuted opaque-id
+  order; hard near-boundary 6+1 batching; DP3 per-packet + whole-batch re-run-once-then-split; the
+  prompt carries neither the gold word refuted/unrefuted nor the expectedEntailment; the gate 12/12 +
+  11/12 pass vs 10/12 -> the batch-5 directive; the module returns the model-reported entails unchanged
+  so a model-entails-true on a refuted-gold trap surfaces as a consensus SPLIT, not a flipped retain).
+  FILE-form green (11 pass).
+
+### Task 5 (commit 9652c5e): the NON-GATING cheaper-model pilot + the k=1 stability certificate + ADDITIVE re-pre-registration (DP7-DP10)
+
+- `eval/lz-eval-cheaper-pilot.mjs` (NET-NEW) exports `classifyCheaperRole(...)` ->
+  `'decider'|'pre-filter'|'diagnostic-annotator'|'none'` via `clopperPearsonUpperOneSided` +
+  `EVAL_THRESHOLDS.TAU_FU/TAU_OR` on the PER-ARM PACKET counts (false-accepts/36 traps;
+  false-vetoes/30 controls), NEVER pooled over n*k (DP8/Pitfall 3). Thresholds fixed before any pilot
+  run (DP9): decider (AMENDMENT-ONLY) = 0 false-accepts AND control CP1s(falseVetoes,30)<=TAU_OR AND
+  <=1 self-split AND frozen-pair agreement>=62/66; pre-filter = agreement>=62 AND 0 false-accepts (not
+  all decider sub-bars); diagnostic-annotator = self-consistency>=0.95 AND agreement>=60/66; else none.
+  Verified: CP1s(0,36)=0.0798 clears the decider trap bar, CP1s(1,36)=0.1251 fails it (a 1-false-accept
+  arm would need N>=46), CP1s(1,30)=0.1486 clears the control bar where CP1s(1,24)=0.1829 would not.
+- `runCheaperPilot(...)` -> `{ perModel, frozenPairSelfConsistency, stabilityCertificate, gating:false,
+  sampleSizes }`: samples n=66 = 36 traps / 30 controls FROM the gold candidates weighted to hard
+  near-boundary; the FROZEN-PAIR all-agree consensus on the sampled packets is the reference label;
+  k=5 by order reshuffle (recorded seed); measured models gpt-5-mini + gemini-3.5-flash + gpt-5.4-mini
+  (operator decision 3) + the frozen pair (gpt-5.5 + gemini-3.1-pro-preview) as the anchor + its own
+  self-consistency. Per model: `{ falseAccepts, nTrap, falseVetoes, nCtrl, estimandA:{cpUpper},
+  estimandB:{cpUpper}, selfConsistency, selfSplits, frozenPairAgreement, role }`. NON-GATING by
+  construction (no retain/membership signal; consumes `candidates` read-only; sets no gold freeze).
+- DP10 k=1 stability certificate: `stabilityCertificate = { k1: frozenPairSelfConsistency === 1.0,
+  frozenPairSelfConsistency }` -- frozen-pair 100% self-consistent across the pilot k=5 -> main
+  gold-screen k=1; gating-stability ONLY (the per-voter k=9 arm is UNCHANGED).
+- ADDITIVE re-pre-registration (zero-votes window, prose==code): 5 NEW lock-rule sections (the OOF
+  bulk-batching note DP1-DP4; the contamination gate DP4; the non-gating pilot DP7-DP9; the k=1
+  certificate DP10; cheaper-as-decider amendment-only and NOT adopted) appended after the RE-PLAN-7
+  sections (RE-PLAN-7 sections UNCHANGED). 5 NEW manifest `stage1_pre_registration` keys
+  (`oof_bulk_batching`, `contamination_gate`, `cheaper_model_pilot`, `k1_stability_certificate`,
+  `cheaper_as_decider_not_adopted`) appended after `screen_not_certificate_framing` (the only diff to an
+  existing manifest line is the trailing comma required to append; the value is byte-identical).
+- `eval/lz-eval-aggregate.test.mjs`: ADDED the RE-PLAN-8 anti-drift assertion (the lock-rule + manifest
+  record the 5 ADDITIVE keys; the DP1 batch sizes 8/6 match `BATCH_DEFAULTS`; the DP9 numbers
+  60/66/62/66/36/30 match `PILOT_THRESHOLDS` byte-for-byte; the RE-PLAN-7 keys + EVAL_THRESHOLDS existing
+  numbers + URL_DATE_RULE + the OOF decider identity gpt-5.5 + gemini-3.1-pro-preview byte-identical).
+  `BATCH_DEFAULTS` exported from the adapter for the prose==code pin.
+- `eval/lz-eval-cheaper-pilot.test.mjs`: 14 DISCRIMINATING tests (the DP9 role boundaries incl. the
+  per-arm-CP-NOT-n*k discriminator; runCheaperPilot structure; the DP10 certificate true at 100% vs
+  false otherwise; the non-gating + read-only-candidates + no-freeze assertions; a false-accepting cheap
+  model is measured and is NEVER decider). FILE-form green (14 pass).
+
+## Deviations from Plan
+
+None for Tasks 4-5 -- the plan was executed exactly as written. Two test-only adjustments (not behavior
+deviations): (1) the unit-stub prompt parser locates the opaque-id line by content rather than assuming
+it is the first line (the rendered item block has a leading newline); (2) two lock-rule anti-drift
+regexes were made whitespace-tolerant to survive prose line-wrapping (`UNFROZEN operational\s+latitude`;
+`per-voter k=9[\s\S]{0,80}UNCHANGED`). Neither alters a threshold, the prose, or any code behavior.
+
+## No frozen primitive changed; no spend
+
+- `eval/lz-eval-aggregate.mjs` (the frozen jstat engine) and `eval/lz-eval-trap-assembler.mjs`
+  (runProbeConsensus) are BYTE-UNCHANGED (`git diff --stat` shows no change). The new adapter imports
+  neither's numbers/identity; it composes the score.mjs slice + the injected callModel transport. The
+  pilot consumes ONLY `clopperPearsonUpperOneSided` + `TAU_FU/TAU_OR` and edits nothing.
+- Only ADDITIVE keys/sections were added to the lock-rule + manifest; every RE-PLAN-7 key is
+  byte-identical and the EXISTING EVAL_THRESHOLDS numbers + URL_DATE_RULE + the OOF gold-decider
+  identity are byte-identical (asserted by the RE-PLAN-8 anti-drift test).
+- ZERO model calls: no `copilot`, no `claude -p`, no WebSearch/WebFetch, no voter-dispatch Workflow run,
+  no OOF probe spend. All Tasks 4-5 machinery is exercised ONLY with deterministic STUB callModels.
+- Tasks 6-7 (the blocking SPEND checkpoints) were NOT started. STATE.md / ROADMAP.md were NOT modified
+  (the orchestrator owns plan-completion tracking; the plan has remaining human-gated spend tasks).
+  `.claude/settings.json` was NOT staged or modified (its pre-existing unrelated modification is left
+  untouched and unstaged).
+
+## Test results (RE-PLAN-8, FILE-form gates)
+
+- `node --test eval/lz-eval-oof-batch.test.mjs` -> 11 pass / 0 fail.
+- `node --test eval/lz-eval-cheaper-pilot.test.mjs` -> 14 pass / 0 fail.
+- `node --test eval/lz-eval-aggregate.test.mjs` -> 40 pass / 0 fail (39 carried RE-PLAN-7/5 + 1
+  RE-PLAN-8 anti-drift; all carried assertions green).
+- Full deterministic eval-tree suite (14 FILE-form test files: aggregate, dataset, packaging-boundary,
+  search-loop, traps, offline-read, trap-assembler, wice-traps, voter-dispatch.workflow.harness,
+  oof-batch, cheaper-pilot, worker-contract, lz-review-gate.workflow.harness, lz-review-gate-check) ->
+  334 pass / 0 fail (was 308 in RE-PLAN-7; +26 = 11 oof-batch + 14 pilot + 1 RE-PLAN-8 anti-drift).
+- Plugin-tree aggregator `node --test plugins/lz-advisor/skills/lz-deep-research/scripts/lz-deep-research-aggregate.test.mjs`
+  -> 41 pass / 0 fail.
+
+## RE-PLAN-8 Self-Check: PASSED
+- FOUND: eval/lz-eval-oof-batch.mjs
+- FOUND: eval/lz-eval-oof-batch-parse.mjs
+- FOUND: eval/lz-eval-oof-batch.test.mjs
+- FOUND: eval/lz-eval-cheaper-pilot.mjs
+- FOUND: eval/lz-eval-cheaper-pilot.test.mjs
+- FOUND commit 5e048a3 (Task 4)
+- FOUND commit 9652c5e (Task 5)
+- 334 eval-tree + 41 plugin-aggregator tests green; frozen engine + assembler byte-unchanged; only ADDITIVE lock-rule/manifest keys; ASCII-only; no spend.
