@@ -27,7 +27,15 @@ import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { aggregate, normalize, CEILINGS, listJson, safeId } from './lz-deep-research-aggregate.mjs';
+import {
+  aggregate,
+  normalize,
+  CEILINGS,
+  listJson,
+  safeId,
+  stableHashFraction,
+  AUDIT_SAMPLE_RATE,
+} from './lz-deep-research-aggregate.mjs';
 
 // Resolve __fixtures__ test-file-relative (NEVER process.cwd() -- T-16-05 / Pitfall 3:
 // cwd drifts under GSD worktrees and headless `claude -p`).
@@ -1067,5 +1075,314 @@ test('AGG-03 / D-14 receipt FORMAT conforms (one line, <= 200 chars, counts-only
   assert.ok(
     !receipt.includes('X reduces Y by 30%'),
     'receipt must not carry raw quote / source text',
+  );
+});
+
+// ===========================================================================
+// VERIF-05 / D-12: the additive load_bearing -> escalate carry + the deterministic
+// per-claim escalate flag (the UNION of Contested OR load_bearing OR a stable-hash
+// audit sample of unanimous 3/3 upholds). Mirrors the EXISTING discipline:
+// discriminating pairs (never tautologies), determinism, frozen-object value-pin.
+// All fixtures are built in OS-temp run-dirs (never committed) and cleaned in finally.
+// ===========================================================================
+
+// Build a run-dir from a list of worker records (sorted file names w00.json, w01.json, ...).
+// Returns the run-dir path. Caller seeds excerpts/ + votes/ as needed. Cleaned via fs.rmSync
+// in the caller's finally (mirrors tmpRunDirWithWorker / the existing temp-dir discipline).
+function tmpRunDirWithWorkers(workers) {
+  const runDir = fs.mkdtempSync(path.join(os.tmpdir(), 'lz-dr-escalate-'));
+  const claimsDir = path.join(runDir, 'claims');
+  fs.mkdirSync(claimsDir, { recursive: true });
+
+  workers.forEach((w, i) => {
+    fs.writeFileSync(path.join(claimsDir, 'w' + String(i).padStart(2, '0') + '.json'), JSON.stringify(w), 'utf8');
+  });
+
+  return runDir;
+}
+
+test('D-12 stableHashFraction is a pure deterministic FNV-1a fraction in [0,1) (same id -> same value)', () => {
+  // The audit sample MUST be reproducible from the run dir (no Math.random, D-12c / Pitfall 4):
+  // a stable hash of the AGGREGATOR-generated cluster id. Assert determinism + the [0,1) range
+  // directly on the exported pure helper.
+  for (const id of ['cluster0', 'cluster20', 'cluster58', 'whatever']) {
+    const a = stableHashFraction(id);
+    const b = stableHashFraction(id);
+    assert.equal(a, b, 'stableHashFraction must be deterministic for ' + id);
+    assert.ok(a >= 0 && a < 1, 'stableHashFraction must be in [0,1) for ' + id + '; got ' + a);
+  }
+
+  // Discriminating: different ids generally produce different fractions (not a constant).
+  assert.notEqual(stableHashFraction('cluster0'), stableHashFraction('cluster20'));
+});
+
+test('D-12 AUDIT_SAMPLE_RATE is frozen and value-pinned to 0.15 (mirror SC5-5 CEILINGS frozen-object)', () => {
+  // The audit-sample rate is a frozen sibling constant the schema doc quotes byte-for-byte. Pin the
+  // frozen-ness AND the exact value (0.15, within the D-12c / RESEARCH A1 15-20% band) so a drift
+  // between code and the schema-doc quote fails this gate -- mirroring SC5-5's CEILINGS assertions.
+  assert.equal(Object.isFrozen(AUDIT_SAMPLE_RATE), true);
+  assert.equal(AUDIT_SAMPLE_RATE.value, 0.15);
+});
+
+test('D-12a Contested cluster -> survivor escalate true (branch a)', () => {
+  // A voter split (>=1 unrefuted AND >=1 refuted) -> confidence Contested -> escalate true via branch
+  // (a). One single claim, votes seeded for a split (cluster0-0 unrefuted, cluster0-1 refuted).
+  const runDir = tmpRunDirWithWorkers([
+    {
+      worker: 'w1',
+      source: 's1',
+      claims: [{ id: 'c1', text: 'X reduces Y by 30%', quote: 'X reduces Y by 30%', excerpt_id: 'e1' }],
+    },
+  ]);
+  const excerptsDir = path.join(runDir, 'excerpts');
+  const votesDir = path.join(runDir, 'votes');
+  fs.mkdirSync(excerptsDir, { recursive: true });
+  fs.mkdirSync(votesDir, { recursive: true });
+  fs.writeFileSync(path.join(excerptsDir, 'e1.txt'), 'The study found that X reduces Y by 30% overall.', 'utf8');
+  fs.writeFileSync(path.join(votesDir, 'cluster0-0.json'), JSON.stringify({ verdict: 'unrefuted' }), 'utf8');
+  fs.writeFileSync(path.join(votesDir, 'cluster0-1.json'), JSON.stringify({ verdict: 'refuted' }), 'utf8');
+
+  try {
+    const r = aggregate(runDir);
+    assert.equal(r.survivors.length, 1);
+    assert.equal(r.survivors[0].confidence, 'Contested');
+    assert.equal(r.survivors[0].escalate, true, 'a Contested cluster must escalate (branch a)');
+  } finally {
+    fs.rmSync(runDir, { recursive: true, force: true });
+  }
+});
+
+test('D-12b load_bearing claim -> survivor escalate true regardless of confidence (branch b, OR-fold)', () => {
+  // An extract worker marks a claim load_bearing: true; the aggregator OR-folds it through
+  // mergeClusters onto the cluster and emits escalate true on the survivor REGARDLESS of confidence.
+  // Here confidence is Low (1 unrefuted seat, thin support) -- not Contested -- proving branch (b)
+  // fires independently of branch (a). cluster0 hashes OUT of the audit sample (frac 0.3526), so
+  // branch (c) is NOT the cause either: load_bearing is the sole escalation trigger.
+  const runDir = tmpRunDirWithWorkers([
+    {
+      worker: 'w1',
+      source: 's1',
+      claims: [
+        { id: 'c1', text: 'X reduces Y by 30%', quote: 'X reduces Y by 30%', excerpt_id: 'e1', load_bearing: true },
+      ],
+    },
+  ]);
+  const excerptsDir = path.join(runDir, 'excerpts');
+  const votesDir = path.join(runDir, 'votes');
+  fs.mkdirSync(excerptsDir, { recursive: true });
+  fs.mkdirSync(votesDir, { recursive: true });
+  fs.writeFileSync(path.join(excerptsDir, 'e1.txt'), 'The study found that X reduces Y by 30% overall.', 'utf8');
+  // One unrefuted seat only -> Low (thin support), NOT Contested and NOT High (no audit-sample path).
+  fs.writeFileSync(path.join(votesDir, 'cluster0-0.json'), JSON.stringify({ verdict: 'unrefuted' }), 'utf8');
+
+  try {
+    // Precondition guard (prevents a vacuous pass): cluster0 must hash OUT of the audit sample AND the
+    // confidence must NOT be Contested, so escalate true can ONLY be the load_bearing carry (branch b).
+    assert.ok(stableHashFraction('cluster0') >= AUDIT_SAMPLE_RATE.value, 'cluster0 must hash OUT of the audit sample');
+
+    const r = aggregate(runDir);
+    assert.equal(r.survivors.length, 1);
+    assert.equal(r.survivors[0].confidence, 'Low', 'confidence is Low (thin support), not Contested');
+    assert.equal(r.survivors[0].escalate, true, 'a load_bearing claim must escalate regardless of confidence (branch b)');
+  } finally {
+    fs.rmSync(runDir, { recursive: true, force: true });
+  }
+});
+
+test('D-12b load_bearing OR-folds across cluster members (ANY member load_bearing -> cluster escalates)', () => {
+  // Two claims with identical text (Jaccard 1.0) from TWO sources merge into ONE cluster. Only the
+  // SECOND member carries load_bearing: true. The OR-fold (mirroring the existing sources Set
+  // accumulation) must mark the merged cluster load_bearing -> escalate true. cluster0 hashes OUT and
+  // the cluster is High (3/3) -- so absent the OR-fold this would be in-sample-only (which it is NOT).
+  const runDir = tmpRunDirWithWorkers([
+    {
+      worker: 'w1',
+      source: 's1',
+      claims: [{ id: 'c1', text: 'X reduces Y by 30%', quote: 'X reduces Y by 30%', excerpt_id: 'e1' }],
+    },
+    {
+      worker: 'w2',
+      source: 's2',
+      claims: [
+        { id: 'c2', text: 'X reduces Y by 30%', quote: 'X reduces Y by 30%', excerpt_id: 'e2', load_bearing: true },
+      ],
+    },
+  ]);
+  const excerptsDir = path.join(runDir, 'excerpts');
+  const votesDir = path.join(runDir, 'votes');
+  fs.mkdirSync(excerptsDir, { recursive: true });
+  fs.mkdirSync(votesDir, { recursive: true });
+  fs.writeFileSync(path.join(excerptsDir, 'e1.txt'), 'The study found that X reduces Y by 30% overall.', 'utf8');
+  fs.writeFileSync(path.join(excerptsDir, 'e2.txt'), 'A review confirmed X reduces Y by 30% in trials.', 'utf8');
+  // Seed cluster0 as a NON-audit-sample, NON-Contested High (3/3 unrefuted): isolate the OR-fold.
+  for (const s of [0, 1, 2]) {
+    fs.writeFileSync(path.join(votesDir, 'cluster0-' + s + '.json'), JSON.stringify({ verdict: 'unrefuted' }), 'utf8');
+  }
+
+  try {
+    assert.ok(stableHashFraction('cluster0') >= AUDIT_SAMPLE_RATE.value, 'cluster0 must hash OUT of the audit sample');
+
+    const r = aggregate(runDir);
+    assert.equal(r.survivors.length, 1, 'the two same-text claims must merge into one cluster');
+    assert.equal(r.survivors[0].confidence, 'High');
+    assert.equal(
+      r.survivors[0].escalate,
+      true,
+      'load_bearing on ANY member must OR-fold onto the merged cluster (branch b)',
+    );
+  } finally {
+    fs.rmSync(runDir, { recursive: true, force: true });
+  }
+});
+
+test('D-12c DISCRIMINATING PAIR: a unanimous uphold whose cluster id hashes IN escalates; an OUT sibling does NOT', () => {
+  // The audit-sample branch (c): a ~15% sample of unanimous (3/3 unrefuted) upholds, selected by a
+  // STABLE HASH of the cluster id. A SINGLE in-sample fixture would be TAUTOLOGICAL (MEMORY
+  // project_fixture_must_discriminate_ordering) -- it could pass even if escalate were always true.
+  // So build a DISCRIMINATING PAIR: cluster20 (frac ~0.107, IN) MUST escalate; cluster0 (frac ~0.353,
+  // OUT) MUST NOT -- both 3/3 unanimous-uphold High, NOT Contested, NOT load_bearing, so branch (c) is
+  // the ONLY differentiator. The in/out membership is COMPUTED from the exported stableHashFraction
+  // (not hardcoded magic), and asserted as a precondition before the behavioral assertions.
+  //
+  // Construction: 21 singleton unanimous-uphold clusters (file order w00..w20 -> cluster0..cluster20;
+  // 21 <= MAX_VERIFY_CLAIMS 24, so the claims cap never fires). All corroboration 1 -> rank is
+  // normalize(text) ASC. Give w20 (cluster20) a lexically-FIRST text so it ranks #1 and survives
+  // SYNTH_CAP=20; give w01 (cluster1, an unasserted OUT cluster) a lexically-LAST text so it is the
+  // single SYNTH_CAP drop; cluster0 keeps a mid text and survives. Both asserted clusters thus appear
+  // in survivors[].
+  const IN_ID = 'cluster20';
+  const OUT_ID = 'cluster0';
+  // Precondition: the chosen ids genuinely straddle the rate (constructed to discriminate, not assumed).
+  assert.ok(stableHashFraction(IN_ID) < AUDIT_SAMPLE_RATE.value, IN_ID + ' must hash INTO the audit sample');
+  assert.ok(stableHashFraction(OUT_ID) >= AUDIT_SAMPLE_RATE.value, OUT_ID + ' must hash OUT of the audit sample');
+
+  const workers = [];
+
+  for (let i = 0; i <= 20; i += 1) {
+    let text;
+
+    if (i === 20) {
+      text = 'aaa alpha lexically first audit sample claim ' + i;
+    } else if (i === 1) {
+      text = 'zzz omega lexically last dropped claim ' + i;
+    } else {
+      text = 'claim number ' + String(i).padStart(2, '0') + ' middle body text';
+    }
+
+    workers.push({
+      worker: 'w' + i,
+      source: 's' + i,
+      claims: [{ id: 'c' + i, text, quote: text, excerpt_id: 'e' + i }],
+    });
+  }
+
+  const runDir = tmpRunDirWithWorkers(workers);
+  const excerptsDir = path.join(runDir, 'excerpts');
+  const votesDir = path.join(runDir, 'votes');
+  fs.mkdirSync(excerptsDir, { recursive: true });
+  fs.mkdirSync(votesDir, { recursive: true });
+
+  try {
+    // Each excerpt verbatim-contains its claim text so every claim survives the quote re-check.
+    for (let i = 0; i <= 20; i += 1) {
+      const text = workers[i].claims[0].text;
+      fs.writeFileSync(path.join(excerptsDir, 'e' + i + '.txt'), 'Per the record, ' + text + ' was observed.', 'utf8');
+    }
+
+    // Every cluster is a 3/3 unanimous uphold (High) keyed by its cluster id.
+    for (let i = 0; i <= 20; i += 1) {
+      for (const s of [0, 1, 2]) {
+        fs.writeFileSync(
+          path.join(votesDir, 'cluster' + i + '-' + s + '.json'),
+          JSON.stringify({ verdict: 'unrefuted' }),
+          'utf8',
+        );
+      }
+    }
+
+    const r = aggregate(runDir);
+    const byId = new Map(r.survivors.map((s) => [s.id, s]));
+
+    // Both asserted clusters survived SYNTH_CAP (the construction guarantees it; assert non-vacuously).
+    assert.ok(byId.has(IN_ID), IN_ID + ' must be present among survivors');
+    assert.ok(byId.has(OUT_ID), OUT_ID + ' must be present among survivors');
+
+    // Both are High unanimous upholds, NOT Contested, NOT load_bearing -- branch (c) is the ONLY cause.
+    assert.equal(byId.get(IN_ID).confidence, 'High');
+    assert.equal(byId.get(OUT_ID).confidence, 'High');
+
+    // The discriminating behavioral pair: IN escalates, OUT does not.
+    assert.equal(byId.get(IN_ID).escalate, true, IN_ID + ' (hashes IN) must escalate via the audit sample (branch c)');
+    assert.equal(byId.get(OUT_ID).escalate, false, OUT_ID + ' (hashes OUT) must NOT escalate (not Contested/load_bearing/in-sample)');
+  } finally {
+    fs.rmSync(runDir, { recursive: true, force: true });
+  }
+});
+
+test('D-12 escalate is byte-identical across two aggregate() calls on the same run-dir (no Math.random)', () => {
+  // Determinism (D-12c / Pitfall 4): the audit-sample selection is a stable hash, so escalate flags are
+  // reproducible run-to-run. Build a run-dir spanning all three branches (a Contested cluster, a
+  // load_bearing cluster, and a plain unanimous uphold), then assert the FULL output is deep-equal
+  // across two calls -- extending the TEST-2b / SC-1 determinism discipline to the new escalate field.
+  const runDir = tmpRunDirWithWorkers([
+    {
+      worker: 'w1',
+      source: 's1',
+      claims: [{ id: 'c1', text: 'alpha beats beta always', quote: 'alpha beats beta always', excerpt_id: 'e1' }],
+    },
+    {
+      worker: 'w2',
+      source: 's2',
+      claims: [
+        { id: 'c2', text: 'gamma exceeds delta daily', quote: 'gamma exceeds delta daily', excerpt_id: 'e2', load_bearing: true },
+      ],
+    },
+    {
+      worker: 'w3',
+      source: 's3',
+      claims: [{ id: 'c3', text: 'zeta tops omega often', quote: 'zeta tops omega often', excerpt_id: 'e3' }],
+    },
+  ]);
+  const excerptsDir = path.join(runDir, 'excerpts');
+  const votesDir = path.join(runDir, 'votes');
+  fs.mkdirSync(excerptsDir, { recursive: true });
+  fs.mkdirSync(votesDir, { recursive: true });
+  fs.writeFileSync(path.join(excerptsDir, 'e1.txt'), 'The trial showed alpha beats beta always here.', 'utf8');
+  fs.writeFileSync(path.join(excerptsDir, 'e2.txt'), 'A report says gamma exceeds delta daily there.', 'utf8');
+  fs.writeFileSync(path.join(excerptsDir, 'e3.txt'), 'Data found zeta tops omega often overall.', 'utf8');
+
+  // Rank by normalize(text) ASC over corroboration 1 each: alpha(cluster0), gamma(cluster1),
+  // zeta(cluster2). Seed cluster0 as a Contested split; cluster1 carries load_bearing; cluster2 plain.
+  fs.writeFileSync(path.join(votesDir, 'cluster0-0.json'), JSON.stringify({ verdict: 'unrefuted' }), 'utf8');
+  fs.writeFileSync(path.join(votesDir, 'cluster0-1.json'), JSON.stringify({ verdict: 'refuted' }), 'utf8');
+  fs.writeFileSync(path.join(votesDir, 'cluster1-0.json'), JSON.stringify({ verdict: 'unrefuted' }), 'utf8');
+
+  try {
+    const r = aggregate(runDir);
+    const r2 = aggregate(runDir);
+    assert.deepEqual(r, r2, 'aggregate (incl. escalate flags) must be byte-identical over the same run-dir');
+
+    // Non-vacuous: at least one escalate true (the load_bearing cluster) and the field is present on all.
+    assert.ok(
+      r.survivors.every((s) => typeof s.escalate === 'boolean'),
+      'every survivor record must carry a boolean escalate flag',
+    );
+    assert.ok(r.survivors.some((s) => s.escalate === true), 'at least one survivor must escalate (the spanning run-dir has one)');
+  } finally {
+    fs.rmSync(runDir, { recursive: true, force: true });
+  }
+});
+
+test('D-12 escalate appends AFTER confidence; the frozen survivor field set is byte-unchanged', () => {
+  // The new field is ADDITIVE: the existing survivor record fields (id, claim, sources,
+  // corroboration_lower_bound, quote_fidelity, confidence) stay byte-unchanged in order, and escalate
+  // appends as the LAST key. Assert the exact key order so a re-ordering or a dropped frozen field
+  // fails this gate. Reuse the committed near-duplicate-merged fixture (a plain High survivor).
+  const r = aggregate(fx('near-duplicate-merged'));
+  assert.equal(r.survivors.length, 1);
+  assert.deepEqual(
+    Object.keys(r.survivors[0]),
+    ['id', 'claim', 'sources', 'corroboration_lower_bound', 'quote_fidelity', 'confidence', 'escalate'],
+    'survivor record must carry the frozen fields in order with escalate appended last',
   );
 });
