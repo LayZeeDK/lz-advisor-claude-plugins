@@ -33,7 +33,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { parseTrace, gradeTraceFile, SC5_THRESHOLDS } from './lz-eval-sc5-trace.mjs';
+import { parseTrace, parseTraceText, gradeTraceFile, SC5_THRESHOLDS } from './lz-eval-sc5-trace.mjs';
 
 // Resolve test artifacts test-file-relative (NEVER process.cwd() -- cwd drifts under GSD worktrees and
 // headless `claude -p`). Stub traces are written to a per-test tmpdir, not under HERE, so no committed
@@ -369,26 +369,94 @@ test('parseTrace fails closed (ContractError) on a non-array trace', () => {
 });
 
 // ===========================================================================
-// File-read seam: gradeTraceFile reads a captured trace file and parses it. Exercises the readJson seam
-// + the fail-closed path on a malformed file. Written to a per-test tmpdir (no committed bytes).
+// File-read seam: gradeTraceFile reads a captured trace file and parses it. Exercises the JSON-array
+// back-compat shape + the fail-closed path on an empty/garbage file. Written to a per-test tmpdir.
 // ===========================================================================
 
-test('gradeTraceFile reads a captured trace file and returns the parsed verdict', () => {
+test('gradeTraceFile reads a JSON-array trace file (back-compat) and returns the parsed verdict', () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'lz-sc5-trace-'));
   const file = path.join(dir, 'trace.json');
   fs.writeFileSync(file, JSON.stringify(buildPassingTrace()) + '\n', 'utf8');
 
   const verdict = gradeTraceFile(file);
-  assert.equal(verdict.pass, true, 'the captured passing trace grades as pass');
+  assert.equal(verdict.pass, true, 'the captured passing array-trace grades as pass');
 
-  // Malformed file fails closed.
-  const bad = path.join(dir, 'bad.json');
-  fs.writeFileSync(bad, '{ not valid json', 'utf8');
+  // A file that yields NO stream-json events (garbage, no JSON array, no JSONL) fails closed.
+  const bad = path.join(dir, 'bad.txt');
+  fs.writeFileSync(bad, 'not json at all\njust prose\n', 'utf8');
   assert.throws(
     () => gradeTraceFile(bad),
     (err) => err.name === 'ContractError',
-    'a malformed trace file fails closed',
+    'a no-events trace file fails closed',
   );
+
+  // A missing file fails closed.
+  assert.throws(
+    () => gradeTraceFile(path.join(dir, 'does-not-exist.json')),
+    (err) => err.name === 'ContractError',
+    'a missing trace file fails closed',
+  );
+
+  fs.rmSync(dir, { recursive: true, force: true });
+});
+
+// ===========================================================================
+// JSONL ADAPTER (the real-capture shape). `claude -p --output-format stream-json` emits JSONL -- one
+// JSON object per line -- NOT a JSON array. The raw capture may also carry interleaved non-JSON stderr
+// lines (e.g. "Warning: no stdin data received" via a `2>&1` redirect). gradeTraceFile / parseTraceText
+// must parse the JSONL form, ignoring blank + non-JSON lines, and still grade identically to the array
+// form. Without this adapter the parser would JSON.parse the whole JSONL file and throw on line 2.
+// ===========================================================================
+
+// Render an events array as the native JSONL capture: one event per line. Optionally interleave a
+// non-JSON stderr warning line (as a `2>&1` redirect would) to prove it is ignored.
+function toJsonl(events, { withStderrWarning } = {}) {
+  const lines = events.map((e) => JSON.stringify(e));
+
+  if (withStderrWarning) {
+    // Splice a stderr-style non-JSON line near the top, as 2>&1 interleaving would.
+    lines.splice(1, 0, 'Warning: no stdin data received');
+  }
+
+  return lines.join('\n') + '\n';
+}
+
+test('parseTraceText parses native JSONL and grades identically to the JSON array', () => {
+  const events = buildPassingTrace();
+  const fromArray = parseTrace(events);
+  const fromJsonl = parseTraceText(toJsonl(events));
+  assert.deepEqual(fromJsonl, fromArray, 'JSONL grades byte-identically to the array form');
+  assert.equal(fromJsonl.pass, true, 'the JSONL passing trace passes');
+});
+
+test('parseTraceText ignores interleaved non-JSON stderr lines in a JSONL capture', () => {
+  const events = buildPassingTrace();
+  const text = toJsonl(events, { withStderrWarning: true });
+  // Sanity: the text really does contain the non-JSON warning line.
+  assert.ok(/^Warning: no stdin data received$/m.test(text), 'the JSONL text carries a stderr warning line');
+
+  const verdict = parseTraceText(text);
+  assert.equal(verdict.pass, true, 'the warning line is ignored; the trace still grades as pass');
+  assert.deepEqual(verdict, parseTrace(events), 'identical to the clean array grading');
+});
+
+test('parseTraceText fails closed (ContractError) when no line yields a stream-json event', () => {
+  assert.throws(
+    () => parseTraceText('Warning: no stdin data received\njust prose\n\n'),
+    (err) => err.name === 'ContractError',
+    'a file with zero parseable events fails closed',
+  );
+});
+
+test('gradeTraceFile reads a real-shape JSONL capture file (with interleaved stderr) and grades it', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'lz-sc5-jsonl-'));
+  const file = path.join(dir, 'capture.stream.json');
+  fs.writeFileSync(file, toJsonl(buildPassingTrace(), { withStderrWarning: true }), 'utf8');
+
+  const verdict = gradeTraceFile(file);
+  assert.equal(verdict.pass, true, 'the native JSONL capture grades as pass');
+  assert.equal(verdict.maxInFlight, 5, 'in-flight cap parsed from JSONL');
+  assert.equal(verdict.advisorSpawns, 2, 'advisor spawns parsed from JSONL');
 
   fs.rmSync(dir, { recursive: true, force: true });
 });

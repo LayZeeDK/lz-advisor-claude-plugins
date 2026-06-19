@@ -22,25 +22,27 @@
 // per-agent JSONL session log (~/.claude/projects/<cwd-hash>/<session>/subagents/agent-<id>.jsonl) is
 // the documented fallback evidence for nested tool-use; the spike doc cross-checks against it.
 //
-// The byte-order mark is code point U+FEFF. This source contains no literal byte-order mark; JSON reads
-// go through the shared lz-eval-readjson.mjs helper, which strips a BOM at read time (ASCII-only source
-// per CLAUDE.md).
+// The captured trace file may be EITHER the native `claude -p --output-format stream-json` JSONL (one
+// JSON object per line, possibly with interleaved non-JSON stderr lines from a `2>&1` redirect) OR a
+// JSON array (a pre-converted *.array.json or a stub fixture). gradeTraceFile / parseTraceText accept
+// both: the array form is tried first, else the text is split into lines and each parseable line is one
+// event (blank / non-JSON lines are ignored). A BOM is stripped at read time (ASCII-only source per
+// CLAUDE.md; the byte-order mark is code point U+FEFF, never written literally here).
 //
 // Pure functions are exported for the validation fixture; the thin CLI is guarded so that `import`-ing
 // this module does NOT run the CLI.
 
+import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-// Cross-tree reuse of the SHIPPED runtime aggregator's fail-closed error type (D-10; eval -> runtime,
-// one-directional, never the reverse). A malformed trace fails closed as a ContractError, never a bare
-// throw, so callers + tests match on a stable name.
+// Cross-tree reuse of the SHIPPED runtime aggregator's fail-closed error type + BOM stripper (D-10;
+// eval -> runtime, one-directional, never the reverse). A malformed trace fails closed as a
+// ContractError, never a bare throw, so callers + tests match on a stable name.
 import {
   ContractError,
+  stripBom,
 } from '../plugins/lz-advisor/skills/lz-deep-research/scripts/lz-deep-research-aggregate.mjs';
-
-// Shared fail-closed JSON read (the eval-tree helper; strips a BOM, never a bare JSON.parse).
-import { readJson } from './lz-eval-readjson.mjs';
 
 // ---------------------------------------------------------------------------
 // Frozen SC-5 acceptance thresholds (D-13). A verdict is `pass` iff ALL of these hold. These are the
@@ -276,14 +278,80 @@ export function parseTrace(events) {
 }
 
 // ---------------------------------------------------------------------------
-// gradeTraceFile(traceFilePath): read a captured stream-json trace file and return parseTrace(). The
-// file is a JSON array of events. Fails closed (ContractError) on a missing / malformed file via the
-// shared readJson.
+// parseTraceText(text): turn the raw captured trace TEXT into the array of stream-json events, then
+// parse it. Accepts EITHER capture shape:
+//   (a) JSONL -- the native `claude -p --output-format stream-json` output: one JSON object per line.
+//       Blank lines and non-JSON lines (e.g. a stderr "Warning: no stdin data received" line
+//       interleaved by a `2>&1` redirect) are IGNORED, so a raw redirect-captured file grades cleanly.
+//   (b) a JSON array -- the back-compat shape (e.g. a pre-converted *.array.json or a stub fixture).
+// The array form is tried FIRST (a whole-text JSON.parse that yields an array wins); otherwise the
+// text is split into lines and each non-blank line is parsed as one event, skipping un-parseable lines.
+// Fails closed (ContractError) only when NEITHER shape yields any event.
 // ---------------------------------------------------------------------------
-export function gradeTraceFile(traceFilePath) {
-  const events = readJson(traceFilePath);
+export function parseTraceText(text, fileLabel) {
+  const label = fileLabel || '<trace>';
+  const clean = stripBom(text);
+
+  // (a) Whole-text JSON: an array is the back-compat shape. A single object or other JSON falls through
+  // to the JSONL path (it may be a one-line JSONL capture).
+  let whole;
+  let wholeOk = false;
+
+  try {
+    whole = JSON.parse(clean);
+    wholeOk = true;
+  } catch {
+    wholeOk = false;
+  }
+
+  if (wholeOk && Array.isArray(whole)) {
+    return parseTrace(whole);
+  }
+
+  // (b) JSONL: one JSON object per line; ignore blank / non-JSON lines (interleaved stderr, etc.).
+  const events = [];
+
+  for (const rawLine of clean.split(/\r?\n/)) {
+    const line = rawLine.trim();
+
+    if (line === '') {
+      continue;
+    }
+
+    let obj;
+
+    try {
+      obj = JSON.parse(line);
+    } catch {
+      // Non-JSON line (e.g. an interleaved stderr warning) -- skip it, do not fail the whole trace.
+      continue;
+    }
+
+    events.push(obj);
+  }
+
+  if (events.length === 0) {
+    throw new ContractError('trace file yielded no stream-json events (neither a JSON array nor JSONL)', label);
+  }
 
   return parseTrace(events);
+}
+
+// ---------------------------------------------------------------------------
+// gradeTraceFile(traceFilePath): read a captured stream-json trace file and return parseTrace(). Accepts
+// either the native JSONL capture or a JSON array (see parseTraceText). Fails closed (ContractError) on
+// a missing / unreadable file or a file that yields no events.
+// ---------------------------------------------------------------------------
+export function gradeTraceFile(traceFilePath) {
+  let text;
+
+  try {
+    text = fs.readFileSync(traceFilePath, 'utf8');
+  } catch (err) {
+    throw new ContractError('cannot read file: ' + err.message, traceFilePath);
+  }
+
+  return parseTraceText(text, traceFilePath);
 }
 
 // ---------------------------------------------------------------------------
