@@ -1,7 +1,7 @@
 # 19-04 T-spend-1 outcome: VOID (positive-control arm construct collapse)
 
 **Date:** 2026-06-19 (autonomous overnight run, user pre-authorized T-spend-1 + T-spend-2 + OOF Copilot).
-**Result:** the offline gold build VOIDs on the positive-control arm. T-spend-2 was NOT run (it is conditioned on a clean gold). Sonnet-default ships in the interim; Haiku stays OFF. **This requires a user redesign decision (RAISE).**
+**Result:** the offline gold build VOIDs on the positive-control arm. T-spend-2 was NOT run (it is conditioned on a clean gold). The VOID blocks the ABSOLUTE PER-MODEL verdict for ALL THREE subjects equally (Haiku, Sonnet, and the Opus reference baseline) -- no per-model false-uphold/over-refusal metrics yet for the "near-Opus intelligence at Sonnet/Haiku cost" thesis (proving Haiku is co-equal with Sonnet is the eval's purpose, NOT sidelined). The production cheap-tier-worker deployment default is a SEPARATE downstream matter, unchanged -- not a judgment on Haiku. **This requires a user redesign decision (RAISE).**
 
 ## What ran (all authorized; checkpoints honored)
 
