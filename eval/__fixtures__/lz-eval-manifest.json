@@ -115,7 +115,8 @@
       ],
       "both_tried_drop_on_no_date": true,
       "remap": "SUPPORTS -> positive-control gold; NEI/REFUTES not controls",
-      "not_reserved_averitec": true
+      "not_reserved_averitec": true,
+      "superseded_by_replan12": "SUPERSEDED-BY-RE-PLAN-12: the synthetic positive-control source (FEVER/VitaminC) is RETIRED (RE-PLAN-9/10/11 DESCOPED twice -- thin yield, difficulty-confound, negative-EV; board-unanimous). The offline verdict mechanism is now the MCC SCREEN over manual contrastive minimal-pairs (see stage1_pre_registration.contrastive_construction + mcc_screen). The over-refusal CP gate MOVES to the Phase-20 live arm. This RE-PLAN-9 block + its sources are PRESERVED as the record; the source is NOT fetched."
     },
     "control_construction": {
       "note": "RE-PLAN-9 (ADDITIVE). The PRE-SPECIFIED control-construction rule (NEVER a post-hoc rescue of weak controls). constructControls (eval/lz-eval-control-construction.mjs) bins candidates into the 6 trap-matched covariate strata, REJECTS exact-substring overlap >= substring_reject_max_chars (40) + applies a complexity/length filter at min_complexity_tokens (12) to force SEMANTIC entailment, and enforces a >=1/3 HARD-POSITIVE stratum. The two threshold constants + the 1/3 fraction are PRE-REGISTERED module-level constants, NEVER tuned toward N. constructControls produces CANDIDATES only; the strict OOF all-agree decider (makeBatchedOofProbe -> runProbeConsensus, entails=true) is the SOLE retain decider.",
@@ -126,7 +127,8 @@
       "min_complexity_tokens": 12,
       "hard_positive_fraction": ">=1/3",
       "thresholds_pre_registered_not_tuned": true,
-      "candidates_only_oof_decides_retain": true
+      "candidates_only_oof_decides_retain": true,
+      "superseded_by_replan12": "SUPERSEDED-BY-RE-PLAN-12: the synthetic-from-source control construction is RETIRED; RE-PLAN-12 authors MANUAL contrastive minimal-pairs on the SAME 12 dense trap evidence bundles (expanded-synthetic positives are REJECTED). The construction constants are PRESERVED as the record but the constructor is NOT run."
     },
     "survival_probe": {
       "note": "RE-PLAN-9 (ADDITIVE). A single pre-registered SURVIVAL PROBE scored by the UNCHANGED strict OUT-OF-FAMILY all-agree screen (the SAME on both arms -- entails=true for a control, entails=false for a trap; NO asymmetric criterion) + a trap-vs-control COVARIATE-MATCH check + a HUMAN confirmation of the retained set. runSurvivalProbe (eval/lz-eval-survival-probe.mjs) is NON-GATING for the trap arm. The N_CTRL_FLOOR=24 stays FROZEN; the probe TARGETS ~30+ retained for CI headroom.",
@@ -136,7 +138,8 @@
       "n_ctrl_floor_frozen": true,
       "screen": "strict OOF all-agree (SAME on both arms)",
       "covariate_match_check": true,
-      "human_confirmation": true
+      "human_confirmation": true,
+      "superseded_by_replan12": "SUPERSEDED-BY-RE-PLAN-12: the synthetic-control survival probe is RETIRED. RE-PLAN-12 replaces it with the dual-baseline artifact guard (NO-SPEND) + the MCC SCREEN over the 24 contrastive items. The probe machinery is PRESERVED as the record but NOT run."
     },
     "control_decision_rule": {
       "note": "RE-PLAN-9 (ADDITIVE). The PRE-REGISTERED build-OR-descope decision rule, FIXED before the probe runs; the probe outcome (a fact) decides the branch (decideControlArm, eval/lz-eval-survival-probe.mjs).",
@@ -146,7 +149,57 @@
       "no_asymmetric_criterion": true,
       "no_auto_lock": true,
       "dead_paths": "Path A (relax the 24 floor) + Path B (a looser support criterion for controls only) -- DEAD by board consensus",
-      "ci_headroom": "CP1s(0,24)=0.1173 <= 0.15; CP1s(1,24)=0.1829 > 0.15; CP1s(1,30)=0.1486 <= 0.15"
+      "ci_headroom": "CP1s(0,24)=0.1173 <= 0.15; CP1s(1,24)=0.1829 > 0.15; CP1s(1,30)=0.1486 <= 0.15",
+      "superseded_by_replan12": "SUPERSEDED-BY-RE-PLAN-12: the synthetic build-OR-descope decision rule is RETIRED. The offline decision rule is now stage1_pre_registration.screen_decision_rule (guard + MCC bar -> SCREEN-PASS gate to live; else DEMOTE to a non-gating diagnostic + trap-only + PROVISIONAL; offline NEVER WORKS). The over-refusal CP gate MOVES to the live arm (stage1_pre_registration.over_refusal_moved_to_live). This rule is PRESERVED as the record."
+    },
+    "contrastive_construction": {
+      "note": "RE-PLAN-12 (board-converged; ADDITIVE, re-registered in the STILL-OPEN ZERO-VOTES window). The ONLY substantive change to the positive arm: MANUAL contrastive minimal-pairs authored on the SAME 12 dense trap EVIDENCE bundles already used by the HEALTHY false-uphold arm -> a 24-item corpus, difficulty-matched BY CONSTRUCTION (same multi-doc density + reasoning depth; only the label-determining edit differs). The edit is on the EVIDENCE (or symmetric across the pair), NOT claim-side (kills the F3 myopia claim-side artifact). Expanded-synthetic positives are REJECTED (they scale the superficial-conjunction skew the audit caught + stay non-difficulty-matched).",
+      "construction": "manual minimal-pairs on the SAME 12 dense trap evidence bundles",
+      "edit_on": "evidence (or symmetric), NOT claim-side",
+      "expanded_synthetic_rejected": true,
+      "n_pairs": 12,
+      "n_items": 24,
+      "min_n": 24,
+      "below_min": "diagnostic-only"
+    },
+    "mcc_screen": {
+      "note": "RE-PLAN-12 (ADDITIVE). The confound-robust METRIC + the PRE-REGISTERED bar (FROZEN + TIMESTAMPED here BEFORE any pair is authored or scored -- the bar is literature-unspecified per the RESEARCH GAPS, so pre-registration is the ONLY defense against result-shopping). MCC structurally breaks the always-refute confound (a degenerate single-class judge = MCC 0, F4) WITHOUT a separately-hand-built positive corpus. The constants match eval/lz-eval-mcc.mjs byte-for-byte.",
+      "metric": "MCC",
+      "bar": "mcc_point >= 0.5 AND ci_lower_one_sided_95 > 0 AND permutation_mcc_gt_0",
+      "mcc_bar_point": 0.5,
+      "mcc_ci_alpha": 0.05,
+      "mcc_ci_lower_floor": 0,
+      "ci_method": "BCa bootstrap",
+      "significance": "label-permutation MCC > 0",
+      "bar_pre_registered_before_authoring": true,
+      "pre_registered_timestamp": "2026-06-19T16:07:00Z",
+      "f4_breaks_always_refute_confound": true,
+      "offline_never_works": true
+    },
+    "dual_baseline_guard": {
+      "note": "RE-PLAN-12 (ADDITIVE). The MECHANICAL artifact guard (the SKEPTIC's sufficiency condition; no discretionary knob). BOTH a lexical TF/bag-of-words baseline (claim+evidence) AND a claim-only no-evidence baseline must be AT CHANCE on separating the pairs. The matches eval/lz-eval-baseline-guard.mjs byte-for-byte.",
+      "lexical_tfidf": true,
+      "claim_only_no_evidence": true,
+      "both_at_chance_required": true,
+      "at_chance": "separation-MCC one-sided BCa lower CI <= 0 (chance for MCC is 0, NOT 0.5)",
+      "chance_value": 0,
+      "either_separates": "lower CI > 0 -> AUTO-DEMOTE to a non-gating diagnostic + offline trap-only",
+      "mechanical": true
+    },
+    "screen_decision_rule": {
+      "note": "RE-PLAN-12 (ADDITIVE). The PRE-REGISTERED SCREEN-PASS/DEMOTE rule (NO auto-lock -- the gate-vs-demote is HUMAN-CONFIRMED at the T-spend checkpoint; decideContrastiveScreen returns the recommendation). The guard runs FIRST. Offline NEVER earns WORKS (the SDT positive-trials constraint, F5/F7): a SCREEN-PASS GATES progression to the Phase-20 live stage (where WORKS is certified); a DEMOTE reverts offline to trap-only + explicitly incomplete. EITHER WAY the label is SCREEN-PASS / PROVISIONAL.",
+      "gate": "guardPasses AND mcc >= 0.5 AND mccLowerCI > 0 AND permutationP < 0.05 -> SCREEN-PASS, gate to the Phase-20 live stage",
+      "demote": "-> DEMOTE to a non-gating diagnostic + offline trap-only + explicitly incomplete + PROVISIONAL (the MCC/over-refusal verdict defers to the live stage)",
+      "offline_never_works": true,
+      "no_auto_lock": true
+    },
+    "over_refusal_moved_to_live": {
+      "note": "RE-PLAN-12 (ADDITIVE). The over-refusal CP gate (CP-upper of the over-refusal rate <= TAU_OR 0.15, N_ctrl >= 24) MOVES OUT of 19-04 to the Phase-20 LIVE arm -- the adjudicated production-distribution positives are the only difficulty-matched-AND-real positives. The engine struct is UNCHANGED (TAU_OR + N_CTRL_FLOOR=24 byte-identical, FROZEN, applied at the live arm). The RE-PLAN-9 synthetic control arm (control_source/control_construction/survival_probe/control_decision_rule) is SUPERSEDED-BY-RE-PLAN-12 + preserved (see each key's superseded_by_replan12 annotation).",
+      "cp_upper_le_tau_or": 0.15,
+      "n_ctrl_floor": 24,
+      "applies_at": "live (Phase 20)",
+      "engine_struct_unchanged": true,
+      "synthetic_control_arm_superseded": true
     }
   },
   "strata": {

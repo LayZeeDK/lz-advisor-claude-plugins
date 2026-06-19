@@ -692,6 +692,8 @@ with margin; the control arm is the tighter post-screen constraint.
 
 ## RE-PLAN-9 (board-converged; ADDITIVE, re-registered in the STILL-OPEN ZERO-VOTES window)
 
+> SUPERSEDED-BY-RE-PLAN-12: the synthetic positive-control arm (FEVER/VitaminC source + construction + survival probe) is RETIRED; the offline verdict mechanism is now the MCC SCREEN over manual contrastive minimal-pairs (see RE-PLAN-12 below); the over-refusal CP gate MOVES to the Phase-20 live arm. The RE-PLAN-9 body below is preserved as the record.
+
 RE-PLAN-9 is an ADDITIVE re-plan (a de-identified, fact-only cross-family advisor board -- 2 in-family
 Opus lenses [a pragmatic FIXER + a validity SKEPTIC, via the Agent tool] + GPT-5.5 + Gemini-3.1-pro-preview
 [out-of-family, via the Copilot CLI], ~4 OOF calls; R1 independent proposals on a neutral brief, R2
@@ -784,3 +786,72 @@ STILL OPEN (the gold VOIDed pre-vote), so the supersession is pre-registration-c
 The 9b16c60 nControls=40 pin TEXT is PRESERVED + annotated SUPERSEDED (in the lock-rule section above + the
 manifest `task6_run_config`), NEVER deleted. The controls come entirely from the new entailment-native
 FEVER + VitaminC source; the assembler CODE is UNCHANGED (nControls=0 is the existing trap-only path).
+
+## RE-PLAN-12 (board-converged; the STAGED path to certified WORKS; ADDITIVE, re-registered in the STILL-OPEN ZERO-VOTES window; PRE-REGISTERED 2026-06-19T16:07:00Z BEFORE any pair authored/scored)
+
+RE-PLAN-12 is an ADDITIVE re-plan (a deep-research pass + a 2-round cross-family advisor board -- 2
+in-family Opus lenses [an eval-redesign ARCHITECT + a validity SKEPTIC, via the Agent tool] + GPT-5.5 +
+Gemini-3.1-pro-preview [out-of-family, via the Copilot CLI]; R1 a genuine 4-way split, R2 CONSENSUS;
+transcripts gitignored under `eval/.cache/replan10-board/works-*`; THE AUTHORITY is
+19-04-REPLAN-DECISION-12.md + 19-04-CERTIFY-WORKS-RESEARCH.md). It CARRIES every RE-PLAN-7 + RE-PLAN-8 +
+RE-PLAN-9 section above BYTE-IDENTICAL (the RE-PLAN-9 head gets the one-line SUPERSEDED banner only) and
+ADDS the sub-sections below. It is entirely inside the STILL-OPEN ZERO-VOTES window (the gold VOIDed at
+the gold-build BEFORE any subject vote, so re-pre-registering the offline verdict mechanism is
+pre-registration-clean, NOT result-shopping). The TIMESTAMP above (2026-06-19T16:07:00Z) is the
+anti-result-shopping anchor: the MCC bar + the scripts are FROZEN BEFORE any contrastive pair is
+authored or scored. The OOF gold-decider identity (gpt-5.5 + gemini-3.1-pro-preview, --effort high) +
+EVAL_THRESHOLDS EXISTING numbers (TAU_OR + N_CTRL_FLOOR=24 FROZEN, now applied at the live arm) +
+URL_DATE_RULE + clopperPearsonUpperOneSided are BYTE-IDENTICAL.
+
+### The offline confound-robust MCC SCREEN (SCREEN-PASS / PROVISIONAL, never WORKS)
+
+The SDT constraint (F5/F7) is decisive and load-bearing: a valid WORKS/sensitivity verdict
+MATHEMATICALLY REQUIRES positive trials (d-prime, balanced accuracy, MCC, AUC all need BOTH a hit rate
+AND a false-alarm rate) -- the trap arm alone cannot certify. The OFFLINE arm (this plan) is therefore a
+confound-robust SCREEN whose output label is SCREEN-PASS / PROVISIONAL; it GATES progression to the
+Phase-20 live stage (pass) or is a cheap offline FALSIFICATION of the judge (fail-the-screen). It NEVER
+earns the word WORKS; ONLY the Phase-20 live stage certifies WORKS. `runContrastiveScreen`
+(eval/lz-eval-contrastive-screen.mjs) sets `provisional = true` ALWAYS.
+
+### The contrastive minimal-pair construction
+
+The ONLY substantive RE-PLAN-12 change to the positive arm: MANUAL minimal label-flipping edits on the
+SAME ~12 dense trap EVIDENCE bundles already used by the HEALTHY false-uphold arm (assembleWiceTraps +
+the AVeriTeC evidence-absent stratum) -> a 24-item corpus, difficulty-matched BY CONSTRUCTION (same
+multi-doc density + reasoning depth; only the label-determining edit differs). The edit MUST be on the
+EVIDENCE (or symmetric across the pair), NOT claim-side -- this kills the F3 "myopia" claim-side artifact
+(a model overfocusing on an edited claim feature). Expanded-synthetic positives are REJECTED (they scale
+the superficial-conjunction skew the audit caught + stay non-difficulty-matched). N >= 24 (12 pairs) else
+the interval is non-informative -> diagnostic-only.
+
+### The pre-registered MCC bar
+
+MCC point >= 0.5 AND one-sided 95% BCa lower-CI > 0 AND a label-permutation test for MCC > 0. The bar is
+FROZEN + TIMESTAMPED here (2026-06-19T16:07:00Z) BEFORE the pairs are authored/scored -- the bar is
+literature-unspecified (per the RESEARCH GAPS), so pre-registration is the ONLY defense against
+result-shopping. The bar constants `MCC_BAR_POINT = 0.5` / `MCC_CI_ALPHA = 0.05` /
+`MCC_CI_LOWER_FLOOR = 0` match eval/lz-eval-mcc.mjs byte-for-byte. MCC structurally breaks the
+always-refute confound (a degenerate single-class judge = MCC 0, F4) WITHOUT a separately-hand-built
+positive corpus. The CI is a BCa bootstrap (RESAMPLING allowed; the quantile + normal-inverse
+acceleration math route through jstat, NEVER hand-rolled -- D-07).
+
+### The dual-baseline artifact guard
+
+BOTH a lexical baseline (TF / bag-of-words on claim+evidence) AND a claim-only no-evidence baseline must
+be AT CHANCE on separating the pairs (each baseline's separation-MCC one-sided BCa lower CI <= 0 --
+chance for MCC is 0, NOT 0.5). BOTH at chance -> the screen GATES; EITHER separates (lower CI > 0) -> a
+lexical/claim-side artifact exists -> AUTO-DEMOTE to a non-gating diagnostic + offline reverts to
+trap-only. The guard is MECHANICAL, no discretionary knob (the comparator constant 0 is pinned in
+eval/lz-eval-baseline-guard.mjs as `AT_CHANCE_MCC = 0`). `dualBaselineGuard` adjudicates the ONE
+empirical unknown (are the 12 manual minimal-pairs artifact-free?) DURING execution.
+
+### The over-refusal CP gate MOVES to the live arm
+
+The over-refusal CP gate (CP-upper <= `TAU_OR` 0.15, N_ctrl >= 24) MOVES OUT of 19-04 to the Phase-20
+LIVE arm (the adjudicated production-distribution positives are the only difficulty-matched-AND-real
+positives we will have). The engine struct is UNCHANGED (TAU_OR + N_CTRL_FLOOR stay byte-identical,
+FROZEN, applied at the live arm). The RE-PLAN-9 synthetic control arm
+(control_source/control_construction/survival_probe/control_decision_rule) is SUPERSEDED-BY-RE-PLAN-12 +
+preserved (the RE-PLAN-9 section above gets a one-line SUPERSEDED banner at its head; the body is
+preserved; the manifest keys carry a `superseded_by_replan12` annotation). The synthetic source is NOT
+fetched; the over-refusal arm moves to the live stage as a NAMED obligation, not silently dropped.

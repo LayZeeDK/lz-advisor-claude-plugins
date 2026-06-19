@@ -69,6 +69,16 @@ import {
 import { FROZEN_PAIR } from './lz-eval-survival-probe.mjs';
 import { CONTROL_SOURCES } from './lz-eval-control-source.mjs';
 
+// RE-PLAN-12 (Task 8) anti-drift: the PRE-REGISTERED MCC bar constants (from the NET-NEW MCC module) +
+// the dual-baseline at-chance comparator (from the NET-NEW guard module), pinned prose == code
+// byte-for-byte against the lock-rule + manifest. These are the RE-PLAN-12 offline-screen modules.
+import {
+  MCC_BAR_POINT,
+  MCC_CI_ALPHA,
+  MCC_CI_LOWER_FLOOR,
+} from './lz-eval-mcc.mjs';
+import { AT_CHANCE_MCC } from './lz-eval-baseline-guard.mjs';
+
 const { jStat } = jStatPkg;
 
 // Resolve __fixtures__ test-file-relative (NEVER process.cwd() -- cwd drifts under GSD worktrees and
@@ -1094,4 +1104,149 @@ test('D2 passHatK(15, 0, 5) === 0 (all-fail: no k-subset of zero correct trials 
   // Symmetric to the passAtK(n,0,k)===0 assertion. passHatK(n,c,k) = C(c,k)/C(n,k).
   // C(0,5) === 0 (cannot choose 5 from 0), so the result is 0/C(15,5) = 0. Pins all-fail symmetry.
   assert.ok(Math.abs(passHatK(15, 0, 5) - 0) < 1e-12, 'passHatK(15,0,5) === 0 (no correct -> no passing k-subset)');
+});
+
+// ---------------------------------------------------------------------------
+// Plan 19-04 / Task 8 / RE-PLAN-12 re-pre-registration anti-drift: the lock-rule + manifest record the 5
+// ADDITIVE RE-PLAN-12 keys (contrastive_construction + mcc_screen + dual_baseline_guard +
+// screen_decision_rule + over_refusal_moved_to_live) with the prose numbers (the MCC bar 0.5, the alpha
+// 0.05, the lower floor 0, the 24-item floor, the 12-pair count, the at-chance comparator 0, the
+// pre-registration TIMESTAMP) matching the Task 6-7 modules byte-for-byte. The pre_registered_timestamp
+// is MACHINE-ASSERTED to parse as a valid ISO-8601 UTC instant, reject the literal placeholder, and be
+// strictly in the PAST -- the anti-result-shopping anchor is enforced, not merely attested. The RE-PLAN-7
+// + RE-PLAN-8 + RE-PLAN-9 keys + EVAL_THRESHOLDS EXISTING numbers (TAU_OR + N_CTRL_FLOOR=24 FROZEN) +
+// URL_DATE_RULE + the OOF gold-decider identity stay byte-identical. The re-registration is in the
+// STILL-OPEN zero-votes window.
+// ---------------------------------------------------------------------------
+
+test('Task-8 RE-PLAN-12 re-pre-registration: the lock rule + manifest record the 5 ADDITIVE keys (contrastive construction + MCC screen + dual-baseline guard + screen decision rule + over-refusal-moved-to-live), prose == code; the timestamp is real + past + placeholder-rejected; the RE-PLAN-7/8/9 keys + EVAL_THRESHOLDS + URL_DATE_RULE + the OOF decider identity byte-identical', () => {
+  const prose = fs.readFileSync(LOCK_RULE, 'utf8');
+  const m = JSON.parse(fs.readFileSync(MANIFEST, 'utf8'));
+  const pre = m.stage1_pre_registration;
+
+  // The RE-PLAN-12 top-level lock-rule section is recorded AFTER the RE-PLAN-9 section.
+  assert.ok(/## RE-PLAN-12 \(board-converged; the STAGED path to certified WORKS/.test(prose), 'the lock rule has the RE-PLAN-12 section');
+  assert.ok(prose.indexOf('## RE-PLAN-9') < prose.indexOf('## RE-PLAN-12'), 'the RE-PLAN-12 section is AFTER the RE-PLAN-9 section (carried sections unaltered)');
+
+  // The RE-PLAN-9 head carries the one-line SUPERSEDED-BY-RE-PLAN-12 banner (body preserved).
+  assert.ok(/> SUPERSEDED-BY-RE-PLAN-12: the synthetic positive-control arm/.test(prose), 'the RE-PLAN-9 section head carries the SUPERSEDED-BY-RE-PLAN-12 banner');
+
+  // (1) The offline MCC SCREEN sub-section: the SDT constraint + SCREEN-PASS / PROVISIONAL never WORKS.
+  assert.ok(/### The offline confound-robust MCC SCREEN \(SCREEN-PASS \/ PROVISIONAL, never WORKS\)/.test(prose), 'the lock rule records the offline MCC SCREEN sub-section');
+  assert.ok(/SDT constraint \(F5\/F7\)/.test(prose) && /MATHEMATICALLY REQUIRES positive trials/.test(prose), 'the SDT positive-trials constraint is recorded');
+  assert.ok(/NEVER\s+earns the word WORKS/.test(prose) && /ONLY the Phase-20 live stage certifies WORKS/.test(prose), 'offline NEVER WORKS; only the live stage certifies WORKS');
+
+  // (2) The contrastive minimal-pair construction sub-section.
+  assert.ok(/### The contrastive minimal-pair construction/.test(prose), 'the lock rule records the contrastive minimal-pair construction sub-section');
+  assert.ok(/SAME ~12 dense trap EVIDENCE bundles/.test(prose) && /difficulty-matched BY CONSTRUCTION/.test(prose), 'the construction is on the SAME dense bundles, difficulty-matched by construction');
+  assert.ok(/on the\s*\n?\s*EVIDENCE \(or symmetric across the pair\), NOT claim-side/.test(prose), 'the edit is on the EVIDENCE/symmetric, NOT claim-side (F3)');
+  assert.ok(/Expanded-synthetic positives are REJECTED/.test(prose), 'expanded-synthetic positives are REJECTED');
+  assert.ok(/N >= 24 \(12 pairs\) else/.test(prose), 'the N>=24 (12 pairs) else diagnostic-only floor is recorded');
+
+  // (3) The pre-registered MCC bar sub-section -- prose == code with the module constants.
+  assert.ok(/### The pre-registered MCC bar/.test(prose), 'the lock rule records the pre-registered MCC bar sub-section');
+  assert.ok(prose.includes('`MCC_BAR_POINT = ' + MCC_BAR_POINT + '`'), 'the lock rule records MCC_BAR_POINT = ' + MCC_BAR_POINT + ' (prose == code)');
+  assert.ok(prose.includes('`MCC_CI_ALPHA = ' + MCC_CI_ALPHA + '`'), 'the lock rule records MCC_CI_ALPHA = ' + MCC_CI_ALPHA + ' (prose == code)');
+  assert.ok(prose.includes('`MCC_CI_LOWER_FLOOR = ' + MCC_CI_LOWER_FLOOR + '`'), 'the lock rule records MCC_CI_LOWER_FLOOR = ' + MCC_CI_LOWER_FLOOR + ' (prose == code)');
+  assert.ok(/MCC point >= 0.5 AND one-sided 95% BCa lower-CI > 0 AND a label-permutation test for MCC > 0/.test(prose), 'the full bar (point + CI + permutation) is recorded');
+  assert.ok(/a degenerate single-class judge = MCC 0, F4/.test(prose), 'MCC structurally breaks the always-refute confound (F4)');
+
+  // (4) The dual-baseline artifact guard sub-section -- the comparator constant 0 (NOT 0.5).
+  assert.ok(/### The dual-baseline artifact guard/.test(prose), 'the lock rule records the dual-baseline artifact guard sub-section');
+  assert.ok(/chance for MCC is 0, NOT 0.5/.test(prose), 'the comparator scale (chance for MCC is 0, NOT 0.5) is recorded');
+  assert.ok(prose.includes('`AT_CHANCE_MCC = ' + AT_CHANCE_MCC + '`'), 'the lock rule records the pinned comparator AT_CHANCE_MCC = ' + AT_CHANCE_MCC + ' (prose == code)');
+  assert.ok(/BOTH at chance -> the screen GATES; EITHER separates \(lower CI > 0\) ->/.test(prose), 'both-at-chance -> gate; either-separates -> auto-demote');
+
+  // (5) The over-refusal CP gate MOVES to the live arm sub-section.
+  assert.ok(/### The over-refusal CP gate MOVES to the live arm/.test(prose), 'the lock rule records the over-refusal-moved-to-live sub-section');
+  assert.ok(/MOVES OUT of 19-04 to the Phase-20\s*\n?\s*LIVE arm/.test(prose), 'the over-refusal CP gate moves to the Phase-20 live arm');
+  assert.ok(/SUPERSEDED-BY-RE-PLAN-12 \+\s*\n?\s*preserved/.test(prose), 'the RE-PLAN-9 synthetic control arm is recorded SUPERSEDED-BY-RE-PLAN-12 + preserved');
+
+  // ----- The MANIFEST records the 5 ADDITIVE keys (anti-drift), prose == code -----
+
+  // contrastive_construction.
+  assert.ok(pre.contrastive_construction && typeof pre.contrastive_construction === 'object', 'the manifest records contrastive_construction');
+  assert.equal(pre.contrastive_construction.expanded_synthetic_rejected, true, 'the manifest records expanded_synthetic_rejected');
+  assert.equal(pre.contrastive_construction.n_pairs, 12, 'the manifest records 12 pairs');
+  assert.equal(pre.contrastive_construction.n_items, 24, 'the manifest records 24 items');
+  assert.equal(pre.contrastive_construction.min_n, 24, 'the manifest records the 24-item min_n floor');
+  assert.ok(/NOT claim-side/.test(pre.contrastive_construction.edit_on), 'the manifest records the edit is evidence-side / NOT claim-side');
+
+  // mcc_screen -- prose == code with the module constants + the timestamp machine-asserted.
+  assert.ok(pre.mcc_screen && typeof pre.mcc_screen === 'object', 'the manifest records mcc_screen');
+  assert.equal(pre.mcc_screen.mcc_bar_point, MCC_BAR_POINT, 'the manifest mcc_bar_point == the module MCC_BAR_POINT (0.5)');
+  assert.equal(pre.mcc_screen.mcc_ci_alpha, MCC_CI_ALPHA, 'the manifest mcc_ci_alpha == the module MCC_CI_ALPHA (0.05)');
+  assert.equal(pre.mcc_screen.mcc_ci_lower_floor, MCC_CI_LOWER_FLOOR, 'the manifest mcc_ci_lower_floor == the module MCC_CI_LOWER_FLOOR (0)');
+  assert.equal(pre.mcc_screen.metric, 'MCC', 'the manifest records the metric is MCC');
+  assert.equal(pre.mcc_screen.ci_method, 'BCa bootstrap', 'the manifest records the BCa bootstrap CI method');
+  assert.equal(pre.mcc_screen.bar_pre_registered_before_authoring, true, 'the manifest records the bar is pre-registered before authoring');
+  assert.equal(pre.mcc_screen.offline_never_works, true, 'the manifest records offline_never_works (SDT)');
+
+  // The pre_registered_timestamp is MACHINE-ENFORCED: parses as ISO-8601 UTC, not the placeholder, past.
+  const ts = pre.mcc_screen.pre_registered_timestamp;
+  assert.equal(typeof ts, 'string', 'the manifest records a pre_registered_timestamp string');
+  assert.ok(Number.isFinite(Date.parse(ts)), 'the pre_registered_timestamp parses as a valid ISO-8601 instant (DISCRIMINATING: a placeholder fails Date.parse)');
+  assert.ok(!/[<>]/.test(ts), 'the pre_registered_timestamp is NOT the placeholder (DISCRIMINATING)');
+  assert.ok(Date.parse(ts) < Date.now(), 'the pre_registered_timestamp is strictly in the PAST relative to the test-run time (the anti-result-shopping anchor; a future timestamp FAILS)');
+  // The lock-rule records the SAME timestamp in its heading + the bar sub-section (prose == manifest).
+  assert.ok(prose.includes(ts), 'the lock-rule records the SAME pre-registration timestamp as the manifest (prose == code)');
+
+  // dual_baseline_guard -- prose == code with the comparator constant.
+  assert.ok(pre.dual_baseline_guard && typeof pre.dual_baseline_guard === 'object', 'the manifest records dual_baseline_guard');
+  assert.equal(pre.dual_baseline_guard.lexical_tfidf, true, 'the manifest records the lexical TF baseline');
+  assert.equal(pre.dual_baseline_guard.claim_only_no_evidence, true, 'the manifest records the claim-only no-evidence baseline');
+  assert.equal(pre.dual_baseline_guard.both_at_chance_required, true, 'the manifest records both-at-chance-required');
+  assert.equal(pre.dual_baseline_guard.chance_value, AT_CHANCE_MCC, 'the manifest chance_value == the module AT_CHANCE_MCC (0, NOT 0.5)');
+  assert.ok(/chance for MCC is 0, NOT 0.5/.test(pre.dual_baseline_guard.at_chance), 'the manifest records the comparator scale (chance for MCC is 0, NOT 0.5)');
+  assert.ok(/AUTO-DEMOTE/.test(pre.dual_baseline_guard.either_separates), 'the manifest records either-separates -> auto-demote');
+
+  // screen_decision_rule.
+  assert.ok(pre.screen_decision_rule && typeof pre.screen_decision_rule === 'object', 'the manifest records screen_decision_rule');
+  assert.ok(/guardPasses AND mcc >= 0.5 AND mccLowerCI > 0 AND permutationP < 0.05 -> SCREEN-PASS/.test(pre.screen_decision_rule.gate), 'the manifest records the GATE rule (the four legs -> SCREEN-PASS)');
+  assert.ok(/DEMOTE to a non-gating diagnostic \+ offline trap-only/.test(pre.screen_decision_rule.demote), 'the manifest records the DEMOTE rule (trap-only + PROVISIONAL)');
+  assert.equal(pre.screen_decision_rule.offline_never_works, true, 'the manifest records offline_never_works in the decision rule');
+  assert.equal(pre.screen_decision_rule.no_auto_lock, true, 'the manifest records no_auto_lock (human-confirmed)');
+
+  // over_refusal_moved_to_live -- TAU_OR + N_CTRL_FLOOR=24 byte-identical, applied at the live arm.
+  assert.ok(pre.over_refusal_moved_to_live && typeof pre.over_refusal_moved_to_live === 'object', 'the manifest records over_refusal_moved_to_live');
+  assert.equal(pre.over_refusal_moved_to_live.cp_upper_le_tau_or, EVAL_THRESHOLDS.TAU_OR, 'the manifest over-refusal CP gate cp_upper_le_tau_or == the FROZEN TAU_OR (0.15)');
+  assert.equal(pre.over_refusal_moved_to_live.n_ctrl_floor, EVAL_THRESHOLDS.N_CTRL_FLOOR, 'the manifest over-refusal n_ctrl_floor == the FROZEN N_CTRL_FLOOR (24)');
+  assert.equal(pre.over_refusal_moved_to_live.applies_at, 'live (Phase 20)', 'the manifest records the over-refusal CP gate applies at the live stage (Phase 20)');
+  assert.equal(pre.over_refusal_moved_to_live.engine_struct_unchanged, true, 'the manifest records the engine struct is UNCHANGED');
+
+  // The RE-PLAN-9 synthetic keys are recorded superseded_by_replan12 (text PRESERVED, not deleted).
+  assert.ok(typeof pre.control_source.superseded_by_replan12 === 'string' && /RETIRED/.test(pre.control_source.superseded_by_replan12), 'control_source is recorded superseded_by_replan12');
+  assert.ok(typeof pre.control_construction.superseded_by_replan12 === 'string', 'control_construction is recorded superseded_by_replan12');
+  assert.ok(typeof pre.survival_probe.superseded_by_replan12 === 'string', 'survival_probe is recorded superseded_by_replan12');
+  assert.ok(typeof pre.control_decision_rule.superseded_by_replan12 === 'string', 'control_decision_rule is recorded superseded_by_replan12');
+  // DISCRIMINATING: the RE-PLAN-9 source ids are PRESERVED (not deleted) under the supersession.
+  assert.deepEqual(pre.control_source.sources.map((s) => s.id).sort(), ['fever', 'vitaminc'], 'the RE-PLAN-9 control_source ids are PRESERVED (not deleted)');
+
+  // ----- The RE-PLAN-7 + RE-PLAN-8 + RE-PLAN-9 keys + the frozen numbers STAY byte-identical -----
+  assert.ok(typeof pre.absolute_per_model_design === 'string' && /certifyModel/.test(pre.absolute_per_model_design), 'the RE-PLAN-7 absolute_per_model_design key is byte-identical');
+  assert.equal(pre.tau_fu, EVAL_THRESHOLDS.TAU_FU, 'the RE-PLAN-7 tau_fu key is byte-identical');
+  assert.equal(pre.tau_or, EVAL_THRESHOLDS.TAU_OR, 'the RE-PLAN-7 tau_or key is byte-identical');
+  assert.equal(pre.n_trap_floor, EVAL_THRESHOLDS.N_TRAP_FLOOR, 'the RE-PLAN-7 n_trap_floor key is byte-identical');
+  assert.equal(pre.n_ctrl_floor, EVAL_THRESHOLDS.N_CTRL_FLOOR, 'the RE-PLAN-7 n_ctrl_floor key is byte-identical (N_CTRL_FLOOR=24 FROZEN)');
+  assert.ok(typeof pre.decision_matrix === 'string' && /opusFailsBar/.test(pre.decision_matrix), 'the RE-PLAN-7 decision_matrix key is byte-identical');
+  assert.ok(pre.oof_bulk_batching && pre.oof_bulk_batching.batch_size === 8, 'the RE-PLAN-8 oof_bulk_batching key is byte-identical');
+  assert.ok(pre.contamination_gate && pre.contamination_gate.threshold === '11/12', 'the RE-PLAN-8 contamination_gate key is byte-identical');
+  assert.ok(pre.cheaper_model_pilot && pre.cheaper_model_pilot.n === 66, 'the RE-PLAN-8 cheaper_model_pilot key is byte-identical');
+  assert.ok(pre.control_source && pre.control_construction && pre.survival_probe && pre.control_decision_rule, 'the RE-PLAN-9 control-arm keys are PRESERVED (not deleted -- only annotated superseded)');
+
+  // The OOF gold-decider identity is byte-identical wherever recorded.
+  assert.ok(/gpt-5\.5/.test(pre.out_of_family_probe_consensus) && /gemini-3\.1-pro-preview/.test(pre.out_of_family_probe_consensus), 'the OOF gold-decider identity is byte-identical in the carried consensus key');
+
+  // The EXISTING EVAL_THRESHOLDS numbers + URL_DATE_RULE byte-lock are UNCHANGED by the RE-PLAN-12 additions.
+  assert.equal(EVAL_THRESHOLDS.ALPHA, 0.05);
+  assert.equal(EVAL_THRESHOLDS.RELIABLE_TRIALS, 15);
+  assert.equal(EVAL_THRESHOLDS.MIN_K, 5);
+  assert.equal(EVAL_THRESHOLDS.DELTA_UPPER_MAX, 0.25);
+  assert.equal(EVAL_THRESHOLDS.ESCALATION_KILL_HIGH, 0.5);
+  assert.equal(EVAL_THRESHOLDS.TAU_FU, 0.10);
+  assert.equal(EVAL_THRESHOLDS.TAU_OR, 0.15);
+  assert.equal(EVAL_THRESHOLDS.N_TRAP_FLOOR, 36);
+  assert.equal(EVAL_THRESHOLDS.N_CTRL_FLOOR, 24);
+  assert.equal(Object.isFrozen(EVAL_THRESHOLDS), true, 'EVAL_THRESHOLDS stays frozen through RE-PLAN-12');
+  assert.equal(m.stage1_pre_registration.url_date_rule, URL_DATE_RULE.source, 'the URL_DATE_RULE byte-lock holds through the RE-PLAN-12 re-registration');
 });
