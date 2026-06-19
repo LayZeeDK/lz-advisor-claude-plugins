@@ -62,8 +62,9 @@ import {
   STOP_REASONS,
 } from './lz-eval-offline-read.mjs';
 
-// (2) The FROZEN CP estimator + thresholds (imported, NEVER re-derived -- byte-identical).
-import { clopperPearsonUpperOneSided, EVAL_THRESHOLDS } from './lz-eval-aggregate.mjs';
+// (2) The FROZEN thresholds (imported, NEVER re-derived -- byte-identical). The CP estimator
+// (clopperPearsonUpperOneSided) is applied INSIDE certifyModel, never called directly here.
+import { EVAL_THRESHOLDS } from './lz-eval-aggregate.mjs';
 
 // (3) The OUT-OF-FAMILY gold adjudicator (composed unchanged for the live adjudication consensus).
 import { makeBatchedOofProbe } from './lz-eval-oof-batch.mjs';
