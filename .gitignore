@@ -15,3 +15,6 @@ evals/**/outputs/
 
 # Transient /lz-plan side-effect output (plan files written to cwd by skill)
 /plans/
+
+# Deep-research run dirs (audit trail; retained on disk, never committed -- INTEG-02 / AGG-05)
+/.lz-research/
