@@ -21,7 +21,7 @@ progress:
 See: .planning/PROJECT.md (updated 2026-06-15 -- milestone v2.1.0 started)
 
 **Core value:** Near-Opus intelligence at Sonnet cost, through strategic advisor consultation at high-leverage moments -- now extended from coding tasks to deep research
-**Current focus:** Phase 20 — orchestrator-skill-headless-scale-confirmation
+**Current focus:** Phase 20 — orchestrator-skill-headless-scale-confirmation. 20-04 Tasks 1-2 DONE (INTEG-02 gitignore commit 5b244ef; SC-5 trace-parser + discriminating tests commit ca8f904); 20-04 Task 3 (live SC-5 headless `claude -p` spike) AWAITING HUMAN SPEND AUTHORIZATION -- 20-04 NOT yet complete.
 
 ## Deferred Items
 
