@@ -11,7 +11,11 @@
       "subjectDifficultyMaxCatchRate": 0.5,
       "subjectDifficultyMaxCatchRate_justification": "The frozen code-default. A symmetric midpoint: a held-out-Claude reference catching > 50% of the retained traps voids the set as too easy (VOID-difficulty).",
       "partition_rule": "controlSeeds = supported.slice(len - nControls) (the trailing nControls Supported AVeriTeC seeds, ascending claim_id); trapSeeds = the remaining qualifying Supported seeds. nControls reserves trailing seeds FROM the shared trap pool (a seed used as a trap is never reused as a control). Verified against assembleStage1Traps.",
-      "feasibility_at_40": "Pre-screen pools (real assemblers, accept-all stubs): AVeriTeC 42 traps + 20 controls; WiCE (F6 cluster-collapsed) 18 traps + 11 controls -> combined ~60 traps (>=36) + ~31 controls (>=24). Reachable with margin; the control arm is the tighter post-screen constraint."
+      "feasibility_at_40": "Pre-screen pools (real assemblers, accept-all stubs): AVeriTeC 42 traps + 20 controls; WiCE (F6 cluster-collapsed) 18 traps + 11 controls -> combined ~60 traps (>=36) + ~31 controls (>=24). Reachable with margin; the control arm is the tighter post-screen constraint.",
+      "averitec_ncontrols_superseded_by_replan9": {
+        "value": 0,
+        "note": "RE-PLAN-9 supersedes the nControls=40 pin (9b16c60) -- AVeriTeC nControls=0 (ALL AVeriTeC seeds are traps); controls come from the entailment-native FEVER+VitaminC source (NOT reserved AVeriTeC native seeds). The zero-votes window is STILL OPEN (the gold VOIDed at the gold-build BEFORE any subject vote), so this is pre-registration-clean, NOT result-shopping. The original nControls=40 pin + nControls_justification above are PRESERVED + annotated SUPERSEDED, never deleted. The trigger: AVeriTeC 'Supported' is an aggregate human judgment over the full evidence base, NOT strict excerpt-entailment, so native AVeriTeC controls drop under the strict OOF screen (~7 << N_CTRL_FLOOR 24; 19-04-T-SPEND-1-OUTCOME.md). The assembler CODE is unchanged (nControls=0 is the existing trap-only path)."
+      }
     },
     "note": "Pre-registered in the ZERO-VOTES window BEFORE any Stage-1 vote (anti result-shopping, T-19-15). The construct-validity-corrected offline gating read (19-04-REPLAN-DECISION-4, AMENDING -3 / -2; UNANIMOUS cross-family board, 5/5, OPTION A): ONE offline CLOSED-BOOK JUDGMENT-difficulty stratum (evidence-absent); buried is DROPPED (construct-invalid offline, D-RP4-1: the synthetic disconfirmer flag is text-unverified; the count-vs-rank predicate error D-RP4-2 mis-classified all 62 seeds as buried) and date-sensitive DEFERRED to Phase-20 live (its post-cutoff-leak arm is unobservable offline) -- both deferred to the Phase-20 live shadow. The offline gate measures CLOSED-BOOK JUDGMENT (resist-uphold-on-absence), NOT retrieval orchestration (which is not cleanly + leak-safely measurable offline and defers to the Phase-20 live operational shadow). EVAL_THRESHOLDS numbers are byte-unchanged.",
     "url_date_rule": "(19|20)\\d{2}\\/(0[1-9]|1[0-2])\\/(0[1-9]|[12]\\d|3[01])(\\/|$)",
@@ -102,6 +106,47 @@
     "cheaper_as_decider_not_adopted": {
       "value": true,
       "note": "amendment-only -- DP6: the cheapest pair after batching saves only ~$2 vs the frozen pair batched at a family-independence/validity cost; the frozen pair (gpt-5.5 + gemini-3.1-pro-preview, --effort high) remains the SOLE gating retain decider; bulk-batching is the ONLY operational change."
+    },
+    "control_source": {
+      "note": "RE-PLAN-9 (board-converged; ADDITIVE, the STILL-OPEN zero-votes window). The ENTAILMENT-NATIVE positive-control source REPLACES the now-VOIDED AVeriTeC-native-control source (T-spend-1: AVeriTeC 'Supported' is an aggregate human judgment over the full evidence base, NOT strict excerpt-entailment, so native controls drop ~7 << N_CTRL_FLOOR 24). The probe tries BOTH sources; verifies EACH license + a defensible per-claim PRE-DATE cutoff IN the probe; a source with no usable date is DROPPED (verifyControlSourceDate -> null). SUPPORTS -> positive-control gold (the inverse of the trap remap); NEI/REFUTES are NOT controls. The date-filter mirrors the FROZEN strict-`<` cutoff. The committed manifest carries ONLY ids + remapped labels + pinned revision + sha256 (no raw CC-BY-SA text). NOT reserved AVeriTeC native seeds. Exports loadControlSource / verifyControlSourceLicense / verifyControlSourceDate / remapControlLabel (eval/lz-eval-control-source.mjs).",
+      "sources": [
+        { "id": "fever", "repo": "fever/fever", "license": "CC-BY-SA-3.0", "date_cutoff": "wikipedia dump revision" },
+        { "id": "vitaminc", "repo": "tals/vitaminc", "license": "CC-BY-SA-3.0", "date_cutoff": "wiki_revision_id" }
+      ],
+      "both_tried_drop_on_no_date": true,
+      "remap": "SUPPORTS -> positive-control gold; NEI/REFUTES not controls",
+      "not_reserved_averitec": true
+    },
+    "control_construction": {
+      "note": "RE-PLAN-9 (ADDITIVE). The PRE-SPECIFIED control-construction rule (NEVER a post-hoc rescue of weak controls). constructControls (eval/lz-eval-control-construction.mjs) bins candidates into the 6 trap-matched covariate strata, REJECTS exact-substring overlap >= substring_reject_max_chars (40) + applies a complexity/length filter at min_complexity_tokens (12) to force SEMANTIC entailment, and enforces a >=1/3 HARD-POSITIVE stratum. The two threshold constants + the 1/3 fraction are PRE-REGISTERED module-level constants, NEVER tuned toward N. constructControls produces CANDIDATES only; the strict OOF all-agree decider (makeBatchedOofProbe -> runProbeConsensus, entails=true) is the SOLE retain decider.",
+      "covariate_strata": ["domain", "date-cutoff", "excerpt-count", "claim-length", "specificity", "retrieval-sparsity"],
+      "substring_reject": true,
+      "substring_reject_max_chars": 40,
+      "complexity_length_filter": true,
+      "min_complexity_tokens": 12,
+      "hard_positive_fraction": ">=1/3",
+      "thresholds_pre_registered_not_tuned": true,
+      "candidates_only_oof_decides_retain": true
+    },
+    "survival_probe": {
+      "note": "RE-PLAN-9 (ADDITIVE). A single pre-registered SURVIVAL PROBE scored by the UNCHANGED strict OUT-OF-FAMILY all-agree screen (the SAME on both arms -- entails=true for a control, entails=false for a trap; NO asymmetric criterion) + a trap-vs-control COVARIATE-MATCH check + a HUMAN confirmation of the retained set. runSurvivalProbe (eval/lz-eval-survival-probe.mjs) is NON-GATING for the trap arm. The N_CTRL_FLOOR=24 stays FROZEN; the probe TARGETS ~30+ retained for CI headroom.",
+      "n": "~50",
+      "target_retained": "~30+",
+      "n_ctrl_floor": 24,
+      "n_ctrl_floor_frozen": true,
+      "screen": "strict OOF all-agree (SAME on both arms)",
+      "covariate_match_check": true,
+      "human_confirmation": true
+    },
+    "control_decision_rule": {
+      "note": "RE-PLAN-9 (ADDITIVE). The PRE-REGISTERED build-OR-descope decision rule, FIXED before the probe runs; the probe outcome (a fact) decides the branch (decideControlArm, eval/lz-eval-survival-probe.mjs).",
+      "clears": "retained >= 24 (frozen) AND covariate-matched AND license/date usable AND NOT selection-easy/substring-dominated -> BUILD the over-refusal arm at the frozen 24 floor",
+      "fails_any": "-> AUTO-DESCOPE to the Phase-20 live shadow + offline trap-only + explicitly incomplete + DEMOTE SATURATION-as-WORKS to PROVISIONAL until the live stage clears TAU_OR",
+      "no_floor_relaxation": true,
+      "no_asymmetric_criterion": true,
+      "no_auto_lock": true,
+      "dead_paths": "Path A (relax the 24 floor) + Path B (a looser support criterion for controls only) -- DEAD by board consensus",
+      "ci_headroom": "CP1s(0,24)=0.1173 <= 0.15; CP1s(1,24)=0.1829 > 0.15; CP1s(1,30)=0.1486 <= 0.15"
     }
   },
   "strata": {

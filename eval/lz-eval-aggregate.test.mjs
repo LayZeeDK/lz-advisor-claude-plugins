@@ -55,6 +55,20 @@ import { URL_DATE_RULE } from './lz-eval-trap-assembler.mjs';
 import { BATCH_DEFAULTS } from './lz-eval-oof-batch.mjs';
 import { PILOT_THRESHOLDS } from './lz-eval-cheaper-pilot.mjs';
 
+// RE-PLAN-9 (Task 9) anti-drift: the control-construction pre-registered constants + the survival-probe
+// frozen-pair identity, pinned prose == code byte-for-byte against the lock-rule + manifest. These are the
+// NET-NEW RE-PLAN-9 control-arm modules (Tasks 6-8); the anti-drift test asserts the recorded prose
+// numbers (target ~30+, the frozen 24, the 1/3 hard-positive fraction, substring_reject_max_chars=40,
+// min_complexity_tokens=12, the source ids) match these modules byte-for-byte.
+import {
+  SUBSTRING_REJECT_MAX_CHARS,
+  MIN_COMPLEXITY_TOKENS,
+  HARD_POSITIVE_FRACTION,
+  COVARIATE_STRATA,
+} from './lz-eval-control-construction.mjs';
+import { FROZEN_PAIR } from './lz-eval-survival-probe.mjs';
+import { CONTROL_SOURCES } from './lz-eval-control-source.mjs';
+
 const { jStat } = jStatPkg;
 
 // Resolve __fixtures__ test-file-relative (NEVER process.cwd() -- cwd drifts under GSD worktrees and
@@ -794,6 +808,155 @@ test('Task-5 RE-PLAN-8 re-pre-registration: the lock rule + manifest record the 
   assert.equal(EVAL_THRESHOLDS.N_TRAP_FLOOR, 36);
   assert.equal(EVAL_THRESHOLDS.N_CTRL_FLOOR, 24);
   assert.equal(m.stage1_pre_registration.url_date_rule, URL_DATE_RULE.source, 'the URL_DATE_RULE byte-lock holds through the RE-PLAN-8 re-registration');
+});
+
+// ---------------------------------------------------------------------------
+// Plan 19-04 / Task 9 / RE-PLAN-9 re-pre-registration anti-drift: the lock-rule + manifest record the 5
+// ADDITIVE RE-PLAN-9 keys (control_source + control_construction + survival_probe + control_decision_rule
+// + the nControls supersession) with the prose numbers (target ~30+, the FROZEN 24 floor, the 1/3
+// hard-positive fraction, substring_reject_max_chars=40, min_complexity_tokens=12, the source ids
+// fever/fever + tals/vitaminc) matching the Task 6-8 modules byte-for-byte. The RE-PLAN-7 + RE-PLAN-8
+// keys + EVAL_THRESHOLDS EXISTING numbers (N_CTRL_FLOOR=24 FROZEN) + URL_DATE_RULE + the OOF gold-decider
+// identity stay byte-identical. The re-registration is in the STILL-OPEN zero-votes window.
+// ---------------------------------------------------------------------------
+
+test('Task-9 RE-PLAN-9 re-pre-registration: the lock rule + manifest record the 5 ADDITIVE control-arm keys (source + construction + survival probe + decision rule + the nControls supersession), prose == code; the RE-PLAN-7/8 keys + EVAL_THRESHOLDS + URL_DATE_RULE + the OOF decider identity byte-identical', () => {
+  const prose = fs.readFileSync(LOCK_RULE, 'utf8');
+  const m = JSON.parse(fs.readFileSync(MANIFEST, 'utf8'));
+  const pre = m.stage1_pre_registration;
+
+  // The RE-PLAN-9 top-level lock-rule section is recorded AFTER the RE-PLAN-8 section.
+  assert.ok(/## RE-PLAN-9 \(board-converged; ADDITIVE, re-registered in the STILL-OPEN ZERO-VOTES window\)/.test(prose), 'the lock rule has the RE-PLAN-9 ADDITIVE section');
+  assert.ok(prose.indexOf('## RE-PLAN-8') < prose.indexOf('## RE-PLAN-9'), 'the RE-PLAN-9 section is AFTER the RE-PLAN-8 section (carried sections unaltered)');
+
+  // (1) The entailment-native control source (FEVER + VitaminC); both tried; drop-on-no-date; the trigger.
+  assert.ok(/### The entailment-native control source \(FEVER \+ VitaminC\)/.test(prose), 'the lock rule records the entailment-native control source section');
+  assert.ok(/control-arm redesign \(the ONLY substantive RE-PLAN-9 change\)/i.test(prose), 'the lock rule records the control-arm redesign is the ONLY substantive change');
+  assert.ok(/aggregate human\s+judgment/i.test(prose) && /NOT strict excerpt-entailment/i.test(prose), 'the lock rule records the T-spend-1 VOID trigger (aggregate human judgment, not strict excerpt-entailment)');
+  assert.ok(/fever\/fever/.test(prose) && /tals\/vitaminc/.test(prose), 'the lock rule records both source repos (fever/fever + tals/vitaminc)');
+  assert.ok(/SUPPORTS remaps to the positive-control gold/i.test(prose) || /SUPPORTS -> the positive-control gold/i.test(prose) || /SUPPORTS\s+remaps to the positive-control gold/i.test(prose), 'the lock rule records SUPPORTS -> positive-control gold');
+  assert.ok(/a source with NO\s*usable date is DROPPED/i.test(prose), 'the lock rule records drop-the-source-on-no-date');
+
+  // (2) The control-construction rule (the 6 covariate strata + the 40/12 thresholds + the 1/3 hard fraction).
+  assert.ok(/### The control-construction rule/.test(prose), 'the lock rule records the control-construction section');
+  assert.ok(/domain \/ date-cutoff \/ excerpt-count \/ claim-length \/ specificity \/\s*retrieval-sparsity/.test(prose), 'the lock rule records the 6 covariate strata');
+  // prose == code: the construction thresholds match the module constants byte-for-byte.
+  assert.ok(prose.includes('substring_reject_max_chars = ' + SUBSTRING_REJECT_MAX_CHARS), 'the lock rule records substring_reject_max_chars = ' + SUBSTRING_REJECT_MAX_CHARS + ' (prose == code)');
+  assert.ok(prose.includes('min_complexity_tokens = ' + MIN_COMPLEXITY_TOKENS), 'the lock rule records min_complexity_tokens = ' + MIN_COMPLEXITY_TOKENS + ' (prose == code)');
+  assert.ok(/`>= 1\/3` HARD-POSITIVE/.test(prose), 'the lock rule records the >= 1/3 hard-positive stratum (prose == code with HARD_POSITIVE_FRACTION)');
+  assert.ok(Math.abs(HARD_POSITIVE_FRACTION - 1 / 3) < 1e-12, 'the construction module HARD_POSITIVE_FRACTION is 1/3 (prose == code)');
+  assert.equal(SUBSTRING_REJECT_MAX_CHARS, 40, 'the construction module SUBSTRING_REJECT_MAX_CHARS is 40');
+  assert.equal(MIN_COMPLEXITY_TOKENS, 12, 'the construction module MIN_COMPLEXITY_TOKENS is 12');
+  assert.equal(COVARIATE_STRATA.length, 6, 'there are 6 covariate strata');
+
+  // (3) The survival probe + the pre-registered decision rule (~50 / ~30+ / frozen 24 / CLEARS->build /
+  // FAILS-ANY->descope+PROVISIONAL / no relaxation / no asymmetric / no auto-lock / CI headroom / Paths DEAD).
+  assert.ok(/### The survival probe \+ the pre-registered decision rule/.test(prose), 'the lock rule records the survival-probe + decision-rule section');
+  assert.ok(/~50 items/.test(prose) && /TARGET ~30\+/.test(prose), 'the lock rule records ~50 items / TARGET ~30+ (prose == code with the survival target)');
+  assert.ok(/N_CTRL_FLOOR=24 stays FROZEN/.test(prose), 'the lock rule records the FROZEN 24 floor');
+  assert.ok(/the SAME\s+screen on BOTH arms/i.test(prose) && /NO asymmetric criterion/i.test(prose), 'the lock rule records the SAME strict screen on both arms (NO asymmetric criterion)');
+  assert.ok(/\*\*CLEARS\*\*/.test(prose) && /BUILD\*\* the\s*\n?\s*offline over-refusal arm at the FROZEN 24 floor/i.test(prose), 'the lock rule records CLEARS -> build at the frozen 24 floor');
+  assert.ok(/\*\*FAILS ANY\*\*/.test(prose) && /AUTO-DESCOPE/.test(prose) && /PROVISIONAL/.test(prose), 'the lock rule records FAILS-ANY -> auto-descope to Phase-20 + PROVISIONAL');
+  assert.ok(/NO floor relaxation, NO asymmetric criterion, NO auto-lock/.test(prose), 'the lock rule records no floor relaxation / no asymmetric criterion / no auto-lock');
+  // prose == code: the CI-headroom anchors match the FROZEN engine byte-for-byte.
+  const cp1s = (x, n) => clopperPearsonUpperOneSided(x, n, EVAL_THRESHOLDS.ALPHA);
+  assert.ok(prose.includes('CP1s(0,24)=' + cp1s(0, 24).toFixed(4)), 'the recorded CP1s(0,24) matches the engine (' + cp1s(0, 24).toFixed(4) + ')');
+  assert.ok(prose.includes('CP1s(1,24)=' + cp1s(1, 24).toFixed(4)), 'the recorded CP1s(1,24) matches the engine (' + cp1s(1, 24).toFixed(4) + ', breaches 0.15)');
+  assert.ok(prose.includes('CP1s(1,30)=' + cp1s(1, 30).toFixed(4)), 'the recorded CP1s(1,30) matches the engine (' + cp1s(1, 30).toFixed(4) + ', the 30 target absorbs one)');
+  assert.ok(/Path A \(relax the 24 floor\)/.test(prose) && /Path B/.test(prose) && /DEAD by board consensus/.test(prose), 'the lock rule records Path A + Path B DEAD by board consensus');
+
+  // (4) The nControls supersession (averitec nControls=0; the 9b16c60 pin preserved + annotated SUPERSEDED).
+  assert.ok(/### The nControls supersession/.test(prose), 'the lock rule records the nControls supersession section');
+  assert.ok(/AVeriTeC `nControls = 0`/.test(prose), 'the lock rule records AVeriTeC nControls = 0 under RE-PLAN-9');
+  assert.ok(/SUPERSEDED-BY-RE-PLAN-9/.test(prose) && /9b16c60/.test(prose), 'the lock rule records the 9b16c60 nControls=40 pin SUPERSEDED');
+  assert.ok(/PRESERVED \+ annotated SUPERSEDED/.test(prose), 'the lock rule records the pin TEXT is preserved + annotated, never deleted');
+
+  // The OOF gold-decider identity (gpt-5.5 + gemini-3.1-pro-preview) is byte-identical in the RE-PLAN-9 section.
+  assert.ok(/gpt-5\.5 \+\s*\n?\s*gemini-3\.1-pro-preview/.test(prose) || /gpt-5\.5 \+ gemini-3\.1-pro-preview/.test(prose), 'the OOF gold-decider identity is byte-identical in the RE-PLAN-9 section');
+  assert.deepEqual(FROZEN_PAIR, ['gpt-5.5', 'gemini-3.1-pro-preview'], 'the survival-probe FROZEN_PAIR matches the OOF gold-decider identity (prose == code)');
+
+  // ----- The MANIFEST records the 5 ADDITIVE keys (anti-drift), prose == code -----
+
+  // control_source: both sources (fever/fever + tals/vitaminc, CC-BY-SA-3.0) + the date-cutoffs + the remap.
+  assert.ok(pre.control_source && typeof pre.control_source === 'object', 'the manifest records control_source');
+  const srcIds = pre.control_source.sources.map((s) => s.id).sort();
+  assert.deepEqual(srcIds, ['fever', 'vitaminc'], 'the manifest control_source records both fever + vitaminc');
+  assert.ok(pre.control_source.sources.every((s) => s.license === 'CC-BY-SA-3.0'), 'both control sources are CC-BY-SA-3.0');
+  assert.equal(pre.control_source.sources.find((s) => s.id === 'fever').date_cutoff, 'wikipedia dump revision', 'FEVER date cutoff is the Wikipedia dump revision');
+  assert.equal(pre.control_source.sources.find((s) => s.id === 'vitaminc').date_cutoff, 'wiki_revision_id', 'VitaminC date cutoff is the wiki_revision_id');
+  assert.equal(pre.control_source.both_tried_drop_on_no_date, true, 'the manifest records both-tried-drop-on-no-date');
+  assert.equal(pre.control_source.not_reserved_averitec, true, 'the manifest records NOT reserved AVeriTeC native seeds');
+  assert.ok(/SUPPORTS -> positive-control gold/.test(pre.control_source.remap), 'the manifest records the SUPPORTS -> positive-control gold remap');
+  // prose == code: the manifest source ids + repos match the CONTROL_SOURCES module registry byte-for-byte.
+  assert.equal(CONTROL_SOURCES.fever.repo, pre.control_source.sources.find((s) => s.id === 'fever').repo, 'the manifest FEVER repo matches the module (fever/fever)');
+  assert.equal(CONTROL_SOURCES.vitaminc.repo, pre.control_source.sources.find((s) => s.id === 'vitaminc').repo, 'the manifest VitaminC repo matches the module (tals/vitaminc)');
+
+  // control_construction: the 6 strata + the 40/12 thresholds + the >=1/3 fraction (prose == code).
+  assert.ok(pre.control_construction && typeof pre.control_construction === 'object', 'the manifest records control_construction');
+  assert.deepEqual(pre.control_construction.covariate_strata, ['domain', 'date-cutoff', 'excerpt-count', 'claim-length', 'specificity', 'retrieval-sparsity'], 'the manifest records the 6 covariate strata');
+  assert.equal(pre.control_construction.substring_reject_max_chars, SUBSTRING_REJECT_MAX_CHARS, 'the manifest substring_reject_max_chars == the module constant (40)');
+  assert.equal(pre.control_construction.min_complexity_tokens, MIN_COMPLEXITY_TOKENS, 'the manifest min_complexity_tokens == the module constant (12)');
+  assert.equal(pre.control_construction.hard_positive_fraction, '>=1/3', 'the manifest records the >=1/3 hard-positive fraction');
+  assert.equal(pre.control_construction.thresholds_pre_registered_not_tuned, true, 'the manifest records the thresholds are pre-registered, not tuned');
+  assert.equal(pre.control_construction.candidates_only_oof_decides_retain, true, 'the manifest records constructControls produces candidates only (the OOF decider decides retain)');
+
+  // survival_probe: ~50 / ~30+ / the FROZEN 24 floor / the strict same-on-both-arms screen.
+  assert.ok(pre.survival_probe && typeof pre.survival_probe === 'object', 'the manifest records survival_probe');
+  assert.equal(pre.survival_probe.n, '~50', 'the manifest records ~50 probe items');
+  assert.equal(pre.survival_probe.target_retained, '~30+', 'the manifest records the ~30+ retained target');
+  assert.equal(pre.survival_probe.n_ctrl_floor, EVAL_THRESHOLDS.N_CTRL_FLOOR, 'the manifest survival_probe n_ctrl_floor == the FROZEN engine N_CTRL_FLOOR (24)');
+  assert.equal(pre.survival_probe.n_ctrl_floor_frozen, true, 'the manifest records the floor is FROZEN');
+  assert.ok(/SAME on both arms/i.test(pre.survival_probe.screen), 'the manifest records the SAME strict screen on both arms');
+  assert.equal(pre.survival_probe.covariate_match_check, true, 'the manifest records the covariate-match check');
+  assert.equal(pre.survival_probe.human_confirmation, true, 'the manifest records the human confirmation');
+
+  // control_decision_rule: CLEARS / FAILS-ANY / no relaxation / no asymmetric / no auto-lock / dead paths / CI headroom.
+  assert.ok(pre.control_decision_rule && typeof pre.control_decision_rule === 'object', 'the manifest records control_decision_rule');
+  assert.ok(/retained >= 24 \(frozen\)/.test(pre.control_decision_rule.clears) && /BUILD the over-refusal arm at the frozen 24 floor/.test(pre.control_decision_rule.clears), 'the manifest CLEARS rule builds at the frozen 24 floor');
+  assert.ok(/AUTO-DESCOPE/.test(pre.control_decision_rule.fails_any) && /PROVISIONAL/.test(pre.control_decision_rule.fails_any), 'the manifest FAILS-ANY rule descopes to Phase-20 + PROVISIONAL');
+  assert.equal(pre.control_decision_rule.no_floor_relaxation, true, 'the manifest records no_floor_relaxation');
+  assert.equal(pre.control_decision_rule.no_asymmetric_criterion, true, 'the manifest records no_asymmetric_criterion');
+  assert.equal(pre.control_decision_rule.no_auto_lock, true, 'the manifest records no_auto_lock');
+  assert.ok(/Path A/.test(pre.control_decision_rule.dead_paths) && /Path B/.test(pre.control_decision_rule.dead_paths), 'the manifest records Path A + Path B DEAD');
+  assert.ok(/CP1s\(0,24\)=0.1173/.test(pre.control_decision_rule.ci_headroom) && /CP1s\(1,24\)=0.1829/.test(pre.control_decision_rule.ci_headroom) && /CP1s\(1,30\)=0.1486/.test(pre.control_decision_rule.ci_headroom), 'the manifest records the CI-headroom anchors (prose == the engine)');
+
+  // The nControls supersession (averitec nControls=0; the 9b16c60 pin preserved + annotated SUPERSEDED).
+  assert.ok(pre.task6_run_config.averitec_ncontrols_superseded_by_replan9 && typeof pre.task6_run_config.averitec_ncontrols_superseded_by_replan9 === 'object', 'the manifest records the nControls supersession');
+  assert.equal(pre.task6_run_config.averitec_ncontrols_superseded_by_replan9.value, 0, 'the supersession records AVeriTeC nControls=0 under RE-PLAN-9');
+  assert.ok(/9b16c60/.test(pre.task6_run_config.averitec_ncontrols_superseded_by_replan9.note) && /SUPERSEDED/.test(pre.task6_run_config.averitec_ncontrols_superseded_by_replan9.note), 'the supersession note records the 9b16c60 pin SUPERSEDED');
+  // DISCRIMINATING: the original nControls=40 pin TEXT is PRESERVED (not deleted).
+  assert.equal(pre.task6_run_config.nControls, 40, 'the 9b16c60 nControls=40 pin is PRESERVED (not deleted)');
+  assert.ok(typeof pre.task6_run_config.nControls_justification === 'string' && pre.task6_run_config.nControls_justification.length > 0, 'the 9b16c60 nControls_justification is PRESERVED');
+
+  // ----- The RE-PLAN-7 + RE-PLAN-8 keys + the frozen numbers STAY byte-identical (a regression fails) -----
+  assert.ok(typeof pre.absolute_per_model_design === 'string' && /certifyModel/.test(pre.absolute_per_model_design), 'the RE-PLAN-7 absolute_per_model_design key is byte-identical');
+  assert.equal(pre.tau_fu, EVAL_THRESHOLDS.TAU_FU, 'the RE-PLAN-7 tau_fu key is byte-identical');
+  assert.equal(pre.tau_or, EVAL_THRESHOLDS.TAU_OR, 'the RE-PLAN-7 tau_or key is byte-identical');
+  assert.equal(pre.n_trap_floor, EVAL_THRESHOLDS.N_TRAP_FLOOR, 'the RE-PLAN-7 n_trap_floor key is byte-identical');
+  assert.equal(pre.n_ctrl_floor, EVAL_THRESHOLDS.N_CTRL_FLOOR, 'the RE-PLAN-7 n_ctrl_floor key is byte-identical (N_CTRL_FLOOR=24 FROZEN, no floor relaxation)');
+  assert.ok(typeof pre.out_of_family_only_retain === 'string' && /non-gating annotation/i.test(pre.out_of_family_only_retain), 'the RE-PLAN-7 out_of_family_only_retain key is byte-identical');
+  assert.ok(typeof pre.decision_matrix === 'string' && /opusFailsBar/.test(pre.decision_matrix), 'the RE-PLAN-7 decision_matrix key is byte-identical');
+  assert.ok(pre.oof_bulk_batching && pre.oof_bulk_batching.batch_size === BATCH_DEFAULTS.BATCH_SIZE, 'the RE-PLAN-8 oof_bulk_batching key is byte-identical');
+  assert.ok(pre.contamination_gate && pre.contamination_gate.threshold === '11/12', 'the RE-PLAN-8 contamination_gate key is byte-identical');
+  assert.ok(pre.cheaper_model_pilot && pre.cheaper_model_pilot.n === 66, 'the RE-PLAN-8 cheaper_model_pilot key is byte-identical');
+  assert.ok(pre.k1_stability_certificate && /k=1/.test(pre.k1_stability_certificate.rule), 'the RE-PLAN-8 k1_stability_certificate key is byte-identical');
+  assert.equal(pre.cheaper_as_decider_not_adopted.value, true, 'the RE-PLAN-8 cheaper_as_decider_not_adopted key is byte-identical');
+
+  // The OOF gold-decider identity is byte-identical wherever recorded.
+  assert.ok(/gpt-5\.5/.test(pre.out_of_family_probe_consensus) && /gemini-3\.1-pro-preview/.test(pre.out_of_family_probe_consensus), 'the OOF gold-decider identity is byte-identical in the carried consensus key');
+
+  // The EXISTING EVAL_THRESHOLDS numbers + URL_DATE_RULE byte-lock are UNCHANGED by the RE-PLAN-9 additions.
+  assert.equal(EVAL_THRESHOLDS.ALPHA, 0.05);
+  assert.equal(EVAL_THRESHOLDS.RELIABLE_TRIALS, 15);
+  assert.equal(EVAL_THRESHOLDS.MIN_K, 5);
+  assert.equal(EVAL_THRESHOLDS.DELTA_UPPER_MAX, 0.25);
+  assert.equal(EVAL_THRESHOLDS.ESCALATION_KILL_HIGH, 0.5);
+  assert.equal(EVAL_THRESHOLDS.TAU_FU, 0.10);
+  assert.equal(EVAL_THRESHOLDS.TAU_OR, 0.15);
+  assert.equal(EVAL_THRESHOLDS.N_TRAP_FLOOR, 36);
+  assert.equal(EVAL_THRESHOLDS.N_CTRL_FLOOR, 24);
+  assert.equal(Object.isFrozen(EVAL_THRESHOLDS), true, 'EVAL_THRESHOLDS stays frozen through RE-PLAN-9');
+  assert.equal(m.stage1_pre_registration.url_date_rule, URL_DATE_RULE.source, 'the URL_DATE_RULE byte-lock holds through the RE-PLAN-9 re-registration');
 });
 
 // ---------------------------------------------------------------------------

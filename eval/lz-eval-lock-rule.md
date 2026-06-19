@@ -689,3 +689,98 @@ supported.slice(len - nControls)`; `trapSeeds` = the remaining qualifying Suppor
 reserves trailing seeds FROM the shared trap pool. Pre-screen feasibility at nControls=40: ~60 combined
 trap candidates (>= N_TRAP_FLOOR 36) + ~31 combined control candidates (>= N_CTRL_FLOOR 24), reachable
 with margin; the control arm is the tighter post-screen constraint.
+
+## RE-PLAN-9 (board-converged; ADDITIVE, re-registered in the STILL-OPEN ZERO-VOTES window)
+
+RE-PLAN-9 is an ADDITIVE re-plan (a de-identified, fact-only cross-family advisor board -- 2 in-family
+Opus lenses [a pragmatic FIXER + a validity SKEPTIC, via the Agent tool] + GPT-5.5 + Gemini-3.1-pro-preview
+[out-of-family, via the Copilot CLI], ~4 OOF calls; R1 independent proposals on a neutral brief, R2
+fact-only convergence with NO proposed synthesis; all four MOVED to the SAME compromise UNANIMOUSLY;
+transcripts gitignored under `eval/.cache/replan9-board/`; 19-04-REPLAN-DECISION-9.md). It CARRIES every
+RE-PLAN-7 + RE-PLAN-8 section above BYTE-IDENTICAL and ADDS the sub-sections below. It is entirely inside
+the STILL-OPEN ZERO-VOTES window (the gold VOIDed at the gold-build BEFORE any subject vote, so
+re-pre-registering the control arm is pre-registration-clean, NOT result-shopping; mirroring
+RE-PLAN-3/4/5/7/8). NO FROZEN PRIMITIVE CHANGES: the OOF gold-decider identity (gpt-5.5 +
+gemini-3.1-pro-preview, --effort high) + the EXISTING EVAL_THRESHOLDS numbers (N_CTRL_FLOOR=24 FROZEN) +
+URL_DATE_RULE + clopperPearsonUpperOneSided all stay BYTE-IDENTICAL.
+
+### The control-arm redesign (the ONLY substantive RE-PLAN-9 change)
+
+THE TRIGGER is the T-spend-1 VOID (19-04-T-SPEND-1-OUTCOME.md): the offline positive-control arm collapsed
+under the strict OUT-OF-FAMILY entailment screen because AVeriTeC "Supported" is an AGGREGATE HUMAN
+JUDGMENT over the full evidence base, NOT strict excerpt-entailment, so native AVeriTeC controls drop (~7
+controls << N_CTRL_FLOOR 24). The HEALTHY TRAP arm is CARRIED BYTE-IDENTICAL (it cleared at T-spend-1:
+contamination gate 12/12 both frozen-pair models, early r_t=12/12). THE ONLY SUBSTANTIVE CHANGE is the
+positive-control source/construction; everything else is carried byte-identical.
+
+### The entailment-native control source (FEVER + VitaminC)
+
+Controls now come from an ENTAILMENT-NATIVE, family-independent, license-clean, date-filterable SOURCE.
+The probe tries BOTH `fever/fever` (CC-BY-SA-3.0; SUPPORTS/REFUTES/NEI; Wikipedia evidence sentences;
+the defensible per-claim PRE-DATE cutoff is the Wikipedia dump revision date) AND `tals/vitaminc`
+(CC-BY-SA-3.0; SUPPORTS/REFUTES/NEI; contrastive design -- the closest construct match, forcing SEMANTIC
+entailment; the defensible per-claim PRE-DATE cutoff is the per-example wiki_revision_id). It VERIFIES
+EACH source's redistribution license (CC-BY-SA is redistributable; the loader records the license + fails
+closed on an unrecognized string) + a defensible per-claim PRE-DATE cutoff IN the probe; a source with NO
+usable date is DROPPED (`verifyControlSourceDate` returns null -> that source is excluded). SUPPORTS
+remaps to the positive-control gold (`{ expected_verdict:'unrefuted', stratum:'positive-control' }` -- the
+inverse of the trap remap); REFUTES/NEI are NOT controls. The date-filter mirrors the FROZEN strict-`<`
+cutoff (a control's evidence must be strictly pre-claim-date). The committed manifest carries ONLY ids +
+remapped labels + pinned revision + sha256 (no raw CC-BY-SA text). These are NOT reserved AVeriTeC native
+seeds. The residual first-source order (FEVER-first vs VitaminC-first) is NOT a blocking split -- the probe
+tries BOTH and the pre-registered survival + covariate + substring + hard-positive criteria decide which
+(or the pooled set) is used. Exports: `loadControlSource` / `verifyControlSourceLicense` /
+`verifyControlSourceDate` / `remapControlLabel` (eval/lz-eval-control-source.mjs).
+
+### The control-construction rule
+
+A PRE-SPECIFIED construction rule (NEVER a post-hoc rescue of weak controls) bins candidates into 6
+trap-matched COVARIATE strata (domain / date-cutoff / excerpt-count / claim-length / specificity /
+retrieval-sparsity); REJECTS exact-substring-overlap at `substring_reject_max_chars = 40` (about one
+clause -- a control whose evidence shares any >= 40-char exact run with the trap claim/evidence is
+lexically-dominated and rejected) + a complexity/length filter at `min_complexity_tokens = 12` (a control
+whose evidence is fewer than 12 whitespace-delimited tokens is rejected as trivially-short) to force
+SEMANTIC, not lexical, entailment; and enforces a `>= 1/3` HARD-POSITIVE stratum (controls carrying a
+specific magnitude/attribution the excerpts DO entail; an under-1/3-hard set is FLAGGED, never silently
+passed). The two threshold constants (40 / 12) + the 1/3 fraction are PRE-REGISTERED module-level
+constants, NEVER tuned toward a desired control count (the floor is load-bearing). `constructControls`
+(eval/lz-eval-control-construction.mjs) produces CANDIDATES only; the carried strict OUT-OF-FAMILY
+all-agree decider (`makeBatchedOofProbe` -> `runProbeConsensus`, entails=true required for a control) is
+the SOLE retain decider.
+
+### The survival probe + the pre-registered decision rule
+
+A single pre-registered SURVIVAL PROBE (~50 items; TARGET ~30+ retained for CI headroom; the
+N_CTRL_FLOOR=24 stays FROZEN) is scored by the UNCHANGED strict OUT-OF-FAMILY all-agree screen (the SAME
+screen on BOTH arms -- entails=true for a control, entails=false for a trap; NO asymmetric criterion) +
+a trap-vs-control COVARIATE-MATCH check + a HUMAN confirmation of the retained set. The PRE-REGISTERED
+DECISION RULE (fixed BEFORE the probe runs; the probe outcome -- a fact -- decides the branch):
+
+- **CLEARS** -- retains `>= 24` controls (TARGET ~30+) that are covariate-matched within tolerance,
+  license/date usable, and NOT selection-easy/substring-dominated, human-confirmed -> **BUILD** the
+  offline over-refusal arm at the FROZEN 24 floor.
+- **FAILS ANY** condition (survival below a clean covariate-matched 24; covariate divergence beyond
+  tolerance; unusable license/date; selection-easy/substring-dominated) -> **AUTO-DESCOPE** the
+  over-refusal arm to the Phase-20 LIVE shadow, ship the offline read TRAP-ONLY + explicitly incomplete,
+  and DEMOTE SATURATION-as-WORKS to PROVISIONAL for any model until the live stage clears TAU_OR.
+
+NO floor relaxation, NO asymmetric criterion, NO auto-lock (the build-vs-descope decision is
+HUMAN-CONFIRMED / RAISED -- `decideControlArm` returns the recommendation, the T-spend checkpoint raises
+it). CI HEADROOM (VERIFIED against the FROZEN engine): `CP1s(0,24)=0.1173 <= 0.15` (the 0-over-refusal
+clear at the FROZEN 24 floor); `CP1s(1,24)=0.1829 > 0.15` (a single over-refusal at 24 BREACHES, so 24 is
+the 0-over-refusal floor); `CP1s(1,30)=0.1486 <= 0.15` (the ~30 target ABSORBS one over-refusal -- the
+reason the probe TARGETS ~30+). Path A (relax the 24 floor) + Path B (a looser "support" criterion for
+controls only -- it would break arm symmetry: a voter could pass controls under a looser bar than it is
+failed on for traps) are DEAD by board consensus (all four advisors keep strict-entailment on BOTH arms).
+`runSurvivalProbe` + `decideControlArm` (eval/lz-eval-survival-probe.mjs) encode this; the probe is
+NON-GATING for the trap arm.
+
+### The nControls supersession
+
+Under RE-PLAN-9 AVeriTeC `nControls = 0` (ALL qualifying AVeriTeC seeds are TRAPS -> more trap headroom);
+controls are NO LONGER reserved from AVeriTeC. The RE-PLAN-8 Task-6 `nControls = 40` pin (commit 9b16c60)
+is SUPERSEDED-BY-RE-PLAN-9 -- it was for the now-VOIDED AVeriTeC-controls design; the zero-votes window is
+STILL OPEN (the gold VOIDed pre-vote), so the supersession is pre-registration-clean, NOT result-shopping.
+The 9b16c60 nControls=40 pin TEXT is PRESERVED + annotated SUPERSEDED (in the lock-rule section above + the
+manifest `task6_run_config`), NEVER deleted. The controls come entirely from the new entailment-native
+FEVER + VitaminC source; the assembler CODE is UNCHANGED (nControls=0 is the existing trap-only path).
