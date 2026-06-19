@@ -764,6 +764,12 @@ test('Task-5 RE-PLAN-8 re-pre-registration: the lock rule + manifest record the 
   assert.equal(pre.cheaper_as_decider_not_adopted.value, true, 'the manifest records cheaper_as_decider_not_adopted = true');
   assert.ok(/amendment-only/i.test(pre.cheaper_as_decider_not_adopted.note), 'cheaper-as-decider is recorded amendment-only (DP6)');
 
+  // Task-6 run-config pin (additive anti-drift; the three pinned parameters).
+  assert.ok(pre.task6_run_config && typeof pre.task6_run_config === 'object', 'the manifest records task6_run_config');
+  assert.equal(pre.task6_run_config.nControls, 40, 'task6 nControls pinned 40');
+  assert.equal(pre.task6_run_config.covariateOverlapTolerance, 0.5, 'task6 covariateOverlapTolerance pinned 0.5 (code-default)');
+  assert.equal(pre.task6_run_config.subjectDifficultyMaxCatchRate, 0.5, 'task6 subjectDifficultyMaxCatchRate pinned 0.5 (code-default)');
+
   // The RE-PLAN-7 keys are BYTE-UNCHANGED (a regression that altered one fails here).
   assert.ok(typeof pre.absolute_per_model_design === 'string' && /certifyModel/.test(pre.absolute_per_model_design), 'the RE-PLAN-7 absolute_per_model_design key is UNCHANGED');
   assert.equal(pre.tau_fu, EVAL_THRESHOLDS.TAU_FU, 'the RE-PLAN-7 tau_fu key is byte-identical');

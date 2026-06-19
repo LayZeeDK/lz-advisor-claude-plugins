@@ -672,3 +672,20 @@ Making a cheaper model the gating DECIDER stays AMENDMENT-ONLY and is NOT adopte
 pair after batching saves only ~$2 vs the frozen pair batched, at a family-independence/validity cost.
 The frozen pair (gpt-5.5 + gemini-3.1-pro-preview, --effort high) remains the SOLE gating retain
 decider; bulk-batching is the ONLY operational change.
+
+### Task-6 run-config pin (nControls / F5 tolerances)
+
+The three under-specified Stage-1 parameters are PINNED before the screen (zero-votes window open):
+- **nControls = 40** -- the trap arm is the binding constraint (the OOF screen's active drop target).
+  nControls=40 demands the lowest trap retention (r_t >= 0.60) while controls still clear (r_c >= 0.77),
+  the best pessimistic-corner joint margin, and the largest trap pool stabilizes the F5 stats. 60 risks
+  failing the trap floor under a culling screen; 50 is an unconfirmed interpolation. nControls is a free
+  draw-size (N is frozen post-screen), so a generous draw is not result-shopping.
+- **covariateOverlapTolerance = 0.5** -- the frozen code-default; a post-screen VOID guard, not a knob.
+- **subjectDifficultyMaxCatchRate = 0.5** -- the frozen code-default; the symmetric midpoint.
+
+The partition rule (FROZEN, verified against `assembleStage1Traps`): `controlSeeds =
+supported.slice(len - nControls)`; `trapSeeds` = the remaining qualifying Supported seeds. nControls
+reserves trailing seeds FROM the shared trap pool. Pre-screen feasibility at nControls=40: ~60 combined
+trap candidates (>= N_TRAP_FLOOR 36) + ~31 combined control candidates (>= N_CTRL_FLOOR 24), reachable
+with margin; the control arm is the tighter post-screen constraint.
