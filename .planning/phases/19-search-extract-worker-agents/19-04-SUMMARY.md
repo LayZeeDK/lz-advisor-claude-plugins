@@ -2,7 +2,7 @@
 phase: 19-search-extract-worker-agents
 plan: 04
 subsystem: testing
-tags: [eval, re-plan-7, absolute-per-model, certify-model, decision-matrix, one-sided-cp, tau-fu, tau-or, n-trap-floor, n-ctrl-floor, saturation-as-pass, screen-not-certificate, out-of-family-only-retain, opus-as-voter, subject-difficulty-floor, covariate-overlap, cluster-independence, evidence-absent-stratum-floor, wice-closed-book-trap-arm, wice-heavy, per-model-fair-prompts, prompt-fairness-gate, prompt-sha-freeze, three-voter-dispatch, opus-reference-voter, re-pre-registration, anti-drift, no-spend, zero-votes-window, haiku-vs-sonnet, gating-read, node-test, pre-registration]
+tags: [eval, re-plan-7, absolute-per-model, certify-model, decision-matrix, one-sided-cp, tau-fu, tau-or, n-trap-floor, n-ctrl-floor, saturation-as-pass, screen-not-certificate, out-of-family-only-retain, opus-as-voter, subject-difficulty-floor, covariate-overlap, cluster-independence, evidence-absent-stratum-floor, wice-closed-book-trap-arm, wice-heavy, per-model-fair-prompts, prompt-fairness-gate, prompt-sha-freeze, three-voter-dispatch, opus-reference-voter, re-pre-registration, anti-drift, no-spend, zero-votes-window, haiku-vs-sonnet, gating-read, node-test, pre-registration, re-plan-12, mcc-screen, contrastive-minimal-pairs, dual-baseline-guard, bca-bootstrap, label-permutation, screen-pass, sdt-positive-trials, offline-never-works, over-refusal-moved-to-live]
 
 # Dependency graph
 requires:
@@ -40,6 +40,12 @@ key-files:
     - "eval/lz-eval-wice-traps.mjs"
     - "eval/lz-eval-wice-traps.test.mjs"
     - "plugins/lz-advisor/agents/research-verify-voter-opus.md"
+    - "eval/lz-eval-mcc.mjs (RE-PLAN-12 Task 6)"
+    - "eval/lz-eval-mcc.test.mjs (RE-PLAN-12 Task 6)"
+    - "eval/lz-eval-baseline-guard.mjs (RE-PLAN-12 Task 7)"
+    - "eval/lz-eval-baseline-guard.test.mjs (RE-PLAN-12 Task 7)"
+    - "eval/lz-eval-contrastive-screen.mjs (RE-PLAN-12 Task 8)"
+    - "eval/lz-eval-contrastive-screen.test.mjs (RE-PLAN-12 Task 8)"
   modified:
     - "eval/lz-eval-aggregate.mjs"
     - "eval/lz-eval-aggregate.test.mjs"
@@ -62,13 +68,14 @@ decisions:
 
 # Metrics
 metrics:
-  duration: ~70min
-  completed: 2026-06-18
-  tasks_completed: 3
-  tasks_pending: 2
-  files_created: 3
+  duration: ~70min (RE-PLAN-7) + RE-PLAN-8 + RE-PLAN-12
+  completed: 2026-06-19
+  tasks_completed: 9
+  tasks_pending: 0
+  files_created: 9
   files_modified: 11
-  eval_tree_tests_green: 308
+  eval_tree_tests_green: 389
+  re_plan_12_decision: SCREEN-PASS (gate to Phase-20 live; offline never WORKS)
 ---
 
 # Phase 19 Plan 04: ABSOLUTE per-model eval (RE-PLAN-7) -- Tasks 1-3 (no-spend build) Summary
@@ -389,3 +396,139 @@ regexes were made whitespace-tolerant to survive prose line-wrapping (`UNFROZEN 
 - FOUND commit 5e048a3 (Task 4)
 - FOUND commit 9652c5e (Task 5)
 - 334 eval-tree + 41 plugin-aggregator tests green; frozen engine + assembler byte-unchanged; only ADDITIVE lock-rule/manifest keys; ASCII-only; no spend.
+
+---
+
+# RE-PLAN-12 Tasks 6-8 (NET-NEW, NO-SPEND) + Task 9 (SPEND -> SCREEN-PASS) -- the offline confound-robust MCC SCREEN
+
+The sections ABOVE document the CARRIED RE-PLAN-7 Tasks 1-3 (c84e6d0 / dca8d43 / 8c97f01) and RE-PLAN-8
+Tasks 4-5 (5e048a3 / 9652c5e), PRESERVED byte-identical. This section documents RE-PLAN-12 (the
+board-converged STAGED path to certified WORKS; THE AUTHORITY is 19-04-REPLAN-DECISION-12.md +
+19-04-CERTIFY-WORKS-RESEARCH.md): the OFFLINE verdict mechanism is RE-SCOPED to a confound-robust MCC
+SCREEN over MANUAL CONTRASTIVE MINIMAL-PAIRS + a dual-baseline artifact guard + a PRE-REGISTERED bar. The
+synthetic positive-control-arm attempt (RE-PLAN-9/10/11) is RETIRED; the over-refusal CP gate MOVES to
+the Phase-20 LIVE arm. The carried Tasks 1-5 machinery is NOT re-touched.
+
+## Status -- COMPLETE (Tasks 1-8 built + green; Task 9 SCREEN-PASS, human-confirmed 2026-06-19)
+
+- **Tasks 1-5 (CARRIED RE-PLAN-7/8): verified green, NOT re-touched** (byte-identical; their FILE-form
+  tests pass).
+- **Tasks 6-8 (NET-NEW RE-PLAN-12, NO-SPEND): built + committed atomically.**
+  - Task 6 -- `81db062`: `eval/lz-eval-mcc.mjs` -- `matthewsCorrelation` (a degenerate single-class matrix
+    -> 0, NOT NaN, F4), `mccFromPairs`, `bcaBootstrapLowerCI` (one-sided 95% BCa; RESAMPLING allowed, the
+    quantile + normal-inverse math route through jstat, NEVER hand-rolled, D-07), `labelPermutationTestMccPositive`,
+    + the PRE-REGISTERED bar constants `MCC_BAR_POINT=0.5` / `MCC_CI_ALPHA=0.05` / `MCC_CI_LOWER_FLOOR=0`.
+    13 FILE-form tests.
+  - Task 7 -- `41c2aaa`: `eval/lz-eval-baseline-guard.mjs` -- `dualBaselineGuard` (a lexical TF baseline +
+    a claim-only no-evidence baseline; `guardPasses` iff BOTH at chance -- each separation-MCC one-sided
+    BCa lower CI <= `AT_CHANCE_MCC` (0, NOT 0.5)). Realized with a leave-one-PAIR-out log-odds classifier
+    (a leave-one-OUT/centroid scheme suffers partner-pull on near-identical contrastive pairs). 6 tests.
+  - Task 8 -- `24a84ea`: `eval/lz-eval-contrastive-screen.mjs` -- `decideContrastiveScreen` ('gate' iff
+    guardPasses AND mcc>=0.5 AND mccLowerCI>0 AND permutationP<0.05; else 'demote'; NO auto-lock) +
+    `runContrastiveScreen` (guard FIRST; OOF-judges the 24 items via the carried `makeBatchedOofProbe` ->
+    `runProbeConsensus`, the SAME strict screen on both arms; provisional ALWAYS true; N<24 ->
+    diagnostic-only). Plus the ADDITIVE re-pre-registration: lock-rule RE-PLAN-12 section + the RE-PLAN-9
+    SUPERSEDED banner; manifest 5 NEW keys (contrastive_construction / mcc_screen / dual_baseline_guard /
+    screen_decision_rule / over_refusal_moved_to_live) + the RE-PLAN-9 synthetic keys annotated
+    `superseded_by_replan12` (preserved); aggregate.test.mjs RE-PLAN-12 anti-drift. The MCC bar was
+    PRE-REGISTERED + TIMESTAMPED `2026-06-19T16:07:00Z` BEFORE any pair was authored or scored (the
+    anti-drift test machine-asserts the timestamp parses as ISO-8601 UTC, rejects the placeholder, and is
+    in the past). 9 contrastive-screen tests + 42 aggregate anti-drift tests.
+- **Task 9 (SPEND -- T-spend, AMENDED for RE-PLAN-12): SCREEN-PASS, human-confirmed.**
+
+## Task 9 -- the contrastive minimal-pairs + the dual-baseline guard + the MCC SCREEN (the spend)
+
+### Construction (manual; NO spend) -- 12 contrastive minimal-pairs on the SAME dense trap bundles
+
+Authored 12 contrastive minimal-pairs (a 24-item corpus) on 12 of the 18 retained WiCE dense trap
+evidence bundles from the healthy false-uphold arm (the T-spend-1 `run-stage1` gold; AVeriTeC arm VOIDed,
+WiCE retained 18 traps). For each: the REFUTED side is the original trap (claimText + enrichedKs
+verbatim, gold refuted); the SUPPORTED side keeps the claim BYTE-IDENTICAL and applies exactly ONE
+minimal label-flipping edit ON THE EVIDENCE (gold unrefuted). Verified properties: 12/12 claims
+byte-identical across the pair (the F3 claim-side artifact structurally excluded); 12/12 minimal
+one-sentence edits (11 in-place swaps with identical doc counts, 1 single-sentence injection); each edit
+in the claim's own domain vocabulary (no recurring stock supporting token across pairs); difficulty-matched
+BY CONSTRUCTION (same dense multi-doc bundle, 26-261 docs; only the label-determining fact differs).
+Topics span film, finance/history, video games, sports, music, biography, linguistics. The corpus +
+per-pair rationale live in gitignored `eval/.cache/contrastive/` (recipe-not-text; no committed NC/CC
+text; `git status` shows none). A small human review confirmed each SUPPORTED item genuinely entails its
+edited bundle and each REFUTED item genuinely does not.
+
+### Dual-baseline artifact guard (NO spend, deterministic) -- PASS
+
+`dualBaselineGuard({ pairs })` over the 24 items: lexical separation-MCC 0, one-sided BCa lower CI
+-0.348 (<= 0 -> at chance); claim-only separation-MCC 0, lower CI 0 (<= 0 -> at chance, zero signal by
+construction since claims are byte-identical); `lexicalAtChance` true, `claimOnlyAtChance` true,
+**guardPasses true**. The construction is mechanically artifact-free (no lexical or F3 claim-side
+artifact separates SUPPORTED from REFUTED above chance).
+
+### MCC SCREEN (the spend: 6 Copilot calls, frozen OOF pair) -- MCC 1.0
+
+Ran `runContrastiveScreen` over the 24 items via the carried `makeBatchedOofProbe` with the FROZEN OOF
+pair `gpt-5.5` + `gemini-3.1-pro-preview --effort high` (the gold-blind all-agree screen, the SAME strict
+screen as the trap arm -- NO asymmetric criterion). A no-spend STUB dry-run validated the wiring first
+(24/24 packets resolved, no drops). The real run = 6 Copilot calls (3 batches x 2 models, batchSize 8),
+NO retries/splits/failures; genuine gold-blind per-item OOF reasoning de-mapped by opaque id. The
+contamination gate was SKIPPED by decision (it is NOT a leg of `decideContrastiveScreen` nor a board /
+pre-registration gating step -- DECISION-12 lists it under Carried/frozen; the lock-rule pins it as "run
+ONCE at T-spend-1" where it cleared 12/12; the new entails=true direction's only residual risk is
+one-directional -- it can depress MCC, never inflate it, under the DP1-DP3 anti-leakage design -- so it
+was kept as an on-demand diagnostic for a suspicious demote, which did not arise).
+
+Result (gitignored `eval/.cache/contrastive/screen-result.json`):
+- Confusion matrix: **tp=12, tn=12, fp=0, fn=0** (every SUPPORTED item judged `unrefuted`, every REFUTED
+  item judged `refuted`).
+- **MCC = 1.0**; **one-sided 95% BCa lower-CI = 1.0** (> 0); **label-permutation p ~= 0.0002** (< 0.05).
+- All four PRE-REGISTERED legs pass: guardPasses AND mcc>=0.5 AND mccLowerCI>0 AND permutationP<0.05.
+- `decideContrastiveScreen` -> **`gate`**; label **`SCREEN-PASS`**; `provisional` **true** (ALWAYS --
+  offline NEVER WORKS, the SDT positive-trials constraint).
+
+### Human-confirmed decision: SCREEN-PASS (gate to the Phase-20 live stage)
+
+The pre-registered recommendation was SCREEN-PASS; the gate-vs-demote was HUMAN-CONFIRMED (no auto-lock),
+approved 2026-06-19. Interpretation: the offline gold instrument is VALID (it discriminates -- a
+degenerate always-refute judge would score MCC 0, F4 -- and the discrimination is artifact-free per the
+guard), and the difficulty-confound that stalled RE-PLAN-9/10/11 is empirically retired by the
+contrastive-on-the-SAME-bundles construction. A SCREEN-PASS GATES progression to the Phase-20 LIVE stage
+(the PRIMARY over-refusal + full-WORKS certifier over adjudicated production-distribution positives); it
+does NOT certify WORKS and does NOT flip Haiku ON. Sonnet-default ships regardless.
+
+## What is NOT in this offline read (named Phase-20 obligations)
+
+- The SUBJECT-voter false-uphold read (Estimand A, the three-voter k=9 dispatch over the healthy traps)
+  was NOT run this session (a separate spend); offline `certifyModel` top-level verdict is `VOID-on-power`
+  because nCtrl=0 (the over-refusal arm MOVED to the live stage) -- EXPECTED, not the healthy-arm result.
+- The over-refusal CP gate (CP-upper <= TAU_OR 0.15, N_ctrl >= 24) + the full-WORKS certification + the
+  Haiku-vs-Sonnet worker-tier flip are all Phase-20 (live) work.
+
+## Verification (all green; FILE-form node:test gates)
+
+- Tasks 6-8 gates: `node --test eval/lz-eval-mcc.test.mjs` (13) / `eval/lz-eval-baseline-guard.test.mjs`
+  (6) / `eval/lz-eval-contrastive-screen.test.mjs` (9) / `eval/lz-eval-aggregate.test.mjs` (42) -- green.
+- The FULL eval-tree suite (20 FILE-form test files) -> **389 pass / 0 fail**; the plugin-tree aggregator
+  `lz-deep-research-aggregate.test.mjs` -> 41 pass. Carried Tasks 1-5 tests green, NOT re-touched.
+
+## No frozen primitive changed
+
+`git diff --stat 8ce9790..HEAD` on the engine files (lz-eval-aggregate.mjs, lz-eval-trap-assembler.mjs,
+lz-eval-offline-read.mjs, lz-eval-oof-batch.mjs, lz-eval-cheaper-pilot.mjs, lz-eval-wice-traps.mjs,
+lz-eval-voter-dispatch.workflow.mjs) = ZERO changes. EVAL_THRESHOLDS (TAU_FU 0.10 / TAU_OR 0.15 /
+N_TRAP_FLOOR 36 / N_CTRL_FLOOR 24) + clopperPearsonUpperOneSided + URL_DATE_RULE + the OOF gold-decider
+identity byte-identical. Task 8 is ADDITIVE only (5 new manifest keys + the RE-PLAN-9 SUPERSEDED
+annotation; no existing key altered). All created/edited files ASCII-only, no BOM. The new modules live in
+the repo-level eval/ dev tree (never the distributed plugin tree).
+
+## Spend accounting
+
+NO-SPEND build (Tasks 6-8) + the manual pair authoring + the deterministic dual-baseline guard = ZERO AI
+Credits. The MCC SCREEN = 6 Copilot calls (the only RE-PLAN-12 spend; the contamination gate was skipped
+as an on-demand diagnostic). All run artifacts (the authored pairs, the rationale, the screen prompts +
+responses, the screen result) live under gitignored `eval/.cache/contrastive/`.
+
+## RE-PLAN-12 Self-Check: PASSED
+- FOUND: eval/lz-eval-mcc.mjs + eval/lz-eval-mcc.test.mjs
+- FOUND: eval/lz-eval-baseline-guard.mjs + eval/lz-eval-baseline-guard.test.mjs
+- FOUND: eval/lz-eval-contrastive-screen.mjs + eval/lz-eval-contrastive-screen.test.mjs
+- FOUND commit 81db062 (Task 6), 41c2aaa (Task 7), 24a84ea (Task 8)
+- 389 eval-tree + 41 plugin-aggregator tests green; frozen primitives byte-identical; ASCII-only.
+- Task 9: dual-baseline guard PASS; MCC SCREEN MCC 1.0 / lowerCI 1.0 / permutationP ~0.0002 -> SCREEN-PASS (human-confirmed); 6 Copilot calls; offline NEVER WORKS (provisional always true).
