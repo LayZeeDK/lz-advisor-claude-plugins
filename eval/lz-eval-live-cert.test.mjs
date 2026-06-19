@@ -43,6 +43,11 @@ import {
   stage2DualRun,
   stage3UnanimousUpholdAudit,
   persistDualRunVote,
+  scoreArmFromVotes,
+  scoreFromPersistedVotes,
+  makeCopilotCallModel,
+  makeOofAdjudicator,
+  COPILOT_CLI_DEFAULTS,
   FROZEN_OOF_PAIR,
   LIVE_N_TARGETS,
 } from './lz-eval-live-cert.mjs';
@@ -378,6 +383,350 @@ test('persistDualRunVote requires the per-vote search trace and SKIPS an already
     assert.equal(second.skipped, true, 'a re-run SKIPS an already-persisted vote (resumable, D-08)');
   } finally {
     fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+// ===========================================================================
+// scoreFromPersistedVotes: the NO-SPEND node scorer reads persisted dual-run votes off disk, builds the
+// two SEPARATE per-arm inputs, and feeds the frozen certifyModel (two arms NEVER pooled). Deterministic
+// stubs only -- the votes are written by persistDualRunVote (the frozen store); NO model spend.
+// ===========================================================================
+
+// A filesystem-safe arm for the disk-persisting tests. The harvest's real uid form is
+// `<run-basename>::<clusterId>`, but ':' is an ILLEGAL Windows filename character (it denotes an alternate
+// data stream / drive), so persistVote -> votePath cannot write `<...>::<...>.json` on Windows. The vote is
+// keyed by the member uid and the scorer reads by that same uid, so a host-safe uid (no ':') exercises the
+// disk round-trip identically. The real run keys votes by safeId-validated uids that avoid ':' (the harvest
+// run-id slug + cluster id are alphanumeric+hyphen). NOTE: the EXISTING `arm()` helper's ':'-bearing uids
+// are only used in NON-persisting freeze/compose tests, where the uid never becomes a filename.
+function fsSafeArm(prefix, n, { corroboration = 3 } = {}) {
+  const out = [];
+
+  for (let i = 0; i < n; i += 1) {
+    out.push(Object.freeze({ uid: prefix + '-cluster' + String(i).padStart(2, '0'), id: 'cluster' + String(i).padStart(2, '0'), confidence: 'High', corroboration_lower_bound: corroboration }));
+  }
+
+  return out;
+}
+
+// Persist a per-arm vote set: for each member uid in the arm, write a vote with the given verdict (a
+// function uid -> 'unrefuted'|'refuted'). Reuses the frozen persistDualRunVote (the required search trace).
+function persistArmVotes(voteDir, armMembers, verdictFor) {
+  for (const m of armMembers) {
+    persistDualRunVote(voteDir, {
+      id: m.uid,
+      seat: 'sonnet',
+      verdict: verdictFor(m.uid),
+      trace: { queries: ['q0', 'q1'], depth: 4, stop_reason: 'exhausted' },
+    });
+  }
+}
+
+test('scoreArmFromVotes scores the two arm KINDS OPPOSITELY (over-refusal = a refuted on a control; false-uphold = an unrefuted on a trap)', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'lz-livecert-scorearm-'));
+
+  try {
+    const ctrl = fsSafeArm('r', 30); // the over-refusal control arm (SUPPORTED positives -- should be upheld)
+    const trap = fsSafeArm('t', 30); // the dense-trap monitor arm (overreaches -- should be refuted)
+
+    const ctrlDir = path.join(root, 'ctrl');
+    const trapDir = path.join(root, 'trap');
+
+    // Control arm: 2 wrong refutes (over-refusals), the rest correctly upheld.
+    persistArmVotes(ctrlDir, ctrl, (uid) => (uid === ctrl[0].uid || uid === ctrl[1].uid ? 'refuted' : 'unrefuted'));
+    // Trap arm: 3 wrong upholds (false-upholds), the rest correctly refuted.
+    persistArmVotes(trapDir, trap, (uid) => (uid === trap[0].uid || uid === trap[1].uid || uid === trap[2].uid ? 'unrefuted' : 'refuted'));
+
+    const ctrlScore = scoreArmFromVotes({ arm: ctrl, voteDir: ctrlDir, kind: 'over-refusal' });
+    assert.equal(ctrlScore.count, 2, 'the over-refusal arm counts the REFUTED votes as over-refusals');
+    assert.equal(ctrlScore.n, 30, 'the over-refusal arm n is the frozen arm size');
+
+    const trapScore = scoreArmFromVotes({ arm: trap, voteDir: trapDir, kind: 'dense-trap' });
+    assert.equal(trapScore.count, 3, 'the dense-trap arm counts the UNREFUTED votes as false-upholds');
+    assert.equal(trapScore.n, 30, 'the dense-trap arm n is the frozen arm size');
+
+    // The two arms are scored OPPOSITELY -- the same verdict means a different failure per arm.
+    assert.notEqual(ctrlScore.count, trapScore.count, 'the two arm kinds are scored on opposite failure directions');
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('scoreArmFromVotes FAILS CLOSED on a partial vote dir (the denominator is the FROZEN N, never a realized subset)', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'lz-livecert-partial-'));
+
+  try {
+    const ctrl = fsSafeArm('r', 30);
+    const ctrlDir = path.join(root, 'ctrl');
+    // Persist only 29 of the 30 frozen members -> a partial / stale vote dir.
+    persistArmVotes(ctrlDir, ctrl.slice(0, 29), () => 'unrefuted');
+
+    assert.throws(
+      () => scoreArmFromVotes({ arm: ctrl, voteDir: ctrlDir, kind: 'over-refusal' }),
+      (e) => e.name === 'ContractError' && /partial \/ stale|realized vote count/.test(e.message),
+      'a 29-of-30 vote dir fails closed (the FROZEN N is the denominator)',
+    );
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('scoreFromPersistedVotes reads the persisted dual-run votes -> certifyModel over the TWO SEPARATE arms (never pooled) -> a clean WORKS', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'lz-livecert-scorefrom-'));
+
+  try {
+    const ctrlArm = fsSafeArm('r', 40); // over-refusal control arm (ESTIMAND B)
+    const trapArm = fsSafeArm('t', 36); // dense-trap monitor arm (ESTIMAND A)
+    const frozen = freezeArms({ overRefusalControls: ctrlArm, denseTrapMonitor: trapArm });
+
+    const ctrlVoteDir = path.join(root, 'sonnet', 'ctrl');
+    const trapVoteDir = path.join(root, 'sonnet', 'trap');
+
+    // A clean WORKS-shaped read: 0 over-refusals (every control upheld) + 0 false-upholds (every trap
+    // refuted). The two arms are written to SEPARATE dirs and read SEPARATELY.
+    persistArmVotes(ctrlVoteDir, ctrlArm, () => 'unrefuted');
+    persistArmVotes(trapVoteDir, trapArm, () => 'refuted');
+
+    const verdict = scoreFromPersistedVotes({
+      frozen,
+      ctrlArm,
+      trapArm,
+      ctrlVoteDir,
+      trapVoteDir,
+      model: 'sonnet',
+      traceAudit: cleanTraceAudit(0),
+      difficultyFloorMet: true,
+      covariateOverlapMet: true,
+      evidenceAbsentStratumMet: true,
+    });
+
+    assert.equal(verdict.verdict, 'WORKS', 'a clean dual-run read (0 over-refusals + 0 false-upholds) -> WORKS');
+    // ESTIMAND B (over-refusal) read from the control arm SEPARATELY (nCtrl=40), byte-identical CP.
+    assert.ok(Math.abs(verdict.estimandB.cpUpper - clopperPearsonUpperOneSided(0, 40)) < 1e-12, 'ESTIMAND B reads the over-refusal arm (nCtrl=40) separately -- the frozen one-sided CP');
+    // ESTIMAND A (false-uphold) read from the trap arm SEPARATELY (nTrap=36) -- never pooled with nCtrl.
+    assert.ok(Math.abs(verdict.estimandA.cpUpper - clopperPearsonUpperOneSided(0, 36)) < 1e-12, 'ESTIMAND A reads the dense-trap arm (nTrap=36) separately -- never pooled with nCtrl');
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('scoreFromPersistedVotes surfaces an OVER-REFUSAL failure read from the control arm distinctly (the two arms are scored + gated SEPARATELY)', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'lz-livecert-scorefail-'));
+
+  try {
+    const ctrlArm = fsSafeArm('r', 30);
+    const trapArm = fsSafeArm('t', 30);
+    const frozen = freezeArms({ overRefusalControls: ctrlArm, denseTrapMonitor: trapArm });
+
+    const ctrlVoteDir = path.join(root, 'haiku', 'ctrl');
+    const trapVoteDir = path.join(root, 'haiku', 'trap');
+
+    // The trap arm is clean (every overreach refuted -> 0 false-upholds) but the control arm is
+    // OVER-REFUSED (6 wrong refutes) -> ESTIMAND B fails, ESTIMAND A passes. The over-refusal gate binds
+    // at the SEPARATE control arm, never folded into the trap arm.
+    let refuteCount = 0;
+    persistArmVotes(ctrlVoteDir, ctrlArm, () => (refuteCount++ < 6 ? 'refuted' : 'unrefuted'));
+    persistArmVotes(trapVoteDir, trapArm, () => 'refuted');
+
+    const verdict = scoreFromPersistedVotes({
+      frozen,
+      ctrlArm,
+      trapArm,
+      ctrlVoteDir,
+      trapVoteDir,
+      model: 'haiku',
+      traceAudit: cleanTraceAudit(0),
+      difficultyFloorMet: true,
+      covariateOverlapMet: true,
+      evidenceAbsentStratumMet: true,
+    });
+
+    assert.notEqual(verdict.verdict, 'WORKS', 'an over-refused control arm is NOT WORKS even with a clean trap arm');
+    assert.equal(verdict.estimandA.pass, true, 'ESTIMAND A (the trap arm) still passes -- the failure is the SEPARATE control arm');
+    assert.equal(verdict.estimandB.pass, false, 'ESTIMAND B (over-refusal) FAILS: 6/30 over-refusals exceed TAU_OR');
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('scoreFromPersistedVotes FAILS CLOSED when an arm size disagrees with the FROZEN N (no optional stopping -- the denominator cannot grow)', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'lz-livecert-frozenN-'));
+
+  try {
+    const ctrlArm = fsSafeArm('r', 40);
+    const trapArm = fsSafeArm('t', 36);
+    const frozen = freezeArms({ overRefusalControls: ctrlArm, denseTrapMonitor: trapArm });
+
+    const ctrlVoteDir = path.join(root, 'ctrl');
+    const trapVoteDir = path.join(root, 'trap');
+    persistArmVotes(ctrlVoteDir, ctrlArm, () => 'unrefuted');
+    persistArmVotes(trapVoteDir, trapArm, () => 'refuted');
+
+    // A GROWN control arm (41 != frozen.nCtrl 40) is a result-shopping defect -> fail closed.
+    const grownCtrl = fsSafeArm('r', 41);
+
+    assert.throws(
+      () => scoreFromPersistedVotes({
+        frozen,
+        ctrlArm: grownCtrl,
+        trapArm,
+        ctrlVoteDir,
+        trapVoteDir,
+        model: 'sonnet',
+        traceAudit: cleanTraceAudit(0),
+        difficultyFloorMet: true,
+        covariateOverlapMet: true,
+        evidenceAbsentStratumMet: true,
+      }),
+      (e) => e.name === 'ContractError' && /FROZEN N|no optional stopping/.test(e.message),
+      'a grown arm (41 != frozen 40) fails closed -- N cannot grow after the Stage-1 freeze',
+    );
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('scoreFromPersistedVotes per-model verdicts compose decisionMatrix with raiseToUser ALWAYS true (the full disk -> certifyModel -> decisionMatrix chain, NO SPEND)', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'lz-livecert-chain-'));
+
+  try {
+    const ctrlArm = fsSafeArm('r', 40);
+    const trapArm = fsSafeArm('t', 36);
+    const frozen = freezeArms({ overRefusalControls: ctrlArm, denseTrapMonitor: trapArm });
+
+    const mkDirs = (seat) => ({ ctrl: path.join(root, seat, 'ctrl'), trap: path.join(root, seat, 'trap') });
+    const score = (seat, model) => {
+      const d = mkDirs(seat);
+      persistArmVotes(d.ctrl, ctrlArm, () => 'unrefuted');
+      persistArmVotes(d.trap, trapArm, () => 'refuted');
+
+      return scoreFromPersistedVotes({
+        frozen, ctrlArm, trapArm, ctrlVoteDir: d.ctrl, trapVoteDir: d.trap, model,
+        traceAudit: cleanTraceAudit(0), difficultyFloorMet: true, covariateOverlapMet: true, evidenceAbsentStratumMet: true,
+      });
+    };
+
+    const haiku = score('haiku', 'haiku');
+    const sonnet = score('sonnet', 'sonnet');
+    const opus = score('opus', 'opus');
+
+    const decision = composeDecision({ haiku, sonnet, opus });
+    assert.equal(decision.raiseToUser, true, 'the full disk-scored chain still raises to the user (settle-OR-raise; the Haiku flip is DEFERRED)');
+    assert.equal(decision.cell, 'both', 'a both-WORKS Haiku x Sonnet cell from the disk-scored verdicts -- but still raises');
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+// ===========================================================================
+// callOof -- the Copilot CLI node transport (D-20). Deterministic STUB runner only -- NO SPEND. Asserts
+// (a) the wiring shape (stdin-piped prompt, NO -p, NO --allow-all-tools, --model + --effort), and (b) the
+// requireSpend hard-guard THROWS on LZ_SPEND unset (a real OOF spend refuses without LZ_SPEND=1).
+// ===========================================================================
+
+test('makeCopilotCallModel WIRES the Copilot CLI argv shape: --model + --effort, NEVER -p, NEVER --allow-all-tools', () => {
+  const callModel = makeCopilotCallModel({ model: 'gpt-5.5' });
+  const argv = callModel.argv;
+
+  assert.equal(argv[0], COPILOT_CLI_DEFAULTS.bin, 'the binary is the copilot CLI');
+  assert.ok(argv.includes('--model') && argv.includes('gpt-5.5'), '--model <slug> is in the argv');
+  assert.ok(argv.includes('--effort') && argv.includes(COPILOT_CLI_DEFAULTS.effort), '--effort <level> is in the argv');
+  // The two classifier / quoting traps are NEVER in the argv (CLAUDE.md copilot-cli-invocation).
+  assert.ok(!argv.includes('-p'), '-p is NEVER passed (the prompt is PIPED via stdin; a -p arg is silently dropped / breaks the argv hand-off)');
+  assert.ok(!argv.includes('--allow-all-tools'), '--allow-all-tools is NEVER passed (the Claude Code classifier auto-DENIES it)');
+});
+
+test('makeCopilotCallModel PIPES the prompt via stdin (the injected runner sees the prompt as input, NEVER as a -p arg) -- with LZ_SPEND=1, a STUB runner, NO real spend', async () => {
+  const saved = process.env.LZ_SPEND;
+  process.env.LZ_SPEND = '1';
+
+  let seen = null;
+  const stubRunner = (bin, args, opts) => {
+    seen = { bin, args, opts };
+
+    // The stub returns a JSON-array OOF response on stdout (the shape the batch slice parses) -- NO spend.
+    return { status: 0, stdout: '[{"id":"p0000abcd","entails":true,"reason":"stub"}]', stderr: '' };
+  };
+
+  try {
+    const callModel = makeCopilotCallModel({ model: 'gemini-3.1-pro-preview', runner: stubRunner });
+    const raw = await callModel('EVIDENCE:\n- x entails y\nCLAIM: y');
+
+    assert.equal(seen.opts.input, 'EVIDENCE:\n- x entails y\nCLAIM: y', 'the prompt is passed via the runner input (stdin pipe), preserving newlines');
+    assert.ok(!seen.args.includes('-p'), 'the runner never receives a -p arg (stdin-only prompt delivery)');
+    assert.match(raw, /"entails":true/, 'the transport returns the subprocess stdout verbatim (the raw OOF response)');
+  } finally {
+    if (saved === undefined) {
+      delete process.env.LZ_SPEND;
+    } else {
+      process.env.LZ_SPEND = saved;
+    }
+  }
+});
+
+test('makeCopilotCallModel HARD-GUARDS on LZ_SPEND: calling the transport THROWS (and NEVER invokes the runner) when LZ_SPEND is unset', async () => {
+  const saved = process.env.LZ_SPEND;
+  delete process.env.LZ_SPEND;
+
+  let runnerCalled = false;
+  const stubRunner = () => {
+    runnerCalled = true;
+
+    return { status: 0, stdout: '[]', stderr: '' };
+  };
+
+  try {
+    const callModel = makeCopilotCallModel({ model: 'gpt-5.5', runner: stubRunner });
+    await assert.rejects(
+      () => callModel('any prompt'),
+      (e) => e.name === 'ContractError' && /LZ_SPEND/.test(e.message),
+      'the OOF transport refuses to spend without LZ_SPEND=1',
+    );
+    assert.equal(runnerCalled, false, 'the runner is NEVER invoked on the unset-LZ_SPEND path -- ZERO spend');
+  } finally {
+    if (saved === undefined) {
+      delete process.env.LZ_SPEND;
+    } else {
+      process.env.LZ_SPEND = saved;
+    }
+  }
+});
+
+test('makeOofAdjudicator composes ONE probe per FROZEN OOF model (gpt-5.5 + gemini-3.1-pro-preview), byte-identical to FROZEN_OOF_PAIR', () => {
+  // A no-op makeCallModel factory (never invoked -- building the adjudicator is NO-SPEND).
+  const makeCallModel = ({ model }) => {
+    const fn = async () => '[]';
+    fn.model = model;
+
+    return fn;
+  };
+
+  const adj = makeOofAdjudicator({ seed: 'seed-X', makeCallModel });
+  assert.equal(adj.probes.length, 2, 'two probes -- one per frozen OOF model');
+  assert.deepEqual(adj.probes.map((p) => p.model), [...FROZEN_OOF_PAIR], 'the probe models are byte-identical to the frozen OOF pair');
+  assert.deepEqual([...adj.pair], ['gpt-5.5', 'gemini-3.1-pro-preview'], 'the adjudicator surfaces the frozen pair identity');
+});
+
+test('makeOofAdjudicator.prepare HARD-GUARDS on LZ_SPEND: the PRE-PASS dispatch THROWS when LZ_SPEND is unset (the spend boundary)', async () => {
+  const saved = process.env.LZ_SPEND;
+  delete process.env.LZ_SPEND;
+
+  // The real Copilot transport (makeCopilotCallModel) is the default -- its callModel requireSpend-guards.
+  const adj = makeOofAdjudicator({ seed: 'seed-Y' });
+  const packets = [{ trap: { id: 'cluster0', claim: 'c', enrichedKs: [{ sentence: 'e' }] } }];
+
+  try {
+    await assert.rejects(
+      () => adj.prepare(packets),
+      (e) => e.name === 'ContractError' && /LZ_SPEND/.test(e.message),
+      'the OOF PRE-PASS dispatch refuses to spend Credits without LZ_SPEND=1',
+    );
+  } finally {
+    if (saved === undefined) {
+      delete process.env.LZ_SPEND;
+    } else {
+      process.env.LZ_SPEND = saved;
+    }
   }
 });
 
