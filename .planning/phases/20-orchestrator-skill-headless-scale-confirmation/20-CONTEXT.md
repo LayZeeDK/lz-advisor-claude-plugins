@@ -58,6 +58,9 @@ Phase 20 is the milestone-capping phase. It delivers TWO coupled workstreams, bo
 
 ### Empirical unknowns resolved DURING execution (pre-flight checks, not blockers)
 - **D-19:** Before committing the full live-cert spend, a Stage-1 **harvest feasibility probe** confirms the shipping skill can emit >= 30 difficulty-representative SUPPORTED claims in the dense / contested-evidence band from real research questions. If it cannot (the board's #1 uncertainty -- difficulty-matched dense-evidence positives are literature-unsolved), the over-refusal arm is not constructible at the target N -> CHEAP is not certifiable under current constraints -> keep STRONG indefinitely, RAISE to the user. Sonnet-default ships regardless.
+
+### Post-discussion directive (user, 2026-06-20) -- live-cert voter transport
+- **D-20:** The live-cert `callVoter` transport = **Agent sub-agents** (the Phase-18 verify-voter agents via the Agent tool, per-invocation `model: haiku` for CHEAP / `model: sonnet` for STRONG), driven from a Claude Code session; `eval/lz-eval-live-cert.mjs` is invoked via `Bash(node:*)` for the deterministic scoring only. The Claude voter spend therefore draws the **Claude session pool**, NEVER the metered Anthropic API (user directive: never use the Anthropic API -- reasserts PROJECT.md "the Claude Code Agent tool is the only mechanism") and NEVER `claude -p` (which stays the dev/UAT-only harness, e.g. the 20-04 SC-5 spike). `callOof` stays the Copilot CLI (metered Copilot AI Credits). Corrects the "metered Claude voter spend" wording in 20-05-PLAN.md: the metered pool is the OOF Credits only.
 </decisions>
 
 <canonical_refs>
