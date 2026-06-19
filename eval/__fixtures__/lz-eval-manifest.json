@@ -432,6 +432,26 @@
       "gated": false,
       "note": "SECONDARY trap-augmentation seed only (D-02c/D-03); not a turnkey stratum.",
       "files": []
+    },
+    {
+      "id": "fever",
+      "repo": "fever/fever",
+      "license": "CC-BY-SA-3.0",
+      "vendored": false,
+      "gated": false,
+      "revision": "PENDING_ENUMERATE_AT_EVAL_TIME",
+      "note": "FETCH-ONLY RE-PLAN-9 entailment-native positive-control source (license CONFIRMED CC-BY-SA-3.0 against the HuggingFace fever/fever dataset card at manifest-authoring time, NO SPEND, W2). SUPPORTS -> positive-control gold (the inverse of the trap remap; NEI/REFUTES are NOT controls); the defensible per-claim PRE-DATE cutoff is the Wikipedia dump revision date. Only ids + remapped labels + pinned revision + sha256 committed, no raw CC-BY-SA text (D-04). The revision + per-file sha256 are enumerated at the Task-10 paid probe (PENDING here). NOT reserved AVeriTeC native seeds.",
+      "files": []
+    },
+    {
+      "id": "vitaminc",
+      "repo": "tals/vitaminc",
+      "license": "CC-BY-SA-3.0",
+      "vendored": false,
+      "gated": false,
+      "revision": "PENDING_ENUMERATE_AT_EVAL_TIME",
+      "note": "FETCH-ONLY RE-PLAN-9 entailment-native positive-control source (license CONFIRMED CC-BY-SA-3.0 against the HuggingFace tals/vitaminc dataset card at manifest-authoring time, NO SPEND, W2). Contrastive design -- the closest construct match, forcing SEMANTIC entailment. SUPPORTS -> positive-control gold; the defensible per-claim PRE-DATE cutoff is the per-example wiki_revision_id. Only ids + remapped labels + pinned revision + sha256 committed, no raw CC-BY-SA text (D-04). The revision + per-file sha256 are enumerated at the Task-10 paid probe (PENDING here). NOT reserved AVeriTeC native seeds.",
+      "files": []
     }
   ],
   "examples": [
