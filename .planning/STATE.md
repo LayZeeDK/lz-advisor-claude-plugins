@@ -2,14 +2,14 @@
 gsd_state_version: 1.0
 milestone: v2.1.0
 milestone_name: lz-deep-research skill
-status: "19-04 RE-PLANNED-7 (board-converged): the pivot to absolute per-model was driven by an OOF probe FALSIFYING RE-PLAN-5 Finding 2 (seed-75 is a VALID refuted trap) -> mandatory OOF gate dropped (RE-PLAN-6) + a 2-round cross-family decision board + a validity board (keep a non-gating diagnostic) + an Opus design panel + a GPT-5.5+Gemini+Opus-peer validation board (VALID-WITH-FIXES, all folded). Locked: #1 TAU_FU=0.10-as-SCREEN, #2 per-model fair prompts (Haiku specially engineered), #3 drop Opus from the gold-decider + add Opus as a measured reference voter. Finding 1 (positive controls) STANDS as Estimand B. SCREEN-not-certificate: offline PASS never auto-flips Haiku ON (Phase-20 live shadow is the named precondition). NEXT: /gsd-execute-phase 19 -> execute T-spend-1 (the AUTHORIZED OUT-OF-FAMILY gold build, Copilot AI Credits) -> pass the F5/F6 floors + FREEZE N (>=36/>=24 or documented VOID) + the 20% human audit -> HALT + RAISE the gold-build outcome before the (NOT-yet-authorized) T-spend-2 three-voter k=9 runs (Claude pool)."
+status: executing
 stopped_at: Phase 20 context gathered (live-cert board consensus + orchestrator panel; D-01..D-19)
-last_updated: "2026-06-19T18:57:09.390Z"
-last_activity: "2026-06-18 -- /gsd-execute-phase 19 then /gsd-pause-work: executed RE-PLAN-7 Tasks 1-3 (the absolute per-model NO-SPEND build) via a gsd-executor (opus, sequential main tree, ZERO spend) after a light gsd-plan-checker re-verify (PASS-WITH-WARNINGS, no blockers, 2 warnings folded). Independently verified -- deterministic (308 eval + 41 plugin green; frozen primitives 0-diff; aggregate ADD-only; existing EVAL_THRESHOLDS byte-identical; clean commits) + an adversarial 3-verifier workflow (wf_d50153a1-bc7) CONFORMS with 0 blockers, 0 failed checks. Presented the spend boundary; user chose "Authorize T-spend-1 (gold build)" to run in a fresh session. PAUSED before the spend; handoff = .continue-here.md + HANDOFF.json (T-spend-1 AUTHORIZED; T-spend-2 NOT yet). NO eval spend this session."
+last_updated: "2026-06-19T19:53:15.129Z"
+last_activity: 2026-06-19 -- Phase 20 planning complete
 progress:
   total_phases: 8
   completed_phases: 6
-  total_plans: 21
+  total_plans: 26
   completed_plans: 20
   percent: 75
 ---
@@ -47,8 +47,8 @@ Items deferred across milestones (v1.0.1 close 2026-06-11; v2.0.0 additions tagg
 
 Phase: 19 (search-extract-worker-agents) — IN PROGRESS; 19-04 RE-PLAN-7 (ABSOLUTE PER-MODEL EVAL) Tasks 1-3 (the no-spend build) EXECUTED + independently verified this session (c84e6d0 one-sided CP + 2 TAU + 2 N floors; dca8d43 certifyModel + decisionMatrix + SATURATED-VOID retired; 8c97f01 assembler OOF-only retain + F5/F6 + NET-NEW WiCE closed-book trap arm + Opus-as-3rd-voter + per-model prompt freeze + RE-PRE-REGISTER + anti-drift; 5de8369 SUMMARY). 308 eval-tree + 41 plugin-aggregator green; frozen primitives 0-diff; EVAL_THRESHOLDS existing numbers byte-identical (ADD-only); adversarial 3-verifier workflow wf_d50153a1-bc7 CONFORMS (9/9 + 8/8 + 7/7; anyBlocker=false). RE-PLAN-5 build CARRIED underneath. HALTED at the BLOCKING spend boundary; user chose "Authorize T-spend-1 (gold build)" -> PAUSED + handoff for a fresh /gsd-execute-phase 19.
 Plan: 5 tasks in 19-04 RE-PLAN-7 [T1 one-sided CP + 2 TAU + 2 N floors (ADD-only); T2 certifyModel 4-label + decisionMatrix; T3 assembler OOF-only retain (Opus dropped) + F5/F6 floors + NET-NEW WiCE closed-book-trap arm + Opus-as-voter + per-model prompt freeze + RE-PRE-REGISTER + anti-drift + re-audit; T-spend-1 BLOCKING OOF gold-build (Copilot credits); T-spend-2 BLOCKING three-voter k=9 runs (Claude pool) -> certifyModel per model -> decision matrix -> RAISE]; 19-05 (old conditional Haiku read) to be RECONCILED (likely subsumed); phase NOT complete.
-Status: 19-04 RE-PLANNED-7 (board-converged): the pivot to absolute per-model was driven by an OOF probe FALSIFYING RE-PLAN-5 Finding 2 (seed-75 is a VALID refuted trap) -> mandatory OOF gate dropped (RE-PLAN-6) + a 2-round cross-family decision board + a validity board (keep a non-gating diagnostic) + an Opus design panel + a GPT-5.5+Gemini+Opus-peer validation board (VALID-WITH-FIXES, all folded). Locked: #1 TAU_FU=0.10-as-SCREEN, #2 per-model fair prompts (Haiku specially engineered), #3 drop Opus from the gold-decider + add Opus as a measured reference voter. Finding 1 (positive controls) STANDS as Estimand B. SCREEN-not-certificate: offline PASS never auto-flips Haiku ON (Phase-20 live shadow is the named precondition). NEXT: /gsd-execute-phase 19 -> execute T-spend-1 (the AUTHORIZED OUT-OF-FAMILY gold build, Copilot AI Credits) -> pass the F5/F6 floors + FREEZE N (>=36/>=24 or documented VOID) + the 20% human audit -> HALT + RAISE the gold-build outcome before the (NOT-yet-authorized) T-spend-2 three-voter k=9 runs (Claude pool).
-Last activity: 2026-06-18 -- /gsd-execute-phase 19 then /gsd-pause-work: executed RE-PLAN-7 Tasks 1-3 (the absolute per-model NO-SPEND build) via a gsd-executor (opus, sequential main tree, ZERO spend) after a light gsd-plan-checker re-verify (PASS-WITH-WARNINGS, no blockers, 2 warnings folded). Independently verified -- deterministic (308 eval + 41 plugin green; frozen primitives 0-diff; aggregate ADD-only; existing EVAL_THRESHOLDS byte-identical; clean commits) + an adversarial 3-verifier workflow (wf_d50153a1-bc7) CONFORMS with 0 blockers, 0 failed checks. Presented the spend boundary; user chose "Authorize T-spend-1 (gold build)" to run in a fresh session. PAUSED before the spend; handoff = .continue-here.md + HANDOFF.json (T-spend-1 AUTHORIZED; T-spend-2 NOT yet). NO eval spend this session.
+Status: Ready to execute
+Last activity: 2026-06-19 -- Phase 20 planning complete
 
 ### Milestone v2.1.0 roadmap (REVISED 2026-06-15)
 

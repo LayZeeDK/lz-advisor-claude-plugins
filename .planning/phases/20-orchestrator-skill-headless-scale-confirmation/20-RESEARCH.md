@@ -417,20 +417,25 @@ if (process.env.LZ_SPEND !== '1') { throw new Error('refusing to spend: set LZ_S
 5. **`${CLAUDE_PLUGIN_ROOT}` non-expansion in some markdown contexts** (finding U4 / issue #9354). If the aggregator path comes through empty under `-p`, the `node` Bash call fails. MITIGATION: the SC-5 spike verifies the aggregator path resolves non-empty in a real `-p` run (the aggregator CLI fails loudly on a missing run-dir, exit 2 -- so an empty path is caught, not silent).
 6. **The SC-5 spike spends real session budget on a full pipeline run** (search + extract + verify waves + 2 Opus gates over a real question). It is not free. MITIGATION: pick a FIXED, modest-scope research question; budget across the 5-hour reset window; the spike is a build-time cost the plan should schedule deliberately, not assume incidental.
 
-## Open Questions
+## Open Questions (RESOLVED)
+
+All three are BUILD-detail latitudes that CONTEXT.md grants to Claude's Discretion or to an empirical pre-flight probe; each is resolved-by-deferral to a named plan/stage (they do not gate planning).
 
 1. **The exact curated research-question set for the live harvest (D-02).**
    - What we know: harvest from the shipping skill's OWN outputs on diverse real questions; oversample dense/contested SUPPORTED claims.
    - What's unclear: which specific questions yield >= 30 dense/contested positives (D-19 / A4).
    - Recommendation: the D-19 feasibility probe selects/validates the set empirically before the Stage-1 freeze; do not pre-commit the question list in the plan beyond "diverse, dense-evidence-oversampling."
+   - RESOLVED: absorbed by Plan 20-05 Stage 0 (the D-19 harvest feasibility probe selects/validates the set empirically before the Stage-1 freeze). CONTEXT.md grants the question-set to Claude's Discretion.
 2. **Whether the SC-5 spike can run the FULL pipeline within one session budget, or needs a reduced-fan-out variant first.**
    - What we know: A2 proved n=2; SC-5 needs >= 3 waves with <=5 in-flight.
    - What's unclear: total token/turn cost of a real full run.
    - Recommendation: a cheap plumbing pre-spike (small question, observe wave structure) before the full acceptance spike; both use the same trace-parse acceptance.
+   - RESOLVED: absorbed by Plan 20-04 Task 3 (a cheap plumbing pre-spike precedes the full acceptance spike; both use the same trace-parse acceptance).
 3. **The progressive-disclosure split: how much of the SKILL.md body moves to `references/`.**
    - What we know: skill-creator ideal is <500 lines; lz-execute pushes timing/packaging into `references/`.
    - What's unclear: the exact split point for this 7-phase orchestrator.
    - Recommendation: keep the phase skeleton + the load-bearing caps/keying inline; push the report micro-format, the canonical-URL recipe reminder, and the advisor-consult packaging into `references/lz-deep-research-orchestration.md` (no cross-skill body references -- shared knowledge lives in `references/`).
+   - RESOLVED: absorbed by Plan 20-03 Task 1 (authors `references/lz-deep-research-orchestration.md`); the split point is the recommended one. CONTEXT.md grants the SKILL.md prose structure to Claude's Discretion.
 
 ## Environment Availability
 
