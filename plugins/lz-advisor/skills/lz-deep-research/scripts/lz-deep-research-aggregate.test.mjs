@@ -1244,30 +1244,41 @@ test('D-12c DISCRIMINATING PAIR: a unanimous uphold whose cluster id hashes IN e
   // the ONLY differentiator. The in/out membership is COMPUTED from the exported stableHashFraction
   // (not hardcoded magic), and asserted as a precondition before the behavioral assertions.
   //
-  // Construction: 21 singleton unanimous-uphold clusters (file order w00..w20 -> cluster0..cluster20;
-  // 21 <= MAX_VERIFY_CLAIMS 24, so the claims cap never fires). All corroboration 1 -> rank is
-  // normalize(text) ASC. Give w20 (cluster20) a lexically-FIRST text so it ranks #1 and survives
-  // SYNTH_CAP=20; give w01 (cluster1, an unasserted OUT cluster) a lexically-LAST text so it is the
-  // single SYNTH_CAP drop; cluster0 keeps a mid text and survives. Both asserted clusters thus appear
-  // in survivors[].
+  // Construction: 21 DISJOINT-vocabulary singleton unanimous-uphold clusters (file order
+  // w00..w20 -> cluster0..cluster20; 21 <= MAX_VERIFY_CLAIMS 24, so the claims cap never fires).
+  // Each text draws three tokens from a unique rotation of a disjoint word pool so pairwise
+  // jaccard stays well below the 0.6 merge threshold (no accidental merging -- the prior
+  // shared-vocabulary draft merged everything into 3 clusters). All corroboration 1 -> rank is
+  // normalize(text) ASC; a per-claim rank-control PREFIX sets the order: w20 (cluster20) prefixes
+  // "aaa" so it ranks #1 and survives SYNTH_CAP=20; w01 (cluster1, an unasserted OUT cluster)
+  // prefixes "zzz" so it is the single SYNTH_CAP drop; cluster0 keeps a mid prefix and survives.
+  // Both asserted clusters thus appear in survivors[].
   const IN_ID = 'cluster20';
   const OUT_ID = 'cluster0';
   // Precondition: the chosen ids genuinely straddle the rate (constructed to discriminate, not assumed).
   assert.ok(stableHashFraction(IN_ID) < AUDIT_SAMPLE_RATE.value, IN_ID + ' must hash INTO the audit sample');
   assert.ok(stableHashFraction(OUT_ID) >= AUDIT_SAMPLE_RATE.value, OUT_ID + ' must hash OUT of the audit sample');
 
+  const pool = [
+    'alpha', 'bravo', 'charlie', 'delta', 'echo', 'foxtrot', 'golf', 'hotel', 'india', 'juliet', 'kilo',
+    'lima', 'mike', 'november', 'oscar', 'papa', 'quebec', 'romeo', 'sierra', 'tango', 'uniform',
+  ];
   const workers = [];
 
   for (let i = 0; i <= 20; i += 1) {
-    let text;
+    let prefix;
 
     if (i === 20) {
-      text = 'aaa alpha lexically first audit sample claim ' + i;
+      prefix = 'aaa';
     } else if (i === 1) {
-      text = 'zzz omega lexically last dropped claim ' + i;
+      prefix = 'zzz';
     } else {
-      text = 'claim number ' + String(i).padStart(2, '0') + ' middle body text';
+      prefix = 'm' + String(i).padStart(2, '0');
     }
+
+    // Three tokens drawn from a coprime rotation (+7, +13 over 21) so every claim's token set is
+    // distinct and pairwise jaccard stays < 0.2 (verified < 0.6 merge threshold).
+    const text = prefix + ' ' + pool[i] + ' ' + pool[(i + 7) % 21] + ' ' + pool[(i + 13) % 21];
 
     workers.push({
       worker: 'w' + i,

@@ -121,6 +121,35 @@ export const CEILINGS = Object.freeze({
 });
 
 // ---------------------------------------------------------------------------
+// Escalation audit sample (D-12c / VERIF-05): a STABLE, REPRODUCIBLE sample of unanimous upholds.
+// ---------------------------------------------------------------------------
+//
+// AUDIT_SAMPLE_RATE is the fraction of unanimous (3/3 unrefuted) upholds the aggregator flags for a
+// re-vote audit (branch (c) of the escalate union). It is a frozen sibling of CEILINGS so the schema
+// doc can quote it byte-for-byte and a dev-time test can pin Object.isFrozen + the value (mirroring the
+// SC5-5 CEILINGS frozen-object assertion). The value 0.15 sits inside the D-12c / RESEARCH A1 15-20%
+// band (Claude's Discretion within the frozen band).
+export const AUDIT_SAMPLE_RATE = Object.freeze({ value: 0.15 });
+
+// A tiny pure, deterministic FNV-1a (32-bit) hash folded to a fraction in [0,1). It selects the audit
+// sample by hashing the AGGREGATOR-GENERATED cluster id ('cluster' + N, never worker-authored), so the
+// sample is reproducible from the run-dir contents -- never a nondeterministic PRNG (which would make
+// the audit trail non-reproducible, D-12c / D-14 / Pitfall 4). The FNV-1a constants (offset basis
+// 2166136261, prime 16777619) mirror the eval `hash32` in eval/lz-eval-oof-batch.mjs lines 50-59
+// (ASCII-only, zero-dep). This is a DISTRIBUTION hash, not a security primitive: collision-resistance
+// is irrelevant (consistent with the schema's percent-encode-not-SHA rationale).
+export function stableHashFraction(clusterId) {
+  let h = 2166136261 >>> 0;
+
+  for (let i = 0; i < clusterId.length; i += 1) {
+    h ^= clusterId.charCodeAt(i);
+    h = Math.imul(h, 16777619) >>> 0;
+  }
+
+  return (h >>> 0) / 2 ** 32;
+}
+
+// ---------------------------------------------------------------------------
 // Safety + IO helpers (zero-dep; explicit UTF-8; BOM-safe JSON.parse)
 // ---------------------------------------------------------------------------
 
@@ -306,16 +335,24 @@ export function mergeClusters(runDir) {
 
   for (const c of raw) {
     const hit = clusters.find((cl) => jaccard(cl.text, c.text) >= 0.6);
+    // load_bearing (D-12b) is an OPTIONAL additive field set by the extract worker on a claim it judges
+    // central / high-consequence. It is OR-folded onto the cluster (a cluster is load_bearing if ANY
+    // member carries it), analogous to the sources Set OR-accumulation above. It is judgment, NOT a
+    // load-bearing read like id/text/quote/source, so it is fail-OPEN: absent / non-true means false
+    // (only the literal boolean true counts; do NOT fail closed on a missing flag).
+    const memberLoadBearing = c.load_bearing === true;
 
     if (hit) {
       hit.members.push(c);
       hit.sources.add(c.source);
+      hit.load_bearing = hit.load_bearing || memberLoadBearing;
     } else {
       clusters.push({
         id: 'cluster' + clusters.length,
         text: c.text,
         members: [c],
         sources: new Set([c.source]),
+        load_bearing: memberLoadBearing,
       });
     }
   }
@@ -634,8 +671,10 @@ export function tally(cl, runDir, capsOut) {
 //
 // Returns { survivors, dropped, summary, caps }. The survivor record field set is LOAD-BEARING --
 // Phase 17 freezes it and Phase 18/20 consume it:
-//   { id, claim, sources: [...], corroboration_lower_bound, quote_fidelity, confidence }
-// The summary is a counts-only, deterministic, bounded string (never raw source text, D-03).
+//   { id, claim, sources: [...], corroboration_lower_bound, quote_fidelity, confidence, escalate }
+// `escalate` is the ADDITIVE D-12 / VERIF-05 extension (appended AFTER confidence; the rest of the
+// frozen field set is byte-unchanged). The summary is a counts-only, deterministic, bounded string
+// (never raw source text, D-03).
 export function aggregate(runDir) {
   // rawCount is the PRE-merge claim total (CR-01): mergeClusters now returns it alongside the
   // post-merge clusters so the summary can report a true `raw:` figure and a non-zero `merged:`.
@@ -656,14 +695,30 @@ export function aggregate(runDir) {
   // Intentionally runs tally on all MAX_VERIFY_CLAIMS-capped clusters before SYNTH_CAP slices the
   // output. votes_ignored may include extra-seat counts from clusters that SYNTH_CAP later discards
   // (clusters 21-24 in the MAX_VERIFY_CLAIMS=24 / SYNTH_CAP=20 gap). Documented scope caveat: AGG-4.
-  const survivorRecords = capped.map((cl) => ({
-    id: cl.id,
-    claim: cl.text,
-    sources: [...cl.sources].sort(),
-    corroboration_lower_bound: cl.sources.size,
-    quote_fidelity: cl.quote_fidelity,
-    confidence: tally(cl, runDir, caps),
-  }));
+  const survivorRecords = capped.map((cl) => {
+    const confidence = tally(cl, runDir, caps);
+    // escalate (D-12 / VERIF-05): a deterministic per-claim flag, the UNION of
+    //   (a) confidence === 'Contested' (a voter split the tally already surfaced);
+    //   (b) the cluster's OR-folded load_bearing === true (an extract-worker judgment);
+    //   (c) an audit sample of unanimous (3/3 unrefuted -> 'High') upholds, selected by a STABLE HASH
+    //       of the aggregator-generated cluster id (reproducible from the run-dir, never a PRNG).
+    // The orchestrator (Plan 20-03) dispatches a Sonnet re-vote wave on every flagged claim. The flag
+    // is ADDITIVE -- it appends after confidence; the frozen survivor field set is byte-unchanged.
+    const escalate =
+      confidence === 'Contested' ||
+      cl.load_bearing === true ||
+      (confidence === 'High' && stableHashFraction(cl.id) < AUDIT_SAMPLE_RATE.value);
+
+    return {
+      id: cl.id,
+      claim: cl.text,
+      sources: [...cl.sources].sort(),
+      corroboration_lower_bound: cl.sources.size,
+      quote_fidelity: cl.quote_fidelity,
+      confidence,
+      escalate,
+    };
+  });
 
   // SYNTH_CAP on the survivors output (observable, D-11).
   let survivors = survivorRecords;
