@@ -114,7 +114,8 @@ field names exactly:
       "id": "c1",
       "text": "X reduces Y by 30%",
       "quote": "X reduces Y by 30%",
-      "excerpt_id": "e1"
+      "excerpt_id": "e1",
+      "load_bearing": true
     }
   ]
 }
@@ -133,6 +134,16 @@ field names exactly:
     ALWAYS write it. The schema permits omitting it, but omission caps the quote's
     fidelity at `downgraded`; you stored the excerpt this turn, so you can and must
     cite it.
+  - `load_bearing` -- OPTIONAL boolean. Set it to `true` ONLY when the claim is
+    CENTRAL or HIGH-CONSEQUENCE: a claim the research question's answer hinges on,
+    a surprising or contested result, a safety / medical / legal / financial
+    figure, or a claim that would materially mislead the reader if it were wrong.
+    This is your judgment as the extractor. It is ADDITIVE and FAIL-OPEN: omit it
+    (or set anything other than the literal `true`) for an ordinary claim -- a
+    missing flag does NOT abort. A `true` flag makes the off-model aggregator mark
+    the claim for a re-vote audit (it never weakens or removes a verdict). Do NOT
+    set it on every claim -- reserve it for the genuinely load-bearing ones, or the
+    audit signal loses its meaning.
 
 Extract only FALSIFIABLE claims -- statements the quoted text can support or
 contradict. Before writing a claim, VERIFY its `quote` is a verbatim substring of

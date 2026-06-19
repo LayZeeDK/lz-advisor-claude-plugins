@@ -34,23 +34,40 @@ enum values, and rubric branches byte-for-byte from the code -- never by
 re-deriving them in fresh prose. The authoritative functions, all in
 `skills/lz-deep-research/scripts/lz-deep-research-aggregate.mjs`, are:
 
-- `aggregate(runDir)` -- the top-level pipeline; writes the survivor record and
-  the stdout summary.
+- `aggregate(runDir)` -- the top-level pipeline; writes the survivor record
+  (incl. the additive `escalate` flag) and the stdout summary.
 - `tally(cl, runDir, capsOut)` -- the vote rubric; returns the confidence label.
 - `mergeClusters(runDir)` -- reads `claims/*.json`; corroboration as a
-  distinct-source Set.
+  distinct-source Set; OR-folds the optional `load_bearing` flag onto the cluster.
 - `quoteOutcome(member, excerptsById, allExcerpts)` -- the three-way quote
   outcome.
 - `recheckClusters(clusters, excerpts)` -- cluster survival + cluster-level
   `quote_fidelity`; emits the dropped record.
 - `enforceCeilings(rankedClusters)` -- the observable `MAX_VERIFY_CLAIMS` cap.
+- `stableHashFraction(clusterId)` -- the pure FNV-1a fraction in `[0,1)` that
+  selects the `escalate` audit sample (D-12c); no PRNG, reproducible from the
+  run dir.
 - `CEILINGS` -- the single frozen ceilings object.
+- `AUDIT_SAMPLE_RATE` -- the frozen `{ value: 0.15 }` audit-sample rate
+  (D-12c).
 
 Any future change to a frozen shape MUST update the code AND this reference in
 lockstep. If the doc says `corroboration_lower_bound` but the code emits a
 different name, the contract is wrong; the code wins, and the doc must be
 corrected to match. Field names below are quoted exactly as the source emits
 them (snake_case, e.g. `corroboration_lower_bound`, never camelCase).
+
+**The additive `load_bearing` / `escalate` extension (D-12 / VERIF-05).** The
+extract worker sets the optional `load_bearing` flag on a claim it judges central
+/ high-consequence; `mergeClusters` OR-folds it onto the cluster; and
+`aggregate()` emits a per-claim `escalate` flag computed DETERMINISTICALLY in the
+off-model spine (never by model discretion) as the UNION of: (a)
+`confidence === 'Contested'`; (b) the carried `load_bearing === true`; (c) an
+`AUDIT_SAMPLE_RATE` (0.15) sample of unanimous (3/3 unrefuted -> `High`) upholds,
+selected by `stableHashFraction(cluster id) < AUDIT_SAMPLE_RATE.value`. Both
+fields are ADDITIVE -- the frozen survivor field set is byte-unchanged; `escalate`
+appends after `confidence`. The orchestrator (Phase 20) reads `escalate` and
+dispatches a Sonnet re-vote wave on every flagged claim.
 
 A formal machine-enforced JSON Schema (a schema-keyword document plus a runtime
 validator library) is deliberately NOT used. The aggregator's runtime
@@ -70,7 +87,7 @@ it).
 
 ```
 <run-dir>/candidates/<worker-id>.json -> {"worker","candidates":[{"url","title"}]}  (NEW; Phase-19 SEARCH worker; orchestrator-consumed; aggregator does NOT read it)
-<run-dir>/claims/<worker-id>.json   -> {"worker","source","claims":[{"id","text","quote","excerpt_id"}]}
+<run-dir>/claims/<worker-id>.json   -> {"worker","source","claims":[{"id","text","quote","excerpt_id","load_bearing?"}]}
 <run-dir>/excerpts/<excerpt-id>.txt -> plain UTF-8 (CRLF or LF; BOM tolerated)
 <run-dir>/votes/<id>-<seat>.json    -> {"verdict":"unrefuted"|"refuted"}  (missing seat -> "insufficient")
 <run-dir>/sources/<source-id>.json  -> {"id","url","title","fetched_at",...}  (NEW; D-07; Phase-19 EXTRACT worker is the SOLE writer; aggregator does NOT read it)
@@ -156,7 +173,8 @@ The PIPE-05 worker-input shape, read by `mergeClusters`. One file per worker; a
       "id": "c1",
       "text": "X reduces Y by 30%",
       "quote": "X reduces Y by 30%",
-      "excerpt_id": "e1"
+      "excerpt_id": "e1",
+      "load_bearing": true
     }
   ]
 }
@@ -170,6 +188,7 @@ The PIPE-05 worker-input shape, read by `mergeClusters`. One file per worker; a
 | `claims[].text` | string | yes (fail-closed) | The claim text; becomes the survivor `claim`. `mergeClusters` rejects a missing or empty `text` (WR-02). |
 | `claims[].quote` | string | yes (fail-closed) | The verbatim supporting quote; checked by the quote-recheck. `mergeClusters` rejects a missing or empty `quote` (WR-01). |
 | `claims[].excerpt_id` | string | optional | The cited excerpt's basename. If absent, the cited-excerpt check is skipped and the quote can only verify as `downgraded` via some other excerpt. |
+| `claims[].load_bearing` | boolean | optional (additive; D-12) | Set `true` by the EXTRACT worker when the claim is central / high-consequence (the worker's judgment). `mergeClusters` OR-folds it onto the cluster (a cluster is `load_bearing` if ANY member carries it), and `aggregate()` escalates a `load_bearing` cluster (see "The aggregator survivor record" -> `escalate`). FAIL-OPEN: absent / non-`true` means false -- it is judgment, not a load-bearing read like `id`/`text`/`quote`/`source`, so a missing flag does NOT abort. Only the literal boolean `true` counts. |
 
 Clustering: `mergeClusters` merges two claims into one cluster when
 `jaccard(a.text, b.text) >= 0.6` (an under-merge bias -- two paraphrases below
@@ -411,7 +430,8 @@ The frozen field set, IN THIS ORDER:
   "sources": ["s1", "s2"],
   "corroboration_lower_bound": 2,
   "quote_fidelity": "verified",
-  "confidence": "High"
+  "confidence": "High",
+  "escalate": false
 }
 ```
 
@@ -423,6 +443,7 @@ The frozen field set, IN THIS ORDER:
 | `corroboration_lower_bound` | integer | `cluster.sources.size` (POST-recheck) | Aggregator | A distinct-source LOWER bound (see caveat). Value is the post-`recheckClusters` distinct-source count: sources whose ONLY member was quote-dropped no longer appear in this Set. A 3-source merge-time cluster that loses 2 sources to fabricated-quote drops emits `corroboration_lower_bound: 1`. The schema's merge-time under-count (D-09) and this post-recheck narrowing are both intentional: only sources with at least one verifiable quote contribute to the count. |
 | `quote_fidelity` | string | `verified \| downgraded` | Aggregator | Assurance 1. |
 | `confidence` | string | `High \| Medium \| Low \| Contested \| Unsupported` | Aggregator (`tally`); synthesis may promote to `Contested` | Mandated on every survivor record (SC-3). |
+| `escalate` | boolean | `true \| false` | Aggregator (`aggregate`) | ADDITIVE (D-12 / VERIF-05); appended AFTER `confidence`, the LAST key. The deterministic VERIF-05 re-vote signal: the UNION of (a) `confidence === 'Contested'`; (b) the OR-folded `load_bearing === true`; (c) a `stableHashFraction(id) < AUDIT_SAMPLE_RATE.value` (0.15) sample of unanimous (`High`) upholds. Computed off-model (never model discretion); reproducible from the run dir (no PRNG). The Phase-20 orchestrator dispatches a Sonnet re-vote wave on every `escalate: true` claim. |
 
 **Corroboration is a lower bound (caveat).** `corroboration_lower_bound` is the
 size of the distinct-source Set AFTER `recheckClusters`, never an exact independence count.
@@ -461,6 +482,13 @@ Report claim record = the survivor fields PLUS:
 Every report claim record structurally carries a `confidence` field (SC-3) and
 BOTH assurances -- `quote_fidelity` and `claim_support` (SC-4).
 
+The survivor `escalate` flag (D-12) is a transient verification-routing signal:
+the orchestrator reads it from `survivors.json` to dispatch the VERIF-05 re-vote
+wave BEFORE synthesis. Whether the final report record retains `escalate` is the
+Phase-20 synthesis step's choice (it is not a report-contract field here); the
+example above omits it because the re-vote has already been resolved by report
+time.
+
 ## The named-ceilings contract
 
 The single frozen ceilings object, copied verbatim from `CEILINGS`:
@@ -474,6 +502,18 @@ export const CEILINGS = Object.freeze({
   SYNTH_CAP: 20,
 });
 ```
+
+The `escalate` audit sample (D-12c / VERIF-05) uses a frozen sibling rate, copied
+verbatim from `AUDIT_SAMPLE_RATE`:
+
+```javascript
+export const AUDIT_SAMPLE_RATE = Object.freeze({ value: 0.15 });
+```
+
+`AUDIT_SAMPLE_RATE.value` (0.15) is the fraction of unanimous (3/3 unrefuted ->
+`High`) upholds the aggregator flags for a re-vote audit (branch (c) of the
+`escalate` union). It is value-pinned by a dev-time test (`Object.isFrozen` +
+`=== 0.15`), mirroring the `CEILINGS` frozen-object assertion.
 
 Enforcement is split across two stages:
 
@@ -534,6 +574,8 @@ Who writes, reads, and owns each contract element:
 | `quote_fidelity` | Aggregator (`quoteOutcome` / `recheckClusters`) | aggregate | Mechanical; Assurance 1; frozen. |
 | `confidence` + tally rubric | Aggregator (`tally`) | aggregate; synthesis may promote to `Contested` | One 5-tier enum. |
 | `corroboration_lower_bound` | Aggregator (`mergeClusters` Set size) | aggregate | Distinct-source lower bound. |
+| `load_bearing` | EXTRACT worker writes (Phase 19) / aggregator OR-folds (`mergeClusters`) | claim / aggregate | Optional additive flag (D-12); judgment, fail-open. ANY member `true` -> cluster `load_bearing`. |
+| `escalate` | Aggregator (`aggregate`) | aggregate | Additive (D-12 / VERIF-05); deterministic re-vote signal = Contested OR `load_bearing` OR audit sample. Read by the Phase-20 orchestrator. |
 | `claim_support` | Voter / synthesis (Phase 18/20) | report | Judgment; Assurance 2; NEW. |
 | `verdict` (vote consumed core) | Voter writes / aggregator reads | vote / aggregate | Frozen-hard consumed shape (D-09). |
 | `attack_mode` / `disconfirming_query` / source-independence note | Voter (Phase 18) | vote | Reserved envelope; additive-only (D-10). |
