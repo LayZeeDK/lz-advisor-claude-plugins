@@ -28,7 +28,7 @@ Requirements for the v2.1.0 milestone. Each maps to exactly one roadmap phase.
 - [ ] **VERIF-02**: Each open-book voter runs an explicit DISCONFIRMING search (searches the negation, not the claim's own terms) and records the disconfirming query it ran.
 - [ ] **VERIF-03**: Corroboration is weighted by SOURCE INDEPENDENCE, not raw source count (N syndicated copies of one source count as one).
 - [x] **VERIF-04**: Each claim's verbatim quote is mechanically re-checked against its stored excerpt; quotes that fail the re-check are dropped UPSTREAM of all voting.
-- [ ] **VERIF-05**: Verification escalates to a stronger tier on the UNION of triggers -- any contested split, OR any load-bearing claim regardless of verdict, OR a random audit sample (~15-20%) of unanimous upholds.
+- [x] **VERIF-05**: Verification escalates to a stronger tier on the UNION of triggers -- any contested split, OR any load-bearing claim regardless of verdict, OR a random audit sample (~15-20%) of unanimous upholds.
 - [x] **VERIF-06**: The report distinguishes "quote verified verbatim" from "claim supported by the quote" as two separate assurances.
 
 ### Aggregation (AGG) -- deterministic, off-model
@@ -128,7 +128,7 @@ Which phase covers which requirement. Filled in during roadmap creation (2026-06
 | PIPE-06 | Phase 20 | Pending |
 | PIPE-08 | Phase 20 | Pending |
 | PIPE-09 | Phase 20 | Pending |
-| VERIF-05 | Phase 20 | Pending |
+| VERIF-05 | Phase 20 | Complete |
 | AGG-05 | Phase 20 | Pending |
 | COST-01 | Phase 20 | Pending |
 | COST-03 | Phase 20 | Pending |
