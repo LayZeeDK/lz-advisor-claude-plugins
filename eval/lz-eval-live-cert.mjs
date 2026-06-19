@@ -50,6 +50,7 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
+import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
 // (1) The FROZEN ABSOLUTE per-model seams (CONSUMED byte-identical -- the over-refusal CP gate MOVES here).
@@ -71,17 +72,24 @@ import { runProbeConsensus } from './lz-eval-trap-assembler.mjs';
 // (4) The Task-1 two-arms control-set loader (the harvest the orchestrator drives).
 import { harvest, HARVEST_TARGETS } from './lz-eval-harvest.mjs';
 
-// (5) Cross-tree reuse of the SHIPPED runtime aggregator's ContractError (eval -> runtime, one-directional).
+// (5) Cross-tree reuse of the SHIPPED runtime aggregator's hardening primitives (eval -> runtime,
+// one-directional). ContractError backs the fail-closed reads; safeId guards a content-derived vote id
+// (T-19-TRAVERSE) before it is used as a path / map key; listJson is the sorted fail-closed *.json listing.
 import {
   ContractError,
+  safeId,
+  listJson,
 } from '../plugins/lz-advisor/skills/lz-deep-research/scripts/lz-deep-research-aggregate.mjs';
 
-// STOP_REASONS / scorePositiveControls are part of the composed live arm; referenced where a dual-run
-// vote / control score is produced (Stage 2). Kept exported-by-use so a lint pass does not flag the
-// import while the model-spend wiring stays behind the LZ_SPEND hard-guard (the dry-run uses stubs).
+// (6) The shared fail-closed JSON read (the eval-tree helper; strips a BOM, never a bare JSON.parse).
+import { readJson } from './lz-eval-readjson.mjs';
+
+// STOP_REASONS / scorePositiveControls / runProbeConsensus are part of the composed live arm; referenced
+// where a dual-run vote / control score / consensus pass is produced (Stage 2). Kept exported-by-use so a
+// lint pass does not flag the import while the model-spend wiring stays behind the LZ_SPEND hard-guard
+// (the dry-run uses stubs). makeBatchedOofProbe is USED by makeOofAdjudicator (the callOof transport).
 void STOP_REASONS;
 void scorePositiveControls;
-void makeBatchedOofProbe;
 void runProbeConsensus;
 
 // ---------------------------------------------------------------------------
@@ -203,6 +211,326 @@ export function composeVerdict(args = {}) {
 // ---------------------------------------------------------------------------
 export function composeDecision({ haiku, sonnet, opus } = {}) {
   return decisionMatrix({ haiku, sonnet, opus });
+}
+
+// ---------------------------------------------------------------------------
+// readArmVotes(voteDir): read every persisted vote in ONE arm's vote dir into an id -> verdict map. The
+// votes were cast at Stage 2 (the human-gated spend) and persisted via persistDualRunVote (the frozen
+// persistVote -- the per-vote search trace + skip-already-done discipline). This READ is NON-SPEND: it
+// only reads already-cast votes off disk. Each record is the frozen vote shape
+// { id, verdict:'unrefuted'|'refuted', trace:{...} }; a malformed record / non-{unrefuted,refuted}
+// verdict fails closed (mirrors scorePositiveControls' read discipline). Every content-derived vote id is
+// routed through safeId (T-19-TRAVERSE) BEFORE it is used as a map key. Returns a Map(id -> verdict).
+// ---------------------------------------------------------------------------
+function readArmVotes(voteDir) {
+  if (typeof voteDir !== 'string' || voteDir.length === 0) {
+    throw new ContractError('readArmVotes requires a voteDir', 'readArmVotes');
+  }
+
+  const files = listJson(voteDir);
+  const byId = new Map();
+
+  for (const f of files) {
+    const votePath_ = path.join(voteDir, f);
+    const rec = readJson(votePath_);
+
+    if (rec == null || typeof rec !== 'object') {
+      throw new ContractError('readArmVotes: malformed vote record: ' + JSON.stringify(rec), votePath_);
+    }
+
+    if (typeof rec.id !== 'string' || rec.id.length === 0) {
+      throw new ContractError('readArmVotes: vote record missing a non-empty string id: ' + JSON.stringify(rec), votePath_);
+    }
+
+    const id = safeId(String(rec.id), votePath_);
+
+    if (rec.verdict !== 'unrefuted' && rec.verdict !== 'refuted') {
+      throw new ContractError('readArmVotes: vote record carries a non-{unrefuted,refuted} verdict: id=' + JSON.stringify(id) + ' verdict=' + JSON.stringify(rec.verdict), votePath_);
+    }
+
+    if (byId.has(id)) {
+      throw new ContractError('readArmVotes: duplicate vote id in the arm vote dir: ' + JSON.stringify(id), votePath_);
+    }
+
+    byId.set(id, rec.verdict);
+  }
+
+  return byId;
+}
+
+// ---------------------------------------------------------------------------
+// scoreArmFromVotes({ arm, voteDir, kind }): build ONE arm's certifyModel count from the persisted votes.
+// The arm is the FROZEN member list (each carrying a `uid`); kind is 'over-refusal' (the control arm,
+// ESTIMAND B) or 'dense-trap' (the monitor arm, ESTIMAND A). For EVERY frozen member a vote MUST exist
+// (a partial / stale vote dir fails closed -- mirrors scorePositiveControls' realized-count guard); the
+// vote is read by the member's uid. The COUNT depends on the arm kind:
+//   - 'over-refusal' control arm: a SUPPORTED positive the voter SHOULD uphold -> a 'refuted' vote is an
+//     OVER-REFUSAL (the wrong refute). overRefusals = # 'refuted' votes; n = nCtrl.
+//   - 'dense-trap' monitor arm: a dense / contested claim where a cheap voter wrongly upholds an
+//     unsupported overreach -> an 'unrefuted' vote is a FALSE-UPHOLD. falseUpholds = # 'unrefuted'
+//     votes; n = nTrap.
+// The two arms are scored SEPARATELY -- this function never sees the other arm's votes; the caller passes
+// the two SEPARATE counts to certifyModel (NEVER one pooled N). Returns { count, n } (count is the arm's
+// failure count: overRefusals or falseUpholds). NON-SPEND (reads cast votes off disk).
+// ---------------------------------------------------------------------------
+export function scoreArmFromVotes({ arm, voteDir, kind } = {}) {
+  if (!Array.isArray(arm) || arm.length === 0) {
+    throw new ContractError('scoreArmFromVotes requires a non-empty frozen arm member list', 'scoreArmFromVotes');
+  }
+
+  if (kind !== 'over-refusal' && kind !== 'dense-trap') {
+    throw new ContractError('scoreArmFromVotes kind must be one of over-refusal|dense-trap: ' + JSON.stringify(kind), 'scoreArmFromVotes');
+  }
+
+  const votes = readArmVotes(voteDir);
+
+  // The realized vote count MUST equal the frozen arm size (a partial / stale vote dir fails closed --
+  // the denominator is the FROZEN N, never a realized subset; mirrors scorePositiveControls W-2 part 1).
+  if (votes.size !== arm.length) {
+    throw new ContractError(
+      'scoreArmFromVotes: realized vote count (' + votes.size + ') != frozen arm size (' + arm.length +
+        ') -- a partial / stale vote dir; the denominator is the FROZEN N (' + kind + ' arm)',
+      'scoreArmFromVotes',
+    );
+  }
+
+  let count = 0;
+
+  for (const member of arm) {
+    if (member == null || typeof member.uid !== 'string' || member.uid.length === 0) {
+      throw new ContractError('scoreArmFromVotes: a frozen arm member is missing a string uid: ' + JSON.stringify(member), 'scoreArmFromVotes');
+    }
+
+    if (!votes.has(member.uid)) {
+      throw new ContractError('scoreArmFromVotes: no persisted vote for frozen arm member uid=' + JSON.stringify(member.uid) + ' (' + kind + ' arm)', 'scoreArmFromVotes');
+    }
+
+    const verdict = votes.get(member.uid);
+
+    // The arm kind decides which verdict is the FAILURE direction (the two arms are scored oppositely):
+    //   over-refusal control arm: a 'refuted' on a SUPPORTED positive is the wrong refute (over-refusal);
+    //   dense-trap monitor arm:   an 'unrefuted' on a dense overreach is the wrong uphold (false-uphold).
+    if (kind === 'over-refusal') {
+      if (verdict === 'refuted') {
+        count += 1;
+      }
+    } else if (verdict === 'unrefuted') {
+      count += 1;
+    }
+  }
+
+  return Object.freeze({ count, n: arm.length });
+}
+
+// ---------------------------------------------------------------------------
+// scoreFromPersistedVotes({ frozen, ctrlArm, trapArm, ctrlVoteDir, trapVoteDir, model, traceAudit,
+//   difficultyFloorMet, covariateOverlapMet, evidenceAbsentStratumMet }): the NODE-SIDE DETERMINISTIC
+// SCORER (NO SPEND -- the decoupling deliverable of this no-spend build). It READS the persisted dual-run
+// votes from the two SEPARATE arm vote dirs (ctrlVoteDir / trapVoteDir), builds the two un-pooled per-arm
+// inputs ({ overRefusals, nCtrl } from the over-refusal control arm; { falseUpholds, nTrap } from the
+// dense-trap monitor arm), and calls the FROZEN certifyModel for ONE model over the two SEPARATE arms.
+// This DECOUPLES scoring from the live transport: the live spend (Stage 2/3) writes votes to disk via
+// persistDualRunVote; THIS node scorer reads them back and scores -- with ZERO spend, runnable via
+// `Bash(node:*)` from the session (D-20).
+//
+// The frozen Stage-1 snapshot (freezeArms output) binds the FROZEN N: ctrlArm.length MUST equal
+// frozen.nCtrl and trapArm.length MUST equal frozen.nTrap (the denominator is the FROZEN N -- no optional
+// stopping). The two arms are passed SEPARATELY to certifyModel (overRefusals/nCtrl is ESTIMAND B;
+// falseUpholds/nTrap is ESTIMAND A) -- NEVER pooled. certifyModel is consumed UNCHANGED (it owns the WORKS
+// verdict, the floors, the one-sided CP). Returns the per-model certifyModel verdict; the caller composes
+// the three per-model verdicts via composeDecision (decisionMatrix) for the final verdict.
+// ---------------------------------------------------------------------------
+export function scoreFromPersistedVotes({
+  frozen,
+  ctrlArm,
+  trapArm,
+  ctrlVoteDir,
+  trapVoteDir,
+  model,
+  traceAudit,
+  difficultyFloorMet,
+  covariateOverlapMet,
+  evidenceAbsentStratumMet,
+} = {}) {
+  if (frozen == null || typeof frozen !== 'object' || frozen.frozenAt !== 'stage-1') {
+    throw new ContractError('scoreFromPersistedVotes requires the Stage-1 frozen snapshot (freezeArms output)', 'scoreFromPersistedVotes');
+  }
+
+  if (!Array.isArray(ctrlArm) || !Array.isArray(trapArm)) {
+    throw new ContractError('scoreFromPersistedVotes requires the two SEPARATE frozen arms (ctrlArm + trapArm arrays)', 'scoreFromPersistedVotes');
+  }
+
+  // The denominator is the FROZEN N (no optional stopping) -- the arms passed in MUST match the Stage-1
+  // freeze exactly. A grown / shrunk arm is a result-shopping defect; fail closed.
+  if (ctrlArm.length !== frozen.nCtrl) {
+    throw new ContractError('scoreFromPersistedVotes: ctrlArm size (' + ctrlArm.length + ') != frozen.nCtrl (' + frozen.nCtrl + ') -- the denominator is the FROZEN N (no optional stopping)', 'scoreFromPersistedVotes');
+  }
+
+  if (trapArm.length !== frozen.nTrap) {
+    throw new ContractError('scoreFromPersistedVotes: trapArm size (' + trapArm.length + ') != frozen.nTrap (' + frozen.nTrap + ') -- the denominator is the FROZEN N (no optional stopping)', 'scoreFromPersistedVotes');
+  }
+
+  // The two arms scored SEPARATELY off disk -- ESTIMAND B (over-refusal) from the control arm, ESTIMAND A
+  // (false-uphold) from the dense-trap arm. NEVER pooled.
+  const ctrl = scoreArmFromVotes({ arm: ctrlArm, voteDir: ctrlVoteDir, kind: 'over-refusal' });
+  const trap = scoreArmFromVotes({ arm: trapArm, voteDir: trapVoteDir, kind: 'dense-trap' });
+
+  // The FROZEN certifyModel owns ALL the gate logic; forward the two SEPARATE arm counts + the floors.
+  return certifyModel({
+    model,
+    falseUpholds: trap.count,
+    nTrap: trap.n,
+    overRefusals: ctrl.count,
+    nCtrl: ctrl.n,
+    traceAudit,
+    difficultyFloorMet,
+    covariateOverlapMet,
+    evidenceAbsentStratumMet,
+  });
+}
+
+// ===========================================================================
+// callOof -- the COPILOT CLI NODE TRANSPORT (D-20). This is the ONLY transport that CAN be node code: the
+// Copilot CLI is an EXTERNAL subprocess (NOT the Agent tool, which a bare `node` process cannot reach).
+// The Claude voter spend (callVoter) + the Stage-3 audit (callAuditor) are session-Agent-driven (see
+// eval/lz-eval-live-cert-driver.md); only the OOF gold adjudication is node-wireable here. The OOF spend
+// is the metered Copilot AI Credits pool (D-20) -- hard-guarded behind requireSpend / LZ_SPEND.
+// ===========================================================================
+
+// ---------------------------------------------------------------------------
+// COPILOT_CLI_DEFAULTS: the documented Copilot CLI invocation posture (CLAUDE.md copilot-cli-invocation).
+// The transport PIPES the prompt via stdin (NO -p flag; a multi-line -p arg is silently dropped + embedded
+// quotes break the argv hand-off), OMITS --allow-all-tools (the Claude Code classifier auto-DENIES it),
+// and passes --model <slug> --effort high. The frozen OOF pair slugs are gpt-5.5 + gemini-3.1-pro-preview
+// (the -preview suffix is REQUIRED; the bare gemini-3.1-pro errors). The binary path is resolvable from
+// PATH (`copilot`) by default; an explicit bin overrides for a non-PATH install.
+// ---------------------------------------------------------------------------
+export const COPILOT_CLI_DEFAULTS = Object.freeze({
+  bin: 'copilot',
+  effort: 'high',
+  timeoutMs: 180000,
+});
+
+// ---------------------------------------------------------------------------
+// makeCopilotCallModel({ model, bin, effort, timeoutMs, runner }): build the callModel(promptText) ->
+// Promise<rawString> transport that makeBatchedOofProbe consumes, wired over the Copilot CLI subprocess.
+// HARD-GUARDED: it calls requireSpend('callOof') FIRST -- a real OOF spend THROWS unless LZ_SPEND=1 (the
+// dry-run + the test suite run stubs only; the guard fires on any accidental spend entry). The runner is
+// INJECTABLE (default node:child_process spawnSync) so the test drives a deterministic stub with ZERO
+// spend; the test asserts (a) the guard throws on LZ_SPEND unset and (b) the wiring shape (the prompt is
+// PIPED via stdin, -p is NEVER passed, --allow-all-tools is NEVER passed, --model + --effort are passed).
+//
+// The transport returns the subprocess STDOUT verbatim (the raw model response); makeBatchedOofProbe's
+// reused score.mjs slice parses the JSON array out of it. A non-zero exit / spawn error fails closed with
+// a ContractError (the OOF response is not usable -> the batch DP3 re-run/split path applies upstream).
+// ---------------------------------------------------------------------------
+export function makeCopilotCallModel({
+  model,
+  bin = COPILOT_CLI_DEFAULTS.bin,
+  effort = COPILOT_CLI_DEFAULTS.effort,
+  timeoutMs = COPILOT_CLI_DEFAULTS.timeoutMs,
+  runner = spawnSync,
+} = {}) {
+  if (typeof model !== 'string' || model.length === 0) {
+    throw new ContractError('makeCopilotCallModel requires a non-empty model slug (e.g. gpt-5.5 / gemini-3.1-pro-preview)', 'makeCopilotCallModel');
+  }
+
+  // The argv: NO -p (stdin is the prompt), NO --allow-all-tools (classifier-denied). --model + --effort
+  // only. Pinned here so the wiring shape is assertable (the test inspects the argv the runner receives).
+  const args = ['--model', model, '--effort', effort];
+
+  async function callModel(promptText) {
+    // HARD-GUARD FIRST: refuse to spend Copilot Credits unless explicitly authorized.
+    requireSpend('callOof');
+
+    if (typeof promptText !== 'string' || promptText.length === 0) {
+      throw new ContractError('makeCopilotCallModel: promptText must be a non-empty string', 'makeCopilotCallModel');
+    }
+
+    // PIPE the prompt via stdin (input), NEVER as a -p arg. spawnSync's `input` option writes to the
+    // child's stdin -- the documented BEST method (preserves newlines + quotes; no flattening/escaping).
+    const res = runner(bin, args, {
+      input: promptText,
+      encoding: 'utf8',
+      timeout: timeoutMs,
+      maxBuffer: 64 * 1024 * 1024,
+    });
+
+    if (res == null || typeof res !== 'object') {
+      throw new ContractError('makeCopilotCallModel: the runner returned no result', 'makeCopilotCallModel');
+    }
+
+    if (res.error) {
+      throw new ContractError('makeCopilotCallModel: copilot spawn failed: ' + String(res.error.message || res.error), 'makeCopilotCallModel');
+    }
+
+    if (typeof res.status === 'number' && res.status !== 0) {
+      throw new ContractError('makeCopilotCallModel: copilot exited non-zero (' + res.status + '): ' + String(res.stderr || ''), 'makeCopilotCallModel');
+    }
+
+    return String(res.stdout == null ? '' : res.stdout);
+  }
+
+  // Surface the argv + posture for the wiring-shape assertion (the test verifies -p / --allow-all-tools
+  // are NEVER in the argv and that --model + --effort are).
+  callModel.argv = Object.freeze([bin, ...args]);
+  callModel.model = model;
+
+  return callModel;
+}
+
+// ---------------------------------------------------------------------------
+// makeOofAdjudicator({ seed, batchSize, hardBatchSize, hardNearBoundaryIds, makeCallModel }): build the
+// FROZEN-OOF-PAIR gold adjudicator -- ONE makeBatchedOofProbe per frozen OOF model, each wired over the
+// Copilot CLI transport (makeCopilotCallModel by default; injectable for the test stub). This composes the
+// OOF batch adapter (lz-eval-oof-batch.mjs) UNCHANGED -- it only supplies the per-model callModel. The
+// returned { probes, prepare } shape matches what runProbeConsensus + the Stage-2 adjudication consume:
+// `prepare(packets)` pre-seeds every probe's resolver map (the documented PRE-PASS) before the per-packet
+// consensus loop. HARD-GUARDED transitively: each probe's callModel calls requireSpend('callOof') FIRST,
+// so building the adjudicator is NO-SPEND but DISPATCHING it (prepare) THROWS unless LZ_SPEND=1.
+//
+// This is the `callOof` the Stage-2 dual-run injects (the human-gated Plan 20-05 wiring). The test builds
+// it with a stub makeCallModel + asserts the two frozen-pair probes are present (gpt-5.5 +
+// gemini-3.1-pro-preview) and that prepare fails closed on LZ_SPEND unset.
+// ---------------------------------------------------------------------------
+export function makeOofAdjudicator({
+  seed,
+  batchSize,
+  hardBatchSize,
+  hardNearBoundaryIds = [],
+  makeCallModel = makeCopilotCallModel,
+} = {}) {
+  if (typeof makeCallModel !== 'function') {
+    throw new ContractError('makeOofAdjudicator requires a makeCallModel factory (default makeCopilotCallModel)', 'makeOofAdjudicator');
+  }
+
+  // ONE probe per FROZEN OOF model (gpt-5.5 + gemini-3.1-pro-preview), byte-identical to FROZEN_OOF_PAIR.
+  const probes = FROZEN_OOF_PAIR.map((model) =>
+    makeBatchedOofProbe({
+      callModel: makeCallModel({ model }),
+      model,
+      seed,
+      batchSize,
+      hardBatchSize,
+      hardNearBoundaryIds,
+    }),
+  );
+
+  // PRE-PASS: pre-seed every probe's resolver map before the consensus loop (the documented shape -- a
+  // packet not pre-prepared fail-closes to a DROP). Each probe.prepare drives its callModel, which
+  // requireSpend-guards -- so prepare is the spend boundary (NO spend until LZ_SPEND=1).
+  async function prepare(packets) {
+    const events = [];
+
+    for (const probe of probes) {
+      const res = await probe.prepare(packets);
+      events.push({ model: probe.model, batchEvents: res.batchEvents });
+    }
+
+    return Object.freeze({ events });
+  }
+
+  return Object.freeze({ probes, prepare, pair: FROZEN_OOF_PAIR });
 }
 
 // ---------------------------------------------------------------------------
