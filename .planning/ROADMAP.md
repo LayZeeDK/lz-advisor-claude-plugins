@@ -200,7 +200,7 @@ Plans:
 - [x] 20-01-PLAN.md -- additive load_bearing/escalate aggregator extension (anti-drift lockstep) [VERIF-05]
 - [x] 20-02-PLAN.md -- live-cert harness NO-SPEND build composing the frozen eval seams + the pre-registered live lock rule
 - [x] 20-03-PLAN.md -- the orchestrator SKILL.md (scope/decompose/search/extract/aggregate/verify/synthesize) [PIPE-01/02/06/08/09, COST-01/03/04, AGG-05]
-- [ ] 20-04-PLAN.md -- INTEG-01 discoverability + INTEG-02 gitignore + the SC-5 headless scale spike
+- [x] 20-04-PLAN.md -- INTEG-01 discoverability + INTEG-02 gitignore + the SC-5 headless scale spike
 - [ ] 20-05-PLAN.md -- the BLOCKING human-authorized live-cert spend (staged WORKS certification; Haiku-first flip deferred) [COST-01]
 
 ## Progress
@@ -218,6 +218,6 @@ Phases execute in numeric order: 16 -> 17 -> 17.1 -> 18 -> 19 -> 20
 | 17.1. Address Phase 16/17 review findings (INSERTED) | v2.1.0 | 3/3 | Complete    | 2026-06-15 |
 | 18. Haiku research + voter + early eval | v2.1.0 | 5/5 | Complete    | 2026-06-16 |
 | 19. Search + extract workers | v2.1.0 | 3/5 | In Progress|  |
-| 20. Orchestrator + scale | v2.1.0 | 3/5 | In Progress|  |
+| 20. Orchestrator + scale | v2.1.0 | 4/5 | In Progress|  |
 
 v1.0 + v1.0.1 + v2.0.0 shipped (plugin 2.0.0). **Active milestone: v2.1.0 (lz-deep-research skill)** -- Phases 16-20, roadmap revised 2026-06-15 (gating eval moved EARLY to Phase 18; EVAL-05 added -- Haiku prompt-engineering research must precede authoring any Haiku agent; the search worker's model tier follows the Phase-18 outcome). Release/publication (REL-01..03) is handled during `/gsd-complete-milestone` after `/gsd-audit-milestone` passes, not as a build phase. See `.planning/MILESTONES.md` for shipped-milestone summaries and `milestones/` for full detail.

@@ -57,8 +57,8 @@ Requirements for the v2.1.0 milestone. Each maps to exactly one roadmap phase.
 
 ### Integration (INTEG)
 
-- [ ] **INTEG-01**: The new skill is discoverable as `lz-advisor:lz-deep-research` (bare `/lz-deep-research`), de-shadowing the Claude Code built-in `/deep-research`.
-- [ ] **INTEG-02**: `.lz-research/` is added to `.gitignore` as runtime scratch.
+- [x] **INTEG-01**: The new skill is discoverable as `lz-advisor:lz-deep-research` (bare `/lz-deep-research`), de-shadowing the Claude Code built-in `/deep-research`.
+- [x] **INTEG-02**: `.lz-research/` is added to `.gitignore` as runtime scratch.
 
 ## Release Requirements (handled during `/gsd-complete-milestone`)
 
@@ -133,8 +133,8 @@ Which phase covers which requirement. Filled in during roadmap creation (2026-06
 | COST-01 | Phase 20 | Pending |
 | COST-03 | Phase 20 | Pending |
 | COST-04 | Phase 20 | Pending |
-| INTEG-01 | Phase 20 | Pending |
-| INTEG-02 | Phase 20 | Pending |
+| INTEG-01 | Phase 20 | Complete |
+| INTEG-02 | Phase 20 | Complete |
 
 Release requirements (REL-01..03) are handled during `/gsd-complete-milestone`, not mapped to build phases.
 
