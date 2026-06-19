@@ -131,3 +131,111 @@ test('SSOT: no STALE design references survive in the frontmatter/examples (the 
   // The search worker must not instruct writing to sources/ in any example (extract owns sources/).
   assert.ok(!/write[^.\n]*\bto\b[^.\n]*sources\//i.test(SEARCH), 'no example tells search to write to sources/');
 });
+
+// ===========================================================================
+// Cluster 3 (GAP, /gsd:validate-phase): least-privilege tools grant -- the T-19-05 (EoP) mitigation.
+//
+// PIPE-03 / PIPE-04 / PIPE-05 each declare the worker's frontmatter `tools` list as the role's
+// access-control boundary: the search worker is EXACTLY [WebSearch, Write] (it never fetches page
+// bodies or runs shell), the extract worker is EXACTLY [WebFetch, Write] (it never searches). Before
+// this gate the grant was proven only by a one-time manual `git grep` during execution -- a maintainer
+// re-adding Read/Bash, or flipping search to WebFetch, would NOT be caught by any test. This converts
+// the least-privilege grant from a one-shot review into a checked regression gate against the SHIPPED
+// frontmatter. It parses the actual `tools:` line, so it FAILS if a tool is added, removed, or swapped.
+// ===========================================================================
+
+// Parse the frontmatter `tools: [...]` array from a shipped agent prompt into a string set.
+const parseToolsGrant = (prompt, name) => {
+  const m = prompt.match(/^tools:\s*\[([^\]]*)\]/m);
+  assert.ok(m, name + ' frontmatter declares a tools: [...] array');
+  return m[1]
+    .split(',')
+    .map((t) => t.trim().replace(/^["']|["']$/g, ''))
+    .filter((t) => t.length > 0);
+};
+
+test('Cluster 3 (T-19-05): the SEARCH worker frontmatter grants EXACTLY [WebSearch, Write] -- no WebFetch/Read/Bash', () => {
+  const grant = parseToolsGrant(SEARCH, 'search-worker');
+  assert.deepEqual(
+    [...grant].sort(),
+    ['WebSearch', 'Write'],
+    'search worker must grant exactly WebSearch + Write (got: ' + grant.join(', ') + ')',
+  );
+  // Discriminating negatives: each over-privilege tool is individually absent from the grant.
+  for (const forbidden of ['WebFetch', 'Read', 'Bash', 'Edit', 'Glob']) {
+    assert.ok(!grant.includes(forbidden), 'search worker must NOT grant ' + forbidden);
+  }
+});
+
+test('Cluster 3 (T-19-05): the EXTRACT worker frontmatter grants EXACTLY [WebFetch, Write] -- no WebSearch/Read/Bash', () => {
+  const grant = parseToolsGrant(EXTRACT, 'extract-worker');
+  assert.deepEqual(
+    [...grant].sort(),
+    ['WebFetch', 'Write'],
+    'extract worker must grant exactly WebFetch + Write (got: ' + grant.join(', ') + ')',
+  );
+  // Discriminating negatives: each over-privilege tool is individually absent from the grant.
+  for (const forbidden of ['WebSearch', 'Read', 'Bash', 'Edit', 'Glob']) {
+    assert.ok(!grant.includes(forbidden), 'extract worker must NOT grant ' + forbidden);
+  }
+});
+
+// ===========================================================================
+// Cluster 4 (GAP, /gsd:validate-phase): the AGG-03 receipt contract against the SHIPPED documented
+// receipt example -- the D-14 / T-19-06 (Information Disclosure) mitigation.
+//
+// The existing plugin-tree receipt test (lz-deep-research-aggregate.test.mjs) asserts a HARDCODED inline
+// sample string, divorced from the agent files -- it cannot catch a maintainer making the DOCUMENTED
+// receipt multi-line, over-cap, or raw-text-bearing. The whole point of the one-line counts-only receipt
+// is that the main session never holds raw source text; if the shipped example drifts to demonstrate a
+// non-conforming receipt, the agent ships a contract violation. This gate extracts the receipt example
+// from the actual shipped fenced ```text block in each agent and asserts the AGG-03 contract on it.
+// ===========================================================================
+
+// Extract the receipt example -- the single line inside the agent's documented ```text fenced block
+// that begins with the counts-only sentinel "ok worker=".
+const extractReceiptExample = (prompt, name) => {
+  const fences = [...prompt.matchAll(/```text\s*\n([\s\S]*?)```/g)].map((mm) => mm[1]);
+  for (const block of fences) {
+    for (const line of block.split('\n')) {
+      const trimmed = line.trim();
+      if (trimmed.startsWith('ok worker=')) {
+        return trimmed;
+      }
+    }
+  }
+  assert.fail(name + ' must document a counts-only receipt example ("ok worker=...") in a ```text block');
+};
+
+test('Cluster 4 (AGG-03/D-14): the SEARCH worker documented receipt is one line, <= 200 chars, counts-only, no raw text', () => {
+  const receipt = extractReceiptExample(SEARCH, 'search-worker');
+  assert.ok(!/[\r\n]/.test(receipt), 'search receipt example must be a single line (no CR/LF)');
+  assert.ok(receipt.length <= 200, 'search receipt must be <= ~200 chars; got ' + receipt.length);
+  // Counts-only shape: carries the worker id + a numeric candidate count + a status word.
+  assert.match(
+    receipt,
+    /\bworker=\S+[\s\S]*\bcandidates=\d+[\s\S]*\bstatus=\S+/,
+    'search receipt must be counts-only (worker=... candidates=N status=...)',
+  );
+});
+
+test('Cluster 4 (AGG-03/D-14): the EXTRACT worker documented receipt is one line, <= 200 chars, counts-only, no raw quote', () => {
+  const receipt = extractReceiptExample(EXTRACT, 'extract-worker');
+  assert.ok(!/[\r\n]/.test(receipt), 'extract receipt example must be a single line (no CR/LF)');
+  assert.ok(receipt.length <= 200, 'extract receipt must be <= ~200 chars; got ' + receipt.length);
+  // Counts-only shape: carries the worker id + numeric excerpt and claim counts + a status word.
+  assert.match(
+    receipt,
+    /\bworker=\S+[\s\S]*\bexcerpts=\d+[\s\S]*\bclaims=\d+[\s\S]*\bstatus=\S+/,
+    'extract receipt must be counts-only (worker=... excerpts=N claims=M status=...)',
+  );
+});
+
+test('Cluster 4 (AGG-03/T-19-06): both workers state the one-line / counts-only / no-raw-text receipt contract in prose', () => {
+  for (const [name, text] of [['extract', EXTRACT], ['search', SEARCH]]) {
+    assert.match(text, /exactly ONE line/i, name + ' states the one-line receipt rule');
+    assert.match(text, /200 characters/i, name + ' states the ~200-char cap');
+    assert.match(text, /counts-only/i, name + ' states the receipt is counts-only');
+    assert.match(text, /NO raw\b[\s\S]{0,40}(text|quote)/i, name + ' states the receipt carries no raw text/quotes');
+  }
+});
