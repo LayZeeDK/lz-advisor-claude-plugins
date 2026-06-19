@@ -1,46 +1,45 @@
 {
   "version": "1.0",
-  "timestamp": "2026-06-19T07:40:48.725Z",
+  "timestamp": "2026-06-19T14:49:38.655Z",
   "phase": "19",
   "phase_name": "search-extract-worker-agents",
   "phase_dir": ".planning/phases/19-search-extract-worker-agents",
   "plan": 4,
-  "task": 6,
+  "task": "RE-PLAN-12 pending (decision recorded; plan re-authoring NOT started, paused per user)",
   "total_tasks": 12,
   "status": "paused",
-  "pause_reason": "RE-PLAN-9 is committed (board-converged control-arm redesign). The T-spend-1 gold build VOIDED (positive-control arm construct collapse); a cross-family board converged on a probe-gated build-OR-descope; gsd-planner re-authored 19-04 to RE-PLAN-9 (12 tasks) + gsd-plan-checker PASS-WITH-WARNINGS (3 folded). Paused awaiting the user's call on how to proceed + a FRESH T-spend authorization (the prior pre-approval does NOT carry to the redesigned plan).",
+  "pause_reason": "A deep-research pass + a 2-round cross-family board CONVERGED on a STAGED path to certified WORKS. Decision records + research are committed. The user said 'commit decision records and research but pause before starting the re-planning' -- so the RE-PLAN-12 plan re-authoring (19-04 -> offline screen; 19-05 retire; Phase 20 -> primary live WORKS certifier) is deliberately held for a fresh go.",
   "completed_tasks": [
-    {"id": "1-3", "name": "RE-PLAN-7 absolute-per-model build", "status": "done", "commit": "c84e6d0/dca8d43/8c97f01", "note": "CARRIED byte-identical"},
-    {"id": "4-5", "name": "RE-PLAN-8 NO-SPEND build (batched OOF adapter + contamination gate; non-gating cheaper pilot + k=1 cert; additive re-pre-registration)", "status": "done", "commit": "5e048a3/9652c5e/2ae3634", "note": "CARRIED byte-identical"},
-    {"id": "task6-pin", "name": "Pre-registration pin (nControls=40, F5 tolerances 0.5)", "status": "superseded", "commit": "9b16c60", "note": "nControls=40 SUPERSEDED by RE-PLAN-9 -> 0 (controls move off AVeriTeC)"},
-    {"id": "T-spend-1", "name": "T-spend-1 gold build EXECUTED -> VOIDED (positive-control arm construct collapse)", "status": "done-void", "commit": "092d228", "note": "genuine VOID, diligence-confirmed; NOT a batching artifact, NOT rubric-too-literal; framing corrected 80fe1f9"},
-    {"id": "replan9-board", "name": "RE-PLAN-9 cross-family board (2 Opus lenses + GPT-5.5 + Gemini; fact-only, no imposed synthesis) -> UNANIMOUS", "status": "done", "commit": "a6acd7f"},
-    {"id": "replan9-plan", "name": "gsd-planner re-authored 19-04 to RE-PLAN-9 + gsd-plan-checker PASS-WITH-WARNINGS (3 folded) + STATE", "status": "done", "commit": "a239d71/1ec2e21"}
+    {"id": "research", "name": "Deep-research pass on reaching certified WORKS (deep-research workflow wf_cd6853aa-792; 105 agents, 23 sources, 20/25 claims 3-vote verified)", "status": "done", "artifact": "19-04-CERTIFY-WORKS-RESEARCH.md"},
+    {"id": "board", "name": "2-round cross-family board on the path to WORKS (2 Opus lenses + GPT-5.5 + Gemini; R1 4-way split -> R2 CONSENSUS on the staged design)", "status": "done", "artifact": "19-04-REPLAN-DECISION-12.md"},
+    {"id": "descope", "name": "RE-PLAN-11 re-run DESCOPED the synthetic offline over-refusal arm (7/40 genuine-synthesis yield, negative-EV; board-unanimous)", "status": "done", "artifact": "19-04-REPLAN-11-OUTCOME.md"}
   ],
   "remaining_tasks": [
-    {"id": 6, "name": "NO-SPEND: entailment-native control-source loader + manifest (FEVER + VitaminC; license/date verified at build time) + drift-gate test", "status": "not_started", "spends": "none"},
-    {"id": 7, "name": "NO-SPEND: control-construction rule (covariate strata + substring-reject SUBSTRING_REJECT_MAX_CHARS=40 + complexity MIN_COMPLEXITY_TOKENS=12 + >=1/3 hard-positive) + test", "status": "not_started", "spends": "none"},
-    {"id": 8, "name": "NO-SPEND: survival-probe harness (reuse batched OOF adapter + score.mjs slice; covariate-match; the pre-registered decision rule build-vs-descope) + STUB test", "status": "not_started", "spends": "none"},
-    {"id": 9, "name": "NO-SPEND: ADDITIVE re-pre-registration (lock-rule + manifest: control-source + construction rule + survival probe + decision rule + nControls supersession) + prose==code anti-drift", "status": "not_started", "spends": "none"},
-    {"id": 10, "name": "SPEND (FRESH AUTHORIZATION BOUNDARY): the survival probe -> human-confirmed BUILD-or-DESCOPE", "status": "not_started", "type": "checkpoint:human-verify", "gate": "blocking", "spends_ai_credits": true, "authorized": false},
-    {"id": 11, "name": "SPEND (only on BUILD): rebuild the family-independent gold control arm + freeze N", "status": "not_started", "type": "checkpoint:human-verify", "gate": "blocking", "authorized": false},
-    {"id": 12, "name": "SPEND (NOT-yet-authorized; only on a built gold): three voters Haiku+Sonnet+Opus at k=9 -> certifyModel per model -> decision matrix -> RAISE", "status": "not_started", "type": "checkpoint:human-verify", "gate": "blocking", "authorized": false},
-    {"id": "close-out", "name": "verify_phase_goal -> secure-phase -> validate-phase -> extract-learnings -> phase.complete; reconcile 19-05", "status": "not_started"}
+    {"id": "replan12-19-04", "name": "Re-author 19-04-PLAN.md to the offline manual-contrastive MCC SCREEN (+ dual-baseline artifact guard + pre-registered bar); retire the synthetic-control-arm tasks; keep the trap/false-uphold arm + carried machinery", "status": "not_started", "gated_on": "explicit user go"},
+    {"id": "replan12-19-05", "name": "Reconcile/retire the stale 19-05-PLAN.md (RE-PLAN-3-era Haiku-MINUS-Sonnet read; subsumed by the staged design)", "status": "not_started", "gated_on": "explicit user go"},
+    {"id": "replan12-phase20", "name": "Amend Phase 20 (ROADMAP + plan): the live/operational stage becomes the PRIMARY over-refusal + full-WORKS certifier (adjudicated-positive pipeline + pre-registered CP gates + MCC secondary)", "status": "not_started", "gated_on": "explicit user go"},
+    {"id": "execute-offline-screen", "name": "Author the ~12 manual contrastive minimal-pairs -> run the dual-baseline guard -> (if it gates) the pre-registered MCC screen -> SCREEN-PASS/PROVISIONAL", "status": "not_started", "gated_on": "RE-PLAN-12 authored"}
   ],
   "blockers": [
-    {"description": "The survival probe (Task 10) is a FRESH spend authorization boundary. The redesign changed the plan, so the prior conditional T-spend-1/2 pre-approval does NOT carry. No probe/gold/voter spend without a new explicit go.", "type": "human_action", "workaround": "Tasks 6-9 (NO-SPEND build) can proceed and be re-proven green without crossing the boundary."}
+    {"description": "User paused BEFORE the RE-PLAN-12 plan re-authoring (not a defect -- a deliberate hold)", "type": "human_action", "workaround": "resume on an explicit go"}
   ],
   "human_actions_pending": [
-    {"action": "Decide: build the NO-SPEND Tasks 6-9 now (then HALT at the survival-probe gate) -- OR review RE-PLAN-9 (19-04-PLAN.md + 19-04-REPLAN-DECISION-9.md) first.", "context": "RE-PLAN-9 is committed; the build is the natural next step and is zero-spend.", "blocking": false},
-    {"action": "Decide: pre-authorize the survival probe (~$3-5 OOF, the cheap first gate) for when the build is green -- OR hold for an explicit go at the gate.", "context": "The probe catches an unbuildable control arm before the larger gold/voter runs.", "blocking": true}
+    {"action": "Give an explicit go to start RE-PLAN-12 (the plan re-authoring of 19-04 + 19-05 + Phase 20)", "context": "User: 'commit decision records and research but pause before starting the re-planning'", "blocking": true},
+    {"action": "During execution: author the ~12 manual contrastive minimal-pairs (supported claims as minimal label-flipping edits on the same dense trap evidence bundles)", "context": "The offline-screen construction; the dual-baseline guard then adjudicates gates-vs-diagnostic", "blocking": false}
   ],
   "decisions": [
-    {"decision": "T-spend-1 VOID is a GENUINE construct collapse of the positive-control arm", "rationale": "AVeriTeC aggregate-'Supported' is not strict excerpt-entailment; single-form (0/8 AVeriTeC) + sound OOF reasons rule out a batching artifact AND rubric-too-literal", "phase": "19"},
-    {"decision": "The eval is ABSOLUTE PER-MODEL -- proves Haiku AND Sonnet (+ Opus baseline) symmetrically; 'Haiku=OFF' was a wrong framing (a downstream deployment default, not an eval judgment) and was corrected", "rationale": "the near-Opus-at-Sonnet/Haiku-cost thesis needs per-model metrics for all three; the VOID blocks the verdict for ALL three equally", "phase": "19"},
-    {"decision": "RE-PLAN-9: probe-gated build-OR-descope of the control arm (entailment-native FEVER+VitaminC; unchanged strict OOF screen + frozen 24 floor; covariate-match + substring-reject + complexity + hard-positive; survival probe ~50 target ~30+; clears -> build, fails any -> auto-descope to Phase-20 live + trap-only + SATURATION->PROVISIONAL)", "rationale": "cross-family board UNANIMOUS (fact-only convergence); Paths A (floor relax) + B (asymmetric criterion) DEAD by consensus", "phase": "19"},
-    {"decision": "nControls 40 -> 0 supersession (AVeriTeC seeds all become traps; controls move to the new source)", "rationale": "gold VOIDed pre-vote so the zero-votes window is genuinely open; documented, not silently rewritten; floors frozen (no result-shopping)", "phase": "19"}
+    {"decision": "STAGED certification: offline = a confound-robust MCC SCREEN over manual contrastive minimal-pairs (SCREEN-PASS/PROVISIONAL, never WORKS); LIVE/Phase-20 = the PRIMARY over-refusal + full-WORKS certifier over adjudicated positives", "rationale": "Signal-detection theory is decisive (a valid WORKS REQUIRES positive trials -> trap-only cannot certify); the difficulty-confound that stalled RE-PLAN-9/10/11 is cracked by contrastive-on-the-same-bundles; the literature-unspecified bar is answered by pre-registration, not a self-chosen number", "phase": "19", "authority": "19-04-REPLAN-DECISION-12.md (cross-family board CONSENSUS)"},
+    {"decision": "RETIRE the synthetic-control-arm attempt (RE-PLAN-9/10/11: fetched FEVER/VitaminC + synthetic-from-trap-corpus positives)", "rationale": "Twice descoped board-unanimous: thin yield, difficulty-confound, negative-EV", "phase": "19"},
+    {"decision": "Offline VERDICT mechanism becomes MCC; the over-refusal CP gate MOVES to the live arm; frozen primitives + EVAL_THRESHOLDS (TAU_FU 0.10 / TAU_OR 0.15 / N_CTRL_FLOOR 24) stay byte-identical", "rationale": "MCC structurally breaks the always-refute confound without a separately-hand-built difficulty-matched corpus (F4); the floors apply at the live arm where positives are real", "phase": "19"}
   ],
-  "uncommitted_files": [".claude/settings.json (pre-existing, UNRELATED -- do NOT bundle)"],
-  "next_action": "Resolve the open question (proceed to NO-SPEND Tasks 6-9 vs review RE-PLAN-9 first; pre-authorize the survival probe vs hold). If proceeding: build Tasks 6-9 (NO SPEND) -> re-prove the FILE-form suite green + the re-pre-registration prose==code -> HALT at Task 10 (the survival probe, a FRESH spend authorization boundary). The ORCHESTRATOR runs all copilot spend directly (subagents correctly refuse a relayed spend authorization).",
-  "context_notes": "Autonomous overnight run. T-spend-1 ran to a genuine VOID (control-arm collapse) -- caught at the gold-build BEFORE the larger T-spend-2 voter runs (the checkpoint design working). The board converged on a clean fix, fact-only with NO imposed synthesis (Lars corrected a leading-synthesis draft mid-board -- see [[feedback_board_convergence_methodology]]). Copilot transport fixed with shell:true (Windows spawn ENOENT); transport at eval/.cache/run-stage1/copilot-transport.mjs is LZ_SPEND-guarded. ~$10-13 Copilot AI Credits this session + 42 Opus generations + ~4 board OOF calls. Do NOT re-attempt the old AVeriTeC-native-controls design, do NOT result-shop the rubric to recover controls, do NOT re-open the converged board, do NOT spend on the redesigned plan without a fresh go."
+  "uncommitted_files": [
+    ".planning/STATE.md",
+    ".planning/phases/19-search-extract-worker-agents/.continue-here.md",
+    ".planning/phases/19-search-extract-worker-agents/19-04-CERTIFY-WORKS-RESEARCH.md",
+    ".planning/phases/19-search-extract-worker-agents/19-04-REPLAN-11-OUTCOME.md",
+    ".planning/phases/19-search-extract-worker-agents/19-04-REPLAN-DECISION-12.md",
+    ".planning/HANDOFF.json"
+  ],
+  "next_action": "Get an explicit go to start RE-PLAN-12 (re-author 19-04 to the offline manual-contrastive MCC screen, reconcile/retire 19-05, amend Phase 20 to the primary live WORKS certifier). Until then: do nothing further -- decision records + research are committed, the board is converged, the synthetic arm is retired.",
+  "context_notes": "Phase 19's 19-04 eval went through RE-PLAN-3..11 chasing a valid offline positive-control (over-refusal) arm; all attempts descoped. The user asked HOW to reach certified WORKS + authorized a full re-plan of 19+20. Deep research + a cross-family board converged on a STAGED design (offline confound-robust MCC screen + live-primary WORKS). The one empirical unknown (do the 12 manual minimal-pairs clear the dual-baseline artifact guard?) is resolved DURING execution: pass -> offline gates; fail -> offline demotes to a non-gating diagnostic + WORKS lands entirely at the live stage. Sonnet-default ships regardless; the Haiku-vs-Sonnet worker-tier decision is settled at the live stage. The RE-PLAN-12 plan re-authoring is deliberately held for a fresh go. NOTE: pre-existing incidental 'TBD' in 19-02-SUMMARY.md (a completed-plan metrics placeholder), out of this pause's scope."
 }
