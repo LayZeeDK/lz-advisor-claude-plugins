@@ -61,6 +61,39 @@ Phase 20 is the milestone-capping phase. It delivers TWO coupled workstreams, bo
 
 ### Post-discussion directive (user, 2026-06-20) -- live-cert voter transport
 - **D-20:** The live-cert `callVoter` transport = **Agent sub-agents** (the Phase-18 verify-voter agents via the Agent tool, per-invocation `model: haiku` for CHEAP / `model: sonnet` for STRONG), driven from a Claude Code session; `eval/lz-eval-live-cert.mjs` is invoked via `Bash(node:*)` for the deterministic scoring only. The Claude voter spend therefore draws the **Claude session pool**, NEVER the metered Anthropic API (user directive: never use the Anthropic API -- reasserts PROJECT.md "the Claude Code Agent tool is the only mechanism") and NEVER `claude -p` (which stays the dev/UAT-only harness, e.g. the 20-04 SC-5 spike). `callOof` stays the Copilot CLI (metered Copilot AI Credits). Corrects the "metered Claude voter spend" wording in 20-05-PLAN.md: the metered pool is the OOF Credits only.
+
+### Post-discussion directive (user + cross-family board, 2026-06-20) -- certified-WORKS methodology re-plan
+- **D-21:** The D-02 false-uphold positives source ("harvest dense-SUPPORTED claims from the skill's own
+  output") is empirically INFEASIBLE (the Stage-0 harvest RAISE: ~0.33 dense-SUPPORTED/run; lexical dedup
+  under-merges so corroboration sticks at 1; the dense-trap arm would need ~90 runs -- see
+  `20-05-LIVE-CERT-RESULT.md`). A 3-round UNANIMOUS cross-family board (2 Opus lenses + gpt-5.5 +
+  gemini-3.1-pro-preview, `--effort high`) DECIDED a replacement: `CERTIFY-WORKS-BOARD-DECISION.md` is THE
+  AUTHORITY for the re-plan, superseding the D-02 positives source. The certified-WORKS methodology -- TWO
+  arms, split-source, both certifying: (B) the OVER-REFUSAL control STAYS LIVE-harvested (D-02 "run the skill
+  on itself" remains valid for arm B; ~2.3 SUPPORTED/run feasible, ~13 runs), N >= 30, CP-upper <= TAU_OR
+  (0.15); (A) the FALSE-UPHOLD arm becomes MANUALLY-CONSTRUCTED contrastive minimal-pairs, each a minimal
+  edit of a REAL live dense evidence bundle of the SAME class as the over-refusal positives (flip only the
+  truth-value; preserve density / length / style), N >= 30, CP-upper <= TAU_FU (0.10) -- EXPAND the
+  underpowered 12-trap set to >= 30, reuse the 12 as seed. WORKS (not merely scoped) IFF: pre-registered
+  before any scored vote + every trap is a minimal-edit-from-a-real-bundle + the construct-validity gate
+  passes -- (d) minimal-edit [MANDATORY] + (a) a zero-dep lexical-overlap AUC <= the pre-registered ceiling
+  (0.60-0.65) [PRIMARY] + (b) a one-sided "not easier" difficulty guard (FAIL only if the constructed cell is
+  detectably EASIER than the harvested dense-SUPPORTED cell, easier-direction SMD > 0.5) + (c) an optional
+  blind audit. Shared pipeline / origin is NOT required (SDT estimates sensitivity + specificity on separate
+  pools); fail the gate -> a SCOPED certificate (scoped to the unverified distribution claim). A 10-pair
+  pre-scale probe gates on gold-panel unanimity (>= 9/10) + the lexical AUC; its scored voter is
+  RUN-but-NOT-GATED (telemetry + a voluntary early-stop only, NEVER the cert gate). STRONG (Sonnet) is
+  certified FIRST; CHEAP (Haiku) is a SEPARATE cert over the SAME frozen corpus / gold / gates with its own
+  frozen prompt (EVAL-05 `lz-haiku-prompt-engineering.md`) + a task-fit pre-gate; no tier inherits another's
+  verdict, no TAU loosened per tier. FOLD IN cross-session resumability as a build item (disk-state recovery;
+  Opus-design + Sonnet-impl; `20-RESUMABILITY-SCOPING.md`). Frozen primitives consumed BYTE-IDENTICAL
+  (EVAL_THRESHOLDS TAU_OR 0.15 / TAU_FU 0.10 / N_CTRL_FLOOR 24; certifyModel / decisionMatrix /
+  clopperPearsonUpperOneSided; the OOF all-agree gold-decider gpt-5.5 + gemini-3.1-pro-preview, `--effort
+  high`, gold-blind); zero runtime deps; N frozen before scoring; no optional stopping; the two arms NEVER
+  pooled; the SDT positive-trials constraint satisfied (both arms carry positive trials). The lz-deep-research
+  workflow re-architecture is DEFERRED to a later milestone (`reference_claude_code_workflows_shippable`).
+  This stays an honest settle-OR-raise: construct-validity fail or a breached gate -> RAISE; the spend is a
+  staged, pre-registered, human-authorized BLOCKING checkpoint; the Sonnet-default voter ships regardless (D-01).
 </decisions>
 
 <canonical_refs>
