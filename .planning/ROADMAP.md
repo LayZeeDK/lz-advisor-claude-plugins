@@ -202,8 +202,8 @@ Plans:
 - [x] 20-02-PLAN.md -- live-cert harness NO-SPEND build composing the frozen eval seams + the pre-registered live lock rule [Wave 1]
 - [x] 20-03-PLAN.md -- the orchestrator SKILL.md (scope/decompose/search/extract/aggregate/verify/synthesize) [PIPE-01/02/06/08/09, COST-01/03/04, AGG-05] [Wave 1]
 - [x] 20-04-PLAN.md -- INTEG-01 discoverability + INTEG-02 gitignore + the SC-5 headless scale spike [Wave 1]
-- [ ] 20-06-PLAN.md -- (CERTIFIED-WORKS RE-PLAN, NO-SPEND build) the construct-validity machinery: the arm-A contrastive minimal-pair authoring/adjudication harness (N>=30) + the zero-dep lexical-overlap AUC (gate a) + the one-sided difficulty SMD guard (gate b) + the 10-pair pre-scale probe + RE-AUTHOR the two pre-registration docs [COST-01] [Wave 1]
-- [ ] 20-07-PLAN.md -- (CERTIFIED-WORKS RE-PLAN, NO-SPEND build) cross-session resumability as a shipped SKILL feature (the <resume> slug-match UX + per-phase skip guards + decompose.json/run_state.json + the degenerate-aggregate mitigation; Opus-design + Sonnet-impl; ZERO aggregator changes) [COST-01] [Wave 1]
+- [x] 20-06-PLAN.md -- (CERTIFIED-WORKS RE-PLAN, NO-SPEND build) the construct-validity machinery: the arm-A contrastive minimal-pair authoring/adjudication harness (N>=30) + the zero-dep lexical-overlap AUC (gate a) + the one-sided difficulty SMD guard (gate b) + the 10-pair pre-scale probe + RE-AUTHOR the two pre-registration docs [COST-01] [Wave 1]
+- [x] 20-07-PLAN.md -- (CERTIFIED-WORKS RE-PLAN, NO-SPEND build) cross-session resumability as a shipped SKILL feature (the <resume> slug-match UX + per-phase skip guards + decompose.json/run_state.json + the degenerate-aggregate mitigation; Opus-design + Sonnet-impl; ZERO aggregator changes) [COST-01] [Wave 1]
 - [ ] 20-05-PLAN.md -- (RE-AUTHORED) the BLOCKING human-authorized two-arm split-source live-cert spend (Stage 0 construct-validity gate + 10-pair probe; STRONG-first then cheap-separate; WORKS iff construct-validity + both CP gates pass, else SCOPED; Haiku-first flip deferred) [COST-01] [Wave 2; depends_on 20-06 + 20-07]
 
 ## Progress
@@ -221,6 +221,6 @@ Phases execute in numeric order: 16 -> 17 -> 17.1 -> 18 -> 19 -> 20
 | 17.1. Address Phase 16/17 review findings (INSERTED) | v2.1.0 | 3/3 | Complete    | 2026-06-15 |
 | 18. Haiku research + voter + early eval | v2.1.0 | 5/5 | Complete    | 2026-06-16 |
 | 19. Search + extract workers | v2.1.0 | 3/5 | In Progress|  |
-| 20. Orchestrator + scale | v2.1.0 | 4/5 | In Progress|  |
+| 20. Orchestrator + scale | v2.1.0 | 6/7 | In Progress|  |
 
 v1.0 + v1.0.1 + v2.0.0 shipped (plugin 2.0.0). **Active milestone: v2.1.0 (lz-deep-research skill)** -- Phases 16-20, roadmap revised 2026-06-15 (gating eval moved EARLY to Phase 18; EVAL-05 added -- Haiku prompt-engineering research must precede authoring any Haiku agent; the search worker's model tier follows the Phase-18 outcome). Release/publication (REL-01..03) is handled during `/gsd-complete-milestone` after `/gsd-audit-milestone` passes, not as a build phase. See `.planning/MILESTONES.md` for shipped-milestone summaries and `milestones/` for full detail.
