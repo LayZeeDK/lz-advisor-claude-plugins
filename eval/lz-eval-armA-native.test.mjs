@@ -298,7 +298,11 @@ test('adjudicateNativeRefutedGold gold direction is the OOF READ, NOT the skill 
   const res = await adjudicateNativeRefutedGold({ candidates, callModel });
 
   assert.equal(res.retained.length, 0, 'a self-tagged Contested item the OOF pair reads as ENTAILED is NOT retained -- gold = the OOF read, never the self-tag');
-  assert.equal(res.residue.length + res.excludedIndeterminate.length, 1, 'the entailed candidate leaves the binary denominator (residue / indeterminate)');
+  // The entailed candidate LEAVES the binary denominator: it is excluded (and surfaced in the residue for
+  // human routing -- residue is the SAME excluded set, not a separate count).
+  assert.equal(res.excludedIndeterminate.length, 1, 'the entailed candidate leaves the binary denominator (excludedIndeterminate)');
+  assert.equal(res.residue.length, 1, 'the same excluded candidate is surfaced in the residue for the maintainer');
+  assert.equal(res.excludedIndeterminate[0].uid, 'runA::e0', 'the entailed candidate is the one excluded');
 });
 
 test('adjudicateNativeRefutedGold runs ZERO spend: it never sets LZ_SPEND and never reaches a real-dispatch guard with a stub', async () => {
