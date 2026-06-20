@@ -4,9 +4,10 @@ This is the progressive-disclosure reference for the deep-research orchestrator
 skill. It is the canonical home for the shared orchestration knowledge the skill
 `@`-mentions so the skill body stays free of cross-skill body references (one
 skill must not reference another skill's named sections; shared knowledge lives
-here). It holds four things: the report 5-section micro-format, the
+here). It holds five things: the report 5-section micro-format, the
 citation-provenance join + canonical-URL rule, the two advisor-gate consult
-packaging, and the wave-batch + per-invocation-model reminders.
+packaging, the wave-batch + per-invocation-model reminders, and the cross-session
+resume UX.
 
 The frozen JSON shapes (the survivor record, the report claim record, the tally
 rubric, the confidence enum, the named ceilings, the two assurances) live in
@@ -168,3 +169,55 @@ search / extract / verify worker, and `model: opus` for the two advisor gates.
 The skill's own `allowed-tools` line is likewise parsed-not-enforced documentation;
 workers carry their own least-privilege `tools` grants, which the skill cannot
 widen or narrow.
+
+## 5. The cross-session resume UX (D-21)
+
+A deep-research run is a long, interruptible spend. It can die mid-pipeline at the
+org usage / spend limit (HTTP 429), and a naive re-run re-pays for all the
+search / fetch / extract work already on disk. Resumability is a SHIPPED,
+user-facing feature: a run that died resumes from its run dir and reuses every
+prior artifact, re-spending only on the phases that did not finish. The skill body
+implements this as a `<resume>` section that runs BEFORE the Phase-0 scope guard;
+this reference holds the detection heuristic and the per-phase semantics.
+
+### The slug-match auto-detect heuristic (the default, headless-safe)
+
+The resume entry point needs NO interactive prompt, so it works under `claude -p`
+where `AskUserQuestion` has no answer channel. The detection steps:
+
+1. Normalize the current research question to a slug (the same kebab-case
+   derivation the run-id uses: lowercase, non-alphanumeric -> `-`, collapse
+   repeats, trim). Keep it `:`-free (a Windows filename constraint).
+2. Scan `.lz-research/` for candidate run dirs. A run dir is a RESUME CANDIDATE iff
+   it has NO `report.md` (an absent terminal sentinel means the run did not finish)
+   AND its run-id slug matches the normalized question slug (or its `scope.md`
+   scope matches). A run dir WITH `report.md` is complete and is never a resume
+   candidate.
+3. If one or more candidates match, pick the MOST RECENT (the run-id timestamp
+   prefix `YYYYMMDD-HHMMSS` orders them). Surface `Resuming <run-id>` to the user,
+   then jump to the FIRST INCOMPLETE phase (the first phase whose done-signal is
+   absent; see "The resume done-signals" in the schema reference).
+4. If no candidate matches, start a fresh run via the normal Phase-0 path (generate
+   a new run-id, create the run dir).
+
+### The explicit `--resume <run-id>` fallback
+
+When the auto-detect is ambiguous or the user wants a specific prior run, the user
+may pass `--resume <run-id>`. The skill then resumes THAT run dir directly
+(skipping the slug scan), surfaces `Resuming <run-id>`, and jumps to its first
+incomplete phase. An explicit `--resume <run-id>` whose dir is missing or already
+has `report.md` is surfaced as such (nothing to resume / already complete), not
+silently restarted.
+
+### The degenerate-aggregate guard on the stage-2 boundary
+
+When resuming a run whose `report.md` is ABSENT, the skill NEVER infers stage-2
+completion from `survivors.json` confidence values (a crashed run can leave a
+PREMATURE all-`Unsupported` stage-1 `survivors.json`). It treats the run as
+incomplete past the verify wave, fills any missing votes, then ALWAYS re-runs the
+idempotent aggregator stage-2 tally (`node
+"${CLAUDE_PLUGIN_ROOT}/skills/lz-deep-research/scripts/lz-deep-research-aggregate.mjs"
+"<run-dir>"`) and writes the `run_state.json` `{ stage2_complete: true }` sentinel
+only after a clean exit. A non-zero aggregator exit stays a RUN FAILURE (surface
+stderr; never consume a missing `survivors.json`) -- the resume path does not
+weaken the aggregator's fail-closed ContractError discipline.

@@ -83,16 +83,52 @@ The run dir is an immutable per-file blackboard. Each producer writes its own
 files; nothing is a shared appendable ledger. The aggregator reads `claims/`,
 `excerpts/`, and `votes/`; it writes `survivors.json`. The `sources/` record is
 forward-declared for the synthesis citation join (the aggregator does not read
-it).
+it). The `decompose.json` and `run_state.json` records (D-21; see "The resume
+done-signals" below) are written by the SKILL, not the aggregator; the aggregator
+does NOT read either of them and stays a pure function of `claims/` + `excerpts/`
++ `votes/`.
 
 ```
+<run-dir>/scope.md                  -> the clarified scope + Assuming-frames  (Phase-0 done-signal; SKILL-written)
+<run-dir>/decompose.json            -> {"angles":[{"id","text","priority"}],"gate1_note","selected_urls":[...]}  (NEW D-21; Phase-1 done-signal; SKILL-written AFTER Gate 1, BEFORE any search worker; aggregator does NOT read it)
 <run-dir>/candidates/<worker-id>.json -> {"worker","candidates":[{"url","title"}]}  (NEW; Phase-19 SEARCH worker; orchestrator-consumed; aggregator does NOT read it)
 <run-dir>/claims/<worker-id>.json   -> {"worker","source","claims":[{"id","text","quote","excerpt_id","load_bearing?"}]}
 <run-dir>/excerpts/<excerpt-id>.txt -> plain UTF-8 (CRLF or LF; BOM tolerated)
 <run-dir>/votes/<id>-<seat>.json    -> {"verdict":"unrefuted"|"refuted"}  (missing seat -> "insufficient")
 <run-dir>/sources/<source-id>.json  -> {"id","url","title","fetched_at",...}  (NEW; D-07; Phase-19 EXTRACT worker is the SOLE writer; aggregator does NOT read it)
-<run-dir>/survivors.json            -> the output array (<= SYNTH_CAP)
+<run-dir>/survivors.json            -> the stage-1 output array (<= SYNTH_CAP); REWRITTEN by stage 2 (idempotent)
+<run-dir>/run_state.json            -> {"stage2_complete":true}  (NEW D-21; Phase-5/6 stage-2 sentinel; SKILL-written AFTER a clean stage-2 exit; aggregator does NOT read or write it)
+<run-dir>/report.md                 -> the cited Markdown report  (Phase-6 terminal sentinel; SKILL-written)
 ```
+
+### The resume done-signals (D-21)
+
+Each phase leaves a durable on-disk done-signal, so a run that dies mid-pipeline
+(for example at the org usage / spend limit, HTTP 429) can resume from disk and
+reuse all prior search / fetch / extract work instead of re-paying for it. The
+per-phase done-signals, in pipeline order:
+
+| Phase | Done-signal | Meaning when present |
+|-------|-------------|----------------------|
+| 0 Scope | `scope.md` | The scope (and any Assuming-frames) is fixed. |
+| 1 Decompose + Gate 1 | `decompose.json` | The sub-angles, the Gate-1 advisor note, and the selected URLs are fixed; the Opus Gate-1 spend is already paid. |
+| 2 Search | `candidates/<worker-id>.json` (per sub-angle worker) | That sub-angle's candidate list is on disk. |
+| 3 Fetch + extract | `claims/` + `excerpts/` + `sources/` records (per fetched source) | That source is fetched, its excerpt stored verbatim, its claims written. |
+| 4 Aggregate stage 1 | `survivors.json` | A stage-1 survivor array exists -- BUT see the degenerate-aggregate caveat below: a crashed run can leave a PREMATURE stage-1 `survivors.json` written before the stage-2 tally. |
+| 5 Verify | `votes/<clusterN>-<seat>.json` (per cast seat) | That cluster seat's vote is cast. Vote files are keyed by the stage-1 cluster id (reproducible; see "The vote record"), so a resume casts ONLY the missing seats -- no re-keying. |
+| 5/6 Aggregate stage 2 | `run_state.json` `{ "stage2_complete": true }` | The stage-2 tally completed cleanly. This sentinel -- NOT the `survivors.json` confidence values -- is the authoritative signal that the tally is final. |
+| 6 Synthesize | `report.md` | The terminal done-signal: the run is complete. |
+
+**The degenerate-aggregate caveat (the highest-risk correctness item; D-21).** A
+stage-1 `survivors.json` is NOT a reliable signal that the tally is final. A run
+that crashed between stage 1 and the verify wave can leave a `survivors.json` that
+is all-`Unsupported` (no votes were cast yet), which a naive resume could consume
+as a finished all-`Unsupported` report. The SKILL therefore NEVER infers
+stage-2 completion from `survivors.json` confidence values; the authoritative
+stage-2 signal is the `run_state.json` `{ stage2_complete: true }` sentinel, and
+when `report.md` is ABSENT the SKILL ALWAYS re-runs the aggregator's stage-2 tally
+(it is idempotent and cheap) after filling the missing votes. See "The decompose
+record" and "The run-state record" below for the additive shapes.
 
 The `claims[].source` value, every `survivors[].sources[]` entry, and the
 `sources/<source-id>.json` `id` MUST be the SAME canonical source key (D-08; see
@@ -157,6 +193,64 @@ INSIDE the JSON always carries the raw canonical key; only the filename is encod
 long key could exceed the filesystem name-length limit; the write then fails loudly -- a rare case
 deferred to the Phase-20 normalizer.) Required of the Phase-19 extract worker and Phase-20
 synthesis, not the aggregator.
+
+## The decompose record (decompose.json) -- additive (D-21)
+
+A run-level record the SKILL writes ONCE, right after the Gate-1 advisor consult
+and BEFORE dispatching any search worker. It is the Phase-1 done-signal: when it
+is present, a resume skips decomposition AND the Opus Gate-1 spend, and reads the
+fixed angle set, the Gate-1 advisor note, and the selected URLs straight from
+disk. The aggregator does NOT read this file -- it is a SKILL-owned resume
+artifact, not part of the off-model reduction.
+
+```json
+{
+  "angles": [
+    { "id": "a0", "text": "the disconfirming angle", "priority": 1 }
+  ],
+  "gate1_note": "the Gate-1 advisor framing / re-ordering, bounded",
+  "selected_urls": ["https://example.org/a/study"]
+}
+```
+
+| Field | Type | Required | Owner | Notes |
+|-------|------|----------|-------|-------|
+| `angles` | object[] | yes | SKILL (Phase 1) | The fixed sub-angle set (capped at `ANGLES` = 5). Each entry is `{ id, text, priority }`. `id` maps an angle to its search worker; `text` is the sub-angle question; `priority` is the Gate-1 ranking order. |
+| `angles[].id` | string | yes | SKILL | The angle id -- the search worker id for that angle (the Phase-2 `candidates/<worker-id>.json` done-signal keys off it). Keep it filename-safe and `:`-free (Windows). |
+| `angles[].text` | string | yes | SKILL | The sub-angle question text. |
+| `angles[].priority` | integer | yes | SKILL | The Gate-1 ranking position (1 = highest). |
+| `gate1_note` | string | yes | SKILL | The bounded Gate-1 advisor note (the angle framing and any re-ordering), so a resume need not re-spend the Opus Gate-1 consult. |
+| `selected_urls` | string[] | optional | SKILL | The Gate-1-ranked URL set carried into the fetch cap (`MAX_FETCH` = 15), so a resume knows the dispatch selection without re-deriving it. |
+
+The record is ADDITIVE: nothing in the frozen aggregator-consumed shapes changes,
+and the aggregator never opens `decompose.json`.
+
+## The run-state record (run_state.json) -- additive (D-21)
+
+A run-level sentinel the SKILL writes -- and ONLY the SKILL -- to mark that the
+aggregator's stage-2 tally completed cleanly. It is the Phase-5/6 stage-2
+done-signal. The aggregator does NOT read or write it; it is the SKILL's resume
+bookkeeping, deliberately kept OUT of the aggregator so the aggregator stays a
+pure, idempotent function of `claims/` + `excerpts/` + `votes/` (ZERO aggregator
+changes).
+
+```json
+{ "stage2_complete": true }
+```
+
+| Field | Type | Required | Owner | Notes |
+|-------|------|----------|-------|-------|
+| `stage2_complete` | boolean | yes | SKILL (Phase 5/6) | Written `true` ONLY after a clean (exit 0) stage-2 aggregator run. This sentinel -- never the `survivors.json` confidence values -- is the authoritative signal that the tally is final. A crashed run leaves NO `run_state.json` (or `stage2_complete` absent / non-`true`), so a resume re-runs the idempotent stage-2 tally. Only the literal boolean `true` counts. |
+
+**Why a sentinel and not `survivors.json` confidence values (the degenerate-
+aggregate trap).** A stage-1 `survivors.json` written before any vote is cast is
+all-`Unsupported` (`readableSeats === 0 -> Unsupported`). A resume that inferred
+"done" from that file would emit a silently-wrong all-`Unsupported` report. The
+`run_state.json` sentinel exists precisely so completion is never inferred from
+the survivor record. When `report.md` is ABSENT, the SKILL ALWAYS re-runs the
+idempotent stage-2 aggregator after filling the missing votes, then writes the
+sentinel on a clean exit. The record is ADDITIVE -- nothing in the frozen
+aggregator shapes changes.
 
 ## The claim record (claims/<worker-id>.json)
 
@@ -582,5 +676,7 @@ Who writes, reads, and owns each contract element:
 | Candidate records (`candidates/`) | Search worker writes (Phase 19) / orchestrator dispatches (Phase 20) | search | NON-authoritative `{url,title}` list; deduped by the shared recipe; aggregator does NOT read it. |
 | Source record + canonical-URL key | EXTRACT worker is sole writer (Phase 19) / synthesis joins (Phase 20) | source / report | Aggregator does NOT read it; citation join (D-07/D-08). Filename is percent-encoded (LLM-executable). |
 | `citation` (inline) | Synthesis (Phase 20) | report | Joined from the source record. |
+| `decompose.json` (`angles` / `gate1_note` / `selected_urls`) | SKILL (Phase 1) | decompose | Additive resume artifact (D-21); Phase-1 done-signal; aggregator does NOT read it. |
+| `run_state.json` (`stage2_complete`) | SKILL (Phase 5/6) | aggregate stage 2 | Additive resume sentinel (D-21); the authoritative stage-2-complete signal; aggregator does NOT read or write it. |
 | `MAX_VERIFY_CLAIMS` / `VOTES_PER_CLAIM` / `SYNTH_CAP` | Aggregator | aggregate | Actively enforced, observable caps. |
 | `ANGLES` / `MAX_FETCH` | Phase-20 orchestrator | dispatch | Carried by the aggregator; enforced at wave dispatch. |
