@@ -23,8 +23,11 @@
 // AT_CHANCE_MCC = 0 is pinned + the Task-7 test asserts it DISCRIMINATING-ly.
 //
 // Tree / dependency boundary (D-10/D-11): this script lives in the repo-level eval/ dev tree, NEVER in
-// the distributed plugin tree. It imports the MCC module (which imports jstat for the quantile math) +
-// ContractError across-tree (eval -> runtime, one-directional). It does NOT edit the frozen engine.
+// the distributed plugin tree. It imports the MCC module (which routes the quantile math through the
+// pinned stats library for the BCa CI) + ContractError across-tree (eval -> runtime, one-directional).
+// It does NOT edit the frozen engine. THIS module stays ZERO-DEP: the lexical-overlap AUC (gate (a),
+// Plan 20-06 Task 2) is hand-rolled rank/counting math -- the pinned stats library is reached ONLY
+// transitively (via the MCC module's BCa lower CI for the dual-baseline separation), NEVER in the AUC path.
 //
 // This source contains no literal byte-order mark and is strictly ASCII (per CLAUDE.md).
 
@@ -41,6 +44,20 @@ import {
 // baseline is "at chance" iff its separation-MCC one-sided BCa lower CI is <= AT_CHANCE_MCC (0). A
 // regression that swapped this to 0.5 (the accuracy scale) is a scale-mix bug the Task-7 test catches.
 export const AT_CHANCE_MCC = 0;
+
+// ---------------------------------------------------------------------------
+// THE PRE-REGISTERED LEXICAL-OVERLAP AUC CEILING (Plan 20-06, Task 2; construct-validity gate (a)).
+// CERTIFY-WORKS-BOARD-DECISION.md section 3 (a): a pre-registered, zero-dependency lexical-overlap baseline
+// must NOT separate the SUPPORTED/REFUTED members of a contrastive pair above this ceiling (the truth-value
+// must not be lexically readable). The board's stated band is [0.60, 0.65]; this PINS 0.65 -- the most
+// PERMISSIVE end of the band, conservative against FALSE-FAILING a genuinely clean corpus. It is a NEW
+// module-level LITERAL, FROZEN BEFORE any pair is authored or scored (recorded in the re-authored
+// eval/lz-eval-live-lock-rule.md WITH A TIMESTAMP, Plan 20-06 Task 3) -- the anti-result-shopping anchor.
+// NOT computed from the corpus. The AUC is the Mann-Whitney probability that a random SUPPORTED item
+// outranks a random REFUTED item by the zero-dep lexical-overlap score; 0.5 is no-separation, 1.0 is a
+// perfect lexical artifact. PASS iff auc <= LEXICAL_AUC_CEILING.
+// ---------------------------------------------------------------------------
+export const LEXICAL_AUC_CEILING = 0.65;
 
 // ---------------------------------------------------------------------------
 // Tokenize a text into a bag of lowercase word tokens (ASCII word characters). Deterministic.
@@ -241,6 +258,109 @@ function cellsOf(verdicts, gold) {
   }
 
   return { tp, tn, fp, fn };
+}
+
+// ---------------------------------------------------------------------------
+// separationScores(items, featureFn) -- the CONTINUOUS leave-one-PAIR-out log-odds SCORE per item (the
+// same machinery as separationVerdicts, but returning the raw score, not the thresholded verdict). The
+// AUC reads these continuous scores. REUSES the SAME lexicalFeature token bag + the SAME leave-one-PAIR-
+// out partner-pull discipline so an artifact-free corpus scores ~chance (AUC ~ 0.5) and a real lexical
+// artifact ranks the SUPPORTED items systematically above the REFUTED items (AUC well above 0.5).
+// ---------------------------------------------------------------------------
+function separationScores(items, featureFn) {
+  const tokenSets = items.map((it) => tokenSet(featureFn(it)));
+  const SMOOTH = 0.5;
+  const scores = [];
+
+  for (let i = 0; i < items.length; i += 1) {
+    const supCount = new Map();
+    const refCount = new Map();
+
+    for (let j = 0; j < items.length; j += 1) {
+      if (items[j].pairId === items[i].pairId) {
+        continue;
+      }
+
+      const target = items[j].gold === 'unrefuted' ? supCount : refCount;
+
+      for (const tok of tokenSets[j]) {
+        target.set(tok, (target.get(tok) || 0) + 1);
+      }
+    }
+
+    let score = 0;
+
+    for (const tok of tokenSets[i]) {
+      const s = (supCount.get(tok) || 0) + SMOOTH;
+      const r = (refCount.get(tok) || 0) + SMOOTH;
+      score += Math.log(s / r);
+    }
+
+    scores.push(score);
+  }
+
+  return scores;
+}
+
+// ---------------------------------------------------------------------------
+// mannWhitneyAuc(scores, gold) -- a ZERO-DEP, hand-rolled Mann-Whitney-U / rank-based AUC over the
+// per-item lexical-overlap score. The AUC is the probability that a random SUPPORTED ('unrefuted') item
+// outranks a random REFUTED item by `score`. Computed by the pairwise count (every SUPPORTED-vs-REFUTED
+// pair: +1 if the SUPPORTED score is higher, +1/2 on an EXACT tie, 0 if lower) divided by the total
+// cross-class pair count. The +1/2 tie credit is EXPLICIT + deterministic (the truth-value must not be
+// lexically readable -- a tie contributes no separation signal). AUC in [0,1]; 0.5 = no-separation;
+// 1.0 = a perfect lexical artifact (every SUPPORTED outranks every REFUTED). Pure counting/ranking math
+// -- NO stats library (the lexical baseline stays zero-dep, board section 6).
+// ---------------------------------------------------------------------------
+function mannWhitneyAuc(scores, gold) {
+  const pos = [];
+  const neg = [];
+
+  for (let i = 0; i < scores.length; i += 1) {
+    if (gold[i] === 'unrefuted') {
+      pos.push(scores[i]);
+    } else {
+      neg.push(scores[i]);
+    }
+  }
+
+  // A degenerate single-class corpus has no cross-class pair to rank -> AUC is undefined; return 0.5 (the
+  // no-separation value) so a degenerate input never spuriously fails the ceiling.
+  if (pos.length === 0 || neg.length === 0) {
+    return 0.5;
+  }
+
+  let wins = 0;
+
+  for (const p of pos) {
+    for (const n of neg) {
+      if (p > n) {
+        wins += 1;
+      } else if (p === n) {
+        wins += 0.5; // EXPLICIT deterministic tie credit (+1/2).
+      }
+    }
+  }
+
+  return wins / (pos.length * neg.length);
+}
+
+// ---------------------------------------------------------------------------
+// lexicalOverlapAuc({ pairs }) -- construct-validity gate (a). Computes the zero-dep, hand-rolled
+// Mann-Whitney AUC over the per-item leave-one-PAIR-out lexical-overlap score (claim + evidence). Returns
+// { auc, pass } where pass = auc <= LEXICAL_AUC_CEILING (the pre-registered ceiling, frozen 0.65). An
+// artifact-free corpus scores ~0.5 (the truth-value is NOT lexically readable -> pass); a corpus where a
+// lexical token systematically marks the SUPPORTED class scores well above 0.5 (a readable artifact ->
+// fail). REUSES the SAME lexicalFeature + leave-one-pair-out discipline as the dual-baseline guard;
+// stays ZERO-DEP (no stats lib).
+// ---------------------------------------------------------------------------
+export function lexicalOverlapAuc({ pairs } = {}) {
+  const items = flattenPairs(pairs, 'lexicalOverlapAuc');
+  const scores = separationScores(items, lexicalFeature);
+  const gold = items.map((it) => it.gold);
+  const auc = mannWhitneyAuc(scores, gold);
+
+  return { auc, pass: auc <= LEXICAL_AUC_CEILING };
 }
 
 // ---------------------------------------------------------------------------

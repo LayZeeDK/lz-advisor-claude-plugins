@@ -21,6 +21,8 @@ import {
   claimOnlyBaselineSeparation,
   dualBaselineGuard,
   AT_CHANCE_MCC,
+  lexicalOverlapAuc,
+  LEXICAL_AUC_CEILING,
 } from './lz-eval-baseline-guard.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
@@ -234,6 +236,82 @@ test('Task-7 the guard is mechanical: the SAME bcaBootstrapLowerCI-vs-0 rule for
   const src = fs.readFileSync(path.join(HERE, 'lz-eval-baseline-guard.mjs'), 'utf8');
   assert.ok(/lowerCI <= AT_CHANCE_MCC/.test(src), 'the shared at-chance rule is bcaBootstrapLowerCI <= AT_CHANCE_MCC');
   assert.ok(!/<=\s*0\.5/.test(src), 'no 0.5 comparator appears in the module (the scale-mix bug is absent)');
+});
+
+// ===========================================================================
+// Plan 20-06, Task 2: the construct-validity gate (a) -- the zero-dep lexical-overlap AUC.
+// ===========================================================================
+
+// ---------------------------------------------------------------------------
+// (1) An artifact-free balanced corpus scores AUC ~0.5 (PASS). REUSE the at-chance fixture: within each
+//     pair the SUPPORTED + REFUTED items carry the SAME token set (the label-flip is a semantic re-order
+//     invisible to a bag of words), and across pairs the vocabulary repeats, so no token systematically
+//     marks a class -> the leave-one-pair-out lexical score does not rank SUPPORTED above REFUTED -> AUC
+//     ~0.5 -> <= the ceiling -> PASS.
+// ---------------------------------------------------------------------------
+
+test('Task-2 lexicalOverlapAuc: an artifact-free balanced corpus scores AUC ~0.5 -> pass (DISCRIMINATING)', () => {
+  const pairs = atChancePairs();
+  const { auc, pass } = lexicalOverlapAuc({ pairs });
+
+  assert.ok(auc >= 0.35 && auc <= 0.65, 'an artifact-free corpus scores AUC near chance (got ' + auc + ')');
+  assert.equal(pass, auc <= LEXICAL_AUC_CEILING, 'pass is exactly (auc <= LEXICAL_AUC_CEILING)');
+  assert.equal(pass, true, 'an artifact-free corpus passes gate (a)');
+});
+
+// ---------------------------------------------------------------------------
+// (2) A deliberately lexically-leaky corpus scores AUC above the ceiling (FAIL). REUSE the lexical-artifact
+//     fixture: every SUPPORTED item's EVIDENCE carries a recurring marker the REFUTED items lack -> the
+//     leave-one-pair-out lexical score ranks SUPPORTED systematically above REFUTED -> AUC near 1.0 ->
+//     above the ceiling -> FAIL (the truth-value is lexically readable).
+// ---------------------------------------------------------------------------
+
+test('Task-2 lexicalOverlapAuc: a lexically-leaky corpus scores AUC above the ceiling -> fail (DISCRIMINATING)', () => {
+  const pairs = lexicalArtifactPairs();
+  const { auc, pass } = lexicalOverlapAuc({ pairs });
+
+  assert.ok(auc > LEXICAL_AUC_CEILING, 'a lexical artifact scores AUC above the ceiling (got ' + auc + ', ceiling ' + LEXICAL_AUC_CEILING + ')');
+  assert.equal(pass, false, 'a lexically-readable truth-value FAILS gate (a)');
+
+  // DISCRIMINATING vs the artifact-free corpus: the SAME function returns a passing AUC on the clean fixture.
+  const clean = lexicalOverlapAuc({ pairs: atChancePairs() });
+  assert.ok(clean.auc < auc, 'the artifact corpus AUC is strictly higher than the artifact-free corpus AUC');
+});
+
+// ---------------------------------------------------------------------------
+// (3) The AUC stays ZERO-DEP -- no stats-lib import in the AUC path. The lexical baseline routes jstat
+//     ONLY transitively via lz-eval-mcc.mjs for the BCa CI (the dualBaselineGuard's lowerCI), NOT in the
+//     AUC path; the module itself imports no jstat.
+// ---------------------------------------------------------------------------
+
+test('Task-2 lexicalOverlapAuc stays zero-dep: no jstat in eval/lz-eval-baseline-guard.mjs (the AUC is hand-rolled)', () => {
+  const src = fs.readFileSync(path.join(HERE, 'lz-eval-baseline-guard.mjs'), 'utf8');
+  assert.ok(!/jstat|jStat/.test(src), 'eval/lz-eval-baseline-guard.mjs imports NO stats library (the AUC is hand-rolled rank/counting math)');
+
+  // The AUC path is a Mann-Whitney pairwise count (no stats-lib call). The frozen ceiling is a literal.
+  assert.ok(/LEXICAL_AUC_CEILING\s*=\s*0\.65/.test(src), 'the frozen ceiling literal is 0.65 (the permissive end of [0.60,0.65])');
+  assert.ok(LEXICAL_AUC_CEILING >= 0.60 && LEXICAL_AUC_CEILING <= 0.65, 'the ceiling is in the pre-registered band [0.60,0.65]');
+});
+
+// ---------------------------------------------------------------------------
+// (4) The tie credit is +1/2 (explicit, deterministic). A fully-tied corpus (every SUPPORTED score equals
+//     a REFUTED score) -> AUC exactly 0.5 (the no-separation value). Build a corpus where SUPPORTED and
+//     REFUTED items are token-identical across the whole corpus so every cross-class pair is an exact tie.
+// ---------------------------------------------------------------------------
+
+test('Task-2 lexicalOverlapAuc: the +1/2 tie credit is explicit -- a fully-tied corpus scores AUC exactly 0.5', () => {
+  // Every item (supported + refuted) carries the IDENTICAL token bag -> every leave-one-pair-out score is
+  // identical -> every cross-class comparison is an EXACT tie -> AUC = 0.5 via the +1/2 tie credit.
+  const pairs = [];
+
+  for (let i = 0; i < 12; i += 1) {
+    const claim = 'the shared identical token bag alpha beta gamma metric value cohort period sample';
+    const evidence = ['the shared identical token bag alpha beta gamma metric value cohort period sample'];
+    pairs.push({ supported: { claim, evidence }, refuted: { claim, evidence } });
+  }
+
+  const { auc } = lexicalOverlapAuc({ pairs });
+  assert.equal(auc, 0.5, 'a fully-tied corpus scores AUC exactly 0.5 (the +1/2 tie credit, no separation)');
 });
 
 test('Task-7 the module source is strictly ASCII (committed bytes, CLAUDE.md)', () => {
