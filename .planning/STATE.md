@@ -3,9 +3,9 @@ gsd_state_version: 1.0
 milestone: v2.1.0
 milestone_name: lz-deep-research skill
 status: executing
-stopped_at: Certified-WORKS RE-PLAN COMPLETE -- 20-05 re-authored to the two-arm split-source methodology (arm B live-harvested over-refusal + arm A manual contrastive minimal-pairs); no-spend build split into 20-06 (construct-validity machinery) + 20-07 (cross-session resumability); 20-05 is the staged human-authorized live-cert RUN (Wave 2, autonomous:false). NEXT: /gsd-execute-phase 20 -- Waves 1 (20-06 + 20-07, no-spend) then Wave 2 (20-05, the Stage-1 blocking spend)
-last_updated: "2026-06-20"
-last_activity: 2026-06-20
+stopped_at: Completed 20-02-PLAN.md (live-cert harness no-spend build)
+last_updated: "2026-06-20T14:01:37.234Z"
+last_activity: 2026-06-20 -- Phase 20 planning complete
 progress:
   total_phases: 8
   completed_phases: 6
@@ -52,7 +52,7 @@ Items deferred across milestones (v1.0.1 close 2026-06-11; v2.0.0 additions tagg
 Phase: 20 (orchestrator-skill-headless-scale-confirmation) — EXECUTING
 Plan: 5 of 5
 Status: Ready to execute
-Last activity: 2026-06-19
+Last activity: 2026-06-20 -- Phase 20 planning complete
 
 ### Milestone v2.1.0 roadmap (REVISED 2026-06-15)
 
