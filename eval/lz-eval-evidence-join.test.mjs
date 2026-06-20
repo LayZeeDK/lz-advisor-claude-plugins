@@ -183,6 +183,154 @@ test('joinClusterEvidence fails closed on a malformed worker file (missing claim
   }
 });
 
+// ===========================================================================
+// FAITHFUL EVIDENCE CLEANING (Phase 20, Plan 20-05 OOF-PREP; NO-SPEND): bibliographic header noise is
+// stripped from the excerpt BEFORE emission, and a quote that is a substring of the excerpt is deduped to the
+// LONGER substantive one. Cleaning is FAITHFUL (no factual sentence removed) and NEVER empties a candidate
+// that had real evidence (a metadata-only excerpt falls back to the verbatim quote).
+// ===========================================================================
+
+test('cleaning STRIPS a "Source:/Title:/Authors:/Published:" bibliographic header from the excerpt, keeping the factual sentence', () => {
+  const { corpus, runDir } = writeRunDir({
+    workers: [{
+      source: 'https://example.org/doc',
+      claims: [{ id: 'c1', text: 'the reactor reached criticality at noon', quote: 'criticality at noon', excerpt_id: 'e1' }],
+    }],
+    // The excerpt leads with the bibliographic header block (the noise) followed by the factual sentence.
+    excerpts: { e1: 'Source: https://example.org/doc Title: Reactor Log Authors: A. Researcher, B. Scientist Published: FSE 2026 The reactor reached criticality at noon under nominal load.' },
+  });
+
+  try {
+    const joined = joinClusterEvidence(runDir, { claim: 'the reactor reached criticality at noon', sources: ['https://example.org/doc'] });
+
+    assert.equal(joined.matched, true, 'the cluster is matched');
+    const text = joined.evidence.map((e) => e.sentence).join(' || ');
+
+    // The factual sentence survives; the bibliographic markers are GONE.
+    assert.ok(/reached criticality at noon under nominal load/.test(text), 'the substantive factual sentence is kept');
+    assert.ok(!/Source:/.test(text), 'the "Source:" header is stripped');
+    assert.ok(!/Title:/.test(text), 'the "Title:" header is stripped');
+    assert.ok(!/Authors:/.test(text), 'the "Authors:" header is stripped');
+    assert.ok(!/Published:/.test(text), 'the "Published:" header is stripped');
+    assert.ok(!/A\. Researcher/.test(text), 'the author names (metadata) are stripped');
+    assert.ok(!/https?:\/\//.test(text), 'the bare source URL is stripped (never a URL)');
+  } finally {
+    fs.rmSync(corpus, { recursive: true, force: true });
+  }
+});
+
+test('cleaning STRIPS a leading markdown "# <title>" heading + its bibliographic block, keeping the factual sentence', () => {
+  const { corpus, runDir } = writeRunDir({
+    workers: [{
+      source: 'https://example.org/survey',
+      claims: [{ id: 'c1', text: 'aot wasm can outperform native', quote: 'outperform native execution', excerpt_id: 'e1' }],
+    }],
+    excerpts: { e1: '# Research on WebAssembly Runtimes: A Survey Source: https://arxiv.org/abs/2404.12621 Authors: Y. Zhang, M. Liu Submitted: April 19, 2024 AOT-compiled Wasm can outperform native execution in several benchmarks.' },
+  });
+
+  try {
+    const joined = joinClusterEvidence(runDir, { claim: 'aot wasm can outperform native', sources: ['https://example.org/survey'] });
+
+    assert.equal(joined.matched, true, 'the cluster is matched');
+    const text = joined.evidence.map((e) => e.sentence).join(' || ');
+
+    assert.ok(/outperform native execution in several benchmarks/.test(text), 'the factual sentence survives');
+    assert.ok(!/^#/.test(text) && !/# Research on WebAssembly/.test(text), 'the leading markdown title heading is stripped');
+    assert.ok(!/Source:/.test(text) && !/Authors:/.test(text) && !/Submitted:/.test(text), 'the bibliographic markers are stripped');
+    assert.ok(!/arxiv\.org/.test(text), 'the source URL is stripped');
+  } finally {
+    fs.rmSync(corpus, { recursive: true, force: true });
+  }
+});
+
+test('cleaning DEDUPS a quote that is a substring of the excerpt -> only the LONGER substantive text is emitted (one sentence, not two)', () => {
+  const { corpus, runDir } = writeRunDir({
+    workers: [{
+      source: 'https://example.org/doc',
+      claims: [{ id: 'c1', text: 'output doubled', quote: 'output doubled in Q3', excerpt_id: 'e1' }],
+    }],
+    // The excerpt CONTAINS the quote verbatim (modulo case/whitespace) -> the quote is redundant.
+    excerpts: { e1: 'Per the audited filing, output doubled in Q3 relative to the prior fiscal quarter.' },
+  });
+
+  try {
+    const joined = joinClusterEvidence(runDir, { claim: 'output doubled', sources: ['https://example.org/doc'] });
+
+    assert.equal(joined.matched, true, 'matched');
+    assert.equal(joined.evidence.length, 1, 'the quote (a substring of the excerpt) is deduped -> exactly ONE evidence sentence');
+    const only = joined.evidence[0].sentence;
+    assert.ok(only.includes('output doubled in Q3 relative to the prior fiscal quarter'), 'the LONGER substantive (the excerpt) is the one kept');
+  } finally {
+    fs.rmSync(corpus, { recursive: true, force: true });
+  }
+});
+
+test('cleaning DEDUPS the OTHER direction: when the excerpt is a substring of the quote, the LONGER quote is kept', () => {
+  const { corpus, runDir } = writeRunDir({
+    workers: [{
+      source: 'https://example.org/doc',
+      // The quote is LONGER and contains the (short) excerpt text.
+      claims: [{ id: 'c1', text: 'margins fell', quote: 'operating margins fell sharply across all three divisions', excerpt_id: 'e1' }],
+    }],
+    excerpts: { e1: 'margins fell sharply' },
+  });
+
+  try {
+    const joined = joinClusterEvidence(runDir, { claim: 'margins fell', sources: ['https://example.org/doc'] });
+
+    assert.equal(joined.matched, true, 'matched');
+    assert.equal(joined.evidence.length, 1, 'one contains the other -> exactly ONE evidence sentence');
+    assert.ok(joined.evidence[0].sentence.includes('operating margins fell sharply across all three divisions'), 'the LONGER substantive (the quote) is kept');
+  } finally {
+    fs.rmSync(corpus, { recursive: true, force: true });
+  }
+});
+
+test('cleaning is SAFE: a metadata-ONLY excerpt falls back to the verbatim quote (evidence is NEVER empty; the candidate is NOT dropped)', () => {
+  const { corpus, runDir } = writeRunDir({
+    workers: [{
+      source: 'https://example.org/doc',
+      claims: [{ id: 'c1', text: 'the policy took effect in March', quote: 'the policy took effect in March', excerpt_id: 'e1' }],
+    }],
+    // The excerpt is ONLY bibliographic metadata -> cleaning empties it -> the quote is the fallback.
+    excerpts: { e1: 'Source: https://example.org/doc Title: Policy Brief Authors: Office of Records Published: 2026 DOI: 10.1000/example' },
+  });
+
+  try {
+    const joined = joinClusterEvidence(runDir, { claim: 'the policy took effect in March', sources: ['https://example.org/doc'] });
+
+    assert.equal(joined.matched, true, 'the candidate is still matched (cleaning never drops a candidate that had real evidence)');
+    assert.ok(joined.evidence.length >= 1, 'evidence is NEVER empty after cleaning -- the quote is the fallback');
+    const text = joined.evidence.map((e) => e.sentence).join(' || ');
+    assert.ok(/the policy took effect in March/.test(text), 'the verbatim quote is the recovered evidence');
+    assert.ok(!/Source:|Title:|Authors:|Published:|DOI:/.test(text), 'no bibliographic metadata leaks through');
+    assert.ok(!/https?:\/\//.test(text), 'no URL leaks through');
+  } finally {
+    fs.rmSync(corpus, { recursive: true, force: true });
+  }
+});
+
+test('cleaning is FAITHFUL: a factual sentence that merely CONTAINS the word "source"/"title" mid-sentence is NOT removed', () => {
+  const { corpus, runDir } = writeRunDir({
+    workers: [{
+      source: 'https://example.org/doc',
+      claims: [{ id: 'c1', text: 'the open source title was adopted widely', quote: 'q', excerpt_id: 'e1' }],
+    }],
+    // "source" and "title" appear MID-sentence (not as "<Marker>:" headers) -> must be kept verbatim.
+    excerpts: { e1: 'The open source title was adopted widely because the source code remained accessible.' },
+  });
+
+  try {
+    const joined = joinClusterEvidence(runDir, { claim: 'the open source title was adopted widely', sources: ['https://example.org/doc'] });
+
+    assert.equal(joined.matched, true, 'matched');
+    const text = joined.evidence.map((e) => e.sentence).join(' || ');
+    assert.ok(/The open source title was adopted widely because the source code remained accessible/.test(text), 'a sentence that merely mentions "source"/"title" mid-sentence is kept verbatim (faithful)');
+  } finally {
+    fs.rmSync(corpus, { recursive: true, force: true });
+  }
+});
+
 test('the shared join source carries NO LZ_SPEND / network code and is strictly ASCII (no BOM)', () => {
   const buf = fs.readFileSync(new URL('./lz-eval-evidence-join.mjs', import.meta.url));
   assert.notEqual(buf[0], 0xef, 'no UTF-8 BOM byte 0');
