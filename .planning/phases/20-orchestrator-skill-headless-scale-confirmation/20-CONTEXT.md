@@ -94,6 +94,33 @@ Phase 20 is the milestone-capping phase. It delivers TWO coupled workstreams, bo
   workflow re-architecture is DEFERRED to a later milestone (`reference_claude_code_workflows_shippable`).
   This stays an honest settle-OR-raise: construct-validity fail or a breached gate -> RAISE; the spend is a
   staged, pre-registered, human-authorized BLOCKING checkpoint; the Sonnet-default voter ships regardless (D-01).
+
+### Post-discussion directive (user + original cross-family board RESUMED, 2026-06-20) -- ARM-A ratification
+- **D-22:** The D-21 ARM-A construction ("manually-constructed minimal-edit contrastive pairs of the same class
+  as the over-refusal positives") is SUPERSEDED. Triggers: minimal-edit pairs are infeasible on-distribution at
+  N>=36 (dense-AND-SUPPORTED scarcity); the human maintainer declines to author; model-authoring injected a
+  lexical artifact (an authored 32-pair seed scored lexical-overlap AUC 0.856 >> the 0.65 ceiling -- by-construction
+  pairing produced the very artifact gate (a) guards). The skill instead OVER-produces refuted-gold (4 real runs ->
+  ~61 Contested/Low candidates; ~15/run as a FREE by-product of the ARM-B harvest). The ORIGINAL certified-WORKS
+  cross-family board (the D-21/RE-PLAN-12 board: 2 Opus lenses + GPT-5.5 + gemini-3.1-pro-preview) was RESUMED and
+  re-asked; it RATIFIED (UNANIMOUS 4/4, consensus round 1) `CERTIFY-WORKS-RATIFICATION.md` as THE AUTHORITY for ARM
+  A, superseding CERTIFY-WORKS-BOARD-DECISION.md section 1/2/3 for ARM A only. AMENDED ARM A: harvest the skill's
+  OWN Contested/Unsupported claims; RETAIN as refuted-gold ONLY those the frozen OOF all-agree pair confirms
+  gold-blind as "does not entail" (gold = the OOF read, NEVER the skill self-tag; OOF non-unanimity = the
+  rating-indeterminacy filter -> excluded from the binary denominator + routed to the human, D-04); difficulty-match
+  STATISTICALLY (covariate-overlap + subject-difficulty + cluster floors), NOT minimal-pairs; N_trap >= 30 (target
+  36), CP-upper <= TAU_FU 0.10. Construct-validity gate (d) minimal-edit is DROPPED; gates (a) lexical-AUC <= 0.65 +
+  (b) one-sided not-easier are RE-RUN ON THE POST-OOF RETAINED SET before vote 1, jointly with the N-freeze; fail ->
+  VOID-on-validity. This is FULL-WORKS-eligible (C is ON-distribution; per-item minimal-pair construction is NOT
+  required for full WORKS -- the minimal-pair rule was an instrument for construct validity, not the construct).
+  External/vetted benchmarks stay SCOPED-only (off-distribution). ARM B UNCHANGED (live-harvested SUPPORTED, N>=30,
+  CP-upper <= TAU_OR 0.15). Six pre-spend locks ratified (cluster-key=source-doc/seed-within-run; gold=OOF not
+  self-tag; floors+gates load-bearing never tuned to 36; N frozen at OOF-consensus-finish before vote 1; arms never
+  pooled; retained N_trap<36 -> VOID-on-power -> SCOPED external arm + RAISE). Fallback ordering: C (full-WORKS) ->
+  external-dataset arm (SCOPED, named) -> RAISE. Frozen primitives byte-identical; Sonnet-default ships regardless
+  (D-01); the Haiku-first flip stays DEFERRED (D-06). 20-06's `eval/lz-eval-contrastive-authoring.mjs` ARM_A_SEED is
+  now UNUSED for the live cert; gates (a)/(b) (`lz-eval-baseline-guard.mjs` / `lz-eval-difficulty-proxy.mjs`) are
+  RETAINED + re-run on the native retained set.
 </decisions>
 
 <canonical_refs>

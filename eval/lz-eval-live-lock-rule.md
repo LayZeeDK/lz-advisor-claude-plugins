@@ -1,5 +1,19 @@
 # lz-advisor LIVE certified-WORKS verify-voter certification -- pre-registered lock rule (Phase 20, certified-WORKS RE-PLAN, two-arm split-source)
 
+> **AMENDMENT 2026-06-20 (RATIFIED -- original cross-family board, UNANIMOUS 4/4; see `CERTIFY-WORKS-RATIFICATION.md`).**
+> ARM A is no longer authored minimal-edit contrastive pairs. ARM A is now the skill's OWN naturally-occurring
+> Contested/Unsupported claims, RETAINED as refuted-gold ONLY by the frozen OOF all-agree gold-blind pair
+> ("evidence does not entail"; gold = the OOF read, NEVER the skill self-tag), difficulty-matched to the ARM-B
+> SUPPORTED controls STATISTICALLY (covariate-overlap + subject-difficulty + cluster guards), NOT by minimal-pair
+> construction. Construct-validity gate (d) minimal-edit/source_uid is DROPPED; gates (a) lexical-AUC <= 0.65 and
+> (b) one-sided not-easier are RE-RUN ON THE POST-OOF RETAINED SET before vote 1, jointly with the N-freeze; fail
+> either -> VOID-on-validity -> SCOPED external arm + RAISE. This is FULL-WORKS-eligible (C is on-distribution; the
+> off-distribution external benchmark stays SCOPED-only). The six pre-spend locks are ratified in
+> `CERTIFY-WORKS-RATIFICATION.md`. The sections below that still describe the minimal-edit ARM A are SUPERSEDED for
+> ARM A by this amendment; everything about ARM B, the CP gates, EVAL_THRESHOLDS, the OOF gold pair, and the
+> anti-result-shopping discipline stands byte-identical. The FULL re-freeze (this doc + the realized N_trap + the
+> realized retained set + a new freeze timestamp) is COMMITTED AT STAGE 1 [HUMAN BLOCK], before any scored vote.
+
 This is the single source of truth for the WORKS / SCOPED / DOES-NOT-WORK / VOID thresholds of the LIVE
 certification of the lz-deep-research verify-voter. It is PRE-REGISTERED: it is written and committed
 BEFORE any scored vote and BEFORE any false-uphold pair is authored or scored, so the live verdict and the
