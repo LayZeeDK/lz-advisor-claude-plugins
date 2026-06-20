@@ -83,3 +83,9 @@ This plan ran on the shared `feat/deep-research` branch (the main checkout, NOT 
 ## Known Stubs
 
 None. The resume feature is fully wired directive prose in the SKILL body (it names the files, the skip conditions, the sentinel, and the re-run rule); the fixture exercises the real on-disk state machine + the real idempotent aggregator. No hardcoded empty values, placeholder text, or unwired data sources.
+
+## Self-Check: PASSED
+
+- All 5 created/modified files exist on disk.
+- All 4 commit hashes (00f4991, cb0c34f, 6eeb626, eb9123d) present in git history.
+- `node --test eval/lz-eval-resume-fixture.test.mjs` re-runs green (EXIT 0); the aggregator remains unmodified.
