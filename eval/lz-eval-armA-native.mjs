@@ -285,86 +285,244 @@ function oofPacketFor(candidate) {
 }
 
 // ---------------------------------------------------------------------------
-// adjudicateNativeRefutedGold({ candidates, callModel, useFrozenTransport, seed }): the OOF all-agree
-// gold-blind RETAIN step (lock b + D-04). It builds ONE makeBatchedOofProbe per FROZEN_OOF_PAIR model,
-// runs the documented prepare() PRE-PASS over the FULL candidate set, then runProbeConsensus per candidate
-// with expectedEntailment='false' (does NOT entail). A candidate is RETAINED as refuted-gold ONLY if BOTH
-// OOF models all-agree the evidence does NOT entail the claim. A NON-unanimous / split / ambiguous read is
-// EXCLUDED from the binary denominator + routed to human (Guerdan response-set exclusion, D-04).
+// THE RESUMABLE OOF VERDICT CACHE (Phase 20, Plan 20-05 OOF-PREP; NO-SPEND prep for the human-gated spend).
+// The OOF adjudication is the Copilot CLI spend; a usage-limit interruption mid-round must NOT re-pay for
+// candidates already adjudicated. This MIRRORS the FROZEN persistDualRunVote skip-already-done resumability
+// (eval/lz-eval-live-cert.mjs -> persistVote, lz-eval-offline-read.mjs: votePath/persistVote, D-08): one
+// small JSON per candidate keyed by the candidate uid, a re-run loads the cache and dispatches ONLY the
+// still-un-adjudicated candidates. The cache is the SAME verdict the probe would produce -- it changes
+// nothing about WHAT the consensus decides, it only avoids re-DISPATCHING an already-decided candidate.
+//
+// The per-candidate verdict record is { uid, accepted, entails, split, reason }: `accepted` = retained as
+// refuted-gold (the all-agree does-not-entail pass); `entails` = the resolved OOF entailment read ('false'
+// when retained as does-not-entail; 'true'/'unknown' otherwise); `split` is persisted so the residue's
+// split-vs-reject distinction is reconstructed EXACTLY from the cache; `reason` is the consensus reason.
+//
+// FILENAME SAFETY (Windows): the candidate uid carries the '::' run-dir separator, and ':' is an ILLEGAL
+// Windows filename character. oofVerdictPath sanitizes '::' -> '__' and any residual ':' -> '_', then routes
+// the basename through safeId (T-19-TRAVERSE) before it is used as a path component -- a crafted uid cannot
+// traverse out of cacheDir.
+// ---------------------------------------------------------------------------
+function oofVerdictPath(cacheDir, uid) {
+  if (typeof cacheDir !== 'string' || cacheDir.length === 0) {
+    throw new ContractError('oofVerdictPath requires a cacheDir (gitignored eval/.cache/)', 'oofVerdictPath');
+  }
+
+  if (typeof uid !== 'string' || uid.length === 0) {
+    throw new ContractError('oofVerdictPath requires a non-empty candidate uid', 'oofVerdictPath');
+  }
+
+  // ':'-free key: the '::' run-dir separator -> '__', any residual ':' -> '_' (Windows filename safety).
+  const key = uid.replace(/::/g, '__').replace(/:/g, '_');
+  const base = safeId(key, cacheDir) + '.json';
+
+  return path.join(cacheDir, base);
+}
+
+// Load a persisted per-candidate OOF verdict, or null when none is cached. Fail-closed on a malformed cache
+// file (a corrupt cache must be surfaced, never silently treated as un-adjudicated -> a re-pay).
+function loadOofVerdict(cacheDir, uid) {
+  const p = oofVerdictPath(cacheDir, uid);
+
+  if (!fs.existsSync(p)) {
+    return null;
+  }
+
+  let raw;
+
+  try {
+    raw = fs.readFileSync(p, 'utf8');
+  } catch (err) {
+    throw new ContractError('loadOofVerdict: cannot read cached verdict: ' + err.message, p);
+  }
+
+  let rec;
+
+  try {
+    rec = JSON.parse(raw);
+  } catch (err) {
+    throw new ContractError('loadOofVerdict: malformed cached verdict JSON: ' + err.message, p);
+  }
+
+  if (rec == null || typeof rec !== 'object' || rec.uid !== uid || typeof rec.accepted !== 'boolean') {
+    throw new ContractError('loadOofVerdict: cached verdict missing uid / boolean accepted (corrupt): ' + p, p);
+  }
+
+  return rec;
+}
+
+// Persist a per-candidate OOF verdict, SKIP-ALREADY-DONE (mirrors persistVote/persistDualRunVote D-08): a
+// re-run does NOT re-write an existing verdict. Returns { persisted, skipped, path }.
+function persistOofVerdict(cacheDir, verdict) {
+  const p = oofVerdictPath(cacheDir, verdict.uid);
+
+  if (fs.existsSync(p)) {
+    return Object.freeze({ persisted: false, skipped: true, path: p });
+  }
+
+  fs.mkdirSync(cacheDir, { recursive: true });
+  fs.writeFileSync(p, JSON.stringify(verdict, null, 2) + '\n', 'utf8');
+
+  return Object.freeze({ persisted: true, skipped: false, path: p });
+}
+
+// ---------------------------------------------------------------------------
+// adjudicateNativeRefutedGold({ candidates, callModel, useFrozenTransport, seed, cacheDir }): the OOF
+// all-agree gold-blind RETAIN step (lock b + D-04). It builds ONE makeBatchedOofProbe per FROZEN_OOF_PAIR
+// model, runs the documented prepare() PRE-PASS over the un-cached candidate set, then runProbeConsensus per
+// un-cached candidate with expectedEntailment='false' (does NOT entail). A candidate is RETAINED as
+// refuted-gold ONLY if BOTH OOF models all-agree the evidence does NOT entail the claim. A NON-unanimous /
+// split / ambiguous read is EXCLUDED from the binary denominator + routed to human (Guerdan response-set
+// exclusion, D-04).
 //
 // TRANSPORT (D-20): callModel is INJECTED. The test passes a deterministic STUB (callModel(promptText) ->
 // JSON array string) -> ZERO spend. The REAL path (useFrozenTransport:true) builds the frozen Copilot
 // transport via makeOofAdjudicator, whose per-model callModel calls requireSpend('callOof') FIRST -> it
 // THROWS unless LZ_SPEND===1 (the no-spend build never reaches a real dispatch).
 //
-// Returns { retained, residue, excludedIndeterminate, nRetained, nExcluded, expectedEntailment }:
+// RESUMABLE CACHE (Phase 20, Plan 20-05 OOF-PREP): an optional `cacheDir`. When set, BEFORE dispatching it
+// loads any persisted per-candidate verdict (oofVerdictPath, keyed by uid) and passes ONLY the un-cached
+// candidates to probe.prepare() (the spend). After dispatch it PERSISTS each newly-resolved verdict
+// (skip-already-done, like persistDualRunVote). The final retained/residue/excluded sets are computed by
+// MERGING cached + freshly-resolved verdicts over the FULL candidate set, in candidate order. A re-run after
+// an interruption re-loads the cache and dispatches ONLY the still-un-adjudicated candidates -> never
+// re-pays. OFF by default (cacheDir undefined -> current behavior: ALL candidates dispatched, nothing
+// persisted), so existing tests are unaffected. The cache changes nothing about WHAT the consensus decides:
+// a cached verdict is the SAME verdict the probe would produce -- it only avoids re-dispatching it.
+//
+// Returns { retained, residue, excludedIndeterminate, nRetained, nExcluded, expectedEntailment,
+//   nDispatched, nCacheHits }:
 //   - retained: the candidates the OOF pair all-agrees do-not-entail (the refuted-gold cell);
 //   - excludedIndeterminate: the candidates EXCLUDED (split / entailed / unresolved) -- the binary
 //     denominator they LEAVE; each carries { uid, residueReason };
-//   - residue: the same excluded items, surfaced for the maintainer's human routing (D-04).
+//   - residue: the same excluded items, surfaced for the maintainer's human routing (D-04);
+//   - nDispatched: how many candidates were sent to the probe this call (the un-cached set; 0 on a full
+//     re-run from cache -> ZERO new spend); nCacheHits: how many were served from the cache.
 // ---------------------------------------------------------------------------
-export async function adjudicateNativeRefutedGold({ candidates, callModel, useFrozenTransport = false, seed = 'armA-native' } = {}) {
+export async function adjudicateNativeRefutedGold({ candidates, callModel, useFrozenTransport = false, seed = 'armA-native', cacheDir = undefined } = {}) {
   if (!Array.isArray(candidates)) {
     throw new ContractError('adjudicateNativeRefutedGold requires a candidates array', 'adjudicateNativeRefutedGold');
   }
 
-  // Build ONE OOF probe per FROZEN model. The REAL path routes each callModel through the Copilot
-  // transport (hard-guarded by requireSpend('callOof')); the test path wraps the SAME injected stub
-  // callModel per model (the stub is gold-blind -- it reads only the rendered prompt).
-  let probes;
+  const useCache = typeof cacheDir === 'string' && cacheDir.length > 0;
 
-  if (useFrozenTransport) {
-    // The real OOF dispatch -- the FROZEN pair over the Copilot CLI transport. Its callModel calls
-    // requireSpend('callOof') FIRST, so building is no-spend but dispatching (prepare) THROWS unless
-    // LZ_SPEND===1. The no-spend build never authorizes the spend; this path exists ONLY for the
-    // human-authorized Plan 20-05.
-    const adjudicator = makeOofAdjudicator({ seed });
-    probes = adjudicator.probes;
-  } else {
-    // callModel is INJECTED (the deterministic STUB; the real path is useFrozenTransport behind
-    // requireSpend). It may be a SINGLE function (the SAME gold-blind judge for both OOF models) OR an ARRAY
-    // of one callModel per FROZEN model (so a test can drive an inter-judge SPLIT). Build ONE
-    // makeBatchedOofProbe per FROZEN model over the matching per-model callModel.
-    const callModels = Array.isArray(callModel) ? callModel : FROZEN_OOF_PAIR.map(() => callModel);
+  // (1) LOAD the cache (when enabled): a per-uid verdict map for the already-adjudicated candidates. Only the
+  //     candidates WITHOUT a cached verdict are dispatched (the spend). On a full re-run every candidate is
+  //     a cache hit -> ZERO candidates dispatched -> ZERO new spend.
+  const cachedByUid = new Map();
+  const toDispatch = [];
 
-    if (callModels.length !== FROZEN_OOF_PAIR.length || callModels.some((c) => typeof c !== 'function')) {
-      throw new ContractError(
-        'adjudicateNativeRefutedGold requires an injected callModel (a single STUB function for both OOF models, or an array of one per FROZEN_OOF_PAIR model); the real path is useFrozenTransport behind requireSpend',
-        'adjudicateNativeRefutedGold',
-      );
+  for (const candidate of candidates) {
+    if (useCache) {
+      const cached = loadOofVerdict(cacheDir, candidate.uid);
+
+      if (cached != null) {
+        cachedByUid.set(candidate.uid, cached);
+        continue;
+      }
     }
 
-    probes = FROZEN_OOF_PAIR.map((model, i) => makeBatchedOofProbe({ callModel: callModels[i], model, seed }));
+    toDispatch.push(candidate);
   }
 
-  const packets = candidates.map((c) => oofPacketFor(c));
+  // (2) DISPATCH only the un-cached candidates. The fresh verdicts (per uid) are merged with the cached ones
+  //     over the FULL candidate set below. When toDispatch is EMPTY (a full re-run from cache), NO probe is
+  //     built + NO prepare() is called -> ZERO new spend (the real-transport prepare is the spend boundary).
+  const freshByUid = new Map();
 
-  // The documented PRE-PASS: pre-seed EVERY probe's resolver map over the FULL candidate set BEFORE the
-  // per-candidate consensus loop (avoids the flush-boundary deadlock; lock e -- per the oof-batch shape).
-  // For the real transport this is the spend boundary (requireSpend fires here).
-  for (const probe of probes) {
-    await probe.prepare(packets);
+  if (toDispatch.length > 0) {
+    // Build ONE OOF probe per FROZEN model. The REAL path routes each callModel through the Copilot
+    // transport (hard-guarded by requireSpend('callOof')); the test path wraps the SAME injected stub
+    // callModel per model (the stub is gold-blind -- it reads only the rendered prompt).
+    let probes;
+
+    if (useFrozenTransport) {
+      // The real OOF dispatch -- the FROZEN pair over the Copilot CLI transport. Its callModel calls
+      // requireSpend('callOof') FIRST, so building is no-spend but dispatching (prepare) THROWS unless
+      // LZ_SPEND===1. The no-spend build never authorizes the spend; this path exists ONLY for the
+      // human-authorized Plan 20-05.
+      const adjudicator = makeOofAdjudicator({ seed });
+      probes = adjudicator.probes;
+    } else {
+      // callModel is INJECTED (the deterministic STUB; the real path is useFrozenTransport behind
+      // requireSpend). It may be a SINGLE function (the SAME gold-blind judge for both OOF models) OR an ARRAY
+      // of one callModel per FROZEN model (so a test can drive an inter-judge SPLIT). Build ONE
+      // makeBatchedOofProbe per FROZEN model over the matching per-model callModel.
+      const callModels = Array.isArray(callModel) ? callModel : FROZEN_OOF_PAIR.map(() => callModel);
+
+      if (callModels.length !== FROZEN_OOF_PAIR.length || callModels.some((c) => typeof c !== 'function')) {
+        throw new ContractError(
+          'adjudicateNativeRefutedGold requires an injected callModel (a single STUB function for both OOF models, or an array of one per FROZEN_OOF_PAIR model); the real path is useFrozenTransport behind requireSpend',
+          'adjudicateNativeRefutedGold',
+        );
+      }
+
+      probes = FROZEN_OOF_PAIR.map((model, i) => makeBatchedOofProbe({ callModel: callModels[i], model, seed }));
+    }
+
+    const dispatchPackets = toDispatch.map((c) => oofPacketFor(c));
+
+    // The documented PRE-PASS: pre-seed EVERY probe's resolver map over the UN-CACHED candidate set BEFORE
+    // the per-candidate consensus loop (avoids the flush-boundary deadlock; lock e -- per the oof-batch
+    // shape). For the real transport this is the spend boundary (requireSpend fires here) -- so a full re-run
+    // from cache (toDispatch empty) never reaches it.
+    for (const probe of probes) {
+      await probe.prepare(dispatchPackets);
+    }
+
+    for (let i = 0; i < toDispatch.length; i += 1) {
+      const candidate = toDispatch[i];
+      const packet = dispatchPackets[i];
+
+      // The SAME strict all-agree gold-blind contract the offline screen uses. RETAIN only if EVERY probe
+      // agrees entails == 'false' (does NOT entail). A split / entailed / unresolved read -> NOT retained.
+      const consensus = await runProbeConsensus(probes, {
+        trap: packet.trap,
+        enrichedKs: packet.enrichedKs,
+        stratum: 'native-refuted-gold',
+        decisiveRank: -1,
+        expectedEntailment: ARM_A_EXPECTED_ENTAILMENT,
+      });
+
+      // The per-candidate verdict record (the SAME verdict the probe produced). `accepted` = retained; on a
+      // retain the resolved entailment is the expected 'false' (does NOT entail); a split/reject carries the
+      // OOF read direction (split -> 'true' = the pair disagreed by reading entailment; reject -> 'unknown').
+      const verdict = {
+        uid: candidate.uid,
+        accepted: consensus.retained === true,
+        entails: consensus.retained ? String(ARM_A_EXPECTED_ENTAILMENT) : (consensus.split ? 'true' : 'unknown'),
+        split: consensus.split === true,
+        reason: consensus.retained ? 'all-probes-agree-does-not-entail' : (consensus.split ? 'oof-split' : (consensus.reason || 'oof-non-entailment-reject')),
+      };
+
+      freshByUid.set(candidate.uid, verdict);
+
+      // PERSIST the newly-resolved verdict (skip-already-done, like persistDualRunVote) so a future re-run
+      // serves it from cache instead of re-dispatching (re-paying). No-op when the cache is OFF.
+      if (useCache) {
+        persistOofVerdict(cacheDir, verdict);
+      }
+    }
   }
 
+  // (3) MERGE cached + freshly-resolved verdicts over the FULL candidate set, in candidate order, to build
+  //     the retained / residue / excluded sets. The merge is verdict-driven so a re-run (all cache hits) and
+  //     a fresh run (all dispatched) produce the IDENTICAL retained/residue (the cache changes nothing about
+  //     WHAT is decided -- only whether it was re-dispatched).
   const retained = [];
   const excludedIndeterminate = [];
   const residue = [];
 
-  for (let i = 0; i < candidates.length; i += 1) {
-    const candidate = candidates[i];
-    const packet = packets[i];
+  for (const candidate of candidates) {
+    const verdict = freshByUid.get(candidate.uid) || cachedByUid.get(candidate.uid);
 
-    // The SAME strict all-agree gold-blind contract the offline screen uses. RETAIN only if EVERY probe
-    // agrees entails == 'false' (does NOT entail). A split / entailed / unresolved read -> NOT retained.
-    const consensus = await runProbeConsensus(probes, {
-      trap: packet.trap,
-      enrichedKs: packet.enrichedKs,
-      stratum: 'native-refuted-gold',
-      decisiveRank: -1,
-      expectedEntailment: ARM_A_EXPECTED_ENTAILMENT,
-    });
+    if (verdict == null) {
+      // Defensive: a candidate with neither a fresh nor a cached verdict should be impossible (every
+      // candidate is either cached or dispatched). Fail closed rather than silently drop it.
+      throw new ContractError('adjudicateNativeRefutedGold: no verdict (cached or fresh) for candidate ' + candidate.uid, 'adjudicateNativeRefutedGold');
+    }
 
-    if (consensus.retained) {
+    if (verdict.accepted === true) {
       retained.push(candidate);
       continue;
     }
@@ -372,7 +530,7 @@ export async function adjudicateNativeRefutedGold({ candidates, callModel, useFr
     // EXCLUDED from the binary denominator + routed to the human (Guerdan response-set exclusion, D-04). A
     // SPLIT (a probe accepted but read entails=true -- the OOF pair disagrees) vs a unanimous-style reject
     // (a probe declined / the evidence DOES entail) is recorded as the residue reason.
-    const residueReason = consensus.split ? 'oof-split' : (consensus.reason || 'oof-non-entailment-reject');
+    const residueReason = verdict.split ? 'oof-split' : (verdict.reason || 'oof-non-entailment-reject');
     const excluded = Object.freeze({ uid: candidate.uid, candidate, residueReason });
     excludedIndeterminate.push(excluded);
     residue.push(excluded);
@@ -385,6 +543,9 @@ export async function adjudicateNativeRefutedGold({ candidates, callModel, useFr
     nRetained: retained.length,
     nExcluded: excludedIndeterminate.length,
     expectedEntailment: ARM_A_EXPECTED_ENTAILMENT,
+    // Resumability telemetry: how many candidates were DISPATCHED this call (the spend) vs served from cache.
+    nDispatched: toDispatch.length,
+    nCacheHits: cachedByUid.size,
   });
 }
 

@@ -571,6 +571,145 @@ test('adjudicateNativeRefutedGold runs ZERO spend: it never sets LZ_SPEND and ne
 });
 
 // ===========================================================================
+// (2b) THE RESUMABLE OOF VERDICT CACHE (Phase 20, Plan 20-05 OOF-PREP; NO-SPEND): adjudicateNativeRefutedGold
+// supports an optional cacheDir. With it set, a per-candidate verdict is persisted and a re-run dispatches
+// ZERO new probe calls (the stub callModel is NOT invoked the second time) while returning the SAME
+// retained/residue. A PARTIAL cache dispatches only the uncached candidates. OFF by default (cacheDir
+// undefined -> all dispatched). This mirrors the FROZEN persistDualRunVote skip-already-done resumability.
+// ===========================================================================
+
+// Wrap a stub-pair factory so EVERY underlying callModel invocation is counted (the probe dispatch is the
+// only thing that calls callModel; a cache hit must NOT call it). Returns { callModels, calls: () => n }.
+function countingOofPairStubs({ splitFlipFor = null } = {}) {
+  let calls = 0;
+  const base = makeOofPairStubs({ splitFlipFor });
+  const callModels = base.map((fn) => async (promptText) => {
+    calls += 1;
+
+    return fn(promptText);
+  });
+
+  return { callModels, calls: () => calls };
+}
+
+test('adjudicateNativeRefutedGold with a cacheDir PERSISTS per-candidate verdicts (one ":"-free JSON per uid)', async () => {
+  const cacheDir = fs.mkdtempSync(path.join(os.tmpdir(), 'lz-armA-oofcache-'));
+
+  try {
+    const candidates = refutedCandidates();
+    const res = await adjudicateNativeRefutedGold({ candidates, callModel: makeOofPairStubs(), cacheDir });
+
+    assert.equal(res.retained.length, 3, 'all 3 all-agree candidates are retained (the cache does not change the decision)');
+    assert.equal(res.nDispatched, 3, 'all 3 candidates were dispatched on the first run (nothing cached yet)');
+    assert.equal(res.nCacheHits, 0, 'no cache hits on the first run');
+
+    // One persisted verdict file per candidate uid, ':'-free (the '::' separator -> '__').
+    const files = fs.readdirSync(cacheDir).filter((f) => f.endsWith('.json'));
+    assert.equal(files.length, 3, 'exactly one persisted verdict per candidate');
+
+    for (const f of files) {
+      assert.ok(!f.includes(':'), 'the persisted verdict filename is ":"-free (Windows-safe): ' + f);
+      const rec = JSON.parse(fs.readFileSync(path.join(cacheDir, f), 'utf8'));
+      assert.equal(typeof rec.uid, 'string', 'the verdict carries its uid');
+      assert.equal(typeof rec.accepted, 'boolean', 'the verdict carries a boolean accepted');
+      assert.ok('entails' in rec && 'reason' in rec, 'the verdict carries entails + reason (the OOF read)');
+      assert.equal(rec.accepted, true, 'each retained candidate persisted accepted:true');
+    }
+  } finally {
+    fs.rmSync(cacheDir, { recursive: true, force: true });
+  }
+});
+
+test('adjudicateNativeRefutedGold RE-RUN from a full cache dispatches ZERO new probe calls and returns the SAME retained/residue (resumable, no re-pay)', async () => {
+  const cacheDir = fs.mkdtempSync(path.join(os.tmpdir(), 'lz-armA-oofcache-'));
+
+  try {
+    const candidates = refutedCandidates();
+
+    // FIRST run: a counting stub -> all 3 dispatched, verdicts persisted.
+    const first = countingOofPairStubs();
+    const res1 = await adjudicateNativeRefutedGold({ candidates, callModel: first.callModels, cacheDir });
+    assert.ok(first.calls() > 0, 'the first run DID dispatch (the probe callModel was invoked)');
+    assert.equal(res1.nDispatched, 3, 'the first run dispatched all 3 candidates');
+
+    // SECOND run over the SAME candidates with the cache present: a FRESH counting stub that must NEVER be
+    // called (every candidate is a cache hit -> ZERO new dispatch -> ZERO re-pay).
+    const second = countingOofPairStubs();
+    const res2 = await adjudicateNativeRefutedGold({ candidates, callModel: second.callModels, cacheDir });
+
+    assert.equal(second.calls(), 0, 'the SECOND run dispatched ZERO new probe calls (the stub callModel was NOT invoked -- resumable, no re-pay)');
+    assert.equal(res2.nDispatched, 0, 'the re-run dispatched 0 candidates (all served from cache)');
+    assert.equal(res2.nCacheHits, 3, 'all 3 candidates were cache hits on the re-run');
+
+    // The re-run returns the SAME retained/residue as the fresh run (the cache changes nothing decided).
+    assert.deepEqual(res2.retained.map((r) => r.uid).sort(), res1.retained.map((r) => r.uid).sort(), 'the re-run retained set is identical to the fresh run');
+    assert.deepEqual(res2.residue.map((r) => r.uid).sort(), res1.residue.map((r) => r.uid).sort(), 'the re-run residue is identical to the fresh run');
+  } finally {
+    fs.rmSync(cacheDir, { recursive: true, force: true });
+  }
+});
+
+test('adjudicateNativeRefutedGold with a PARTIAL cache dispatches ONLY the uncached candidates', async () => {
+  const cacheDir = fs.mkdtempSync(path.join(os.tmpdir(), 'lz-armA-oofcache-'));
+
+  try {
+    const candidates = refutedCandidates();
+
+    // FIRST run over a SUBSET (the first 2 candidates) -> only those 2 are persisted.
+    await adjudicateNativeRefutedGold({ candidates: candidates.slice(0, 2), callModel: makeOofPairStubs(), cacheDir });
+    assert.equal(fs.readdirSync(cacheDir).filter((f) => f.endsWith('.json')).length, 2, 'two verdicts persisted from the subset run');
+
+    // SECOND run over the FULL set with the partial cache: only the 1 uncached candidate is dispatched.
+    const counting = countingOofPairStubs();
+    const res = await adjudicateNativeRefutedGold({ candidates, callModel: counting.callModels, cacheDir });
+
+    assert.equal(res.nDispatched, 1, 'only the 1 still-uncached candidate is dispatched (the 2 cached are skipped)');
+    assert.equal(res.nCacheHits, 2, 'the 2 already-adjudicated candidates are cache hits');
+    assert.ok(counting.calls() > 0, 'the probe WAS called for the uncached candidate');
+    assert.equal(res.retained.length, 3, 'the merged result over the FULL set still retains all 3 all-agree candidates');
+    assert.equal(fs.readdirSync(cacheDir).filter((f) => f.endsWith('.json')).length, 3, 'the newly-dispatched verdict is now persisted (all 3 cached)');
+  } finally {
+    fs.rmSync(cacheDir, { recursive: true, force: true });
+  }
+});
+
+test('adjudicateNativeRefutedGold caches a RESIDUE (split) verdict too: a re-run reproduces the same exclusion without re-dispatch', async () => {
+  const cacheDir = fs.mkdtempSync(path.join(os.tmpdir(), 'lz-armA-oofcache-'));
+
+  try {
+    const candidates = refutedCandidates();
+
+    // FIRST run with a split on runA::r1 -> 2 retained, 1 excluded (the split). Persist all 3 verdicts.
+    const res1 = await adjudicateNativeRefutedGold({ candidates, callModel: makeOofPairStubs({ splitFlipFor: 'doubled output' }), cacheDir });
+    assert.equal(res1.retained.length, 2, 'first run retains 2');
+    assert.equal(res1.excludedIndeterminate.length, 1, 'first run excludes the split candidate');
+
+    // SECOND run from cache with a counting stub that must NOT be called -> the SAME split exclusion.
+    const counting = countingOofPairStubs();
+    const res2 = await adjudicateNativeRefutedGold({ candidates, callModel: counting.callModels, cacheDir });
+
+    assert.equal(counting.calls(), 0, 'the re-run dispatched ZERO new probe calls even with a residue in the cache');
+    assert.equal(res2.retained.length, 2, 'the re-run reproduces the 2 retained from cache');
+    assert.equal(res2.excludedIndeterminate.length, 1, 'the re-run reproduces the 1 excluded (split) from cache');
+    assert.equal(res2.excludedIndeterminate[0].uid, 'runA::r1', 'the same split candidate is excluded on the re-run');
+    assert.equal(res2.excludedIndeterminate[0].residueReason, 'oof-split', 'the split residue reason is reconstructed exactly from the cache');
+  } finally {
+    fs.rmSync(cacheDir, { recursive: true, force: true });
+  }
+});
+
+test('adjudicateNativeRefutedGold is OFF by default (no cacheDir): nothing is persisted, all candidates dispatched', async () => {
+  const candidates = refutedCandidates();
+  const counting = countingOofPairStubs();
+  const res = await adjudicateNativeRefutedGold({ candidates, callModel: counting.callModels });
+
+  assert.ok(counting.calls() > 0, 'with no cacheDir, the probe IS dispatched (current behavior)');
+  assert.equal(res.nDispatched, 3, 'all 3 candidates dispatched when the cache is off');
+  assert.equal(res.nCacheHits, 0, 'no cache hits when the cache is off');
+  assert.equal(res.retained.length, 3, 'the cache-off result is the existing all-agree retain');
+});
+
+// ===========================================================================
 // (3) assembleArmA: the matching guards + gates (a)/(b) on the retained set; constructValid folds
 // covariate+difficulty+cluster+lexical+notEasier (NO minimalEdit term); reports smd.
 // ===========================================================================
