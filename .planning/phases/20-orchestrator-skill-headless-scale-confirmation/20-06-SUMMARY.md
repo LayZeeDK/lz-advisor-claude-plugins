@@ -156,3 +156,7 @@ None. Every model-spend path is exercised with deterministic stubs (zero spend) 
 
 - This plan does NOT modify STATE.md or ROADMAP.md (the orchestrator owns those writes after the wave completes). The three task commits + this SUMMARY commit touch eval/ + this plan's SUMMARY only.
 - The parallel 20-07 agent shares this checkout; its commits (plugins/ + 20-07-SUMMARY.md + lz-eval-resume-fixture.test.mjs) are interleaved on the branch but are NOT part of this plan's three 20-06 commits.
+
+## Self-Check: PASSED
+
+All 10 created/modified files exist on disk; all 4 commits (db89374, 1ce914d, c33b1d2, cbfcc68) exist in git history. All four FILE-form test suites exit 0 with zero spend.
