@@ -55,6 +55,13 @@ import {
 // Shared fail-closed JSON read (the eval-tree helper; strips a BOM, never a bare JSON.parse).
 import { readJson } from './lz-eval-readjson.mjs';
 
+// The shared evidence-text JOIN (cluster -> claims -> excerpts). ARM B surfaces its over-refusal control +
+// dense-trap members with the REAL stored evidence TEXT (the Stage-2 verify-voter judges "does this evidence
+// entail the claim?"; a bare URL is not adjudicable). This is an ADDITIVE field on the surfaced members --
+// the nCtrl/nTrap counting + the two-arms-never-pooled discipline are byte-identical. The join lives in its
+// own module so arm A + arm B both import it WITHOUT a cycle (arm A imports the run-dir reader from HERE).
+import { joinClusterEvidence } from './lz-eval-evidence-join.mjs';
+
 // ---------------------------------------------------------------------------
 // FROZEN harvest N targets (D-03): run-config N TARGETS, NOT threshold changes. The frozen
 // EVAL_THRESHOLDS (TAU_OR 0.15 / TAU_FU 0.10 / N_CTRL_FLOOR 24) stay BYTE-IDENTICAL in the engine; these
@@ -300,8 +307,9 @@ export function harvest({
 
       // Run-dir-qualified uid so a cluster id repeated across run dirs is distinct (safeId already
       // validated rec.id in readRunDirClaims). The uid is non-enumerable-by-convention internal state
-      // (prefixed __) so it never collides with a frozen survivor field.
-      supported.push(Object.assign({}, rec, { __uid: basename + '::' + rec.id, source_run_dir: basename }));
+      // (prefixed __) so it never collides with a frozen survivor field. __runDir threads the run-dir path so
+      // the surfaced member can JOIN to its real stored evidence TEXT (cluster -> claims -> excerpts).
+      supported.push(Object.assign({}, rec, { __uid: basename + '::' + rec.id, __runDir: dir, source_run_dir: basename }));
     }
   }
 
@@ -319,11 +327,19 @@ export function harvest({
   const overRefusalControls = controlPool.slice(0, nCtrlTarget);
 
   // Strip the internal __uid into a stable `uid` field on the surfaced members (drop other internal state).
+  // ADDITIVE evidence-text JOIN: surface the REAL stored evidence TEXT ([{ sentence }]) so the Stage-2
+  // verify-voter judges against text, not a bare URL. This is an ADDITIVE field only -- the member is NEVER
+  // dropped on a no-match (arm B counts stay byte-identical); a no-match member carries evidence:[] (the
+  // voter then has no adjudicable evidence for that member, surfaced honestly rather than a URL). The
+  // internal __runDir is stripped after the join (it never leaks into the surfaced member).
   const surface = (members) =>
     members.map((r) => {
       const out = Object.assign({}, r);
       out.uid = r.__uid;
+      const joined = joinClusterEvidence(r.__runDir, r);
+      out.evidence = joined.evidence;
       delete out.__uid;
+      delete out.__runDir;
 
       return Object.freeze(out);
     });

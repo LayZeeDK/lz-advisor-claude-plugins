@@ -42,6 +42,8 @@ import {
   HARVEST_TARGETS,
 } from './lz-eval-harvest.mjs';
 
+import { resetEvidenceJoinCache } from './lz-eval-evidence-join.mjs';
+
 // Resolve test-file-relative (NEVER process.cwd() -- cwd drifts under GSD worktrees and headless
 // `claude -p`). The stub corpus is written to a per-test tmpdir, not under HERE, so no committed bytes.
 const HERE = path.dirname(fileURLToPath(import.meta.url));
@@ -352,4 +354,144 @@ test('the harvester source carries NO LZ_SPEND / network code (a pure on-disk lo
   assert.ok(!/\bfetch\s*\(/.test(src) && !/https?:\/\//.test(src), 'the harvester performs no network I/O (on-disk run dirs only)');
   // The tree-boundary statement is present (eval -> runtime, NEVER ships).
   assert.ok(/NEVER ships|NEVER in\b|one-directional/.test(src), 'the eval-tree boundary statement is present');
+});
+
+// ===========================================================================
+// ARM-B evidence-text JOIN (BLOCKING-BUG fix, Plan 20-05): the surfaced members now carry the REAL stored
+// evidence TEXT ([{ sentence }]) so the Stage-2 verify-voter judges against text, not a bare URL. This is an
+// ADDITIVE field -- the nCtrl/nTrap counts + the two-arms-never-pooled discipline are byte-identical.
+// ===========================================================================
+
+// Write a run-dir corpus WITH claims/*.json + excerpts/*.txt synthesized from the survivors so the
+// evidence-text JOIN has real worker quotes + excerpt passages to recover. Each survivor's `claim` becomes a
+// worker claim `text` (exact-match), with a `quote` + an `excerpt_id` pointing to an excerpt passage; the
+// worker `source` is the survivor's first source so the join's source-scope filter matches.
+function writeCorpusWithEvidence(dirs) {
+  resetEvidenceJoinCache();
+  const corpus = fs.mkdtempSync(path.join(os.tmpdir(), 'lz-harvest-ev-corpus-'));
+
+  for (const [name, survivors] of Object.entries(dirs)) {
+    const runDir = path.join(corpus, name);
+    fs.mkdirSync(path.join(runDir, 'claims'), { recursive: true });
+    fs.mkdirSync(path.join(runDir, 'excerpts'), { recursive: true });
+    fs.writeFileSync(path.join(runDir, 'survivors.json'), JSON.stringify(survivors, null, 2) + '\n', 'utf8');
+
+    const claimsBySource = {};
+    const excerptTexts = {};
+    let excerptSeq = 0;
+
+    for (const s of survivors) {
+      const source = (Array.isArray(s.sources) && s.sources[0]) || 's0';
+      const excerptId = 'e' + (excerptSeq += 1);
+      const quote = 'verbatim backing quote for ' + s.id;
+      (claimsBySource[source] = claimsBySource[source] || []).push({
+        id: 'wc-' + s.id,
+        text: s.claim,
+        quote,
+        excerpt_id: excerptId,
+        load_bearing: true,
+      });
+      excerptTexts[excerptId] = 'Excerpt passage for ' + s.id + ': ' + quote + ' with full surrounding context.';
+    }
+
+    let wIdx = 0;
+
+    for (const [source, claims] of Object.entries(claimsBySource)) {
+      wIdx += 1;
+      fs.writeFileSync(
+        path.join(runDir, 'claims', 'w-extract-' + wIdx + '.json'),
+        JSON.stringify({ worker: 'w-extract-' + wIdx, source, claims }, null, 2) + '\n',
+        'utf8',
+      );
+    }
+
+    for (const [excerptId, text] of Object.entries(excerptTexts)) {
+      fs.writeFileSync(path.join(runDir, 'excerpts', excerptId + '.txt'), text + '\n', 'utf8');
+    }
+  }
+
+  return corpus;
+}
+
+// A survivor whose `sources` carry real (URL-like) source ids + a `claim` text that the synthesized worker
+// claims will exact-match (so the join recovers evidence text).
+function survivorWithSource({ id, confidence = 'High', corroboration = 3, source }) {
+  return {
+    id,
+    claim: 'supported claim text for ' + id + ' that the voter must judge against evidence',
+    sources: [source || ('https://example.org/' + id)],
+    corroboration_lower_bound: corroboration,
+    quote_fidelity: 'verified',
+    confidence,
+    escalate: false,
+  };
+}
+
+test('harvest surfaces ARM-B members with the JOINED evidence TEXT (NOT a URL) -- additive field for the Stage-2 voter', () => {
+  const survivors = [
+    survivorWithSource({ id: 'cluster0', confidence: 'High', corroboration: 3 }),
+    survivorWithSource({ id: 'cluster1', confidence: 'Medium', corroboration: 2 }),
+    survivorWithSource({ id: 'cluster2', confidence: 'High', corroboration: 1 }),
+  ];
+  const corpus = writeCorpusWithEvidence({ run0: survivors });
+
+  try {
+    resetEvidenceJoinCache();
+    const res = harvest({ corpusDir: corpus, nCtrlTarget: 40, nTrapTarget: 40 });
+    const members = [...res.overRefusalControls, ...res.denseTrapMonitor];
+
+    assert.ok(members.length >= 1, 'at least one SUPPORTED member is harvested');
+
+    for (const m of members) {
+      assert.ok(Array.isArray(m.evidence), 'every surfaced member carries an evidence array (additive field)');
+      assert.ok(m.evidence.length >= 1, 'the member evidence is recovered (joined from claims/excerpts)');
+      assert.ok(m.evidence.every((e) => e && typeof e.sentence === 'string' && e.sentence.length > 0), 'every evidence item is a non-empty { sentence }');
+      assert.ok(!/https?:\/\//.test(JSON.stringify(m.evidence)), 'the member evidence is TEXT, NEVER a bare URL (the bug)');
+      assert.ok(m.evidence.some((e) => e.sentence.includes('verbatim backing quote')), 'the verbatim worker quote text is present');
+    }
+  } finally {
+    fs.rmSync(corpus, { recursive: true, force: true });
+  }
+});
+
+test('the additive ARM-B evidence join leaves nCtrl/nTrap + the member uids byte-identical (regression: counts unchanged)', () => {
+  // Build TWO corpora from the SAME survivors: one WITH claims/excerpts (evidence recovered) and one WITHOUT
+  // (evidence:[]). The arm counts + the member uids + the two-arms disjointness must be byte-identical -- the
+  // evidence join is purely additive and never perturbs the selection / stratification / counting.
+  const survivors = [];
+
+  for (let i = 0; i < 12; i += 1) {
+    survivors.push(survivorWithSource({ id: 'cluster' + String(i).padStart(2, '0'), confidence: 'High', corroboration: i % 2 === 0 ? 3 : 1 }));
+  }
+
+  const withEvidence = writeCorpusWithEvidence({ run0: survivors });
+  // The no-evidence corpus: same survivors.json, NO claims/excerpts dirs (the join returns evidence:[]).
+  const noEvidence = fs.mkdtempSync(path.join(os.tmpdir(), 'lz-harvest-noev-corpus-'));
+  fs.mkdirSync(path.join(noEvidence, 'run0'), { recursive: true });
+  fs.writeFileSync(path.join(noEvidence, 'run0', 'survivors.json'), JSON.stringify(survivors, null, 2) + '\n', 'utf8');
+
+  try {
+    resetEvidenceJoinCache();
+    const a = harvest({ corpusDir: withEvidence, nCtrlTarget: 4, nTrapTarget: 3 });
+    resetEvidenceJoinCache();
+    const b = harvest({ corpusDir: noEvidence, nCtrlTarget: 4, nTrapTarget: 3 });
+
+    // Counts byte-identical.
+    assert.equal(a.nCtrl, b.nCtrl, 'nCtrl is unchanged by the additive evidence join');
+    assert.equal(a.nTrap, b.nTrap, 'nTrap is unchanged by the additive evidence join');
+
+    // Member uids byte-identical (same selection / stratification / disjointness).
+    assert.deepEqual(a.overRefusalControls.map((r) => r.uid), b.overRefusalControls.map((r) => r.uid), 'the over-refusal arm membership is unchanged');
+    assert.deepEqual(a.denseTrapMonitor.map((r) => r.uid), b.denseTrapMonitor.map((r) => r.uid), 'the dense-trap arm membership is unchanged');
+
+    // The two-arms-never-pooled discipline is intact (no combined-N field) in BOTH.
+    assert.ok(!('n' in a) && !('nPooled' in a) && !('nTotal' in a), 'no combined-N field with the evidence join');
+
+    // The WITH-evidence members carry text; the NO-evidence members carry evidence:[] (additive, never dropped).
+    assert.ok(a.overRefusalControls.every((r) => Array.isArray(r.evidence) && r.evidence.length >= 1), 'WITH evidence: members carry recovered text');
+    assert.ok(b.overRefusalControls.every((r) => Array.isArray(r.evidence) && r.evidence.length === 0), 'NO evidence: members carry evidence:[] (never dropped -- counts stay identical)');
+  } finally {
+    fs.rmSync(withEvidence, { recursive: true, force: true });
+    fs.rmSync(noEvidence, { recursive: true, force: true });
+  }
 });

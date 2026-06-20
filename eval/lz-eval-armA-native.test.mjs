@@ -46,6 +46,8 @@ import {
   harvestRefutedGoldCandidates,
   adjudicateNativeRefutedGold,
   assembleArmA,
+  joinClusterEvidence,
+  resetEvidenceJoinCache,
   ARM_A_EXPECTED_ENTAILMENT,
 } from './lz-eval-armA-native.mjs';
 
@@ -57,17 +59,86 @@ void HERE;
 
 // ---------------------------------------------------------------------------
 // Helper: write a stub run-dir corpus. `dirs` maps a run-dir basename -> an array of survivor records.
-// Each run dir gets a survivors.json. Returns the corpus dir path. The records use the FROZEN survivor
-// shape ({ id, claim, sources, corroboration_lower_bound, quote_fidelity, confidence, escalate }) PLUS the
+// Each run dir gets a survivors.json PLUS a claims/ dir + an excerpts/ dir SYNTHESIZED from the survivors so
+// the evidence-text JOIN (cluster -> claims -> excerpts) has real worker quotes + excerpt passages to
+// recover (the BLOCKING-BUG fix's contract: each candidate's evidence is the stored TEXT, never a URL).
+// Returns the corpus dir path. The records use the FROZEN survivor shape
+// ({ id, claim, sources, corroboration_lower_bound, quote_fidelity, confidence, escalate }) PLUS the
 // optional source_doc/cluster field the source-doc-within-run cluster key reads.
+//
+// The JOIN builds, per run dir, ONE worker file (w-extract-1.json) whose `claims[]` carry one entry per
+// survivor: { id, text: <survivor.claim>, quote: <survivor.__quote>, excerpt_id: <survivor.__excerptId> }
+// with `source` set to the survivor's FIRST source. Each referenced excerpt id gets an excerpts/<id>.txt
+// passage. A survivor flagged `__noEvidence:true` is OMITTED from the worker file -- its cluster has no
+// recoverable evidence text and MUST be dropped by the harvest.
 // ---------------------------------------------------------------------------
 function writeCorpus(dirs) {
+  resetEvidenceJoinCache();
   const corpus = fs.mkdtempSync(path.join(os.tmpdir(), 'lz-armA-corpus-'));
 
   for (const [name, survivors] of Object.entries(dirs)) {
     const runDir = path.join(corpus, name);
     fs.mkdirSync(runDir, { recursive: true });
-    fs.writeFileSync(path.join(runDir, 'survivors.json'), JSON.stringify(survivors, null, 2) + '\n', 'utf8');
+    fs.mkdirSync(path.join(runDir, 'claims'), { recursive: true });
+    fs.mkdirSync(path.join(runDir, 'excerpts'), { recursive: true });
+
+    // The on-disk survivors.json carries ONLY the frozen survivor fields (strip the test-only __* hints).
+    const frozenSurvivors = survivors.map((s) => {
+      const out = {};
+
+      for (const k of Object.keys(s)) {
+        if (!k.startsWith('__')) {
+          out[k] = s[k];
+        }
+      }
+
+      return out;
+    });
+    fs.writeFileSync(path.join(runDir, 'survivors.json'), JSON.stringify(frozenSurvivors, null, 2) + '\n', 'utf8');
+
+    // Synthesize the worker claims + excerpts that JOIN to each survivor cluster (exact-text by default).
+    // Each worker claim's `source` must match a cluster's sources for the join to be eligible, so group the
+    // synthesized claims by the survivor's FIRST source and emit one worker file per source.
+    const excerptTexts = {};
+    const claimsBySource = {};
+    let excerptSeq = 0;
+
+    for (const s of survivors) {
+      if (s.__noEvidence === true) {
+        continue;
+      }
+
+      const source = (Array.isArray(s.sources) && s.sources[0]) || 's0';
+      const excerptId = s.__excerptId || ('e' + (excerptSeq += 1));
+      const quote = s.__quote || ('verbatim quote backing ' + s.id);
+      const workerText = s.__workerText || s.claim || ('claim ' + s.id);
+      (claimsBySource[source] = claimsBySource[source] || []).push({
+        id: 'wc-' + s.id,
+        text: workerText,
+        quote,
+        excerpt_id: excerptId,
+        load_bearing: true,
+      });
+
+      if (!(excerptId in excerptTexts)) {
+        excerptTexts[excerptId] = s.__excerptText || ('Excerpt passage for ' + s.id + ': ' + quote + ' (full context follows).');
+      }
+    }
+
+    let wIdx = 0;
+
+    for (const [source, claims] of Object.entries(claimsBySource)) {
+      wIdx += 1;
+      fs.writeFileSync(
+        path.join(runDir, 'claims', 'w-extract-' + wIdx + '.json'),
+        JSON.stringify({ worker: 'w-extract-' + wIdx, source, claims }, null, 2) + '\n',
+        'utf8',
+      );
+    }
+
+    for (const [excerptId, text] of Object.entries(excerptTexts)) {
+      fs.writeFileSync(path.join(runDir, 'excerpts', excerptId + '.txt'), text + '\n', 'utf8');
+    }
   }
 
   return corpus;
@@ -75,7 +146,10 @@ function writeCorpus(dirs) {
 
 // Build a survivor record with the frozen shape. `source_doc` is the source-doc/seed WITHIN a run (the
 // lock-(a) cluster key); claim text + sources are carried so the OOF stub + the guards have real content.
-function survivor({ id, confidence = 'High', corroboration = 1, claim, sources, source_doc }) {
+// The test-only __* hints (__quote, __excerptId, __excerptText, __workerText, __noEvidence) steer the
+// synthesized claims/excerpts the evidence-text JOIN recovers; they are STRIPPED from the on-disk
+// survivors.json by writeCorpus.
+function survivor({ id, confidence = 'High', corroboration = 1, claim, sources, source_doc, hints }) {
   const rec = {
     id,
     claim: claim || ('claim ' + id),
@@ -88,6 +162,12 @@ function survivor({ id, confidence = 'High', corroboration = 1, claim, sources, 
 
   if (source_doc !== undefined) {
     rec.source_doc = source_doc;
+  }
+
+  if (hints && typeof hints === 'object') {
+    for (const [k, v] of Object.entries(hints)) {
+      rec['__' + k] = v;
+    }
   }
 
   return rec;
@@ -221,9 +301,14 @@ test('harvestRefutedGoldCandidates uids are run-dir-qualified, ":"-free (the "::
   }
 });
 
-test('harvestRefutedGoldCandidates carries evidence/sources + corroboration_lower_bound + source_run_dir per candidate', () => {
+test('harvestRefutedGoldCandidates carries the JOINED evidence TEXT (NOT a URL) + corroboration_lower_bound + source_run_dir per candidate', () => {
   const corpus = writeCorpus({
-    run0: [survivor({ id: 'c0', confidence: 'Contested', corroboration: 3, claim: 'alpha overtook gamma', sources: ['gamma led the field', 'beta trailed'] })],
+    run0: [survivor({
+      id: 'c0', confidence: 'Contested', corroboration: 3,
+      claim: 'alpha overtook gamma',
+      sources: ['https://example.org/alpha', 'https://example.org/beta'],
+      hints: { quote: 'alpha overtook gamma in the final lap', excerptText: 'Race report: alpha overtook gamma in the final lap, with beta trailing.' },
+    })],
   });
 
   try {
@@ -231,9 +316,179 @@ test('harvestRefutedGoldCandidates carries evidence/sources + corroboration_lowe
     const cand = res.candidates[0];
 
     assert.equal(cand.claim, 'alpha overtook gamma', 'the candidate carries the claim text');
-    assert.ok(Array.isArray(cand.evidence) || typeof cand.evidence === 'string', 'the candidate carries evidence/sources');
+    assert.ok(Array.isArray(cand.evidence), 'the candidate carries an evidence array of { sentence } objects');
+    assert.ok(cand.evidence.every((e) => e && typeof e.sentence === 'string' && e.sentence.length > 0), 'every evidence item is a non-empty { sentence: <text> }');
+
+    // BLOCKING-BUG fix: the evidence is the stored TEXT (the worker quote + the excerpt passage), NEVER a URL.
+    const joined = JSON.stringify(cand.evidence);
+    assert.ok(!/https?:\/\//.test(joined), 'the evidence is the stored TEXT, NEVER a bare URL (the bug)');
+    assert.ok(cand.evidence.some((e) => e.sentence.includes('alpha overtook gamma in the final lap')), 'the matched verbatim quote text is present in the evidence');
+
     assert.equal(cand.corroboration_lower_bound, 3, 'the candidate carries corroboration_lower_bound');
     assert.equal(cand.source_run_dir, 'run0', 'the candidate carries the source_run_dir');
+  } finally {
+    fs.rmSync(corpus, { recursive: true, force: true });
+  }
+});
+
+// ===========================================================================
+// (1b) THE EVIDENCE-TEXT JOIN (BLOCKING-BUG fix): each harvested member's evidence is the real stored
+// excerpt/quote TEXT (joined cluster -> claims -> excerpts), NEVER a bare URL; a cluster with no recoverable
+// evidence text is DROPPED + counted in droppedNoEvidence. Both the EXACT-match and the OVERLAP-match paths
+// are covered, plus joinClusterEvidence directly.
+// ===========================================================================
+
+test('joinClusterEvidence returns the worker QUOTE + excerpt TEXT (NOT a URL) via the EXACT-match path', () => {
+  const corpus = writeCorpus({
+    run0: [survivor({
+      id: 'c0', confidence: 'Contested', corroboration: 2,
+      claim: 'beta led for three quarters of the race',
+      sources: ['https://example.org/race-report'],
+      hints: { quote: 'beta led for three quarters of the race', excerptText: 'Lap log: beta led for three quarters of the race before fading.' },
+    })],
+  });
+
+  try {
+    resetEvidenceJoinCache();
+    const runDir = path.join(corpus, 'run0');
+    const cluster = { id: 'c0', claim: 'beta led for three quarters of the race', sources: ['https://example.org/race-report'] };
+    const joined = joinClusterEvidence(runDir, cluster);
+
+    assert.equal(joined.matched, true, 'the exact-text worker claim is matched');
+    assert.equal(joined.reason, 'exact', 'the match path is EXACT (the cluster claim is a verbatim worker text)');
+    assert.ok(joined.evidence.length >= 1, 'at least one evidence sentence is recovered');
+    const text = JSON.stringify(joined.evidence);
+    assert.ok(!/https?:\/\//.test(text), 'the recovered evidence is TEXT, NEVER a URL');
+    assert.ok(joined.evidence.some((e) => e.sentence.includes('beta led for three quarters of the race')), 'the verbatim quote is present');
+    assert.ok(joined.evidence.some((e) => e.sentence.includes('before fading')), 'the excerpt passage text is present (joined from excerpts/<id>.txt)');
+  } finally {
+    fs.rmSync(corpus, { recursive: true, force: true });
+  }
+});
+
+test('joinClusterEvidence recovers evidence via the OVERLAP-match path when the cluster claim is a paraphrase (no exact worker text)', () => {
+  // The cluster claim is a PARAPHRASE of the worker claim text (high token overlap, NOT byte-exact) so the
+  // exact path misses and the Jaccard-overlap fallback fires. The recovered evidence is still the worker
+  // quote + excerpt TEXT, never a URL.
+  const corpus = writeCorpus({
+    run0: [survivor({
+      id: 'c0', confidence: 'Low', corroboration: 2,
+      claim: 'the annual regional output doubled across the full survey window period',
+      sources: ['https://example.org/survey'],
+      hints: {
+        workerText: 'the annual regional output doubled across the survey window period reportedly',
+        quote: 'regional output doubled across the survey window',
+        excerptText: 'Survey: the annual regional output doubled across the survey window period reportedly, per the audit.',
+      },
+    })],
+  });
+
+  try {
+    resetEvidenceJoinCache();
+    const runDir = path.join(corpus, 'run0');
+    const cluster = { id: 'c0', claim: 'the annual regional output doubled across the full survey window period', sources: ['https://example.org/survey'] };
+    const joined = joinClusterEvidence(runDir, cluster);
+
+    assert.equal(joined.matched, true, 'the paraphrased cluster claim matches the worker text via overlap');
+    assert.equal(joined.reason, 'overlap', 'the match path is OVERLAP (Jaccard fallback, no exact byte match)');
+    const text = JSON.stringify(joined.evidence);
+    assert.ok(!/https?:\/\//.test(text), 'the overlap-recovered evidence is TEXT, NEVER a URL');
+    assert.ok(joined.evidence.some((e) => e.sentence.includes('regional output doubled across the survey window')), 'the matched worker quote is present');
+  } finally {
+    fs.rmSync(corpus, { recursive: true, force: true });
+  }
+});
+
+test('joinClusterEvidence FLAGS matched:false when no worker claim matches the cluster (no recoverable evidence text)', () => {
+  // A cluster whose claim shares no source / no overlapping worker text -> the join recovers nothing and
+  // flags matched:false with a reason. The caller (harvest) must DROP it, never emit a URL.
+  const corpus = writeCorpus({
+    run0: [survivor({
+      id: 'present', confidence: 'High', corroboration: 2,
+      claim: 'an entirely unrelated supported statement about chemistry',
+      sources: ['https://example.org/chem'],
+      hints: { quote: 'chemistry quote', excerptText: 'chemistry passage' },
+    })],
+  });
+
+  try {
+    resetEvidenceJoinCache();
+    const runDir = path.join(corpus, 'run0');
+    // The cluster references a DIFFERENT source with NO matching worker claim.
+    const cluster = { id: 'orphan', claim: 'a claim with no backing worker evidence whatsoever', sources: ['https://example.org/nonexistent'] };
+    const joined = joinClusterEvidence(runDir, cluster);
+
+    assert.equal(joined.matched, false, 'no matching worker claim -> matched:false');
+    assert.equal(joined.evidence.length, 0, 'no evidence text is emitted (never a URL, never an empty packet passed downstream)');
+    assert.ok(typeof joined.reason === 'string' && joined.reason.length > 0, 'a reason is surfaced for the maintainer');
+  } finally {
+    fs.rmSync(corpus, { recursive: true, force: true });
+  }
+});
+
+test('harvestRefutedGoldCandidates DROPS a cluster with no recoverable evidence text and counts it in droppedNoEvidence (never emits a URL)', () => {
+  // Two refuted-gold clusters: c0 has recoverable evidence (joined); c1 is flagged __noEvidence (no worker
+  // claim / excerpt synthesized) -> it MUST be dropped + counted, never emitted carrying a URL.
+  const corpus = writeCorpus({
+    run0: [
+      survivor({ id: 'c0', confidence: 'Contested', corroboration: 2, claim: 'gamma posted the fastest split', sources: ['https://example.org/splits'], hints: { quote: 'gamma posted the fastest split', excerptText: 'Timing: gamma posted the fastest split overall.' } }),
+      survivor({ id: 'c1', confidence: 'Unsupported', corroboration: 1, claim: 'delta withdrew before the start', sources: ['https://example.org/withdrawals'], hints: { noEvidence: true } }),
+    ],
+  });
+
+  try {
+    const res = harvestRefutedGoldCandidates({ corpusDir: corpus });
+
+    assert.equal(res.nCandidates, 1, 'only the cluster with recoverable evidence text is a candidate');
+    assert.equal(res.droppedNoEvidence, 1, 'the no-evidence cluster is counted in droppedNoEvidence');
+    assert.equal(res.dropped.length, 1, 'the dropped cluster is surfaced for the maintainer');
+    assert.ok(res.dropped[0].uid.endsWith('::c1'), 'the dropped uid is the no-evidence cluster');
+    assert.ok(typeof res.dropped[0].reason === 'string' && res.dropped[0].reason.length > 0, 'the drop carries a reason');
+
+    // The surviving candidate carries TEXT, never a URL.
+    const cand = res.candidates[0];
+    assert.ok(cand.uid.endsWith('::c0'), 'the kept candidate is the one with evidence');
+    assert.ok(!/https?:\/\//.test(JSON.stringify(cand.evidence)), 'the kept candidate evidence is TEXT, never a URL');
+  } finally {
+    fs.rmSync(corpus, { recursive: true, force: true });
+  }
+});
+
+test('joinClusterEvidence caps an oversized excerpt passage + strips non-ASCII bytes (ASCII-safe, length-capped)', () => {
+  // An excerpt longer than the documented cap + carrying non-ASCII bytes. The recovered passage must be
+  // ASCII-only and not exceed the cap; the verbatim quote (the load-bearing snippet) is emitted IN FULL.
+  const bigPassage = 'PASSAGE-START ' + 'x'.repeat(5000) + ' PASSAGE-END';
+  // Build the accented string from char codes so THIS test source stays strictly ASCII (CLAUDE.md). The
+  // codes 0xe9 (e-acute) / 0xef (i-diaeresis) are the non-ASCII bytes the join must STRIP from the quote.
+  const accent = (cp) => String.fromCharCode(cp);
+  const nonAscii = 'caf' + accent(0xe9) + ' na' + accent(0xef) + 've r' + accent(0xe9) + 'sum' + accent(0xe9) + ' quote text'; // accented chars must be stripped
+  const corpus = writeCorpus({
+    run0: [survivor({
+      id: 'c0', confidence: 'Contested', corroboration: 2,
+      claim: 'the cap test claim sentence',
+      sources: ['https://example.org/cap'],
+      hints: { quote: nonAscii, excerptText: bigPassage },
+    })],
+  });
+
+  try {
+    resetEvidenceJoinCache();
+    const runDir = path.join(corpus, 'run0');
+    const cluster = { id: 'c0', claim: 'the cap test claim sentence', sources: ['https://example.org/cap'] };
+    const joined = joinClusterEvidence(runDir, cluster);
+
+    assert.equal(joined.matched, true, 'the cap-test cluster is matched');
+
+    for (const e of joined.evidence) {
+      for (let i = 0; i < e.sentence.length; i += 1) {
+        assert.ok(e.sentence.charCodeAt(i) <= 0x7f, 'every evidence char is ASCII (<= 0x7f)');
+      }
+
+      assert.ok(e.sentence.length <= 1200, 'no evidence sentence exceeds the documented 1200-char cap (got ' + e.sentence.length + ')');
+    }
+
+    // The quote is recovered with the non-ASCII bytes STRIPPED (e.g. "cafe naive resume quote text").
+    assert.ok(joined.evidence.some((e) => e.sentence.includes('quote text')), 'the (ASCII-stripped) quote text is present');
   } finally {
     fs.rmSync(corpus, { recursive: true, force: true });
   }

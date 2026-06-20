@@ -73,6 +73,19 @@ import {
   isSupportedClaim,
 } from './lz-eval-harvest.mjs';
 
+// (1b) The shared evidence-text JOIN (cluster -> claims -> excerpts). Extracted into its own module so BOTH
+//      arm A (here) and arm B (lz-eval-harvest.mjs) import it WITHOUT a cycle (arm A already imports the
+//      run-dir reader from arm B). joinClusterEvidence returns the REAL stored TEXT as [{ sentence }], NEVER
+//      a URL; resetEvidenceJoinCache clears the per-runDir claims cache for tests reusing a run-dir path.
+import {
+  joinClusterEvidence,
+  resetEvidenceJoinCache,
+} from './lz-eval-evidence-join.mjs';
+
+// Re-export the join surface from arm A so existing importers (the validation fixture) keep working after the
+// extraction -- the join's authority is shared, but arm A remains the documented entry point for the harvest.
+export { joinClusterEvidence, resetEvidenceJoinCache };
+
 // (2) The OUT-OF-FAMILY batched gold-blind probe adapter (composed UNCHANGED -- one element per OOF model).
 import { makeBatchedOofProbe } from './lz-eval-oof-batch.mjs';
 
@@ -155,39 +168,26 @@ function clusterKeyWithinRun(runBasename, rec) {
 }
 
 // ---------------------------------------------------------------------------
-// The evidence/sources of a refuted-gold candidate. The frozen survivor shape carries `sources` (an array
-// of source strings / objects); some records carry `evidence`. Returns the array as-is (the renderer +
-// gate (a) accept a string OR an array of strings / { sentence } objects).
-// ---------------------------------------------------------------------------
-function candidateEvidence(rec) {
-  if (Array.isArray(rec.evidence)) {
-    return rec.evidence;
-  }
-
-  if (typeof rec.evidence === 'string') {
-    return rec.evidence;
-  }
-
-  if (Array.isArray(rec.sources)) {
-    return rec.sources;
-  }
-
-  return [];
-}
-
-// ---------------------------------------------------------------------------
 // harvestRefutedGoldCandidates({ corpusDir, runDirs }): read the run dirs (via the FROZEN readRunDirClaims /
 // listRunDirs) and return the skill's OWN refuted-gold CANDIDATES = the Contested + Unsupported + Low claims
 // (the INVERSE of isSupportedClaim). Each candidate carries:
 //   - uid: run-dir-qualified, ':'-free with the '::' separator (`<run-basename>::<claim-id>`);
 //   - claim: the claim text;
-//   - evidence: the survivor's evidence/sources (array or string);
+//   - evidence: the REAL stored evidence TEXT, joined cluster -> claims -> excerpts (the matched worker
+//     quote(s) + their excerpt passage(s) as [{ sentence: <text> }]) -- NEVER a bare URL (the BLOCKING-BUG
+//     fix; joinClusterEvidence);
 //   - corroboration_lower_bound: the corroboration count (for the difficulty proxy);
 //   - source_run_dir: the run basename;
 //   - source_cluster: the WITHIN-RUN source-doc cluster key (lock a);
 //   - confidence: the source bucket (Contested/Unsupported/Low -- NEVER the gold).
+// A candidate whose evidence TEXT cannot be recovered (no matching worker claim / no readable quote or
+// excerpt) is DROPPED -- never emitted with a URL or an empty packet -- and counted in droppedNoEvidence.
 // PURE function of the on-disk corpus: no network, no spend, no LZ_SPEND code path. A malformed run dir
 // fails closed (readRunDirClaims). The OOF adjudication (the gold) is a SEPARATE step.
+//
+// Returns { candidates, nCandidates, nRunDirs, droppedNoEvidence, dropped } where droppedNoEvidence is the
+// count of refuted-gold clusters dropped for lacking recoverable evidence text, and `dropped` surfaces each
+// dropped cluster's { uid, reason } for the maintainer.
 // ---------------------------------------------------------------------------
 export function harvestRefutedGoldCandidates({ corpusDir, runDirs } = {}) {
   let dirs;
@@ -201,6 +201,7 @@ export function harvestRefutedGoldCandidates({ corpusDir, runDirs } = {}) {
   }
 
   const candidates = [];
+  const dropped = [];
 
   for (const dir of dirs) {
     const basename = path.basename(dir);
@@ -216,13 +217,23 @@ export function harvestRefutedGoldCandidates({ corpusDir, runDirs } = {}) {
       safeId(rec.id, dir);
       const uid = basename + '::' + rec.id;
 
+      // THE EVIDENCE-TEXT JOIN (BLOCKING-BUG fix): reconstruct the REAL stored evidence TEXT (matched worker
+      // quote(s) + excerpt passage(s)) from cluster -> claims -> excerpts. A cluster with no recoverable
+      // text is DROPPED -- never emitted with a URL or an empty packet.
+      const joined = joinClusterEvidence(dir, rec);
+
+      if (!joined.matched || joined.evidence.length === 0) {
+        dropped.push(Object.freeze({ uid, reason: joined.reason }));
+        continue;
+      }
+
       candidates.push(
         Object.freeze({
           uid,
           claim_id: rec.id,
           source_id: rec.id,
           claim: rec.claim,
-          evidence: candidateEvidence(rec),
+          evidence: joined.evidence,
           corroboration_lower_bound: Number.isInteger(rec.corroboration_lower_bound) ? rec.corroboration_lower_bound : 0,
           source_run_dir: basename,
           source_cluster: clusterKeyWithinRun(basename, rec),
@@ -236,6 +247,8 @@ export function harvestRefutedGoldCandidates({ corpusDir, runDirs } = {}) {
     candidates: Object.freeze(candidates),
     nCandidates: candidates.length,
     nRunDirs: dirs.length,
+    droppedNoEvidence: dropped.length,
+    dropped: Object.freeze(dropped),
   });
 }
 
@@ -552,7 +565,8 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.a
       const res = harvestRefutedGoldCandidates({ corpusDir });
       const clusters = new Set(res.candidates.map((c) => c.source_cluster));
       console.log(
-        'armA-native: nCandidates=' + res.nCandidates + ' (refuted-gold buckets Contested/Unsupported/Low) over ' +
+        'armA-native: nCandidates=' + res.nCandidates + ' (refuted-gold buckets Contested/Unsupported/Low, evidence-text joined) ' +
+          'droppedNoEvidence=' + res.droppedNoEvidence + ' over ' +
           res.nRunDirs + ' run dirs, ' + clusters.size + ' within-run source-doc clusters -- OOF all-agree RETAIN + gates (a)/(b) are the human-gated spend',
       );
       process.exit(0);
