@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v2.1.0
 milestone_name: lz-deep-research skill
 status: executing
-stopped_at: Phase 21 context gathered
-last_updated: "2026-06-21T22:52:36.161Z"
+stopped_at: Completed 21-02-PLAN.md (open-book retrieval-log builder)
+last_updated: "2026-06-21T23:07:28.481Z"
 last_activity: 2026-06-21
 progress:
   total_phases: 9
   completed_phases: 7
   total_plans: 33
-  completed_plans: 33
+  completed_plans: 34
   percent: 78
 ---
 
@@ -66,7 +66,7 @@ Items deferred across milestones (v1.0.1 close 2026-06-11; v2.0.0 additions tagg
 **RE-PLAN-8 READY (2026-06-19; supersedes the RE-PLAN-7 status below at the design layer):** A 4-round cross-family board (Opus + Copilot GPT-5.5 + Gemini 3.1 Pro Preview; de-identified, fact-only) UNANIMOUSLY converged on a BULK OOF gold-screen + a NON-GATING cheaper-model pilot + the k=1-stability-certificate lever. DECISION-8 + the re-authored 19-04-PLAN.md committed (2c5a418); gsd-plan-checker PASS-WITH-WARNINGS (0 blockers, 5 warnings folded). 19-04 is now 7 tasks: 1-3 CARRIED byte-identical (c84e6d0/dca8d43/8c97f01); 4-5 NEW no-spend build (batched OOF adapter + contamination gate + cheaper-model pilot + k=1 cert + ADDITIVE re-pre-registration) -- NOT yet built; 6 AMENDED T-spend-1 (AUTHORIZED Copilot spend, BLOCKED on 4-5); 7 UNCHANGED T-spend-2 (NOT authorized). No frozen-primitive change (bulk = unfrozen latitude); cheaper-as-decider amendment-only + NOT adopted. Pricing-grounded: batching captures ~85% of the savings (~310 vs ~2,140 credits/pass), cheaper-as-decider adds ~$2. ~103 Copilot AI Credits on the consult; NO eval spend. PAUSED via /gsd-pause-work (handoff: .continue-here.md + HANDOFF.json). NEXT: build the no-spend Tasks 4-5 -> re-prove the suite green -> T-spend-1. The RE-PLAN-7 position below is retained as historical context.
 
 Phase: 21 (live-web-open-book-over-refusal-gold-and-arm-b-re-run) — EXECUTING
-Plan: 2 of 5
+Plan: 3 of 5
 Status: Ready to execute
 Last activity: 2026-06-21
 
@@ -186,6 +186,7 @@ Advisor runtime-proven on Opus 4.8. Final phase: Phase 10 (documentation-hygiene
 | Phase 20 P02 | 24min | 3 tasks | 5 files |
 | Phase 20 P03 | ~11min | 2 tasks | 2 files |
 | Phase 21 P01 | 35min | 2 tasks | 4 files |
+| Phase 21 P02 | 40min | 1 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -233,6 +234,7 @@ Recent decisions affecting current work (v2.1.0):
 - [Phase ?]: 20-05 live-cert evidence join: harvested members carry real stored TEXT (worker quote + excerpt passage), never a bare URL; arm-A pool 97 (Contested 76, Low 21), droppedNoEvidence 0; arm-B counts byte-identical (additive); shared join module eval/lz-eval-evidence-join.mjs avoids an import cycle.
 - [Phase ?]: Phase 21-01: open-book rescore keys frozen votes by canonical trace.uid (matches confirmed_uids + gold), not the __-joined id field
 - [Phase ?]: Phase 21-01: composeVerdict emits SCOPED-sensitivity-only / DOES-NOT-WORK / VOID-on-power-RAISE via frozen decideScopedSensitivity; full WORKS never emitted (arm A void, D-11)
+- [Phase 21]: 21-02: percent-encode the confirmed_uid to a Windows-safe claims-file basename ('::' -> '%3A%3A'); safeId alone is insufficient (it accepts ':'); the RAW uid stays the openbook-evidence.json snapshot key
 
 ### Pending Todos
 
@@ -285,8 +287,8 @@ Recent decisions affecting current work (v2.1.0):
 
 Session resumed: 2026-06-18 -- /gsd-resume-work -> /gsd-execute-phase 19. Tasks 1-3 of RE-PLAN-3 19-04 EXECUTED + committed by a gsd-executor (opus, main tree): d9a9205 (assembler I3/I4/buried-auto-drop + re-pointed throw, EVAL-01), e25f7ef (3-part closed-book dispatch rework C1/I1/I2 + W-3, EVAL-02/T-19-19), a3f6029 (W-1 prose + ADDED pre-registration, EVAL-04/T-19-15), 5731305 (SUMMARY). 294 tests green (253 eval-tree + 41 plugin aggregator); anti-drift invariants hold (manifest URL_DATE_RULE == assembler RegExp; EVAL_THRESHOLDS byte-identical); frozen primitives byte-unchanged. Two authorized deviations: PART-1 pre-pass in sibling eval/lz-eval-voter-dispatch.prepass.mjs (Workflow body is import-sealed); aggregate.test.mjs updated in lockstep (Task-3 body authoritative). PAUSED at the Task-4 spend boundary: the Sonnet CLOSED-BOOK calibrator SPENDS the capped usage pool -> settle VOID vs PROCEED -> raise to user. RESUMED 2026-06-18 (new session, /gsd-resume-work): RE-PLAN-4 Tasks 1-3 review-cleared (see front-matter stopped_at for the RE-PLAN-4 detail: single evidence-absent stratum + gold-blind entailment probe; C-RP4-1 closed-book-mirroring fix ee45e9e). User AUTHORIZED the Task-4 calibrator spend. Routing to /gsd-execute-phase 19 to run the runbook in a clean context (no-spend step-1 green re-prove + pre-registration-unchanged FIRST, then the brokered Opus-generate -> gold-blind probe -> Sonnet-voter k>=5 spend), then PRESENT VOID vs PROCEED for sign-off (never auto-resolve). HANDOFF.json + .continue-here.md retained for the execute session. UPDATE 2026-06-18 (same session): step-1 no-spend re-prove green (294) + enumerate (62 evidence-absent seeds) + a transform-diverse generate+probe PILOT (8/8 retained in-family) ran -> the pilot validated the construct but moved likely-VOID to SATURATION and exposed the read is confounded; the user asked for a recommendation, then explicitly invited a board. A max-quality cross-family board (3 blind Opus lenses via Workflow wf_851775f1-aff + Copilot GPT-5.5 + Gemini-3.1-pro-preview, eval/.cache/board3/, ~21 AI Credits) found TWO decisive validity findings (no positive control -> confounded with an always-refute prior; in-family probe too lenient -- pilot seed 75) + UNANIMOUS read mechanics (full N, k=9 diverse seats, CP(0,N) pooled gate). User chose RE-PLAN-5 via gsd-planner. gsd-planner re-authored 19-04 to RE-PLAN-5 (decision record 19-04-REPLAN-DECISION-5.md); gsd-plan-checker PASS-WITH-WARNINGS (B-1 EVAL-01-recipe-vs-control-rows + W-1/W-2/W-3, ALL FOLDED by a planner refinement pass). STATE + .continue-here.md + HANDOFF.json updated to RE-PLAN-5 ready-to-execute + committed. PAUSED before the RE-PLAN-5 build+spend per user; /gsd-resume-work to set up the fresh /gsd-execute-phase 19. RESUMED 2026-06-18 (this session, /gsd-resume-work): full context restored from STATE + HANDOFF.json + .continue-here.md (no divergence -- only .claude/settings.json modified, pre-existing/unrelated, not bundled). User chose the SCOPED path: build RE-PLAN-5 Tasks 1-3 (NO spend) via /gsd-execute-phase 19, re-prove the suite green, then HALT at the Task-4 spend boundary for a separately-authorized go (Task 4 spends BOTH the capped Claude pool AND Copilot AI Credits -- not yet authorized).
 
-Last session: 2026-06-21T22:51:58.671Z
-Stopped at: Phase 21 context gathered
+Last session: 2026-06-21T23:07:19.310Z
+Stopped at: Completed 21-02-PLAN.md (open-book retrieval-log builder)
 Resume file: None
 SCOPE EXPANDED (user directive 2026-06-17): the lz-review gate MUST run for ALL Phase-19 plans/waves implemented, not just the eval-manifest source. The manifest was eval-import-coupling only, so it missed plugin-tree + test/contract deliverables. Added groups beyond A/B: Group C (19-02 SHIPPED worker agents research-extract-worker.md + research-search-worker.md + the +80 round-trip test) -- RUNNING (runId wf_b9c66433-8a0); Group D (the 5 eval .test.mjs suites + eval/lz-eval-lock-rule.md contract) -- PENDING (pace after C; may split D1/D2 if packaging is too large). Pure-data fixtures excluded (exercised by the Group-D tests). Using the default lz-advisor:reviewer (code/contract lens).
 Group C COMPLETE: reviewed (511k, 4 rounds), its two design clusters RESOLVED by a 3-round advisor panel (Opus + Copilot GPT-5.5 + Gemini 3.1 Pro Preview, unanimous; ~73 AI Credits; transcripts in gitignored eval/.cache/panel/), and the FIXES APPLIED + committed: the two shipped worker prompts + the schema (percent-encoding filename not SHA-256; verbatim excerpt store; delete the consult-the-schema contradiction; one shared case-insensitive canonicalize recipe; extract sole sources/ writer; search writes candidates/<worker-id>.json non-authoritatively + >=3-query floor; maxTurns 6); a NEW dev-time SSOT gate eval/lz-eval-worker-contract.test.mjs (wired into ci.yml) + round-trip fixture/test fixes (percent-encoding, non-tautological, assert-via-aggregate, AGG-03 relabel). Deterministic re-review GREEN (SSOT 9/9 + shipped aggregator 41/41 + full eval suite). The deterministic Node NORMALIZER is DEFERRED to Phase 20 (supersedes the prompt recipe then).
