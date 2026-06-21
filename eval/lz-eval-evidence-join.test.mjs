@@ -252,25 +252,30 @@ test('cleaning STRIPS a leading markdown "# <title>" heading + its bibliographic
   }
 });
 
-test('QUOTE-PRIMARY DEDUP: when the excerpt CONTAINS the quote (a superset that only restates it), the lean quote stands alone (one sentence)', () => {
+test('FAITHFUL DEDUP (DISCRIMINATING -- PACKAGING-FIX2): a SUPERSET excerpt that CONTAINS the quote PLUS an EXTRA fact keeps BOTH (the over-trim would lose the extra fact)', () => {
   const { corpus, runDir } = writeRunDir({
     workers: [{
       source: 'https://example.org/doc',
-      // The verified quote IS the load-bearing fact. The excerpt is a SUPERSET that merely wraps the quote in
-      // vaguer prose -> re-emitting it would restate the quote's words -> deduped (token-reduction lever).
-      claims: [{ id: 'c1', text: 'output doubled', quote: 'output doubled in Q3 relative to the prior fiscal quarter', excerpt_id: 'e1' }],
+      // The verified quote is a SHORT fact. The excerpt is a SUPERSET: it CONTAINS the quote ("output doubled in
+      // Q3") AND carries an EXTRA load-bearing fact ("margins expanded 400 bps") the quote omits. The corpus-
+      // dominant case (~53%). The FAITHFUL dedup must KEEP the superset so the extra fact survives for the OOF
+      // entailment read; the OLD bidirectional over-trim dropped the superset to the lean quote alone, LOSING it.
+      claims: [{ id: 'c1', text: 'output doubled in Q3', quote: 'output doubled in Q3', excerpt_id: 'e1' }],
     }],
-    excerpts: { e1: 'Per the audited filing, output doubled in Q3 relative to the prior fiscal quarter.' },
+    excerpts: { e1: 'Per the audited filing, output doubled in Q3, and margins expanded 400 bps.' },
   });
 
   try {
-    const joined = joinClusterEvidence(runDir, { claim: 'output doubled', sources: ['https://example.org/doc'] });
+    const joined = joinClusterEvidence(runDir, { claim: 'output doubled in Q3', sources: ['https://example.org/doc'] });
 
     assert.equal(joined.matched, true, 'matched');
-    // QUOTE-PRIMARY: the verbatim quote is the FIRST (and here only) evidence sentence.
-    assert.equal(joined.evidence[0].sentence, 'output doubled in Q3 relative to the prior fiscal quarter', 'the verbatim quote LEADS (quote-primary)');
-    // BIDIRECTIONAL DEDUP: the excerpt CONTAINS the quote (superset) -> dropped; the lean quote stands alone.
-    assert.equal(joined.evidence.length, 1, 'the superset excerpt (which only restates the quote) is deduped -> exactly ONE evidence sentence');
+    // QUOTE-PRIMARY: the verbatim quote LEADS.
+    assert.equal(joined.evidence[0].sentence, 'output doubled in Q3', 'the verbatim quote LEADS (quote-primary)');
+    const text = joined.evidence.map((e) => e.sentence).join(' || ');
+    // DISCRIMINATING: BOTH the quote AND the superset's extra fact are recoverable. This FAILS on the old
+    // over-trim (which emitted ONLY the quote) and PASSES on the faithful fix.
+    assert.ok(/output doubled in Q3/.test(text), 'the quote fact is recoverable from the emitted evidence');
+    assert.ok(/margins expanded 400 bps/.test(text), 'the SUPERSET excerpt EXTRA fact is recoverable (the over-trim would lose it)');
   } finally {
     fs.rmSync(corpus, { recursive: true, force: true });
   }
@@ -507,6 +512,56 @@ test('OOF-PREP FAITHFUL: a factual sentence that mentions "status"/"category" mi
     assert.equal(joined.matched, true, 'matched');
     const text = joined.evidence.map((e) => e.sentence).join(' || ');
     assert.ok(/The catalyst status changed the category of the reaction under sustained load conditions/.test(text), 'a sentence mentioning "status"/"category" mid-sentence is kept verbatim (faithful)');
+  } finally {
+    fs.rmSync(corpus, { recursive: true, force: true });
+  }
+});
+
+test('cleaning is FAITHFUL (PACKAGING-FIX2): a content "#" token (C#, F#) is PRESERVED; only a markdown HEADING marker is stripped', () => {
+  const { corpus, runDir } = writeRunDir({
+    workers: [{
+      source: 'https://example.org/doc',
+      // The excerpt body carries language identifiers with a content '#': "C#", "F#". The strip MUST NOT eat the
+      // '#' glued to the letter (it is part of the token, not a heading marker). A heading marker is only a '#'
+      // run at a unit boundary (line start / after whitespace), which there is none of here.
+      claims: [{ id: 'c1', text: 'language adoption shares were surveyed', quote: 'language adoption shares were surveyed', excerpt_id: 'e1' }],
+    }],
+    excerpts: { e1: 'C/C++ dominates at 46.4%, followed by C# at 23.7% and F# trailing the pack.' },
+  });
+
+  try {
+    const joined = joinClusterEvidence(runDir, { claim: 'language adoption shares were surveyed', sources: ['https://example.org/doc'] });
+
+    assert.equal(joined.matched, true, 'matched');
+    const text = joined.evidence.map((e) => e.sentence).join(' || ');
+    // The content '#' tokens survive INTACT (the old residual `\s*#{1,6}\s+` strip corrupted "C#" -> "C").
+    assert.ok(/C#/.test(text), 'the content token "C#" is preserved (not stripped to "C")');
+    assert.ok(/F#/.test(text), 'the content token "F#" is preserved');
+    assert.ok(/C\/C\+\+ dominates at 46\.4%, followed by C# at 23\.7% and F#/.test(text), 'the full factual sentence survives intact');
+  } finally {
+    fs.rmSync(corpus, { recursive: true, force: true });
+  }
+});
+
+test('cleaning STRIPS a real markdown HEADING marker at a unit boundary (## Results) while preserving content "#"', () => {
+  const { corpus, runDir } = writeRunDir({
+    workers: [{
+      source: 'https://example.org/doc',
+      // The excerpt leads with a real heading marker "## Results" (a '#' run at the line/segment START) followed
+      // by a factual sentence that itself mentions "C#" mid-prose. The heading marker is dropped; "C#" survives.
+      claims: [{ id: 'c1', text: 'throughput doubled under load', quote: 'throughput doubled under load', excerpt_id: 'e1' }],
+    }],
+    excerpts: { e1: '## Results\n\nThe C# runtime throughput doubled under sustained load.' },
+  });
+
+  try {
+    const joined = joinClusterEvidence(runDir, { claim: 'throughput doubled under load', sources: ['https://example.org/doc'] });
+
+    assert.equal(joined.matched, true, 'matched');
+    const text = joined.evidence.map((e) => e.sentence).join(' || ');
+    assert.ok(/C# runtime throughput doubled under sustained load/.test(text), 'the factual sentence (with content "C#") survives');
+    assert.ok(!/##/.test(text), 'the markdown "##" heading marker at the unit boundary is stripped');
+    assert.ok(!/\bResults\b\s+The/.test(text) || /C# runtime/.test(text), 'the heading label does not bleed into the factual body');
   } finally {
     fs.rmSync(corpus, { recursive: true, force: true });
   }

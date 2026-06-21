@@ -367,7 +367,13 @@ function stripBibliographicMetadata(text) {
 
   // Any residual lone "#{1,6}" marker tokens (a heading whose label ran to end, or a heading with no following
   // prose) -- drop the bare marker token, keep any remaining label text (faithful: removes formatting only).
-  working = working.replace(/\s*#{1,6}\s+/g, ' ');
+  // FAITHFUL SCOPING (PACKAGING-FIX2): a markdown heading marker is ONLY ever a '#' run at a UNIT BOUNDARY (the
+  // start of the string, or after whitespace). A '#' that is GLUED to a preceding word char is CONTENT -- it is
+  // part of a token like "C#", "F#", "A#" -- and must be PRESERVED. The prior `\s*#{1,6}\s+` matched a glued
+  // "C# " (the `\s*` matched zero spaces), corrupting "C#" -> "C". Anchoring the run to "(?:^|\s)" leaves a
+  // content '#' intact while still stripping a real leading/embedded heading marker. The capture restores the
+  // single boundary space the run consumed so adjacent words stay separated.
+  working = working.replace(/(^|\s)#{1,6}\s+/g, '$1');
 
   // (c) Drop a bare-URL-only residue: if after metadata removal a token is a bare URL standing alone, remove
   //     it. Split on whitespace, drop tokens that are bare URLs ONLY when the WHOLE remaining text is URLs
@@ -567,15 +573,22 @@ export function joinClusterEvidence(runDir, cluster) {
     return Object.freeze({ evidence: Object.freeze([]), matched: false, reason: 'no-worker-claim-matched-cluster-claim' });
   }
 
-  // Collect evidence QUOTE-PRIMARY (Phase 20, Plan 20-05 OOF-PREP). For each matched worker claim:
+  // Collect evidence QUOTE-PRIMARY (Phase 20, Plan 20-05 OOF-PREP + PACKAGING-FIX2). For each matched worker
+  // claim:
   //   1. The VERBATIM quote (the load-bearing snippet the claim was extracted from, quote_fidelity: verified)
   //      is the FIRST, primary evidence -- ASCII-cleaned only (a worker quote is factual, not a bibliographic
   //      header; cleaning it would risk eating real content). It is the most relevant + token-lean support, so
-  //      it LEADS the evidence array.
+  //      it LEADS the evidence array (quote-primary ORDERING for relevance).
   //   2. The excerpt passage is SECONDARY context: read RAW, run through the FAITHFUL bibliographic + section-
-  //      heading cleaning pass, then capped at EXCERPT_CHAR_CAP. It is included ONLY if it adds substantive
-  //      content beyond the quote (DEDUP: dropped if the quote already contains it, or it contains the quote --
-  //      normalized case/whitespace containment -- so we never send both when one subsumes the other).
+  //      heading cleaning pass, then capped at EXCERPT_CHAR_CAP. It is included whenever it carries substantive
+  //      content the quote does NOT already FULLY contain.
+  // FAITHFUL DEDUP (PACKAGING-FIX2): the token savings come from the METADATA STRIP (above), NOT from dropping
+  // a superset excerpt's extra facts. The ONLY case in which the excerpt is dropped is total redundancy -- when
+  // the verified quote ALREADY contains the WHOLE cleaned excerpt (quote-contains-excerpt). When the cleaned
+  // excerpt is a SUPERSET of the quote (it restates the quote PLUS extra factual sentences -- the corpus-
+  // dominant case ~53%) OR is DISTINCT from the quote, the excerpt is kept in FULL as secondary context, so its
+  // extra facts (measured rates, named entities, scaling-law statements) survive for the OOF entailment read. A
+  // substantive sentence is NEVER dropped; only an excerpt wholly subsumed by the quote is.
   // SAFETY / FAITHFULNESS: the quote is emitted whenever it exists, so a candidate that HAD real evidence is
   // NEVER emptied by cleaning (droppedNoEvidence cannot increase vs the pre-clean join). When the quote is
   // absent (rare), the cleaned excerpt stands alone as the evidence.
@@ -613,27 +626,28 @@ export function joinClusterEvidence(runDir, cluster) {
       continue;
     }
 
-    // QUOTE-vs-EXCERPT DEDUP (case/whitespace-insensitive, BIDIRECTIONAL containment -- the OOF-PREP rule
-    // "include the excerpt's substantive body ONLY if it ADDS content beyond the quote; drop if the quote
-    // already contains it OR vice-versa"). The quote is the PRIMARY, verified, token-lean support and ALWAYS
-    // leads (emitted above). The excerpt is included as SECONDARY context ONLY when it adds content the quote
-    // does NOT already carry -- i.e. when NEITHER string contains the other. Drop the excerpt when EITHER
-    // direction of containment holds:
-    //   - quote CONTAINS the excerpt body (or identical) -> the excerpt is fully redundant; the lean quote
-    //     stands alone.
-    //   - excerpt CONTAINS the quote -> the excerpt is a SUPERSET that RESTATES the verified snippet wrapped in
-    //     vaguer surrounding prose. The QUOTE already carries the load-bearing, verified fact as the primary
-    //     sentence, so re-emitting the superset would only restate it (the redundancy that defeats token
-    //     reduction). Drop the superset excerpt -- the verified quote IS the substantive support.
-    // FAITHFUL: the load-bearing factual support is the verified quote, which is always kept; only a
-    // containment-REDUNDANT excerpt is dropped, never a DISTINCT substantive passage. droppedNoEvidence cannot
-    // increase: a candidate is dropped only when it has neither a quote nor any distinct substantive excerpt.
+    // QUOTE-vs-EXCERPT DEDUP (case/whitespace-insensitive, FAITHFUL -- PACKAGING-FIX2). The quote is the
+    // PRIMARY, verified, token-lean support and ALWAYS leads (emitted above). The excerpt is kept as SECONDARY
+    // context UNLESS it is TOTALLY redundant -- i.e. the verified quote ALREADY contains the WHOLE cleaned
+    // excerpt (quote-contains-excerpt). This is the ONLY drop direction:
+    //   - quote CONTAINS the excerpt body (or identical) -> the excerpt is fully subsumed; the lean quote
+    //     already carries every word of it -> drop the redundant excerpt.
+    //   - excerpt CONTAINS the quote (a SUPERSET) -> the excerpt restates the quote PLUS extra factual
+    //     sentences (the corpus-dominant case). Those extra facts are LOAD-BEARING for the OOF entailment read,
+    //     so the excerpt is KEPT IN FULL -- the verified quote leads (relevance), the superset follows
+    //     (faithfulness). The redundant overlap of the quote words is a small, acceptable token cost; dropping
+    //     the superset would LOSE the extra facts (the BLOCKER this fix repairs).
+    //   - NEITHER contains the other (DISTINCT) -> the excerpt is kept in full.
+    // FAITHFUL: a substantive sentence is NEVER dropped; only an excerpt WHOLLY subsumed by the quote is.
+    // droppedNoEvidence cannot increase: a candidate is dropped only when it has neither a quote nor any
+    // substantive excerpt text after cleaning. The token savings come from the METADATA STRIP above, NOT from
+    // discarding superset facts.
     const qKey = containmentKey(quoteText);
     const eKey = containmentKey(excerptText);
 
-    if (hasQuote && qKey.length > 0 && eKey.length > 0 && (qKey.includes(eKey) || eKey.includes(qKey))) {
-      // One contains the other -> the verified quote (primary) already carries the signal; drop the redundant
-      // excerpt. This is the TOKEN-REDUCTION lever for the common "quote is a snippet OF its excerpt" case.
+    if (hasQuote && qKey.length > 0 && eKey.length > 0 && qKey.includes(eKey)) {
+      // The verified quote ALREADY contains the WHOLE cleaned excerpt -> the excerpt adds nothing; drop it.
+      // (The reverse -- a superset excerpt that contains the quote -- is NOT dropped: its extra facts survive.)
       continue;
     }
 

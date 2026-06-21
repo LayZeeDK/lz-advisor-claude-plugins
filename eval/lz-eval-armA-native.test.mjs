@@ -338,15 +338,16 @@ test('harvestRefutedGoldCandidates carries the JOINED evidence TEXT (NOT a URL) 
 // are covered, plus joinClusterEvidence directly.
 // ===========================================================================
 
-test('joinClusterEvidence returns the worker QUOTE first + DISTINCT excerpt TEXT (NOT a URL) via the EXACT-match path', () => {
+test('joinClusterEvidence returns the worker QUOTE first + a SUPERSET excerpt that carries EXTRA facts (NOT a URL) via the EXACT-match path', () => {
   const corpus = writeCorpus({
     run0: [survivor({
       id: 'c0', confidence: 'Contested', corroboration: 2,
       claim: 'beta led for three quarters of the race',
       sources: ['https://example.org/race-report'],
-      // The verified quote is the load-bearing snippet; the excerpt carries DISTINCT context (neither contains
-      // the other) -> the excerpt is kept as secondary evidence under the quote-primary bidirectional dedup.
-      hints: { quote: 'beta led for three quarters of the race', excerptText: 'Lap log: the leader faded badly on the final lap.' },
+      // GENUINE SUPERSET GUARD (PACKAGING-FIX2, restoring the property the inverted fixture lost): the excerpt
+      // CONTAINS the verified quote PLUS an EXTRA factual clause ("before fading on the final lap"). The faithful
+      // dedup must KEEP the superset (its extra fact is load-bearing), NEVER drop it to the lean quote alone.
+      hints: { quote: 'beta led for three quarters of the race', excerptText: 'Lap log: beta led for three quarters of the race before fading on the final lap.' },
     })],
   });
 
@@ -363,7 +364,11 @@ test('joinClusterEvidence returns the worker QUOTE first + DISTINCT excerpt TEXT
     assert.ok(!/https?:\/\//.test(text), 'the recovered evidence is TEXT, NEVER a URL');
     // QUOTE-PRIMARY: the verbatim quote is the FIRST evidence sentence.
     assert.equal(joined.evidence[0].sentence, 'beta led for three quarters of the race', 'the verbatim quote LEADS (quote-primary)');
-    assert.ok(joined.evidence.some((e) => e.sentence.includes('the leader faded badly on the final lap')), 'the distinct excerpt passage text is present (joined from excerpts/<id>.txt)');
+    // DISCRIMINATING: the SUPERSET excerpt's EXTRA fact ("before fading") survives -- the faithful dedup keeps
+    // it. (Fails on the old over-trim, which dropped the superset to the lean quote alone.)
+    const joinedText = joined.evidence.map((e) => e.sentence).join(' || ');
+    assert.ok(/beta led for three quarters of the race/.test(joinedText), 'the quote text is present');
+    assert.ok(/before fading on the final lap/.test(joinedText), 'the SUPERSET excerpt EXTRA fact is preserved (the over-trim would lose it)');
   } finally {
     fs.rmSync(corpus, { recursive: true, force: true });
   }
