@@ -221,7 +221,7 @@ Plans:
   5. The frozen over-refusal CP gate (CP-upper of the over-refusal rate <= TAU_OR 0.15 over the open-book-confirmed denominator) yields a SCOPED sensitivity-only certificate, a clean DOES-NOT-WORK, or an honest VOID -> RAISE; full WORKS is NOT claimed (arm A is structurally void); Sonnet-default ships regardless; the Haiku-first flip stays deferred.
   6. Copilot AI Credits are minimized (batched OOF + tight evidence packaging + reuse-30 + a human-authorized 1-2 item pre-flight cost spike that HALTs + RAISEs if significantly over estimate); every script that runs or is used by an LLM task is code-reviewed AND covered by code-reviewed unit tests.
 **Plans**: 5 plans (4 waves)
-- [ ] 21-01-PLAN.md -- Deterministic certification core: openbook-lib (4-way->binary map, blocklist filter, kappa/Jaccard) + openbook-rescore (two-sided re-score + frozen CP gate); FILE-form tested (wave 1)
+- [x] 21-01-PLAN.md -- Deterministic certification core: openbook-lib (4-way->binary map, blocklist filter, kappa/Jaccard) + openbook-rescore (two-sided re-score + frozen CP gate); FILE-form tested (wave 1)
 - [ ] 21-02-PLAN.md -- Retrieval-log builder: read the .lz-research run dir, enforce the meta-source blocklist, freeze the evidence snapshot; FILE-form tested (wave 1)
 - [ ] 21-03-PLAN.md -- OOF gold driver (no-spend build): LZ_SPEND-gated, isCliEntry-guarded, two-field gold + RESIDUE routing; stub-injected FILE-form test (wave 2)
 - [ ] 21-04-PLAN.md -- Live-web open-book retrieval (session pool, zero Copilot) over the frozen 30 + freeze snapshot + pre-register lock-rule + independent adversarial review (wave 3, has GO/NO-GO checkpoint)
@@ -243,6 +243,6 @@ Phases execute in numeric order: 16 -> 17 -> 17.1 -> 18 -> 19 -> 20 -> 21
 | 18. Haiku research + voter + early eval | v2.1.0 | 5/5 | Complete    | 2026-06-16 |
 | 19. Search + extract workers | v2.1.0 | 3/5 | In Progress|  |
 | 20. Orchestrator + scale | v2.1.0 | 6/7 | In Progress|  |
-| 21. Over-refusal gold + arm-B re-run | v2.1.0 | 0/5 | Planned |  |
+| 21. Over-refusal gold + arm-B re-run | v2.1.0 | 1/5 | In Progress|  |
 
 v1.0 + v1.0.1 + v2.0.0 shipped (plugin 2.0.0). **Active milestone: v2.1.0 (lz-deep-research skill)** -- Phases 16-21 (Phase 21 added 2026-06-21), roadmap revised 2026-06-15 (gating eval moved EARLY to Phase 18; EVAL-05 added -- Haiku prompt-engineering research must precede authoring any Haiku agent; the search worker's model tier follows the Phase-18 outcome). Release/publication (REL-01..03) is handled during `/gsd-complete-milestone` after `/gsd-audit-milestone` passes, not as a build phase. See `.planning/MILESTONES.md` for shipped-milestone summaries and `milestones/` for full detail.
