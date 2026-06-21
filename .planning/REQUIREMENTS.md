@@ -60,6 +60,20 @@ Requirements for the v2.1.0 milestone. Each maps to exactly one roadmap phase.
 - [x] **INTEG-01**: The new skill is discoverable as `lz-advisor:lz-deep-research` (bare `/lz-deep-research`), de-shadowing the Claude Code built-in `/deep-research`.
 - [x] **INTEG-02**: `.lz-research/` is added to `.gitignore` as runtime scratch.
 
+### Open-book over-refusal gold (OBG) -- Phase 21 RAISE
+
+Derived 2026-06-21 (the ROADMAP Phase-21 "Requirements: TBD -- run /gsd-plan-phase 21 to derive"). The RAISE from the Plan 20-05 NOT-WORKS live-cert verdict: resolve the construct mismatch (a closed / training-knowledge gold vs an open-book live-web voter) by building a live-web OPEN-BOOK over-refusal gold and re-running arm B. Verdict ceiling = a SCOPED sensitivity-only certificate or a clean DOES-NOT-WORK (full WORKS is out of reach -- arm A / false-uphold is structurally void on-distribution). Sonnet-default ships regardless; the Haiku-first flip stays deferred.
+
+- [ ] **OBG-01**: A live-web OPEN-BOOK over-refusal gold is built whose evidence is gathered by an INDEPENDENT live-web search (the same class the voter runs) on the Claude session pool -- NOT from training knowledge, and NOT via Copilot web search (cost ruling).
+- [ ] **OBG-02**: Each gold item carries a two-field record -- a retrieval / groundedness field (logged canonical URLs + verbatim quoted spans + fetched_at) and a verdict / validity field (an AVeriTeC 4-way adjudication label mapped to the frozen binary).
+- [ ] **OBG-03**: Leakage is bounded -- a meta-source blocklist excludes the claim's own published fact-check / leaderboards / dataset pages; retrieval timestamps are pinned and the gold's evidence snapshot is frozen (snapshot / time-drift that cannot be closed is a named PROVISIONAL limit).
+- [ ] **OBG-04**: The gold is adjudicated by the FROZEN out-of-family OOF all-agree pair (gpt-5.5 + gemini-3.1-pro-preview, --effort high, gold-blind) judging over the logged evidence; OOF non-unanimity excludes the item from the binary denominator and routes it to the human (Guerdan rating-indeterminacy).
+- [ ] **OBG-05**: The over-refusal arm is RE-RUN by re-scoring the FROZEN Sonnet voter votes against the new open-book gold over the reused frozen 30 controls -- no new voter votes and no re-harvest; the re-adjudication is two-sided (it may confirm a refute as correct or surface a missed false-uphold).
+- [ ] **OBG-06**: The new open-book gold + lock rule (the re-confirmed N, the CP estimator, the two-sided guard, the snapshot) are PRE-REGISTERED and frozen BEFORE any re-scored vote; no optional stopping; the two arms are never pooled.
+- [ ] **OBG-07**: The frozen over-refusal CP gate is applied byte-identical (CP-upper of the over-refusal rate <= TAU_OR 0.15 over the open-book-confirmed denominator), yielding a SCOPED sensitivity-only certificate, a clean DOES-NOT-WORK, or an honest VOID -> RAISE; full WORKS is not claimed; Sonnet-default ships; the Haiku-first flip stays deferred.
+- [ ] **OBG-08**: Copilot AI Credits are minimized -- batched closed-book OOF judgment over tightly-packaged evidence + reuse-30 + a human-authorized 1-2 item pre-flight cost spike that HALTs + RAISEs if the per-item cost is significantly above the disclosed estimate.
+- [ ] **OBG-09**: Every script that runs or is used by an LLM task is code-reviewed AND covered by code-reviewed unit tests; the eval tree never ships (the one-directional eval -> runtime import boundary holds).
+
 ## Release Requirements (handled during `/gsd-complete-milestone`)
 
 Satisfied at milestone completion -- AFTER `/gsd-audit-milestone` passes -- so any audit findings can be resolved before publishing. These are NOT mapped to build phases; the roadmapper does not cover them.
@@ -99,7 +113,7 @@ Explicitly excluded. Documented to prevent scope creep and to record the anti-fe
 
 ## Traceability
 
-Which phase covers which requirement. Filled in during roadmap creation (2026-06-15) and revised the same day (gating eval moved early to Phase 18; EVAL-05 added). Every one of the 32 phased requirements maps to exactly one of Phases 16-20.
+Which phase covers which requirement. Filled in during roadmap creation (2026-06-15) and revised the same day (gating eval moved early to Phase 18; EVAL-05 added). The original 32 v2.1.0 phased requirements map to Phases 16-20; Phase 21 (the RAISE, added 2026-06-21) adds the 9-item OBG family, for 41 phased requirements total.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
@@ -135,18 +149,28 @@ Which phase covers which requirement. Filled in during roadmap creation (2026-06
 | COST-04 | Phase 20 | Pending |
 | INTEG-01 | Phase 20 | Complete |
 | INTEG-02 | Phase 20 | Complete |
+| OBG-01 | Phase 21 | Pending |
+| OBG-02 | Phase 21 | Pending |
+| OBG-03 | Phase 21 | Pending |
+| OBG-04 | Phase 21 | Pending |
+| OBG-05 | Phase 21 | Pending |
+| OBG-06 | Phase 21 | Pending |
+| OBG-07 | Phase 21 | Pending |
+| OBG-08 | Phase 21 | Pending |
+| OBG-09 | Phase 21 | Pending |
 
 Release requirements (REL-01..03) are handled during `/gsd-complete-milestone`, not mapped to build phases.
 
 **Coverage:**
-- v1 phased requirements: 32 total
-- Mapped to phases: 32 (100% -- no orphans, no duplicates)
+- v2.1.0 phased requirements: 41 total (32 original + 9 OBG / Phase 21 RAISE)
+- Mapped to phases: 41 (100% -- no orphans, no duplicates)
 - Unmapped: 0
 - Release requirements (completion-gated, not phased): 3
 
-**Per-phase counts:** Phase 16 = 5 (AGG-01/02/04/06, VERIF-04); Phase 17 = 2 (PIPE-07, VERIF-06); Phase 18 = 6 (VERIF-01/02/03, COST-02, EVAL-03/05); Phase 19 = 7 (PIPE-03/04/05, AGG-03, EVAL-01/02/04); Phase 20 = 12 (PIPE-01/02/06/08/09, VERIF-05, AGG-05, COST-01/03/04, INTEG-01/02). 5 + 2 + 6 + 7 + 12 = 32. (REVISED 2026-06-16: EVAL-01/02/04 re-mapped Phase 18 -> 19 -- the definitive gating eval relocated to the Phase-19 staged autonomous-search pilot after the standalone synthesized-overreach gate VOIDed via saturation; the Phase-18 eval machinery is built and reused.)
+**Per-phase counts:** Phase 16 = 5 (AGG-01/02/04/06, VERIF-04); Phase 17 = 2 (PIPE-07, VERIF-06); Phase 18 = 6 (VERIF-01/02/03, COST-02, EVAL-03/05); Phase 19 = 7 (PIPE-03/04/05, AGG-03, EVAL-01/02/04); Phase 20 = 12 (PIPE-01/02/06/08/09, VERIF-05, AGG-05, COST-01/03/04, INTEG-01/02); Phase 21 = 9 (OBG-01..09). 5 + 2 + 6 + 7 + 12 + 9 = 41. (REVISED 2026-06-16: EVAL-01/02/04 re-mapped Phase 18 -> 19 -- the definitive gating eval relocated to the Phase-19 staged autonomous-search pilot after the standalone synthesized-overreach gate VOIDed via saturation; the Phase-18 eval machinery is built and reused. AMENDED 2026-06-21: Phase 21 RAISE added; the 9-item OBG family derived from the goal + 21-CONTEXT.md.)
 
 ---
 *Requirements defined: 2026-06-15*
 *Last updated: 2026-06-15 -- traceability REVISED by roadmapper: gating eval moved EARLY (Phase 18, decoupled from the orchestrator), EVAL-05 (Haiku prompt-engineering research precedes any Haiku agent) added, EVAL-03 kill-path raised to the user. All 32 phased requirements mapped to Phases 16-20 (100% coverage). REL-01..03 left completion-gated.*
 *Updated 2026-06-16 -- Phase 18 COMPLETE (verified): VERIF-01/02/03, COST-02, EVAL-03, EVAL-05 met. EVAL-03 achieved via RAISE (the standalone synthesized-overreach gate VOIDed via saturation; owner decided to PURSUE Haiku-first via a staged autonomous-search pilot; Sonnet-default ships, Haiku OFF). EVAL-01/02/04 re-mapped to Phase 19 (the definitive eval relocated to the staged pilot). Count: Phase 18 6, Phase 19 7; 32 total unchanged.*
+*Updated 2026-06-21 -- Phase 21 RAISE: the 9-item OBG family (OBG-01..09) derived from the Phase-21 goal + 21-CONTEXT.md, filling the ROADMAP "Requirements: TBD -- run /gsd-plan-phase 21 to derive". Live-web open-book over-refusal gold + arm-B re-run; ceiling = SCOPED sensitivity-only or clean DOES-NOT-WORK. Phased total 32 -> 41. Sonnet-default ships regardless; Haiku-first flip deferred.*

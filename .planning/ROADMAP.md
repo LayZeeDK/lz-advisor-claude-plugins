@@ -212,10 +212,16 @@ Plans:
 ### Phase 21: Live-web open-book over-refusal gold and arm-B re-run
 **Goal**: Resolve the construct mismatch that VOIDed the over-refusal (sensitivity) certification arm, surfaced after many re-plans in Phases 19 and 20 (the 2026-06-21 Plan 20-05 live-cert verdict: NOT WORKS -> RAISE). The shared root of both certification arms is a construct mismatch -- a closed/knowledge gold (adjudicated from evidence + training knowledge, with NO live-web search) versus an open-book live-web voter. To validly resolve SENSITIVITY, build a live-web OPEN-BOOK over-refusal gold in which the adjudicators do the SAME live-web search the voter does (with per-item reasoning + bounded leakage), then re-run arm B (over-refusal) against that gold. Only then is a SCOPED sensitivity-only certificate (or a clean DOES-NOT-WORK) valid. Sonnet-default verify-voter ships regardless; the Haiku-first flip stays deferred.
 **Depends on**: Phases 19 and 20 (the re-plan/verdict outcomes -- the Plan 20-05 live-cert RAISE, the frozen eval primitives + EVAL_THRESHOLDS, and the two-arm split-source methodology)
-**Requirements**: TBD (run /gsd-plan-phase 21 to derive)
-**Success Criteria** (what must be TRUE): TBD (run /gsd-plan-phase 21 to derive)
-**Plans**: 0 plans
-- [ ] TBD (run /gsd-plan-phase 21 to break down)
+**Requirements**: OBG-01, OBG-02, OBG-03, OBG-04, OBG-05, OBG-06, OBG-07, OBG-08, OBG-09 (the Open-Book Gold family -- derived 2026-06-21 from the goal + 21-CONTEXT.md; see REQUIREMENTS.md)
+**Success Criteria** (what must be TRUE):
+  1. A live-web OPEN-BOOK over-refusal gold exists whose evidence was gathered by an INDEPENDENT live-web search on the Claude session pool (logged canonical URLs + verbatim quoted spans + fetched_at) -- NOT from training knowledge and NOT via Copilot web search (cost ruling).
+  2. Each gold item separates groundedness (retrieval) from validity (judgment), carries an AVeriTeC 4-way label mapped to the frozen binary, and honors the meta-source blocklist + a pinned/frozen evidence snapshot.
+  3. The FROZEN out-of-family OOF all-agree pair (gpt-5.5 + gemini-3.1-pro-preview, --effort high, gold-blind) adjudicates over the logged evidence; OOF-split / indeterminate items are excluded from the binary denominator and routed to the human (Guerdan).
+  4. The over-refusal arm is re-run by re-scoring the FROZEN Sonnet votes against the new open-book gold over the reused frozen 30 controls (two-sided; no new votes; no re-harvest), with the gold + lock rule pre-registered and frozen before any re-scored vote (the two arms never pooled).
+  5. The frozen over-refusal CP gate (CP-upper of the over-refusal rate <= TAU_OR 0.15 over the open-book-confirmed denominator) yields a SCOPED sensitivity-only certificate, a clean DOES-NOT-WORK, or an honest VOID -> RAISE; full WORKS is NOT claimed (arm A is structurally void); Sonnet-default ships regardless; the Haiku-first flip stays deferred.
+  6. Copilot AI Credits are minimized (batched OOF + tight evidence packaging + reuse-30 + a human-authorized 1-2 item pre-flight cost spike that HALTs + RAISEs if significantly over estimate); every script that runs or is used by an LLM task is code-reviewed AND covered by code-reviewed unit tests.
+**Plans**: TBD (derived during this /gsd-plan-phase 21 run)
+- [ ] TBD (planner breaks the OBG family into wave-ordered plans)
 
 ## Progress
 
