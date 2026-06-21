@@ -1,4 +1,94 @@
-# 20-05 LIVE-cert result -- Stage 0 (D-19 harvest feasibility): RAISE + external budget halt
+# 20-05 LIVE certified-WORKS result -- FINAL (the verify-voter certification outcome)
+
+**Date:** 2026-06-21 (supersedes the Stage-0 RAISE record below: after that halt, the budget reset, the
+harvest succeeded across 8 canonical run dirs, and the cert ran end-to-end to the verdict here).
+**Verdict:** NOT WORKS -> RAISE (settle-OR-raise, D-01). The Sonnet-default verify-voter SHIPS regardless;
+the Haiku-first flip stays DEFERRED (D-06). Neither error-rate arm validly certifies on-distribution.
+**Authority:** the pre-registered lock rule (`eval/lz-eval-live-lock-rule.md`), the board decision
+(`20-05-PROVE-DISPROVE-BOARD-DECISION.md`), the re-adjudication pre-registration
+(`20-05-REJUDICATION-PREREGISTRATION.md`), the research (`20-05-PROVE-DISPROVE-RESEARCH.md`). Frozen
+primitives consumed byte-identical; the two arms never pooled.
+
+## One-line outcome
+WORKS could be neither cleanly certified NOR cleanly refuted on the maintainer-curated production
+distribution: the FALSE-UPHOLD (specificity) arm is VOID-on-power, and the OVER-REFUSAL (sensitivity) arm is
+VOID-on-CONSTRUCT (the gold construct does not match the open-book live-web production construct). RAISE.
+
+## ESTIMAND B -- over-refusal (sensitivity): VOID-on-construct
+- Arm B harvested 40 SUPPORTED controls; 30 OOF-confirmed (closed-book excerpt-entailment), 10 oof-split.
+- The shipping Sonnet voter (OPEN-BOOK, live web -- the production construct) voted over the 30 controls:
+  4 `refuted` / 30 -> raw CP1s-upper = 0.2796 > TAU_OR 0.15 (a nominal over-refusal gate breach).
+- INSPECTION: all 4 refutes are the voter, via live-web disconfirming search, finding the claims overreach or
+  contradict the broader literature (transformer/cluster38: the claim says a scaling law "underestimates"
+  while the voter found the cited paper says "OVERestimates" -- the claim contradicts its own source;
+  crispr/cluster47: the claim conflates a gene with its erythroid-specific enhancer).
+- BOARD RULING (unanimous Q1): the controls' gold was built CLOSED-BOOK (does the excerpt entail the claim?),
+  but the voter runs OPEN-BOOK (is the claim true given the live-web literature?). DIFFERENT CONSTRUCTS; the
+  closed-book gold systematically mismeasures the voter, so 4/30 is confounded with CORRECT refutes of
+  overclaimed controls (control label-noise).
+- PRE-REGISTERED TWO-SIDED RE-ADJUDICATION (Bundle 2; `20-05-REJUDICATION-PREREGISTRATION.md`): the 4 disputed
+  + a seed-pinned blind sample of 6 agreed controls (10 shuffled, gold-blind + verdict-blind) were
+  re-adjudicated via the FROZEN OOF pair (gpt-5.5 + gemini-3.1-pro-preview, --effort high), asking the
+  open-book "is the claim ACCURATELY SUPPORTED -- not overclaimed/contradicted?" question; two-sided (an
+  agreed/upheld control judged NOT-SUPPORTED would CONVICT the voter as a false-uphold). RESULT: both OOF
+  models judged ALL 10 SUPPORTED -> the 4 stand as over-refusals (NOT gold errors); 0 false-upholds;
+  decontaminated CP1s-upper = 0.2796 at validN = 30. (2 OOF calls, 7.09 AI Credits; `rejudication-result.json`.)
+- WHY VOID-ON-CONSTRUCT (not a clean DOES-NOT-WORK): the re-adjudication OOF pair judged from EVIDENCE +
+  TRAINING KNOWLEDGE via the Copilot CLI -- it did NOT live-web-search, the construct the voter uses. By the
+  board's OWN unanimous Q1 principle, a non-live-web gold is STILL construct-mismatched for an open-book
+  live-web voter, so the OOF's "supported" cannot authoritatively override the voter's live-web "refuted"
+  (the voter found a specific web contradiction a knowledge-based judge would not surface). The re-adjudication
+  therefore did NOT achieve a construct-matched gold; it cannot validly establish that the voter over-refuses.
+  (Secondary: the OOF returned a constant SUPPORTED with no reasoning [JSON-only prompt], so per-item
+  discrimination on this set is unvalidated -- though the same pair discriminated 10/40 oof-split in the gold,
+  so it is not a blanket always-uphold adjudicator.)
+- CHARACTERIZATION: VOID-on-construct -- the measurement neither certifies nor refutes sensitivity; the raw
+  4/30 is reported transparently and is NOT laundered into a pass. The two-sided guard was operative (it could
+  have convicted; it found 0 false-upholds among the blind agreed controls).
+
+## ESTIMAND A -- false-uphold (specificity): VOID-on-power
+- Difficulty-matched dense-evidence false-uphold traps are structurally infeasible ON-DISTRIBUTION at N>=30
+  (the pipeline EXTRACTS each claim FROM its evidence, claim ~= evidence). The native refuted-gold re-test
+  (D-22) gave 10/98 retained (old evidence); the clean-evidence re-test (1/16) CONFIRMED VOID (~16 << the 36
+  floor). The OFFLINE Phase-19 MCC SCREEN-PASS over vetted EXTERNAL datasets is reported AS a NON-CERTIFYING,
+  OFF-DISTRIBUTION diagnostic -- NOT the specificity half of a two-arm result. CHARACTERIZATION: VOID-on-power.
+
+## The decisionMatrix verdict
+- WORKS requires BOTH gates on-distribution. Specificity VOID-on-power; sensitivity VOID-on-construct. WORKS is
+  NOT certified, and DOES-NOT-WORK is NOT established (neither arm is a valid refutation). Net: VOID -> RAISE.
+- The SHIPPABLE outcome never depended on this (D-01): the Sonnet-default verify-voter SHIPS regardless. The
+  Haiku-first flip is DEFERRED (D-06) -- a cheap-vs-strong McNemar + non-inferiority comparison is only
+  meaningful on a construct-matched over-refusal metric (the tier-flip artifact: a stronger open-book judge
+  correctly refutes contaminated controls and scores WORSE on a confounded metric, so a cheap "tie" is
+  spurious). The flip waits for the live-web gold below.
+
+## The DISTRIBUTION-SCOPE LIMIT (D-05; named, not faked)
+No production traffic; the verdict is on the MAINTAINER-CURATED distribution (arm B from the skill's own runs;
+arm A its own refuted-gold). A staged operational shadow/canary/Tier-1 is NOT literally applicable.
+
+## RAISE -- the construct-aligned next step (headline; future work, NOT this milestone)
+The root cause of BOTH arms is the construct mismatch (closed-book/knowledge gold vs open-book live-web voter).
+The construct-aligned path to validly resolve sensitivity (the board's A2 / research Target D), DEFERRED:
+1. Build an OPEN-BOOK over-refusal gold MATCHING the production construct -- the adjudicators perform the SAME
+   live-web search the voter does (not judge from training knowledge), with per-item reasoning so the gold's
+   discrimination is auditable and leakage is bounded (Target D: separate retrieval-reachability from judgment).
+2. Re-run the over-refusal arm against that construct-matched gold; only then is a SCOPED sensitivity-only
+   certificate (or a clean DOES-NOT-WORK) valid.
+3. The false-uphold arm remains structurally VOID on-distribution; an off-distribution external screen is the
+   only available specificity evidence (SCOPED, non-certifying).
+Sonnet-default ships throughout; the Haiku flip is gated on the above.
+
+## Spend (honest; verify exact on the Copilot dashboard)
+- arm-B OOF gold: 10 Copilot calls, ~79 AI Credits (per-call ~8; M-1 ANSI-strip fix landed mid-stream; 3/10
+  captured 13.8/4.51/5.45).
+- arm-B over-refusal voting: 30 Sonnet verify-voter votes (session pool, dedicated --plugin-dir sessions).
+- re-adjudication: 2 OOF calls, 7.09 AI Credits.
+- board: ~20.3 AI Credits (GPT-5.5 13.9 + Gemini 6.42); Opus lenses + research on the session pool.
+- TOTAL metered Copilot: ~106 AI Credits across 20-05.
+
+---
+
+# [HISTORICAL -- SUPERSEDED by the FINAL verdict above] 20-05 LIVE-cert result -- Stage 0 (D-19 harvest feasibility): RAISE + external budget halt
 
 **Status:** RAISE (settle-OR-raise, D-01). Stage 1 [HUMAN BLOCK] NOT entered; no scored vote cast; no
 Stage-2/3 spend. The live-cert WORKS certification did NOT proceed.

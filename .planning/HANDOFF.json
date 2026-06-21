@@ -5,7 +5,7 @@
   "phase_name": "orchestrator-skill-headless-scale-confirmation",
   "phase_dir": ".planning/phases/20-orchestrator-skill-headless-scale-confirmation",
   "plan": 5,
-  "task": "20-05 OPTION A SCOPED in progress: arm-A re-test -> VOID; arm-B over-refusal OOF GOLD done (30/40 confirmed at floor; 10 oof-split residue; ~79 credits actual ~3x est; M-1 ANSI-strip fixed). REMAINING = Stage-2 over-refusal voting (session-pool, ~30 Sonnet agents) -> CP vs TAU_OR -> SCOPED verdict + docs. Surfaced the spend overrun + the voting decision to the user",
+  "task": "20-05 LIVE CERT COMPLETE -> VERDICT: NOT WORKS -> RAISE (settle-OR-raise, D-01). Sonnet-default verify-voter SHIPS regardless; Haiku flip DEFERRED (D-06). Sensitivity (over-refusal) VOID-on-construct (the board-ratified pre-registered TWO-SIDED re-adjudication ran [7.09 credits]: both OOF judged the 4 disputed + 6 blind agreed SUPPORTED -> 4/30 over-refusals NOT rescued; BUT the OOF judged from knowledge not live-web, so by the board's own Q1 it is STILL construct-mismatched for the open-book live-web voter -> cannot validly establish over-refusal -> VOID-on-construct, NOT a clean DOES-NOT-WORK; raw 4/30 reported transparently). Specificity (false-uphold) VOID-on-power (arm-A re-test 1/16 confirmed structural void) + off-distribution Phase-19 SCREEN-PASS. RAISE headline = build a live-web open-book over-refusal gold (construct-aligned, future work). Records: 20-05-LIVE-CERT-RESULT.md (FINAL) + 20-05-SUMMARY.md",
   "total_tasks": 7,
   "status": "paused",
   "completed_tasks": [
