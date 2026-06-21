@@ -767,6 +767,35 @@ test('adjudicateNativeRefutedGold (B-1 evidenceSha guard -- DISCRIMINATING): a r
   }
 });
 
+test('adjudicateNativeRefutedGold expectedEntailment="true" (arm-B over-refusal gold): RETAINs only controls the OOF pair all-agree DO entail (confirmed controls)', async () => {
+  // ARM B (Option A): the harvested SUPPORTED controls; the OOF gold confirms the evidence DOES entail the
+  // claim (expectedEntailment 'true'). A control whose claim entity MATCHES its evidence lead -> the semantic
+  // stub reads entails=true -> all-agree -> RETAINED (a confirmed over-refusal control). A control whose
+  // claim leads with a DIFFERENT entity reads entails=false -> NOT all-agree-true -> EXCLUDED (the gold did
+  // not confirm it; routed to the maintainer, NEVER coerced into the denominator).
+  const controls = [
+    { uid: 'runA::b0', claim_id: 'b0', claim: 'alpha led the race decisively', evidence: ['alpha led the race', 'beta trailed'] },
+    { uid: 'runA::b1', claim_id: 'b1', claim: 'gamma doubled its output', evidence: ['gamma doubled output last quarter', 'alpha held flat'] },
+    { uid: 'runB::b2', claim_id: 'b2', claim: 'beta won the contract', evidence: ['alpha bid lowest', 'gamma was rejected'] }, // claim entity (beta) != evidence lead (alpha) -> entails=false -> NOT confirmed
+  ];
+
+  const res = await adjudicateNativeRefutedGold({ candidates: controls, callModel: makeOofPairStubs(), expectedEntailment: 'true' });
+
+  assert.equal(res.expectedEntailment, 'true', 'the result reports the arm-B expectation direction');
+  const retainedUids = res.retained.map((r) => r.uid).sort();
+  assert.deepEqual(retainedUids, ['runA::b0', 'runA::b1'], 'the two controls the pair all-agree DO entail are RETAINED as confirmed controls');
+  assert.ok(!retainedUids.includes('runB::b2'), 'a control the gold does NOT confirm (entails=false) is EXCLUDED, never coerced into the denominator');
+  assert.equal(res.excludedIndeterminate.length, 1, 'the unconfirmed control leaves the gold-confirmed set');
+});
+
+test('adjudicateNativeRefutedGold rejects a non-boolean-string expectedEntailment (fail-closed)', async () => {
+  await assert.rejects(
+    () => adjudicateNativeRefutedGold({ candidates: [], callModel: makeOofPairStubs(), expectedEntailment: 'maybe' }),
+    (e) => e.name === 'ContractError' && /expectedEntailment must be/.test(e.message),
+    'an invalid expectedEntailment fails closed',
+  );
+});
+
 // ===========================================================================
 // (3) assembleArmA: the matching guards + gates (a)/(b) on the retained set; constructValid folds
 // covariate+difficulty+cluster+lexical+notEasier (NO minimalEdit term); reports smd.

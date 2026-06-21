@@ -416,10 +416,11 @@ function persistOofVerdict(cacheDir, verdict) {
 // adjudicateNativeRefutedGold({ candidates, callModel, useFrozenTransport, seed, cacheDir }): the OOF
 // all-agree gold-blind RETAIN step (lock b + D-04). It builds ONE makeBatchedOofProbe per FROZEN_OOF_PAIR
 // model, runs the documented prepare() PRE-PASS over the un-cached candidate set, then runProbeConsensus per
-// un-cached candidate with expectedEntailment='false' (does NOT entail). A candidate is RETAINED as
-// refuted-gold ONLY if BOTH OOF models all-agree the evidence does NOT entail the claim. A NON-unanimous /
-// split / ambiguous read is EXCLUDED from the binary denominator + routed to human (Guerdan response-set
-// exclusion, D-04).
+// un-cached candidate with the injected `expectedEntailment` (default 'false' = does NOT entail, the arm-A
+// false-uphold traps). A candidate is RETAINED ONLY if BOTH OOF models all-agree entails == expectedEntailment
+// (arm A: all-agree does-NOT-entail the refuted-gold claim; arm B `expectedEntailment:'true'`: all-agree DOES
+// entail the SUPPORTED control). A NON-unanimous / split / opposite read is EXCLUDED from the binary
+// denominator + routed to human (Guerdan response-set exclusion, D-04).
 //
 // TRANSPORT (D-20): callModel is INJECTED. The test passes a deterministic STUB (callModel(promptText) ->
 // JSON array string) -> ZERO spend. The REAL path (useFrozenTransport:true) builds the frozen Copilot
@@ -448,10 +449,21 @@ function persistOofVerdict(cacheDir, verdict) {
 //   - nDispatched: how many candidates were sent to the probe this call (the un-cached set; 0 on a full
 //     re-run from cache -> ZERO new spend); nCacheHits: how many were served from the cache.
 // ---------------------------------------------------------------------------
-export async function adjudicateNativeRefutedGold({ candidates, callModel, useFrozenTransport = false, seed = 'armA-native', cacheDir = undefined } = {}) {
+export async function adjudicateNativeRefutedGold({ candidates, callModel, useFrozenTransport = false, seed = 'armA-native', cacheDir = undefined, expectedEntailment = ARM_A_EXPECTED_ENTAILMENT, stratum = 'native-refuted-gold' } = {}) {
   if (!Array.isArray(candidates)) {
     throw new ContractError('adjudicateNativeRefutedGold requires a candidates array', 'adjudicateNativeRefutedGold');
   }
+
+  // expectedEntailment parameterizes the all-agree direction (Plan 20-05 Option A): arm A (false-uphold
+  // traps) keeps the default 'false' (RETAIN = the OOF pair all-agree the evidence does NOT entail the
+  // refuted-gold claim); arm B (over-refusal controls) passes 'true' (RETAIN = the pair all-agree the
+  // evidence DOES entail the SUPPORTED claim -> a confirmed over-refusal control). The SAME frozen OOF pair /
+  // batched probe / all-agree consensus / resumable cache serve both; only the expectation direction differs.
+  if (expectedEntailment !== 'true' && expectedEntailment !== 'false') {
+    throw new ContractError('adjudicateNativeRefutedGold expectedEntailment must be "true" or "false"', 'adjudicateNativeRefutedGold');
+  }
+
+  const disagreeDirection = expectedEntailment === 'false' ? 'true' : 'false';
 
   const useCache = typeof cacheDir === 'string' && cacheDir.length > 0;
 
@@ -530,9 +542,9 @@ export async function adjudicateNativeRefutedGold({ candidates, callModel, useFr
       const consensus = await runProbeConsensus(probes, {
         trap: packet.trap,
         enrichedKs: packet.enrichedKs,
-        stratum: 'native-refuted-gold',
+        stratum,
         decisiveRank: -1,
-        expectedEntailment: ARM_A_EXPECTED_ENTAILMENT,
+        expectedEntailment,
       });
 
       // The per-candidate verdict record (the SAME verdict the probe produced). `accepted` = retained; on a
@@ -544,9 +556,13 @@ export async function adjudicateNativeRefutedGold({ candidates, callModel, useFr
         // re-packaged evidence treats it as a MISS (re-dispatch) rather than a stale-evidence replay.
         evidenceSha: evidenceFingerprint(candidate),
         accepted: consensus.retained === true,
-        entails: consensus.retained ? String(ARM_A_EXPECTED_ENTAILMENT) : (consensus.split ? 'true' : 'unknown'),
+        // On a RETAIN the resolved entailment is the expectation (the pair all-agree it); a split carries the
+        // disagreement direction; a reject is unknown.
+        entails: consensus.retained ? String(expectedEntailment) : (consensus.split ? disagreeDirection : 'unknown'),
         split: consensus.split === true,
-        reason: consensus.retained ? 'all-probes-agree-does-not-entail' : (consensus.split ? 'oof-split' : (consensus.reason || 'oof-non-entailment-reject')),
+        reason: consensus.retained
+          ? (expectedEntailment === 'false' ? 'all-probes-agree-does-not-entail' : 'all-probes-agree-entails')
+          : (consensus.split ? 'oof-split' : (consensus.reason || (expectedEntailment === 'false' ? 'oof-non-entailment-reject' : 'oof-entailment-reject'))),
       };
 
       freshByUid.set(candidate.uid, verdict);
@@ -596,7 +612,7 @@ export async function adjudicateNativeRefutedGold({ candidates, callModel, useFr
     residue: Object.freeze(residue),
     nRetained: retained.length,
     nExcluded: excludedIndeterminate.length,
-    expectedEntailment: ARM_A_EXPECTED_ENTAILMENT,
+    expectedEntailment,
     // Resumability telemetry: how many candidates were DISPATCHED this call (the spend) vs served from cache.
     nDispatched: toDispatch.length,
     nCacheHits: cachedByUid.size,
