@@ -4,12 +4,12 @@ milestone: v2.1.0
 milestone_name: lz-deep-research skill
 status: executing
 stopped_at: Phase 21 context gathered
-last_updated: "2026-06-21T21:35:22.702Z"
-last_activity: "2026-06-21 -- Plan 20-05 OOF-PREP packaging: quote-primary evidence + extended faithful front-matter strip (Status/venue/##-headings/DOI/arXiv/separator blocks) in the shared join; ~44% per-candidate token reduction (650 vs 1171 chars), droppedNoEvidence unchanged at 0, ZERO spend; the live-cert spend is the next human-authorized boundary"
+last_updated: "2026-06-21T22:37:02.793Z"
+last_activity: 2026-06-21 -- Phase 21 planning complete
 progress:
   total_phases: 9
   completed_phases: 7
-  total_plans: 28
+  total_plans: 33
   completed_plans: 32
   percent: 78
 ---
@@ -67,8 +67,8 @@ Items deferred across milestones (v1.0.1 close 2026-06-11; v2.0.0 additions tagg
 
 Phase: 20 (orchestrator-skill-headless-scale-confirmation) — EXECUTING
 Plan: 1 of 7
-Status: Executing Phase 20
-Last activity: 2026-06-21 -- Plan 20-05 OOF-PREP packaging: quote-primary evidence + extended faithful front-matter strip (Status/venue/##-headings/DOI/arXiv/separator blocks) in the shared join; ~44% per-candidate token reduction (650 vs 1171 chars), droppedNoEvidence unchanged at 0, ZERO spend; the live-cert spend is the next human-authorized boundary
+Status: Ready to execute
+Last activity: 2026-06-21 -- Phase 21 planning complete
 
 ### Milestone v2.1.0 roadmap (REVISED 2026-06-15)
 
