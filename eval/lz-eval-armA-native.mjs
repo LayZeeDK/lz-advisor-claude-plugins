@@ -65,6 +65,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { createHash } from 'node:crypto';
 
 // (1) The FROZEN run-dir reader + the SUPPORTED predicate (ARM A is the INVERSE -- the refuted-gold buckets).
 import {
@@ -285,6 +286,24 @@ function oofPacketFor(candidate) {
 }
 
 // ---------------------------------------------------------------------------
+// evidenceFingerprint(candidate) (B-1 cache fingerprint, Phase 20 Plan 20-05): a sha256 over the EXACT OOF
+// input -- the claim + the evidence sentences the probe will actually read (the oofPacketFor content). The
+// verdict cache is keyed by uid ALONE, which is correct for resumability (a usage-limit interruption re-runs
+// the SAME candidates on the SAME evidence) but UNSAFE across an evidence-PACKAGING change: a full re-run on
+// freshly re-packaged evidence would silently REPLAY a stale-evidence verdict computed on the OLD bytes. The
+// fingerprint closes that hole -- a cached verdict is valid ONLY for the evidence it was computed on; a
+// mismatch (or a legacy record that predates the fingerprint) is treated as a cache MISS and re-dispatched.
+// The hash is over the SAME content the OOF reads (claim + enrichedKs sentences), so any change to the
+// packaging that the OOF would see changes the fingerprint; a change that the OOF would NOT see (e.g. an
+// internal field) does not -- exactly the equivalence class the cache should key on.
+function evidenceFingerprint(candidate) {
+  const packet = oofPacketFor(candidate);
+  const canonical = JSON.stringify({ claim: packet.trap.claim, evidence: packet.enrichedKs.map((d) => d.sentence) });
+
+  return createHash('sha256').update(canonical, 'utf8').digest('hex');
+}
+
+// ---------------------------------------------------------------------------
 // THE RESUMABLE OOF VERDICT CACHE (Phase 20, Plan 20-05 OOF-PREP; NO-SPEND prep for the human-gated spend).
 // The OOF adjudication is the Copilot CLI spend; a usage-limit interruption mid-round must NOT re-pay for
 // candidates already adjudicated. This MIRRORS the FROZEN persistDualRunVote skip-already-done resumability
@@ -319,9 +338,14 @@ function oofVerdictPath(cacheDir, uid) {
   return path.join(cacheDir, base);
 }
 
-// Load a persisted per-candidate OOF verdict, or null when none is cached. Fail-closed on a malformed cache
-// file (a corrupt cache must be surfaced, never silently treated as un-adjudicated -> a re-pay).
-function loadOofVerdict(cacheDir, uid) {
+// Load a persisted per-candidate OOF verdict, or null when none is a usable cache HIT. Fail-closed on a
+// malformed cache file (a corrupt cache must be surfaced, never silently treated as un-adjudicated -> a
+// re-pay). The expectedSha (B-1) is the candidate's CURRENT evidenceFingerprint: a cached verdict whose
+// evidenceSha does NOT match (or that PREDATES the fingerprint, i.e. has no evidenceSha) is a cache MISS
+// (return null) -- it was computed on DIFFERENT evidence, so re-dispatch on the current evidence rather than
+// silently replay a stale-evidence verdict. A fingerprint mismatch is an EXPECTED miss, not corruption: it
+// returns null (it does NOT throw).
+function loadOofVerdict(cacheDir, uid, expectedSha) {
   const p = oofVerdictPath(cacheDir, uid);
 
   if (!fs.existsSync(p)) {
@@ -348,16 +372,38 @@ function loadOofVerdict(cacheDir, uid) {
     throw new ContractError('loadOofVerdict: cached verdict missing uid / boolean accepted (corrupt): ' + p, p);
   }
 
+  // B-1 FINGERPRINT GUARD: a cached verdict is valid ONLY for the SAME evidence it was computed on. A
+  // mismatch (or a legacy record with no evidenceSha) is a cache MISS -> re-dispatch on the current evidence.
+  if (typeof expectedSha === 'string' && expectedSha.length > 0 && rec.evidenceSha !== expectedSha) {
+    return null;
+  }
+
   return rec;
 }
 
 // Persist a per-candidate OOF verdict, SKIP-ALREADY-DONE (mirrors persistVote/persistDualRunVote D-08): a
-// re-run does NOT re-write an existing verdict. Returns { persisted, skipped, path }.
+// re-run does NOT re-write a verdict that was computed on the SAME evidence. B-1: skip-already-done is now
+// CONDITIONED on a matching evidenceSha. When an existing record carries a DIFFERENT (or absent, i.e. legacy)
+// evidenceSha it is a STALE-evidence verdict -> OVERWRITE it with the fresh, current-evidence verdict. Without
+// the overwrite a stale/legacy record would be a cache MISS on every re-run (re-dispatching forever) yet never
+// get corrected. Returns { persisted, skipped, path }.
 function persistOofVerdict(cacheDir, verdict) {
   const p = oofVerdictPath(cacheDir, verdict.uid);
 
   if (fs.existsSync(p)) {
-    return Object.freeze({ persisted: false, skipped: true, path: p });
+    let existing = null;
+
+    try {
+      existing = JSON.parse(fs.readFileSync(p, 'utf8'));
+    } catch {
+      existing = null;
+    }
+
+    // Skip ONLY when the existing verdict was computed on the SAME evidence (matching evidenceSha) -- that is
+    // genuine resumability. A different/absent evidenceSha is stale -> fall through and overwrite.
+    if (existing != null && typeof existing === 'object' && existing.evidenceSha === verdict.evidenceSha) {
+      return Object.freeze({ persisted: false, skipped: true, path: p });
+    }
   }
 
   fs.mkdirSync(cacheDir, { recursive: true });
@@ -380,10 +426,13 @@ function persistOofVerdict(cacheDir, verdict) {
 // transport via makeOofAdjudicator, whose per-model callModel calls requireSpend('callOof') FIRST -> it
 // THROWS unless LZ_SPEND===1 (the no-spend build never reaches a real dispatch).
 //
-// RESUMABLE CACHE (Phase 20, Plan 20-05 OOF-PREP): an optional `cacheDir`. When set, BEFORE dispatching it
-// loads any persisted per-candidate verdict (oofVerdictPath, keyed by uid) and passes ONLY the un-cached
-// candidates to probe.prepare() (the spend). After dispatch it PERSISTS each newly-resolved verdict
-// (skip-already-done, like persistDualRunVote). The final retained/residue/excluded sets are computed by
+// RESUMABLE CACHE (Phase 20, Plan 20-05 OOF-PREP; B-1 fingerprint added): an optional `cacheDir`. When set,
+// BEFORE dispatching it loads any persisted per-candidate verdict (oofVerdictPath, keyed by uid) -- but a
+// cache HIT additionally requires a matching evidenceSha (B-1): a verdict computed on DIFFERENT (or
+// pre-fingerprint legacy) evidence is a MISS and re-dispatched on the current evidence, so a full re-run on
+// re-packaged evidence never silently REPLAYS a stale-evidence verdict. Only the un-cached candidates go to
+// probe.prepare() (the spend). After dispatch it PERSISTS each newly-resolved verdict (skip-already-done when
+// the evidenceSha matches; OVERWRITE a stale-fingerprint record). The final retained/residue/excluded sets are computed by
 // MERGING cached + freshly-resolved verdicts over the FULL candidate set, in candidate order. A re-run after
 // an interruption re-loads the cache and dispatches ONLY the still-un-adjudicated candidates -> never
 // re-pays. OFF by default (cacheDir undefined -> current behavior: ALL candidates dispatched, nothing
@@ -414,7 +463,9 @@ export async function adjudicateNativeRefutedGold({ candidates, callModel, useFr
 
   for (const candidate of candidates) {
     if (useCache) {
-      const cached = loadOofVerdict(cacheDir, candidate.uid);
+      // B-1: a cache hit requires BOTH the uid AND a matching evidenceSha -- a verdict computed on different
+      // (or pre-fingerprint legacy) evidence is a MISS and re-dispatched on the current evidence.
+      const cached = loadOofVerdict(cacheDir, candidate.uid, evidenceFingerprint(candidate));
 
       if (cached != null) {
         cachedByUid.set(candidate.uid, cached);
@@ -489,6 +540,9 @@ export async function adjudicateNativeRefutedGold({ candidates, callModel, useFr
       // OOF read direction (split -> 'true' = the pair disagreed by reading entailment; reject -> 'unknown').
       const verdict = {
         uid: candidate.uid,
+        // B-1: stamp the fingerprint of the evidence this verdict was computed on, so a later re-run on
+        // re-packaged evidence treats it as a MISS (re-dispatch) rather than a stale-evidence replay.
+        evidenceSha: evidenceFingerprint(candidate),
         accepted: consensus.retained === true,
         entails: consensus.retained ? String(ARM_A_EXPECTED_ENTAILMENT) : (consensus.split ? 'true' : 'unknown'),
         split: consensus.split === true,

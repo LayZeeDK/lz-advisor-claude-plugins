@@ -719,6 +719,54 @@ test('adjudicateNativeRefutedGold is OFF by default (no cacheDir): nothing is pe
   assert.equal(res.retained.length, 3, 'the cache-off result is the existing all-agree retain');
 });
 
+test('adjudicateNativeRefutedGold (B-1 evidenceSha guard -- DISCRIMINATING): a re-run on CHANGED evidence is a cache MISS (re-dispatch + overwrite), NOT a stale-verdict replay', async () => {
+  const cacheDir = fs.mkdtempSync(path.join(os.tmpdir(), 'lz-armA-oofcache-'));
+  const jsonFiles = () => fs.readdirSync(cacheDir).filter((f) => f.endsWith('.json'));
+  const readVerdict = () => JSON.parse(fs.readFileSync(path.join(cacheDir, jsonFiles()[0]), 'utf8'));
+
+  try {
+    const uid = 'runC::cc0';
+
+    // E1: the claim ("beta ...") leads with a DIFFERENT entity than the evidence ("alpha ...") -> the
+    // semantic OOF stub reads entails=false (does NOT entail) -> RETAINED as refuted-gold.
+    const v1 = [{ uid, claim_id: 'cc0', claim: 'beta surpassed all rivals', evidence: ['alpha led the early laps'] }];
+    const res1 = await adjudicateNativeRefutedGold({ candidates: v1, callModel: makeOofPairStubs(), cacheDir });
+
+    assert.equal(res1.nDispatched, 1, 'first run dispatched the candidate (nothing cached)');
+    assert.equal(res1.retained.length, 1, 'on E1 the candidate is RETAINED (claim entity != evidence lead -> does not entail)');
+    const sha1 = readVerdict().evidenceSha;
+    assert.equal(typeof sha1, 'string', 'the persisted verdict carries an evidenceSha (B-1)');
+
+    // E2: the SAME uid but CHANGED evidence whose lead entity now MATCHES the claim ("beta ...") -> the stub
+    // reads entails=true -> EXCLUDED. The OLD uid-only cache would HIT here and REPLAY the stale "retained"
+    // verdict (the bug); the fingerprint guard makes it a MISS so the correct (flipped) verdict is computed.
+    const v2 = [{ uid, claim_id: 'cc0', claim: 'beta surpassed all rivals', evidence: ['beta surpassed all rivals comfortably'] }];
+    const counting = countingOofPairStubs();
+    const res2 = await adjudicateNativeRefutedGold({ candidates: v2, callModel: counting.callModels, cacheDir });
+
+    // DISCRIMINATING #1: the changed evidence is a cache MISS -> re-dispatch. FAILS on the old uid-only cache
+    // (which would report nDispatched 0 / nCacheHits 1 and replay the stale retained verdict).
+    assert.equal(res2.nDispatched, 1, 'CHANGED evidence is a cache MISS -> re-dispatched (not a stale replay)');
+    assert.equal(res2.nCacheHits, 0, 'the stale-evidence verdict is NOT a cache hit');
+    assert.ok(counting.calls() > 0, 'the probe WAS re-invoked on the changed evidence');
+    // DISCRIMINATING #2: the verdict FLIPPED to the correct read on E2 -- proving the stale replay would have
+    // returned the WRONG (retained) answer.
+    assert.equal(res2.retained.length, 0, 'on E2 the candidate is EXCLUDED (claim entity == evidence lead -> entails) -- the flipped, correct verdict');
+    assert.equal(res2.excludedIndeterminate.length, 1, 'the changed-evidence candidate leaves the binary denominator');
+    // DISCRIMINATING #3: the stale record was OVERWRITTEN with the fresh, current-evidence verdict.
+    assert.equal(jsonFiles().length, 1, 'still exactly one verdict file (the stale one was overwritten, not duplicated)');
+    assert.notEqual(readVerdict().evidenceSha, sha1, 'the persisted evidenceSha changed (the stale record was overwritten, not left behind)');
+
+    // RESUMABILITY PRESERVED: a THIRD run on E2 (now correctly cached) is a HIT -> ZERO new dispatch / re-pay.
+    const counting3 = countingOofPairStubs();
+    const res3 = await adjudicateNativeRefutedGold({ candidates: v2, callModel: counting3.callModels, cacheDir });
+    assert.equal(res3.nDispatched, 0, 'a re-run on the SAME (E2) evidence is a cache HIT -> no re-pay (resumability intact after overwrite)');
+    assert.equal(counting3.calls(), 0, 'the probe is NOT re-invoked when the evidence matches the cached fingerprint');
+  } finally {
+    fs.rmSync(cacheDir, { recursive: true, force: true });
+  }
+});
+
 // ===========================================================================
 // (3) assembleArmA: the matching guards + gates (a)/(b) on the retained set; constructValid folds
 // covariate+difficulty+cluster+lexical+notEasier (NO minimalEdit term); reports smd.
