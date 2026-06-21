@@ -5,7 +5,7 @@
 - **[SHIPPED] v1.0 MVP** -- Phases 1-10 (incl. 5.1-5.6), shipped 2026-06-01 at plugin 1.0.0. Full detail: [milestones/v1.0-ROADMAP.md](milestones/v1.0-ROADMAP.md). Requirements: [milestones/v1.0-REQUIREMENTS.md](milestones/v1.0-REQUIREMENTS.md). Audit: [milestones/v1.0-MILESTONE-AUDIT.md](milestones/v1.0-MILESTONE-AUDIT.md).
 - **[SHIPPED] v1.0.1 No review report shorthands** -- Phases 11-13, shipped 2026-06-11 at plugin 1.0.1 (PR #1 merged). Full detail: [milestones/v1.0.1-ROADMAP.md](milestones/v1.0.1-ROADMAP.md). Requirements: [milestones/v1.0.1-REQUIREMENTS.md](milestones/v1.0.1-REQUIREMENTS.md). Audit: [milestones/v1.0.1-MILESTONE-AUDIT.md](milestones/v1.0.1-MILESTONE-AUDIT.md).
 - **[SHIPPED] v2.0.0 Prefixed skill names** -- Phases 14-15 (incl. 14.1, 14.2), shipped 2026-06-14 at plugin 2.0.0 (PR #2 merged). Breaking `lz-` skill rename (de-shadow built-in `/plan` / `/review` / `/security-review`) + release. Full detail: [milestones/v2.0.0-ROADMAP.md](milestones/v2.0.0-ROADMAP.md). Requirements: [milestones/v2.0.0-REQUIREMENTS.md](milestones/v2.0.0-REQUIREMENTS.md). Audit: [milestones/v2.0.0-MILESTONE-AUDIT.md](milestones/v2.0.0-MILESTONE-AUDIT.md).
-- **[IN PROGRESS] v2.1.0 lz-deep-research skill** -- Phases 16-20, started 2026-06-15. Add a fifth skill `/lz-advisor:lz-deep-research` (de-shadowing the built-in `/deep-research`): decompose -> parallel search -> fetch -> extract -> adversarial-verify -> cited report. Built bottom-up, with the Haiku prompt-engineering research + gating eval moved EARLY (right after the schema) so the voter default is settled before the workers and orchestrator are authored.
+- **[IN PROGRESS] v2.1.0 lz-deep-research skill** -- Phases 16-21, started 2026-06-15. Add a fifth skill `/lz-advisor:lz-deep-research` (de-shadowing the built-in `/deep-research`): decompose -> parallel search -> fetch -> extract -> adversarial-verify -> cited report. Built bottom-up, with the Haiku prompt-engineering research + gating eval moved EARLY (right after the schema) so the voter default is settled before the workers and orchestrator are authored.
 
 ## Phases
 
@@ -60,7 +60,7 @@ Full phase details, success criteria, and decision logs are archived in [milesto
 
 </details>
 
-### [IN PROGRESS] v2.1.0 lz-deep-research skill (Phases 16-20)
+### [IN PROGRESS] v2.1.0 lz-deep-research skill (Phases 16-21)
 
 **Milestone Goal:** Add a fifth skill, `/lz-advisor:lz-deep-research` (the `lz-` prefix de-shadows the Claude Code built-in `/deep-research`), that applies the advisor strategy to research: decompose a question into ~5 sub-angles, fan out parallel cheap-tier web search/fetch/extract workers, adversarially verify the top claims with isolated skeptic voters, and emit a cited report with per-claim confidence -- at ~1.2-2x single-pass Sonnet cost, not the 4-220x of naive multi-agent designs. Built bottom-up against the converged design (`.planning/research/SESSION-DESIGN.md`, triangulated across 3 model lineages + 4 empirical spikes): a deterministic off-model `scripts/` aggregator does all dedup/rank/tally/quote-recheck at zero model tokens, and the existing Opus `advisor` is consulted read-only at exactly two high-leverage gates. The build is dependency-ordered: aggregator -> schema -> Haiku-prompt research + verify-voter + early gating eval -> search/extract workers -> orchestrator+scale. The gating eval is moved EARLY (right after the schema, decoupled from the orchestrator -- it drives the voter agent directly via the existing pilot harness, needing only the aggregator tally + the vote schema + a voter prompt + a labeled dataset) so the voter default and the Haiku/Sonnet model choice for ALL cheap-tier workers is settled BEFORE any worker or the orchestrator is authored. A dedicated deep-research pass on Haiku prompt engineering PRECEDES authoring any Haiku agent, so the eval tests a fair, research-grounded Haiku prompt -- never `model: haiku` on a Sonnet prompt; if the eval shows Haiku non-viable, the decision is raised to the user (Sonnet-default ships in the interim regardless). Release/publication (version sync, CHANGELOG/README, tag + GitHub Release; REL-01..03) is handled during `/gsd-complete-milestone` AFTER `/gsd-audit-milestone` passes -- it is NOT a build phase.
 
@@ -70,6 +70,7 @@ Full phase details, success criteria, and decision logs are archived in [milesto
 - [ ] **Phase 18: Haiku prompt-engineering deep research + verify-voter + early gating eval** - Research-ground the Haiku prompt FIRST, author the Sonnet baseline + research-grounded Haiku verify-voter variants, run the pre-registered eval, and settle the voter default (raising to the user if Haiku is non-viable) -- all isolated from the orchestrator
 - [ ] **Phase 19: Search + extract worker agents** - The fetch/extract worker (immutable excerpt at fetch time) and the search worker, whose model tier is chosen from the Phase-18 Haiku research/eval outcome, each returning one-line receipts
 - [ ] **Phase 20: Orchestrator skill + headless scale confirmation** - The `lz-deep-research` skill that wires the full pipeline with the already-settled voter default, reuses the Opus advisor at two gates, wave-batches the fan-out (<=5 in-flight), and is empirically confirmed at real headless concurrency
+- [ ] **Phase 21: Live-web open-book over-refusal gold and arm-B re-run** - Build a live-web OPEN-BOOK over-refusal gold (adjudicators run the SAME live-web search the voter does, with per-item reasoning + bounded leakage) and re-run arm B (over-refusal) against it to validly resolve sensitivity -- the RAISE from the Plan 20-05 NOT WORKS verdict (construct mismatch surfaced after many Phase 19/20 re-plans); Sonnet-default ships regardless, the Haiku-first flip stays deferred
 
 ## Phase Details
 
@@ -208,10 +209,18 @@ Plans:
 - [x] 20-05-ARMA-BUILD (ARM-A RATIFICATION / D-22, NO-SPEND build) -- the amended ARM-A assembly path: `eval/lz-eval-armA-native.mjs` (harvestRefutedGoldCandidates / adjudicateNativeRefutedGold OOF all-agree RETAIN gold-blind / assembleArmA covariate+difficulty+cluster guards + gates (a)/(b) on the post-OOF retained set; constructValid fold sans minimal-edit; realized smd) + the re-authored `eval/lz-eval-live-cert-driver.md` Stage 0; frozen seams imported byte-identical; FILE-form test 16/16 green, ZERO spend (see `20-05-ARMA-BUILD-SUMMARY.md`) [Wave 2 prerequisite; depends_on 20-06]
 - [ ] 20-05-PLAN.md -- (RE-AUTHORED; ARM A amended per D-22) the BLOCKING human-authorized two-arm split-source live-cert spend (Stage 0 = harvest native refuted-gold + OOF all-agree RETAIN + the construct-validity gates on the retained set; STRONG-first then cheap-separate; WORKS iff construct-validity + both CP gates pass, else SCOPED; Haiku-first flip deferred) [COST-01] [Wave 2; depends_on 20-06 + 20-07 + 20-05-ARMA-BUILD]
 
+### Phase 21: Live-web open-book over-refusal gold and arm-B re-run
+**Goal**: Resolve the construct mismatch that VOIDed the over-refusal (sensitivity) certification arm, surfaced after many re-plans in Phases 19 and 20 (the 2026-06-21 Plan 20-05 live-cert verdict: NOT WORKS -> RAISE). The shared root of both certification arms is a construct mismatch -- a closed/knowledge gold (adjudicated from evidence + training knowledge, with NO live-web search) versus an open-book live-web voter. To validly resolve SENSITIVITY, build a live-web OPEN-BOOK over-refusal gold in which the adjudicators do the SAME live-web search the voter does (with per-item reasoning + bounded leakage), then re-run arm B (over-refusal) against that gold. Only then is a SCOPED sensitivity-only certificate (or a clean DOES-NOT-WORK) valid. Sonnet-default verify-voter ships regardless; the Haiku-first flip stays deferred.
+**Depends on**: Phases 19 and 20 (the re-plan/verdict outcomes -- the Plan 20-05 live-cert RAISE, the frozen eval primitives + EVAL_THRESHOLDS, and the two-arm split-source methodology)
+**Requirements**: TBD (run /gsd-plan-phase 21 to derive)
+**Success Criteria** (what must be TRUE): TBD (run /gsd-plan-phase 21 to derive)
+**Plans**: 0 plans
+- [ ] TBD (run /gsd-plan-phase 21 to break down)
+
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 16 -> 17 -> 17.1 -> 18 -> 19 -> 20
+Phases execute in numeric order: 16 -> 17 -> 17.1 -> 18 -> 19 -> 20 -> 21
 
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
@@ -224,5 +233,6 @@ Phases execute in numeric order: 16 -> 17 -> 17.1 -> 18 -> 19 -> 20
 | 18. Haiku research + voter + early eval | v2.1.0 | 5/5 | Complete    | 2026-06-16 |
 | 19. Search + extract workers | v2.1.0 | 3/5 | In Progress|  |
 | 20. Orchestrator + scale | v2.1.0 | 6/7 | In Progress|  |
+| 21. Over-refusal gold + arm-B re-run | v2.1.0 | TBD | Not planned |  |
 
-v1.0 + v1.0.1 + v2.0.0 shipped (plugin 2.0.0). **Active milestone: v2.1.0 (lz-deep-research skill)** -- Phases 16-20, roadmap revised 2026-06-15 (gating eval moved EARLY to Phase 18; EVAL-05 added -- Haiku prompt-engineering research must precede authoring any Haiku agent; the search worker's model tier follows the Phase-18 outcome). Release/publication (REL-01..03) is handled during `/gsd-complete-milestone` after `/gsd-audit-milestone` passes, not as a build phase. See `.planning/MILESTONES.md` for shipped-milestone summaries and `milestones/` for full detail.
+v1.0 + v1.0.1 + v2.0.0 shipped (plugin 2.0.0). **Active milestone: v2.1.0 (lz-deep-research skill)** -- Phases 16-21 (Phase 21 added 2026-06-21), roadmap revised 2026-06-15 (gating eval moved EARLY to Phase 18; EVAL-05 added -- Haiku prompt-engineering research must precede authoring any Haiku agent; the search worker's model tier follows the Phase-18 outcome). Release/publication (REL-01..03) is handled during `/gsd-complete-milestone` after `/gsd-audit-milestone` passes, not as a build phase. See `.planning/MILESTONES.md` for shipped-milestone summaries and `milestones/` for full detail.

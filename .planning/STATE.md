@@ -7,11 +7,11 @@ stopped_at: 20-05 LIVE CERT COMPLETE -> NOT WORKS -> RAISE (sensitivity VOID-on-
 last_updated: "2026-06-21T10:00:00.000Z"
 last_activity: 2026-06-21 -- Plan 20-05 OPTION A SCOPED (user-approved Option A spend + autonomous): arm-B over-refusal OOF gold via the new armB-oof-gold.mjs (adjudicateNativeRefutedGold parameterized expectedEntailment='true', commit 250e73f). 40 controls harvested, 30 CONFIRMED all-agree-entail (== floor 30; frozen 24 -> feasible), 10 oof-split (D-04 residue). 10 Copilot calls; actual ~79 AI Credits (per-call ~8 confirmed non-cumulative; 3x my ~25 estimate) -- SURFACED. M-1 credit-capture RESOLVED (parseCredits strips ANSI; the CLI interleaves 'AI Credits \\x1b[39m13.8'). REMAINING = Stage-2 over-refusal voting (session-pool, ~30 Sonnet verify-voter agents) -> scoreArmFromVotes -> CP vs TAU_OR 0.15 (at floor: 2 over-refusals breach) -> SCOPED verdict + 20-05-LIVE-CERT-RESULT.md + SUMMARY. Verdict ceiling is SCOPED (arm A void)
 progress:
-  total_phases: 8
+  total_phases: 9
   completed_phases: 7
   total_plans: 28
   completed_plans: 28
-  percent: 88
+  percent: 78
 ---
 
 # Project State
@@ -270,6 +270,7 @@ Recent decisions affecting current work (v2.1.0):
 - Phase 17.1 inserted after Phase 17: Address Phase 16/17 review findings (URGENT)
 - Phase 17.2 inserted after Phase 17.1: Address lz-review Important findings R1-1 (id path-safety in mergeClusters) and R2-1 (null vote file TypeError) plus 4 Suggestion findings (URGENT)
 - Phase 17.3 inserted after Phase 17: Add GitHub Actions workflow for script tests (URGENT)
+- Phase 21 added: Live-web open-book over-refusal gold and arm-B re-run -- the RAISE from the Plan 20-05 NOT WORKS verdict (construct mismatch: closed/knowledge gold vs open-book live-web voter); surfaced after many re-plans in Phases 19 and 20
 
 ## Session Continuity
 
