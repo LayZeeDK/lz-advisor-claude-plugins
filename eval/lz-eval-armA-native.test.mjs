@@ -338,15 +338,16 @@ test('harvestRefutedGoldCandidates carries the JOINED evidence TEXT (NOT a URL) 
 // are covered, plus joinClusterEvidence directly.
 // ===========================================================================
 
-test('joinClusterEvidence returns the worker QUOTE first + a SUPERSET excerpt that carries EXTRA facts (NOT a URL) via the EXACT-match path', () => {
+test('joinClusterEvidence (KEEP-SUPERSET-ONLY -- 20-05 DESIGN): a SUPERSET excerpt collapses to ONE sentence carrying the quote content + the EXTRA fact (NOT a URL) via the EXACT-match path', () => {
   const corpus = writeCorpus({
     run0: [survivor({
       id: 'c0', confidence: 'Contested', corroboration: 2,
       claim: 'beta led for three quarters of the race',
       sources: ['https://example.org/race-report'],
-      // GENUINE SUPERSET GUARD (PACKAGING-FIX2, restoring the property the inverted fixture lost): the excerpt
-      // CONTAINS the verified quote PLUS an EXTRA factual clause ("before fading on the final lap"). The faithful
-      // dedup must KEEP the superset (its extra fact is load-bearing), NEVER drop it to the lean quote alone.
+      // GENUINE SUPERSET GUARD: the excerpt CONTAINS the verified quote PLUS an EXTRA factual clause ("before
+      // fading on the final lap"). KEEP-SUPERSET-ONLY emits the SUPERSET EXCERPT ALONE -- it already carries the
+      // quote's content + the extra (load-bearing) fact, so the separate quote would only duplicate the overlap.
+      // The extra fact MUST survive (the old over-trim dropped the superset to the lean quote alone, losing it).
       hints: { quote: 'beta led for three quarters of the race', excerptText: 'Lap log: beta led for three quarters of the race before fading on the final lap.' },
     })],
   });
@@ -359,15 +360,16 @@ test('joinClusterEvidence returns the worker QUOTE first + a SUPERSET excerpt th
 
     assert.equal(joined.matched, true, 'the exact-text worker claim is matched');
     assert.equal(joined.reason, 'exact', 'the match path is EXACT (the cluster claim is a verbatim worker text)');
-    assert.ok(joined.evidence.length >= 1, 'at least one evidence sentence is recovered');
     const text = JSON.stringify(joined.evidence);
     assert.ok(!/https?:\/\//.test(text), 'the recovered evidence is TEXT, NEVER a URL');
-    // QUOTE-PRIMARY: the verbatim quote is the FIRST evidence sentence.
-    assert.equal(joined.evidence[0].sentence, 'beta led for three quarters of the race', 'the verbatim quote LEADS (quote-primary)');
-    // DISCRIMINATING: the SUPERSET excerpt's EXTRA fact ("before fading") survives -- the faithful dedup keeps
-    // it. (Fails on the old over-trim, which dropped the superset to the lean quote alone.)
+    // DISCRIMINATING #1: exactly ONE sentence -- the superset excerpt. FAILS on KEEP-BOTH (quote + excerpt = 2,
+    // duplicating the quote's words).
+    assert.equal(joined.evidence.length, 1, 'the superset collapses to exactly ONE sentence (the quote is NOT separately duplicated)');
+    assert.equal(joined.evidence[0].sentence, 'Lap log: beta led for three quarters of the race before fading on the final lap.', 'the single sentence is the superset excerpt');
     const joinedText = joined.evidence.map((e) => e.sentence).join(' || ');
-    assert.ok(/beta led for three quarters of the race/.test(joinedText), 'the quote text is present');
+    // DISCRIMINATING #2: the quote content survives.
+    assert.ok(/beta led for three quarters of the race/.test(joinedText), 'the quote content is present');
+    // DISCRIMINATING #3: the SUPERSET excerpt's EXTRA fact survives (FAILS on the old over-trim to quote-alone).
     assert.ok(/before fading on the final lap/.test(joinedText), 'the SUPERSET excerpt EXTRA fact is preserved (the over-trim would lose it)');
   } finally {
     fs.rmSync(corpus, { recursive: true, force: true });

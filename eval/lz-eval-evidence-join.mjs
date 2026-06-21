@@ -573,25 +573,34 @@ export function joinClusterEvidence(runDir, cluster) {
     return Object.freeze({ evidence: Object.freeze([]), matched: false, reason: 'no-worker-claim-matched-cluster-claim' });
   }
 
-  // Collect evidence QUOTE-PRIMARY (Phase 20, Plan 20-05 OOF-PREP + PACKAGING-FIX2). For each matched worker
-  // claim:
-  //   1. The VERBATIM quote (the load-bearing snippet the claim was extracted from, quote_fidelity: verified)
-  //      is the FIRST, primary evidence -- ASCII-cleaned only (a worker quote is factual, not a bibliographic
-  //      header; cleaning it would risk eating real content). It is the most relevant + token-lean support, so
-  //      it LEADS the evidence array (quote-primary ORDERING for relevance).
-  //   2. The excerpt passage is SECONDARY context: read RAW, run through the FAITHFUL bibliographic + section-
-  //      heading cleaning pass, then capped at EXCERPT_CHAR_CAP. It is included whenever it carries substantive
-  //      content the quote does NOT already FULLY contain.
-  // FAITHFUL DEDUP (PACKAGING-FIX2): the token savings come from the METADATA STRIP (above), NOT from dropping
-  // a superset excerpt's extra facts. The ONLY case in which the excerpt is dropped is total redundancy -- when
-  // the verified quote ALREADY contains the WHOLE cleaned excerpt (quote-contains-excerpt). When the cleaned
-  // excerpt is a SUPERSET of the quote (it restates the quote PLUS extra factual sentences -- the corpus-
-  // dominant case ~53%) OR is DISTINCT from the quote, the excerpt is kept in FULL as secondary context, so its
-  // extra facts (measured rates, named entities, scaling-law statements) survive for the OOF entailment read. A
-  // substantive sentence is NEVER dropped; only an excerpt wholly subsumed by the quote is.
-  // SAFETY / FAITHFULNESS: the quote is emitted whenever it exists, so a candidate that HAD real evidence is
-  // NEVER emptied by cleaning (droppedNoEvidence cannot increase vs the pre-clean join). When the quote is
-  // absent (rare), the cleaned excerpt stands alone as the evidence.
+  // Collect evidence with the KEEP-SUPERSET-ONLY packaging (Phase 20, Plan 20-05 DESIGN; refines OOF-PREP +
+  // PACKAGING-FIX2). For each matched worker claim there are two candidate evidence texts:
+  //   - the VERBATIM quote (the load-bearing snippet the claim was extracted from, quote_fidelity: verified) --
+  //     ASCII-cleaned only (a worker quote is factual, not a bibliographic header; cleaning it would risk
+  //     eating real content);
+  //   - the excerpt passage -- read RAW, run through the FAITHFUL bibliographic + section-heading cleaning
+  //     pass, then capped at EXCERPT_CHAR_CAP.
+  // A single case-/whitespace-insensitive containment test decides what to emit, so the same fact is never
+  // duplicated across BOTH the quote and the excerpt:
+  //   - quote CONTAINS the whole cleaned excerpt -> emit the (longer) QUOTE ALONE (the excerpt is redundant);
+  //   - excerpt is a SUPERSET of the quote (restates it PLUS extra factual sentences -- the corpus-dominant
+  //     ~56% case) -> emit the SUPERSET EXCERPT ALONE. It already carries every word of the quote's content
+  //     plus the extra load-bearing facts (measured rates, named entities, scaling-law statements), so a
+  //     separate quote would only duplicate the overlap. This is the KEEP-SUPERSET-ONLY refinement: ~5.7%
+  //     leaner (~1290 -> ~1217 chars/candidate) with PROVABLY ZERO fact loss (the excerpt is a strict
+  //     superset), honoring the save-Copilot-tokens directive on the metered OOF run;
+  //   - NEITHER contains the other (DISTINCT) -> keep BOTH, quote-primary: the verified quote leads
+  //     (relevance), the distinct excerpt follows (its extra context).
+  // FAITHFUL: a substantive sentence is NEVER dropped. The only thing the superset branch removes is the
+  // duplicated overlap of the quote's own words -- never a fact -- because the emitted excerpt is a superset of
+  // the quote. Quote lead-position is a weak relevance signal (not a correctness one) for a 1-2 sentence
+  // entailment block that already contains the quote's words, so collapsing the superset case costs nothing the
+  // OOF reads. (For arm A the claim ~= the quote by construction, so dropping the standalone quote is at worst
+  // neutral for the entailment read.)
+  // SAFETY: a candidate that HAD real evidence is NEVER emptied -- when the excerpt cleans to nothing the quote
+  // stands alone, and when the quote is absent (rare) the cleaned excerpt stands alone. droppedNoEvidence
+  // cannot increase vs the pre-clean join (a candidate drops only when it has neither a quote nor a substantive
+  // excerpt after cleaning).
   const sentences = [];
   const seen = new Set();
 
@@ -607,51 +616,55 @@ export function joinClusterEvidence(runDir, cluster) {
   };
 
   for (const c of matchedClaims) {
-    // (1) The verbatim quote -- PRIMARY evidence, emitted FIRST.
     const quoteText = asciiClean(c.quote);
     const hasQuote = quoteText.length > 0;
 
-    if (hasQuote) {
-      emit(quoteText);
-    }
-
-    // (2) The excerpt passage -- SECONDARY: raw -> faithful clean -> cap at EXCERPT_CHAR_CAP.
+    // The excerpt passage: raw -> faithful clean -> cap at EXCERPT_CHAR_CAP.
     const excerptRaw = readExcerptText(runDir, c.excerpt_id);
     const excerptClean = stripBibliographicMetadata(excerptRaw);
     const excerptText = excerptClean.length > EXCERPT_CHAR_CAP ? excerptClean.slice(0, EXCERPT_CHAR_CAP) : excerptClean;
     const hasExcerpt = excerptText.length > 0;
 
+    // No substantive excerpt (missing, or cleaned down to metadata-only) -> the verified quote carries the
+    // evidence on its own. A candidate that HAD a real quote is therefore never emptied by cleaning.
     if (!hasExcerpt) {
-      // Metadata-only excerpt (cleaning emptied it) -> the quote already carries the evidence; nothing to add.
+      if (hasQuote) {
+        emit(quoteText);
+      }
+
       continue;
     }
 
-    // QUOTE-vs-EXCERPT DEDUP (case/whitespace-insensitive, FAITHFUL -- PACKAGING-FIX2). The quote is the
-    // PRIMARY, verified, token-lean support and ALWAYS leads (emitted above). The excerpt is kept as SECONDARY
-    // context UNLESS it is TOTALLY redundant -- i.e. the verified quote ALREADY contains the WHOLE cleaned
-    // excerpt (quote-contains-excerpt). This is the ONLY drop direction:
-    //   - quote CONTAINS the excerpt body (or identical) -> the excerpt is fully subsumed; the lean quote
-    //     already carries every word of it -> drop the redundant excerpt.
-    //   - excerpt CONTAINS the quote (a SUPERSET) -> the excerpt restates the quote PLUS extra factual
-    //     sentences (the corpus-dominant case). Those extra facts are LOAD-BEARING for the OOF entailment read,
-    //     so the excerpt is KEPT IN FULL -- the verified quote leads (relevance), the superset follows
-    //     (faithfulness). The redundant overlap of the quote words is a small, acceptable token cost; dropping
-    //     the superset would LOSE the extra facts (the BLOCKER this fix repairs).
-    //   - NEITHER contains the other (DISTINCT) -> the excerpt is kept in full.
-    // FAITHFUL: a substantive sentence is NEVER dropped; only an excerpt WHOLLY subsumed by the quote is.
-    // droppedNoEvidence cannot increase: a candidate is dropped only when it has neither a quote nor any
-    // substantive excerpt text after cleaning. The token savings come from the METADATA STRIP above, NOT from
-    // discarding superset facts.
+    // No verified quote (rare) -> the cleaned excerpt stands alone as the evidence.
+    if (!hasQuote) {
+      emit(excerptText);
+
+      continue;
+    }
+
+    // BOTH present: a single case-/whitespace-insensitive containment test (KEEP-SUPERSET-ONLY) decides what to
+    // emit, so the quote's words are never duplicated across two sentences.
     const qKey = containmentKey(quoteText);
     const eKey = containmentKey(excerptText);
 
-    if (hasQuote && qKey.length > 0 && eKey.length > 0 && qKey.includes(eKey)) {
-      // The verified quote ALREADY contains the WHOLE cleaned excerpt -> the excerpt adds nothing; drop it.
-      // (The reverse -- a superset excerpt that contains the quote -- is NOT dropped: its extra facts survive.)
-      continue;
+    if (qKey.length > 0 && eKey.length > 0 && qKey.includes(eKey)) {
+      // The verified quote ALREADY contains the WHOLE cleaned excerpt -> the excerpt is fully redundant; emit
+      // the (longer) quote alone.
+      emit(quoteText);
+    } else if (qKey.length > 0 && eKey.length > 0 && eKey.includes(qKey)) {
+      // The cleaned excerpt is a SUPERSET of the quote (it restates the quote PLUS extra factual sentences --
+      // the corpus-dominant ~56% case). Emit the SUPERSET EXCERPT ALONE: it already carries every word of the
+      // quote's content plus the extra load-bearing facts, so the separate quote would only duplicate the
+      // overlap. KEEP-SUPERSET-ONLY: ~5.7% leaner with provably zero fact loss (the excerpt is a strict
+      // superset). The extra facts the prior over-trim BLOCKER lost are preserved here precisely because the
+      // WHOLE excerpt is kept.
+      emit(excerptText);
+    } else {
+      // DISTINCT (neither contains the other) -> keep BOTH, quote-primary: the verified quote leads (relevance),
+      // the distinct excerpt follows (its extra context).
+      emit(quoteText);
+      emit(excerptText);
     }
-
-    emit(excerptText);
   }
 
   if (sentences.length === 0) {

@@ -252,14 +252,14 @@ test('cleaning STRIPS a leading markdown "# <title>" heading + its bibliographic
   }
 });
 
-test('FAITHFUL DEDUP (DISCRIMINATING -- PACKAGING-FIX2): a SUPERSET excerpt that CONTAINS the quote PLUS an EXTRA fact keeps BOTH (the over-trim would lose the extra fact)', () => {
+test('KEEP-SUPERSET-ONLY (DISCRIMINATING -- 20-05 DESIGN): a SUPERSET excerpt collapses to ONE sentence carrying BOTH the quote fact AND the extra fact (no duplicated quote, no lost fact)', () => {
   const { corpus, runDir } = writeRunDir({
     workers: [{
       source: 'https://example.org/doc',
       // The verified quote is a SHORT fact. The excerpt is a SUPERSET: it CONTAINS the quote ("output doubled in
       // Q3") AND carries an EXTRA load-bearing fact ("margins expanded 400 bps") the quote omits. The corpus-
-      // dominant case (~53%). The FAITHFUL dedup must KEEP the superset so the extra fact survives for the OOF
-      // entailment read; the OLD bidirectional over-trim dropped the superset to the lean quote alone, LOSING it.
+      // dominant case (~56%). KEEP-SUPERSET-ONLY emits the SUPERSET EXCERPT ALONE -- it already carries every
+      // word of the quote PLUS the extra fact, so a separate quote would only duplicate the overlap.
       claims: [{ id: 'c1', text: 'output doubled in Q3', quote: 'output doubled in Q3', excerpt_id: 'e1' }],
     }],
     excerpts: { e1: 'Per the audited filing, output doubled in Q3, and margins expanded 400 bps.' },
@@ -269,12 +269,15 @@ test('FAITHFUL DEDUP (DISCRIMINATING -- PACKAGING-FIX2): a SUPERSET excerpt that
     const joined = joinClusterEvidence(runDir, { claim: 'output doubled in Q3', sources: ['https://example.org/doc'] });
 
     assert.equal(joined.matched, true, 'matched');
-    // QUOTE-PRIMARY: the verbatim quote LEADS.
-    assert.equal(joined.evidence[0].sentence, 'output doubled in Q3', 'the verbatim quote LEADS (quote-primary)');
+    // DISCRIMINATING #1: exactly ONE sentence -- the superset excerpt. FAILS on KEEP-BOTH (which would emit the
+    // quote AND the excerpt = 2 sentences, duplicating the quote's words).
+    assert.equal(joined.evidence.length, 1, 'the superset collapses to exactly ONE sentence (the quote is NOT separately duplicated)');
+    // The single emitted sentence is the SUPERSET EXCERPT (carries the quote content + the extra fact).
+    assert.equal(joined.evidence[0].sentence, 'Per the audited filing, output doubled in Q3, and margins expanded 400 bps.', 'the single sentence is the superset excerpt');
     const text = joined.evidence.map((e) => e.sentence).join(' || ');
-    // DISCRIMINATING: BOTH the quote AND the superset's extra fact are recoverable. This FAILS on the old
-    // over-trim (which emitted ONLY the quote) and PASSES on the faithful fix.
+    // DISCRIMINATING #2: the quote content survives. FAILS if the excerpt were dropped instead of the quote.
     assert.ok(/output doubled in Q3/.test(text), 'the quote fact is recoverable from the emitted evidence');
+    // DISCRIMINATING #3: the SUPERSET excerpt EXTRA fact survives. FAILS on the old over-trim (quote alone).
     assert.ok(/margins expanded 400 bps/.test(text), 'the SUPERSET excerpt EXTRA fact is recoverable (the over-trim would lose it)');
   } finally {
     fs.rmSync(corpus, { recursive: true, force: true });
