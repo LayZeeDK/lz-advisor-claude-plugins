@@ -35,6 +35,11 @@
 
 ---
 
+## Process constraints (maintainer directives, 2026-06-21 overnight)
+
+- All scripts that run or are used by an LLM task MUST be code-reviewed and covered by code-reviewed unit tests (project-wide MUST; CONTEXT D-13).
+- Overnight autonomous run; Copilot AI Credit spend pre-approved conditioned on (a) realized cost not significantly above estimate and (b) active token minimization; the pre-flight cost spike is the guard, HALT + RAISE if cost runs significantly over (CONTEXT D-14).
+
 ## Claude's Discretion
 - The exact retrieval wiring (reuse the search+extract workers vs a thin dedicated retrieval driver over the same tools); the evidence-packaging caps within the frozen quote-primary join; the OOF batch size; the AVeriTeC-4-way -> binary mapping micro-rule; the 1-2 item pre-flight spike design; the kappa/Jaccard reporting format.
 
