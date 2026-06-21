@@ -69,33 +69,44 @@ function normForMatch(text) {
 
 // ---------------------------------------------------------------------------
 // FAITHFUL EVIDENCE CLEANING (Phase 20, Plan 20-05 OOF-PREP; NO-SPEND). The fetched excerpt passages carry
-// BIBLIOGRAPHIC HEADER NOISE -- "Source: <url>", "Title: ...", "Authors: ...", "Published: ...", a leading
-// markdown heading "# <document title>", bare-URL-only lines -- that is METADATA, not factual evidence. The
-// OOF judges "does this EVIDENCE entail the CLAIM?"; bibliographic metadata is non-adjudicable noise that
-// Copilot pays per-token to read. This pass STRIPS that metadata BEFORE the evidence is emitted (before any
-// scored vote / freeze -> pre-registration-clean). It is FAITHFUL: it removes ONLY metadata lines/segments +
-// normalizes whitespace; it NEVER fabricates, paraphrases, or removes a substantive factual sentence.
+// BIBLIOGRAPHIC HEADER NOISE -- "Source: <url>", "Title: ...", "Authors: ...", "Published: ...", "Status: ...",
+// venue/acceptance lines ("Accepted by SANER 2025", "To appear in ..."), "Submission Date: ...", "DOI: ...",
+// "arXiv: ..." id lines, markdown SECTION headings ("# <doc title>", "## Abstract", "## Key Overview",
+// "## Introduction", "## Conclusion", any "#"/"##"/"###" heading), bare-URL-only lines -- that is METADATA and
+// STRUCTURAL noise, not factual evidence. The OOF judges "does this EVIDENCE entail the CLAIM?"; bibliographic
+// metadata + section labels are non-adjudicable noise that Copilot pays per-token to read AND that buries the
+// real support, splitting entailment judgments on noise. This pass STRIPS that metadata BEFORE the evidence is
+// emitted (before any scored vote / freeze -> pre-registration-clean). It is FAITHFUL: it removes ONLY metadata
+// lines/segments + section-heading labels + normalizes whitespace; it NEVER fabricates, paraphrases, or removes
+// a substantive factual sentence.
 //
 // THE CLEANING RULE (pre-registration-relevant -- documented in the SUMMARY):
-//   1. Split the (already ASCII-cleaned, whitespace-collapsed) text back into line + leading-segment units.
-//      Because asciiClean collapses newlines into single spaces, the metadata markers are matched as LEADING
-//      SEGMENTS of the text and as embedded "<Marker>: ..." runs, in addition to whole-line matches.
-//   2. Drop any line/leading-segment that IS bibliographic metadata:
-//        - a "<Marker>:" prefix where Marker is one of Source / Title / Authors / Author / Published /
-//          Submitted / Updated / DOI (case-insensitive), consuming up to the next metadata marker or end;
-//        - a leading markdown heading "# <title>" (a single '#'-prefixed heading that is just the doc title);
-//        - a bare-URL-only segment (the whole segment is a single http(s) URL with no surrounding prose).
+//   1. LINE PASS (when the raw passage still has newlines): split on lines; drop any line that IS a markdown
+//      heading ("#{1,6} <label>") or a whole-line bibliographic marker ("<Marker>: <value>"); keep factual
+//      lines verbatim. Then collapse the surviving lines to one ASCII-clean string.
+//   2. SEGMENT PASS (always, on the collapsed string -- catches headers/headings already collapsed inline):
+//        - drop a "<Marker>:" run where Marker is one of the BIBLIO_MARKERS (case-insensitive), consuming the
+//          value up to the next marker / a sentence boundary / a section header / end;
+//        - drop any markdown heading run "#{1,6} <label>" wherever it appears (leading OR embedded after a
+//          prior collapse), consuming the heading label up to the start of the factual sentence;
+//        - drop a venue/acceptance segment ("Accepted by/at ...", "To appear in ...", "Published in ...");
+//        - drop a bare-URL-only segment (the whole segment is a single http(s) URL with no surrounding prose).
 //   3. Keep ALL substantive factual sentences verbatim (only whitespace re-normalized).
 // The markers are matched ONLY at a unit boundary (line start / leading segment / after a prior metadata
-// marker) so a factual sentence that merely CONTAINS the word "source"/"title" mid-sentence is NEVER removed.
+// marker / heading boundary) so a factual sentence that merely CONTAINS the word "source"/"title" mid-sentence
+// is NEVER removed.
 // ---------------------------------------------------------------------------
 
 // The bibliographic marker labels (case-insensitive), matched as "<Marker>:" at a segment boundary. The set
-// reflects the markers actually emitted into the curated corpus's excerpt headers (verified against the real
-// .lz-research corpus): Source / Source URL / Title / Authors / Author / Published / Submitted / Submission
-// Date / Updated / Fetched / DOI / arXiv identifier. Each value is consumed up to the next marker, a sentence
-// boundary, or end (see stripBibliographicMetadata). Multi-word labels are matched verbatim (the regex below
-// escapes none of these because they are alphanumeric + single spaces only).
+// reflects the metadata markers actually emitted into the curated corpus's excerpt headers (verified against
+// the real .lz-research corpus) PLUS the markers named in the Plan 20-05 OOF-PREP objective: Source / Source
+// URL / Title / Authors / Author / Published / Submitted / Submission Date / Updated / Fetched / Fetched from /
+// Status / Category / Subject Areas / Journal / Publication / Article Identifier / arXiv / arXiv identifier /
+// DOI. Each value is consumed up to the next marker, a sentence boundary, a section header, or end (see
+// stripBibliographicMetadata). Only METADATA labels appear here; content labels actually used as factual
+// sentence prefixes in the corpus (e.g. "Key Finding:", "Clinical Efficacy:", "Mechanisms of Action:") are
+// DELIBERATELY EXCLUDED so a factual line is never eaten. Multi-word labels are matched verbatim (the regex
+// below escapes none of these because they are alphanumeric + single spaces only).
 const BIBLIO_MARKERS = [
   'Source URL',
   'Source',
@@ -106,8 +117,16 @@ const BIBLIO_MARKERS = [
   'Submission Date',
   'Submitted',
   'Updated',
+  'Fetched from',
   'Fetched',
+  'Status',
+  'Category',
+  'Subject Areas',
+  'Journal',
+  'Publication',
+  'Article Identifier',
   'arXiv identifier',
+  'arXiv',
   'DOI',
 ];
 
@@ -145,16 +164,83 @@ const BIBLIO_MARKER_ALT = BIBLIO_MARKERS
 // A bare-URL-only segment: the entire (trimmed) segment is a single http(s) URL with no surrounding prose.
 const BARE_URL_ONLY = /^https?:\/\/\S+$/i;
 
-// A leading markdown heading line "# <title>" (one-or-more '#' then a space then the heading text). Only a
-// LEADING heading (the document title) is stripped; an embedded '#' inside prose is never a heading here
-// because asciiClean has already collapsed newlines, so a heading can only appear as the LEADING segment.
+// A leading markdown heading "# <title>" (one-or-more '#' then a space then the heading text), used by the
+// segment pass on a collapsed single-line string. A LEADING heading (the document title) and any embedded
+// "## <section>" heading run are stripped (see the (a)/(a3) blocks below).
 const LEADING_MD_HEADING = /^#{1,6}\s+\S/;
 
-// Strip bibliographic metadata from a single ASCII-cleaned, whitespace-collapsed evidence string. Returns the
-// substantive factual text (metadata removed, whitespace re-normalized). FAITHFUL: removes only metadata
-// segments; never fabricates / paraphrases / removes a factual sentence.
+// A WHOLE-LINE markdown heading "#{1,6} <label>" (line pass): the entire line is a heading. The label after
+// the '#'s is captured so a heading can be dropped wholesale. Used by stripHeadingAndMarkerLines on the RAW
+// (pre-collapse) passage where a heading is unambiguously its own line.
+const WHOLE_LINE_MD_HEADING = /^\s*#{1,6}\s+\S/;
+
+// A WHOLE-LINE bibliographic marker "<Marker>: <value>" (line pass): the line STARTS with a metadata marker.
+// Built case-insensitively WITHOUT the /i flag (consistent with caseInsensitivePattern). Anchored at line
+// start so a factual line that merely mentions a marker word mid-line is never dropped.
+const WHOLE_LINE_BIBLIO_MARKER = new RegExp('^\\s*(?:' + BIBLIO_MARKER_ALT + ')\\s*:');
+
+// A venue / acceptance segment (the Plan 20-05 objective): "Accepted by <venue>", "Accepted at <venue>",
+// "To appear in <venue>", "Published in <venue>". These are publication-status metadata, not factual evidence.
+// Matched at a segment boundary (start, or after a sentence boundary) and consumed up to the next sentence
+// boundary / marker / section header / end. The phrase head is fixed (case-insensitive) so a factual sentence
+// is never mistaken for a venue line.
+const VENUE_HEAD = '(?:' +
+  caseInsensitivePattern('Accepted by') + '|' +
+  caseInsensitivePattern('Accepted at') + '|' +
+  caseInsensitivePattern('To appear in') + '|' +
+  caseInsensitivePattern('Published in') +
+  ')';
+
+// LINE PASS (Phase 20, Plan 20-05 OOF-PREP): when the RAW excerpt still has newlines, drop whole-line markdown
+// headings ("#{1,6} <label>") and whole-line bibliographic markers ("<Marker>: <value>") -- where a heading or
+// a header is unambiguously its OWN line -- BEFORE the whitespace collapse. This is the faithful, deterministic
+// way to strip the "## Abstract" / "## Key Overview" / "## Introduction" / "## Conclusion" section labels that
+// litter the curated corpus (568 headings across the corpus): on the raw text each is a standalone line, so
+// removing the line removes the label WITHOUT touching the factual sentence on the next line. A factual line is
+// never a markdown-heading line and never STARTS with a metadata marker, so it survives verbatim. Returns the
+// surviving factual lines joined by a single newline (the caller then ASCII-cleans + collapses).
+function stripHeadingAndMarkerLines(rawText) {
+  const raw = String(rawText == null ? '' : rawText);
+
+  // Only meaningful when there are real line breaks; a single collapsed line is handled by the segment pass.
+  if (!/[\r\n]/.test(raw)) {
+    return raw;
+  }
+
+  const kept = [];
+
+  for (const line of raw.split(/\r?\n/)) {
+    const trimmed = line.trim();
+
+    if (trimmed.length === 0) {
+      continue;
+    }
+
+    // Drop a whole-line markdown heading (a section label / doc title on its own line).
+    if (WHOLE_LINE_MD_HEADING.test(line)) {
+      continue;
+    }
+
+    // Drop a whole-line bibliographic marker line ("Source: ...", "Status: ...", "DOI: ...", "Submission Date:
+    // ...", etc.). The line STARTS with the marker, so a factual line mentioning the word mid-line survives.
+    if (WHOLE_LINE_BIBLIO_MARKER.test(line)) {
+      continue;
+    }
+
+    kept.push(trimmed);
+  }
+
+  return kept.join('\n');
+}
+
+// Strip bibliographic metadata from an evidence string. Accepts either the RAW multi-line excerpt (preferred --
+// the line pass then removes whole-line headings/markers faithfully) OR an already-collapsed single line (the
+// segment pass below handles inline headers/headings). Returns the substantive factual text (metadata removed,
+// whitespace re-normalized). FAITHFUL: removes only metadata segments + section-heading labels; never
+// fabricates / paraphrases / removes a factual sentence.
 function stripBibliographicMetadata(text) {
-  const input = asciiClean(text);
+  // (0) LINE PASS first (no-op on a single collapsed line), then ASCII-clean + collapse.
+  const input = asciiClean(stripHeadingAndMarkerLines(text));
 
   if (input.length === 0) {
     return '';
@@ -180,26 +266,20 @@ function stripBibliographicMetadata(text) {
     working = working.replace(/^#{1,6}\s+/, '');
   }
 
-  // (a2) A "--- <SECTION> ---" / "---" rule separator marks the end of the LEADING bibliographic header block
-  //      and the start of the factual body (the curated corpus emits e.g. "Source: ... Fetched: ...
-  //      --- ABSTRACT (from ...) --- <prose>"). When the LEADING segment (before the first "---") contains a
-  //      bibliographic marker, drop everything from the start UP TO AND INCLUDING the LEADING separator BLOCK
-  //      -- the header + any "--- SECTION ---" label run -- and keep the factual body verbatim. The leading
-  //      separator block is matched as one-or-more "---"-delimited runs (so "--- ABSTRACT (from x) ---" is a
-  //      single block, label and all). Only the LEADING block is a boundary, and only when the preceding span
-  //      is header-like, so a "---" inside the factual body is never a cut point.
-  const firstDash = working.indexOf('---');
+  // (a2) A "--- <SECTION LABEL> ---" rule-separator block is a STRUCTURAL section label (the curated corpus
+  //      emits e.g. "--- ABSTRACT (from arxiv.org/abs/...) ---" between the header and the factual body). It is
+  //      noise like a markdown heading, so it is stripped wherever it appears: a "---" rule, optionally followed
+  //      by a short section label and a closing "---" rule. FAITHFUL scoping: a "---" rule must be at a
+  //      whitespace/boundary unit (so a numeric range or em-dash glued to a word inside prose, e.g. "5---10", is
+  //      NOT a separator). The captured label is the title between the two rules; it is dropped with the rules.
+  //      A LONE leading "---" (the header/body divider after the line pass removed the header lines) is also
+  //      dropped. Iterate so multiple stacked section labels are all consumed.
+  const sectionBlock = /(?:^|\s)---(?:[^-][\s\S]*?---)?(?=\s|$)/;
+  let sectionGuard = 0;
 
-  if (firstDash >= 0 && markerBoundary.test(working.slice(0, firstDash))) {
-    // Consume the leading separator block: the run of "--- ... ---" up to the start of the factual body. A
-    // section label between two "---" rules (e.g. " --- ABSTRACT (from ...) --- ") is part of the block.
-    const block = working.slice(firstDash).match(/^(?:\s*---[^-]*?---)+\s*|^\s*---\s*/);
-
-    if (block != null) {
-      working = working.slice(firstDash + block[0].length);
-    } else {
-      working = working.slice(firstDash + 3);
-    }
+  while (sectionBlock.test(working) && sectionGuard < 64) {
+    working = working.replace(sectionBlock, ' ');
+    sectionGuard += 1;
   }
 
   // (b) Strip each remaining "<Marker>: <value>" run. A marker value extends from the marker UP TO the
@@ -238,6 +318,56 @@ function stripBibliographicMetadata(text) {
     working = working.replace(markerRun, ' ');
     guard += 1;
   }
+
+  // (b2) Strip a VENUE / ACCEPTANCE segment ("Accepted by/at <venue>", "To appear in <venue>", "Published in
+  //      <venue>") wherever it appears as a segment: consume the venue head + its value up to the EARLIEST of a
+  //      sentence boundary, the next bibliographic marker, a section header, or end. The phrase head is a fixed
+  //      case-insensitive prefix, so a factual sentence is never mistaken for a venue line. Iterate until none
+  //      remain.
+  const venueRun = new RegExp(
+    '\\b' + VENUE_HEAD + '\\b[\\s\\S]*?(?=' +
+      '\\b(?:' + BIBLIO_MARKER_ALT + ')\\s*:' + // the next marker
+      '|' + SENTENCE_BOUNDARY + // a sentence boundary starting substantive prose
+      '|' + YEAR_BOUNDARY + // a venue line ending in a 4-digit year, prose follows
+      '|\\s#{1,6}\\s' + // a markdown section header begins the body
+      '|\\s---' + // a rule separator begins the body
+      '|$)', // end of string
+  );
+
+  let venueGuard = 0;
+
+  while (venueRun.test(working) && venueGuard < 64) {
+    working = working.replace(venueRun, ' ');
+    venueGuard += 1;
+  }
+
+  // (a3) Strip INLINE markdown section-heading runs that survived collapse ("... ## Abstract / Key Overview
+  //      <factual sentence>"). A heading run is "#{1,6} <label>" where the label is the heading title up to the
+  //      start of the factual body. The factual body begins at the EARLIEST of: the next "#{1,6}" heading, a
+  //      bibliographic marker, a "---" separator, or a SENTENCE START (a Capitalized word that begins a clause
+  //      ending in sentence punctuation -- detected as ". " mid-run is NOT present in a bare label, so the body
+  //      is the remainder after the contiguous Title-Case heading words). To stay FAITHFUL and deterministic,
+  //      consume the heading marker + the contiguous run of heading-label tokens (Capitalized words, slashes,
+  //      digits, parens) and STOP at the first token that begins a normal sentence flow -- i.e. the first
+  //      lowercase-led token OR a Capitalized token followed later by sentence punctuation within the clause.
+  //      Conservative form: drop "#{1,6}" + the immediate Title-Case label words (each starting Uppercase or a
+  //      non-alpha label char), stopping at the first lowercase-initial word (the prose almost always continues
+  //      with articles/verbs, but a heading like "## Abstract" is followed by a Capitalized sentence -- handled
+  //      by stopping the label at the LAST Title-Case word before a word that is followed by a lowercase word,
+  //      i.e. a real sentence). Simpler + safe: strip "#{1,6}\s+" and the label up to the first sentence that
+  //      contains internal lowercase prose. Implemented as: from each "#{1,6}", drop up to the start of the
+  //      first run of >=3 consecutive words where a lowercase-led word appears (sentence prose), else to end.
+  const inlineHeading = /#{1,6}\s+(?:[^\s][^\s]*\s+)*?(?=[A-Z][a-z']+\s+[a-z])/;
+  let headingGuard = 0;
+
+  while (inlineHeading.test(working) && headingGuard < 64) {
+    working = working.replace(inlineHeading, ' ');
+    headingGuard += 1;
+  }
+
+  // Any residual lone "#{1,6}" marker tokens (a heading whose label ran to end, or a heading with no following
+  // prose) -- drop the bare marker token, keep any remaining label text (faithful: removes formatting only).
+  working = working.replace(/\s*#{1,6}\s+/g, ' ');
 
   // (c) Drop a bare-URL-only residue: if after metadata removal a token is a bare URL standing alone, remove
   //     it. Split on whitespace, drop tokens that are bare URLs ONLY when the WHOLE remaining text is URLs
@@ -316,10 +446,19 @@ function readRunDirWorkerClaims(runDir) {
   return out;
 }
 
-// Read one excerpt passage (excerpts/<excerpt_id>.txt), ASCII-cleaned + capped. The excerpt_id is routed
-// through safeId (T-19-TRAVERSE) before it is used as a path component -- a crafted id cannot traverse out of
-// the run dir. A missing/unreadable excerpt file returns '' (the quote is still emitted; only the passage is
-// absent).
+// A generous RAW read bound: an excerpt file can be tens of KB. The line pass + bibliographic strip need the
+// RAW (newline-bearing) text to remove whole-line headings/markers faithfully, so the collapse-to-single-line
+// happens INSIDE the cleaner, not here. To bound memory we read at most EXCERPT_RAW_READ_CAP raw bytes (a wide
+// multiple of EXCERPT_CHAR_CAP, since front-matter stripping shrinks the text); the FINAL substantive text is
+// then capped at EXCERPT_CHAR_CAP by the caller AFTER cleaning.
+const EXCERPT_RAW_READ_CAP = EXCERPT_CHAR_CAP * 8;
+
+// Read one excerpt passage (excerpts/<excerpt_id>.txt) as RAW text (newlines preserved for the line pass),
+// bounded to EXCERPT_RAW_READ_CAP raw chars. The excerpt_id is routed through safeId (T-19-TRAVERSE) before it
+// is used as a path component -- a crafted id cannot traverse out of the run dir. A missing/unreadable excerpt
+// file returns '' (the quote is still emitted; only the passage is absent). The ASCII clean + whitespace
+// collapse + the EXCERPT_CHAR_CAP truncation are applied DOWNSTREAM (stripBibliographicMetadata collapses; the
+// join caps the cleaned result), so the RAW newline structure survives into the line pass.
 function readExcerptText(runDir, excerptId) {
   if (typeof excerptId !== 'string' || excerptId.length === 0) {
     return '';
@@ -340,9 +479,7 @@ function readExcerptText(runDir, excerptId) {
     return '';
   }
 
-  const cleaned = asciiClean(raw);
-
-  return cleaned.length > EXCERPT_CHAR_CAP ? cleaned.slice(0, EXCERPT_CHAR_CAP) : cleaned;
+  return raw.length > EXCERPT_RAW_READ_CAP ? raw.slice(0, EXCERPT_RAW_READ_CAP) : raw;
 }
 
 // Per-runDir cache of the flattened worker claims so the JOIN reads claims/*.json ONCE per run dir even when
@@ -430,14 +567,18 @@ export function joinClusterEvidence(runDir, cluster) {
     return Object.freeze({ evidence: Object.freeze([]), matched: false, reason: 'no-worker-claim-matched-cluster-claim' });
   }
 
-  // Collect the matched quotes + their excerpt passages. For each matched worker claim, the VERBATIM quote
-  // (the load-bearing snippet) is collected as-is (ASCII-cleaned, never metadata) and the excerpt passage is
-  // run through the FAITHFUL bibliographic-metadata cleaning pass BEFORE emission (Phase 20, Plan 20-05
-  // OOF-PREP). The quote/excerpt pair is then DE-DUPLICATED: if the quote text is contained in the cleaned
-  // excerpt (or vice versa) under a case/whitespace-insensitive containment check, only the LONGER
-  // substantive one is emitted (do not send both when one contains the other). SAFETY: if cleaning would
-  // leave a matched claim with NO substantive evidence (the excerpt was only metadata), fall back to the
-  // verbatim quote so a candidate that HAD real evidence is never dropped by cleaning.
+  // Collect evidence QUOTE-PRIMARY (Phase 20, Plan 20-05 OOF-PREP). For each matched worker claim:
+  //   1. The VERBATIM quote (the load-bearing snippet the claim was extracted from, quote_fidelity: verified)
+  //      is the FIRST, primary evidence -- ASCII-cleaned only (a worker quote is factual, not a bibliographic
+  //      header; cleaning it would risk eating real content). It is the most relevant + token-lean support, so
+  //      it LEADS the evidence array.
+  //   2. The excerpt passage is SECONDARY context: read RAW, run through the FAITHFUL bibliographic + section-
+  //      heading cleaning pass, then capped at EXCERPT_CHAR_CAP. It is included ONLY if it adds substantive
+  //      content beyond the quote (DEDUP: dropped if the quote already contains it, or it contains the quote --
+  //      normalized case/whitespace containment -- so we never send both when one subsumes the other).
+  // SAFETY / FAITHFULNESS: the quote is emitted whenever it exists, so a candidate that HAD real evidence is
+  // NEVER emptied by cleaning (droppedNoEvidence cannot increase vs the pre-clean join). When the quote is
+  // absent (rare), the cleaned excerpt stands alone as the evidence.
   const sentences = [];
   const seen = new Set();
 
@@ -453,39 +594,50 @@ export function joinClusterEvidence(runDir, cluster) {
   };
 
   for (const c of matchedClaims) {
-    // The verbatim quote (load-bearing snippet) -- ASCII-cleaned only (a worker quote is factual, not a
-    // bibliographic header; cleaning it would risk eating real content).
+    // (1) The verbatim quote -- PRIMARY evidence, emitted FIRST.
     const quoteText = asciiClean(c.quote);
-    // The excerpt passage -- ASCII-cleaned + capped (readExcerptText) THEN bibliographic-metadata-stripped.
-    const excerptRaw = readExcerptText(runDir, c.excerpt_id);
-    const excerptText = stripBibliographicMetadata(excerptRaw);
+    const hasQuote = quoteText.length > 0;
 
-    // QUOTE-vs-EXCERPT DEDUP (case/whitespace-insensitive containment): when one contains the other, emit
-    // only the LONGER substantive one. When neither contains the other, emit both.
+    if (hasQuote) {
+      emit(quoteText);
+    }
+
+    // (2) The excerpt passage -- SECONDARY: raw -> faithful clean -> cap at EXCERPT_CHAR_CAP.
+    const excerptRaw = readExcerptText(runDir, c.excerpt_id);
+    const excerptClean = stripBibliographicMetadata(excerptRaw);
+    const excerptText = excerptClean.length > EXCERPT_CHAR_CAP ? excerptClean.slice(0, EXCERPT_CHAR_CAP) : excerptClean;
+    const hasExcerpt = excerptText.length > 0;
+
+    if (!hasExcerpt) {
+      // Metadata-only excerpt (cleaning emptied it) -> the quote already carries the evidence; nothing to add.
+      continue;
+    }
+
+    // QUOTE-vs-EXCERPT DEDUP (case/whitespace-insensitive, BIDIRECTIONAL containment -- the OOF-PREP rule
+    // "include the excerpt's substantive body ONLY if it ADDS content beyond the quote; drop if the quote
+    // already contains it OR vice-versa"). The quote is the PRIMARY, verified, token-lean support and ALWAYS
+    // leads (emitted above). The excerpt is included as SECONDARY context ONLY when it adds content the quote
+    // does NOT already carry -- i.e. when NEITHER string contains the other. Drop the excerpt when EITHER
+    // direction of containment holds:
+    //   - quote CONTAINS the excerpt body (or identical) -> the excerpt is fully redundant; the lean quote
+    //     stands alone.
+    //   - excerpt CONTAINS the quote -> the excerpt is a SUPERSET that RESTATES the verified snippet wrapped in
+    //     vaguer surrounding prose. The QUOTE already carries the load-bearing, verified fact as the primary
+    //     sentence, so re-emitting the superset would only restate it (the redundancy that defeats token
+    //     reduction). Drop the superset excerpt -- the verified quote IS the substantive support.
+    // FAITHFUL: the load-bearing factual support is the verified quote, which is always kept; only a
+    // containment-REDUNDANT excerpt is dropped, never a DISTINCT substantive passage. droppedNoEvidence cannot
+    // increase: a candidate is dropped only when it has neither a quote nor any distinct substantive excerpt.
     const qKey = containmentKey(quoteText);
     const eKey = containmentKey(excerptText);
 
-    const hasQuote = quoteText.length > 0;
-    const hasExcerpt = excerptText.length > 0;
-
-    if (hasQuote && hasExcerpt && qKey.length > 0 && eKey.length > 0 && (eKey.includes(qKey) || qKey.includes(eKey))) {
-      // One contains the other -> keep only the LONGER substantive text (by character length).
-      emit(quoteText.length >= excerptText.length ? quoteText : excerptText);
-    } else {
-      // SAFETY FALLBACK: if cleaning emptied the excerpt (metadata-only), the quote still carries the real
-      // evidence -- emit the quote so the candidate is never left empty by cleaning. Otherwise emit both
-      // distinct substantive pieces.
-      if (hasExcerpt) {
-        emit(excerptText);
-      }
-
-      if (hasQuote) {
-        emit(quoteText);
-      }
-
-      // If the excerpt was metadata-only (hasExcerpt false) AND the quote is empty, this matched claim
-      // contributed nothing; the loop continues to the next matched claim (a later claim may carry text).
+    if (hasQuote && qKey.length > 0 && eKey.length > 0 && (qKey.includes(eKey) || eKey.includes(qKey))) {
+      // One contains the other -> the verified quote (primary) already carries the signal; drop the redundant
+      // excerpt. This is the TOKEN-REDUCTION lever for the common "quote is a snippet OF its excerpt" case.
+      continue;
     }
+
+    emit(excerptText);
   }
 
   if (sentences.length === 0) {

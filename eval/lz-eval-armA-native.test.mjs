@@ -338,13 +338,15 @@ test('harvestRefutedGoldCandidates carries the JOINED evidence TEXT (NOT a URL) 
 // are covered, plus joinClusterEvidence directly.
 // ===========================================================================
 
-test('joinClusterEvidence returns the worker QUOTE + excerpt TEXT (NOT a URL) via the EXACT-match path', () => {
+test('joinClusterEvidence returns the worker QUOTE first + DISTINCT excerpt TEXT (NOT a URL) via the EXACT-match path', () => {
   const corpus = writeCorpus({
     run0: [survivor({
       id: 'c0', confidence: 'Contested', corroboration: 2,
       claim: 'beta led for three quarters of the race',
       sources: ['https://example.org/race-report'],
-      hints: { quote: 'beta led for three quarters of the race', excerptText: 'Lap log: beta led for three quarters of the race before fading.' },
+      // The verified quote is the load-bearing snippet; the excerpt carries DISTINCT context (neither contains
+      // the other) -> the excerpt is kept as secondary evidence under the quote-primary bidirectional dedup.
+      hints: { quote: 'beta led for three quarters of the race', excerptText: 'Lap log: the leader faded badly on the final lap.' },
     })],
   });
 
@@ -359,8 +361,9 @@ test('joinClusterEvidence returns the worker QUOTE + excerpt TEXT (NOT a URL) vi
     assert.ok(joined.evidence.length >= 1, 'at least one evidence sentence is recovered');
     const text = JSON.stringify(joined.evidence);
     assert.ok(!/https?:\/\//.test(text), 'the recovered evidence is TEXT, NEVER a URL');
-    assert.ok(joined.evidence.some((e) => e.sentence.includes('beta led for three quarters of the race')), 'the verbatim quote is present');
-    assert.ok(joined.evidence.some((e) => e.sentence.includes('before fading')), 'the excerpt passage text is present (joined from excerpts/<id>.txt)');
+    // QUOTE-PRIMARY: the verbatim quote is the FIRST evidence sentence.
+    assert.equal(joined.evidence[0].sentence, 'beta led for three quarters of the race', 'the verbatim quote LEADS (quote-primary)');
+    assert.ok(joined.evidence.some((e) => e.sentence.includes('the leader faded badly on the final lap')), 'the distinct excerpt passage text is present (joined from excerpts/<id>.txt)');
   } finally {
     fs.rmSync(corpus, { recursive: true, force: true });
   }
