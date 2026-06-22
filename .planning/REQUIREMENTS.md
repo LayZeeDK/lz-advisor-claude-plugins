@@ -64,12 +64,12 @@ Requirements for the v2.1.0 milestone. Each maps to exactly one roadmap phase.
 
 Derived 2026-06-21 (the ROADMAP Phase-21 "Requirements: TBD -- run /gsd-plan-phase 21 to derive"). The RAISE from the Plan 20-05 NOT-WORKS live-cert verdict: resolve the construct mismatch (a closed / training-knowledge gold vs an open-book live-web voter) by building a live-web OPEN-BOOK over-refusal gold and re-running arm B. Verdict ceiling = a SCOPED sensitivity-only certificate or a clean DOES-NOT-WORK (full WORKS is out of reach -- arm A / false-uphold is structurally void on-distribution). Sonnet-default ships regardless; the Haiku-first flip stays deferred.
 
-- [ ] **OBG-01**: A live-web OPEN-BOOK over-refusal gold is built whose evidence is gathered by an INDEPENDENT live-web search (the same class the voter runs) on the Claude session pool -- NOT from training knowledge, and NOT via Copilot web search (cost ruling).
+- [x] **OBG-01**: A live-web OPEN-BOOK over-refusal gold is built whose evidence is gathered by an INDEPENDENT live-web search (the same class the voter runs) on the Claude session pool -- NOT from training knowledge, and NOT via Copilot web search (cost ruling).
 - [x] **OBG-02**: Each gold item carries a two-field record -- a retrieval / groundedness field (logged canonical URLs + verbatim quoted spans + fetched_at) and a verdict / validity field (an AVeriTeC 4-way adjudication label mapped to the frozen binary).
-- [ ] **OBG-03**: Leakage is bounded -- a meta-source blocklist excludes the claim's own published fact-check / leaderboards / dataset pages; retrieval timestamps are pinned and the gold's evidence snapshot is frozen (snapshot / time-drift that cannot be closed is a named PROVISIONAL limit).
+- [x] **OBG-03**: Leakage is bounded -- a meta-source blocklist excludes the claim's own published fact-check / leaderboards / dataset pages; retrieval timestamps are pinned and the gold's evidence snapshot is frozen (snapshot / time-drift that cannot be closed is a named PROVISIONAL limit).
 - [x] **OBG-04**: The gold is adjudicated by the FROZEN out-of-family OOF all-agree pair (gpt-5.5 + gemini-3.1-pro-preview, --effort high, gold-blind) judging over the logged evidence; OOF non-unanimity excludes the item from the binary denominator and routes it to the human (Guerdan rating-indeterminacy).
 - [x] **OBG-05**: The over-refusal arm is RE-RUN by re-scoring the FROZEN Sonnet voter votes against the new open-book gold over the reused frozen 30 controls -- no new voter votes and no re-harvest; the re-adjudication is two-sided (it may confirm a refute as correct or surface a missed false-uphold).
-- [ ] **OBG-06**: The new open-book gold + lock rule (the re-confirmed N, the CP estimator, the two-sided guard, the snapshot) are PRE-REGISTERED and frozen BEFORE any re-scored vote; no optional stopping; the two arms are never pooled.
+- [x] **OBG-06**: The new open-book gold + lock rule (the re-confirmed N, the CP estimator, the two-sided guard, the snapshot) are PRE-REGISTERED and frozen BEFORE any re-scored vote; no optional stopping; the two arms are never pooled.
 - [x] **OBG-07**: The frozen over-refusal CP gate is applied byte-identical (CP-upper of the over-refusal rate <= TAU_OR 0.15 over the open-book-confirmed denominator), yielding a SCOPED sensitivity-only certificate, a clean DOES-NOT-WORK, or an honest VOID -> RAISE; full WORKS is not claimed; Sonnet-default ships; the Haiku-first flip stays deferred.
 - [x] **OBG-08**: Copilot AI Credits are minimized -- batched closed-book OOF judgment over tightly-packaged evidence + reuse-30 + a human-authorized 1-2 item pre-flight cost spike that HALTs + RAISEs if the per-item cost is significantly above the disclosed estimate.
 - [x] **OBG-09**: Every script that runs or is used by an LLM task is code-reviewed AND covered by code-reviewed unit tests; the eval tree never ships (the one-directional eval -> runtime import boundary holds).
@@ -149,12 +149,12 @@ Which phase covers which requirement. Filled in during roadmap creation (2026-06
 | COST-04 | Phase 20 | Pending |
 | INTEG-01 | Phase 20 | Complete |
 | INTEG-02 | Phase 20 | Complete |
-| OBG-01 | Phase 21 | Pending |
+| OBG-01 | Phase 21 | Complete |
 | OBG-02 | Phase 21 | Complete |
-| OBG-03 | Phase 21 | Pending |
+| OBG-03 | Phase 21 | Complete |
 | OBG-04 | Phase 21 | Complete |
 | OBG-05 | Phase 21 | Complete |
-| OBG-06 | Phase 21 | Pending |
+| OBG-06 | Phase 21 | Complete |
 | OBG-07 | Phase 21 | Complete |
 | OBG-08 | Phase 21 | Complete |
 | OBG-09 | Phase 21 | Complete |
