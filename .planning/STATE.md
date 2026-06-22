@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v2.1.0
 milestone_name: lz-deep-research skill
 status: executing
-stopped_at: Phase 21 Waves 1-3 complete (no-spend core built+tested+committed); PAUSED at Wave 4 boundary -- live-web retrieval is orchestrator-driven (gsd-executor lacks Agent/WebSearch/WebFetch), best run in a fresh context
-last_updated: "2026-06-21T23:24:11.638Z"
+stopped_at: Phase 21 Wave 4 (Plan 21-04) COMPLETE + no-spend (live-web open-book retrieval over the frozen 30 done; snapshot frozen+pinned sha256 9faee64a; lock-rule pre-registered+committed 59f8d4b; no-spend build reviewed CLEAN-WITH-NOTES 67/67; 2 D-08 diagnostics fixed 4bc8298). PAUSED at the Plan-04 GO/NO-GO before the ONLY metered Copilot spend (Plan 05). Resume in a FRESH context per .planning/phases/21-.../.continue-here.md -- do NOT re-freeze the pinned snapshot; a pre-flight cost-spike + explicit GO gate the spend
+last_updated: "2026-06-22T08:04:22.197Z"
 last_activity: 2026-06-22
 progress:
   total_phases: 9
@@ -21,7 +21,7 @@ progress:
 See: .planning/PROJECT.md (updated 2026-06-15 -- milestone v2.1.0 started)
 
 **Core value:** Near-Opus intelligence at Sonnet cost, through strategic advisor consultation at high-leverage moments -- now extended from coding tasks to deep research
-**Current focus:** Phase 21 — live-web-open-book-over-refusal-gold-and-arm-b-re-run
+**Current focus:** Phase 21 -- live-web-open-book-over-refusal-gold-and-arm-b-re-run
 
 ## Deferred Items
 
@@ -65,7 +65,7 @@ Items deferred across milestones (v1.0.1 close 2026-06-11; v2.0.0 additions tagg
 
 **RE-PLAN-8 READY (2026-06-19; supersedes the RE-PLAN-7 status below at the design layer):** A 4-round cross-family board (Opus + Copilot GPT-5.5 + Gemini 3.1 Pro Preview; de-identified, fact-only) UNANIMOUSLY converged on a BULK OOF gold-screen + a NON-GATING cheaper-model pilot + the k=1-stability-certificate lever. DECISION-8 + the re-authored 19-04-PLAN.md committed (2c5a418); gsd-plan-checker PASS-WITH-WARNINGS (0 blockers, 5 warnings folded). 19-04 is now 7 tasks: 1-3 CARRIED byte-identical (c84e6d0/dca8d43/8c97f01); 4-5 NEW no-spend build (batched OOF adapter + contamination gate + cheaper-model pilot + k=1 cert + ADDITIVE re-pre-registration) -- NOT yet built; 6 AMENDED T-spend-1 (AUTHORIZED Copilot spend, BLOCKED on 4-5); 7 UNCHANGED T-spend-2 (NOT authorized). No frozen-primitive change (bulk = unfrozen latitude); cheaper-as-decider amendment-only + NOT adopted. Pricing-grounded: batching captures ~85% of the savings (~310 vs ~2,140 credits/pass), cheaper-as-decider adds ~$2. ~103 Copilot AI Credits on the consult; NO eval spend. PAUSED via /gsd-pause-work (handoff: .continue-here.md + HANDOFF.json). NEXT: build the no-spend Tasks 4-5 -> re-prove the suite green -> T-spend-1. The RE-PLAN-7 position below is retained as historical context.
 
-Phase: 21 (live-web-open-book-over-refusal-gold-and-arm-b-re-run) — EXECUTING
+Phase: 21 (live-web-open-book-over-refusal-gold-and-arm-b-re-run) -- EXECUTING
 Plan: 4 of 5
 Status: Ready to execute
 Last activity: 2026-06-22
