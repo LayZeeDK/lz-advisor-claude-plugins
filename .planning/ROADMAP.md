@@ -306,7 +306,7 @@ v1.0 + v1.0.1 + v2.0.0 shipped (plugin 2.0.0). **Active milestone: v2.1.0 (lz-de
 Plans:
 **Wave 1**
 
-- [ ] 22-01-PLAN.md -- Deterministic SCORE+VERDICT core: lz-eval-parity-judge.mjs (position-swap agreement + SEM) + lz-eval-parity-verdict.mjs (two-layer floor+parity bar, frozen PARITY_BAR) [PAR-04/05] [wave 1, no-spend]
+- [x] 22-01-PLAN.md -- Deterministic SCORE+VERDICT core: lz-eval-parity-judge.mjs (position-swap agreement + SEM) + lz-eval-parity-verdict.mjs (two-layer floor+parity bar, frozen PARITY_BAR) [PAR-04/05] [wave 1, no-spend]
 - [ ] 22-02-PLAN.md -- Gold-anchoring modules: lz-eval-judge-calibration.mjs (MCC gate, D-13) + lz-eval-sliceA-gold.mjs (AVeriTeC collapse/filter/per-direction tally + frozen feasibility gate, D-11/14) + lz-eval-baseline-manifest.mjs (fail-closed CC-ver+model pin) [PAR-02/03/06] [wave 1, no-spend]
 - [ ] 22-03-PLAN.md -- Architectural-parity write-up (docs-grounded built-in-vs-lz preserve-vs-collapse contrast) + content-review gate [PAR-07/08] [wave 1, no-spend]
 

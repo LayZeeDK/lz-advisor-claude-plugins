@@ -4,14 +4,14 @@ milestone: v2.1.0
 milestone_name: lz-deep-research skill
 status: executing
 stopped_at: Phase 22 EXECUTING (5 plans / 3 waves; started 2026-06-22, maintainer approved bulk Claude spend). Wave 1-2 = no-spend eval-harness build + pre-registration FREEZE; Wave 3 (22-05) = human-authorized Claude-pool spend AFTER the freeze commits (D-20). Sonnet-default ships regardless. Deferred milestone-level: /gsd-audit-milestone covers 16-22 + reconcile the phases-19/20 In-Progress rows before /gsd-complete-milestone.
-last_updated: "2026-06-22T19:30:33.634Z"
-last_activity: 2026-06-22 -- Phase 22 execution started
+last_updated: "2026-06-22T19:40:06Z"
+last_activity: 2026-06-22 -- Phase 22 Plan 01 complete (parity SCORE+VERDICT core, no-spend)
 progress:
   total_phases: 10
   completed_phases: 7
   total_plans: 38
-  completed_plans: 35
-  percent: 80
+  completed_plans: 36
+  percent: 82
 ---
 
 # Project State
@@ -66,9 +66,9 @@ Items deferred across milestones (v1.0.1 close 2026-06-11; v2.0.0 additions tagg
 **RE-PLAN-8 READY (2026-06-19; supersedes the RE-PLAN-7 status below at the design layer):** A 4-round cross-family board (Opus + Copilot GPT-5.5 + Gemini 3.1 Pro Preview; de-identified, fact-only) UNANIMOUSLY converged on a BULK OOF gold-screen + a NON-GATING cheaper-model pilot + the k=1-stability-certificate lever. DECISION-8 + the re-authored 19-04-PLAN.md committed (2c5a418); gsd-plan-checker PASS-WITH-WARNINGS (0 blockers, 5 warnings folded). 19-04 is now 7 tasks: 1-3 CARRIED byte-identical (c84e6d0/dca8d43/8c97f01); 4-5 NEW no-spend build (batched OOF adapter + contamination gate + cheaper-model pilot + k=1 cert + ADDITIVE re-pre-registration) -- NOT yet built; 6 AMENDED T-spend-1 (AUTHORIZED Copilot spend, BLOCKED on 4-5); 7 UNCHANGED T-spend-2 (NOT authorized). No frozen-primitive change (bulk = unfrozen latitude); cheaper-as-decider amendment-only + NOT adopted. Pricing-grounded: batching captures ~85% of the savings (~310 vs ~2,140 credits/pass), cheaper-as-decider adds ~$2. ~103 Copilot AI Credits on the consult; NO eval spend. PAUSED via /gsd-pause-work (handoff: .continue-here.md + HANDOFF.json). NEXT: build the no-spend Tasks 4-5 -> re-prove the suite green -> T-spend-1. The RE-PLAN-7 position below is retained as historical context.
 
 Phase: 22 (deep-research-skill-eval-and-parity-baseline-with-built-in-d) -- EXECUTING
-Plan: 1 of 5
+Plan: 2 of 5 (Plan 01 complete)
 Status: Executing Phase 22
-Last activity: 2026-06-22 -- Phase 22 execution started
+Last activity: 2026-06-22 -- Phase 22 Plan 01 complete (parity SCORE+VERDICT core)
 
 ### Milestone v2.1.0 roadmap (REVISED 2026-06-15)
 
@@ -153,6 +153,7 @@ Advisor runtime-proven on Opus 4.8. Final phase: Phase 10 (documentation-hygiene
 | 18 (Haiku research + voter + early eval) | 4/5 | 45min | 11min |
 | 19 (Search + extract workers) | TBD | - | - |
 | 20 (Orchestrator + scale) | TBD | - | - |
+| 22 (Parity eval + built-in baseline) | 1/5 | ~30min | ~30min |
 
 **Recent Trend:**
 
@@ -188,6 +189,7 @@ Advisor runtime-proven on Opus 4.8. Final phase: Phase 10 (documentation-hygiene
 | Phase 21 P01 | 35min | 2 tasks | 4 files |
 | Phase 21 P02 | 40min | 1 tasks | 2 files |
 | Phase 21 P03 | 45min | 1 tasks | 2 files |
+| Phase 22 P01 | ~30min | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -237,6 +239,7 @@ Recent decisions affecting current work (v2.1.0):
 - [Phase ?]: Phase 21-01: composeVerdict emits SCOPED-sensitivity-only / DOES-NOT-WORK / VOID-on-power-RAISE via frozen decideScopedSensitivity; full WORKS never emitted (arm A void, D-11)
 - [Phase 21]: 21-02: percent-encode the confirmed_uid to a Windows-safe claims-file basename ('::' -> '%3A%3A'); safeId alone is insufficient (it accepts ':'); the RAW uid stays the openbook-evidence.json snapshot key
 - [Phase 21]: 21-03: open-book OOF gold driver (openbook-oof-gold.mjs) built NO-SPEND -- mirrors armB-oof-gold.mjs with the open-book evidence source; consumes the Plan 02 uid-keyed snapshot BY UID; FROZEN_OOF_PAIR gold-blind expectedEntailment:true; two-field gold (groundedness+validity, AVeriTeC-4-way->binary, oof_per_model, kappa, Jaccard); OOF non-unanimity -> RESIDUE (excluded + routed to human, never coerced); LZ_SAMPLE cap BEFORE dispatch; LZ_SPEND+isCliEntry hard-gated (zero-spend-on-import proven). FILE-form 13/13 mutation-verified (residue/cap/shape). OBG-04/08/09; D-02/03/08/13.
+- [Phase 22 P01]: [v2.1.0 / Phase 22 P01]: the deterministic parity SCORE+VERDICT core landed NO-SPEND in eval/ (never ships) -- TWO new modules. lz-eval-parity-judge.mjs: cellVerdict(orderAB,orderBA) encodes the D-06/Pattern-3 position-swap rule (win iff BOTH orderings agree, else TIE -- the discrimination anchor); scoreJudgeCells({records,orderingMap}) groups landed judge JSON by (question x dimension), resolves each ordering's preferred A/B into lz|builtin via the per-ordering map, applies cellVerdict, reports descriptive {verdict, meanScoreLz/Builtin, semLz/Builtin, k}; PARITY_K_RANGE=Object.freeze({MIN:3,MAX:5}); SEM = sample-stddev(n-1)/sqrt(k), DESCRIPTIVE ONLY (no CI gate, D-07; no jstat). lz-eval-parity-verdict.mjs: PARITY_BAR=Object.freeze({FLOOR_DIMS [factual,citation], MAX_LOSS_FLOOR_DIMS 0, MAX_LOSS_OTHER_DIMS 1, PASS_THRESHOLD 0.7}); parityVerdict({floorPassByQuestion,lossByDimension}) = PARITY iff floor passes all questions AND zero floor-dim loss AND <=1 other-dim loss; floor fail -> NAMED-GAP (load-bearing, D-05); floor pass + bar breach -> SCOPED-PARITY-OR-NAMED-GAP; pure, no jstat (count comparison, D-07). Both fail-closed (ContractError on missing ordering / k out of range / mismatched k / unknown dim / non-boolean floor / negative-or-fractional loss; T-22-01). Both import readJson/ContractError one-directionally (eval->runtime); packaging-boundary 2/2 intact. Each test discrimination-proven by an invert-the-fix run (relaxed either-prefers rule fails 3 judge tests; MAX_LOSS_FLOOR_DIMS 0->1 fails 6 verdict tests). FILE-form gate 14/14 + 14/14. Commits 8033835 (judge) + f28ae7e (verdict). PAR-04/PAR-05 satisfied at the DETERMINISTIC-ENGINE level -- they stay Pending in traceability until the Plan 22-05 live eval validates them end-to-end (do not orphan the live-eval close). No deviations.
 
 ### Pending Todos
 
