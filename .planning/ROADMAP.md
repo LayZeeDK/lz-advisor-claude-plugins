@@ -274,7 +274,7 @@ Phases execute in numeric order: 16 -> 17 -> 17.1 -> 18 -> 19 -> 20 -> 21
 | 19. Search + extract workers | v2.1.0 | 3/5 | In Progress|  |
 | 20. Orchestrator + scale | v2.1.0 | 6/7 | In Progress|  |
 | 21. Over-refusal gold + arm-B re-run | v2.1.0 | 5/5 | Complete | 2026-06-22 |
-| 22. Deep-research skill eval + built-in parity | v2.1.0 | 0/5 | Planned     |  |
+| 22. Deep-research skill eval + built-in parity | v2.1.0 | 4/5 | In Progress |  |
 
 v1.0 + v1.0.1 + v2.0.0 shipped (plugin 2.0.0). **Active milestone: v2.1.0 (lz-deep-research skill)** -- Phases 16-22 (Phase 21 added 2026-06-21; Phase 22 -- deep-research eval + built-in parity -- added 2026-06-22), roadmap revised 2026-06-15 (gating eval moved EARLY to Phase 18; EVAL-05 added -- Haiku prompt-engineering research must precede authoring any Haiku agent; the search worker's model tier follows the Phase-18 outcome). Release/publication (REL-01..03) is handled during `/gsd-complete-milestone` after `/gsd-audit-milestone` passes, not as a build phase. See `.planning/MILESTONES.md` for shipped-milestone summaries and `milestones/` for full detail.
 
@@ -312,7 +312,7 @@ Plans:
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-- [ ] 22-04-PLAN.md -- FREEZE the pre-registration (rubric + both question lists + collapse map + MCC bar + resolved D-14 gate + fallback + parity bar + k) + the session driver + anti-drift test; blocking content-review + timestamped freeze commit BEFORE any spend [PAR-01/08] [wave 2, no-spend gate]
+- [x] 22-04-PLAN.md -- FREEZE the pre-registration (rubric + both question lists + collapse map + MCC bar + resolved D-14 gate + fallback + parity bar + k) + the session driver + anti-drift test; blocking content-review + timestamped freeze commit BEFORE any spend [PAR-01/08] [wave 2, no-spend gate] -- DONE 2026-06-22 (eval/lz-eval-parity-prereg.md + eval/lz-eval-parity-driver.md + eval/lz-eval-parity-prereg.test.mjs; anti-drift 8/8 FILE-form, discrimination-proven; no-OOF driver D-18; freeze commit ae7294d at 2026-06-22T20:23:01Z = the pre-registration timestamp of record D-20; PAR-01 complete; PAR-08 partial -- prereg+driver content-review met, the phase-wide gate closes in 22-05; no-spend, zero packages)
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
