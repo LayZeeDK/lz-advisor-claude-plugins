@@ -3,9 +3,9 @@ gsd_state_version: 1.0
 milestone: v2.1.0
 milestone_name: lz-deep-research skill
 status: executing
-stopped_at: Phase 22 PLANNED (5 plans / 3 waves; plan-checker PASSED 0-blockers, decision-coverage 20/20). Wave 1-2 = no-spend eval-harness build + pre-registration FREEZE; Wave 3 = human-authorized Claude-pool spend (all autonomous:false). PAUSED before /gsd-execute-phase 22 so the maintainer reviews the plans + pre-registration before any pool spend (pool-heavy eval, spend behind a human gate). Sonnet-default ships regardless. Deferred milestone-level: /gsd-audit-milestone covers 16-22 + reconcile the phases-19/20 In-Progress rows before /gsd-complete-milestone.
-last_updated: "2026-06-22T15:39:00.378Z"
-last_activity: 2026-06-22 -- Phase 22 planning complete
+stopped_at: Phase 22 EXECUTING (5 plans / 3 waves; started 2026-06-22, maintainer approved bulk Claude spend). Wave 1-2 = no-spend eval-harness build + pre-registration FREEZE; Wave 3 (22-05) = human-authorized Claude-pool spend AFTER the freeze commits (D-20). Sonnet-default ships regardless. Deferred milestone-level: /gsd-audit-milestone covers 16-22 + reconcile the phases-19/20 In-Progress rows before /gsd-complete-milestone.
+last_updated: "2026-06-22T19:30:33.634Z"
+last_activity: 2026-06-22 -- Phase 22 execution started
 progress:
   total_phases: 10
   completed_phases: 7
@@ -21,7 +21,7 @@ progress:
 See: .planning/PROJECT.md (updated 2026-06-15 -- milestone v2.1.0 started)
 
 **Core value:** Near-Opus intelligence at Sonnet cost, through strategic advisor consultation at high-leverage moments -- now extended from coding tasks to deep research
-**Current focus:** Phase 21 -- live-web-open-book-over-refusal-gold-and-arm-b-re-run
+**Current focus:** Phase 22 -- deep-research-skill-eval-and-parity-baseline-with-built-in-d
 
 ## Deferred Items
 
@@ -65,10 +65,10 @@ Items deferred across milestones (v1.0.1 close 2026-06-11; v2.0.0 additions tagg
 
 **RE-PLAN-8 READY (2026-06-19; supersedes the RE-PLAN-7 status below at the design layer):** A 4-round cross-family board (Opus + Copilot GPT-5.5 + Gemini 3.1 Pro Preview; de-identified, fact-only) UNANIMOUSLY converged on a BULK OOF gold-screen + a NON-GATING cheaper-model pilot + the k=1-stability-certificate lever. DECISION-8 + the re-authored 19-04-PLAN.md committed (2c5a418); gsd-plan-checker PASS-WITH-WARNINGS (0 blockers, 5 warnings folded). 19-04 is now 7 tasks: 1-3 CARRIED byte-identical (c84e6d0/dca8d43/8c97f01); 4-5 NEW no-spend build (batched OOF adapter + contamination gate + cheaper-model pilot + k=1 cert + ADDITIVE re-pre-registration) -- NOT yet built; 6 AMENDED T-spend-1 (AUTHORIZED Copilot spend, BLOCKED on 4-5); 7 UNCHANGED T-spend-2 (NOT authorized). No frozen-primitive change (bulk = unfrozen latitude); cheaper-as-decider amendment-only + NOT adopted. Pricing-grounded: batching captures ~85% of the savings (~310 vs ~2,140 credits/pass), cheaper-as-decider adds ~$2. ~103 Copilot AI Credits on the consult; NO eval spend. PAUSED via /gsd-pause-work (handoff: .continue-here.md + HANDOFF.json). NEXT: build the no-spend Tasks 4-5 -> re-prove the suite green -> T-spend-1. The RE-PLAN-7 position below is retained as historical context.
 
-Phase: 22 (deep-research skill eval + built-in /deep-research parity) -- ADDED, NOT PLANNED
-Plan: 0 (run /gsd-discuss-phase 22 -> /gsd-plan-phase 22)
-Status: Ready to execute
-Last activity: 2026-06-22 -- Phase 22 planning complete
+Phase: 22 (deep-research-skill-eval-and-parity-baseline-with-built-in-d) -- EXECUTING
+Plan: 1 of 5
+Status: Executing Phase 22
+Last activity: 2026-06-22 -- Phase 22 execution started
 
 ### Milestone v2.1.0 roadmap (REVISED 2026-06-15)
 
