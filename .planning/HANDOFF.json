@@ -1,43 +1,34 @@
 {
   "version": "1.0",
-  "timestamp": "2026-06-22T08:04:22.197Z",
+  "timestamp": "2026-06-22T09:09:38.000Z",
   "phase": "21",
   "phase_name": "live-web-open-book-over-refusal-gold-and-arm-b-re-run",
   "phase_dir": ".planning/phases/21-live-web-open-book-over-refusal-gold-and-arm-b-re-run",
   "plan": 5,
-  "task": 1,
+  "task": "complete",
   "total_tasks": 3,
-  "status": "paused",
+  "status": "executing",
   "completed_tasks": [
     {"id": "21-01", "name": "No-spend deterministic core (openbook-lib + openbook-rescore + tests)", "status": "done", "commit": "bacefcd"},
     {"id": "21-02", "name": "Open-book retrieval-log builder (openbook-retrieval-log.mjs + test)", "status": "done", "commit": "a2e998d"},
     {"id": "21-03", "name": "Open-book OOF gold driver (openbook-oof-gold.mjs + test, LZ_SPEND/LZ_SAMPLE gated)", "status": "done", "commit": "1a4941b"},
-    {"id": "21-04-T1", "name": "Live-web open-book retrieval over the frozen 30 controls (session pool, zero Copilot) + normalize + freeze openbook-evidence.json (30/30 evidence, 0 gaps, sha256 9faee64a)", "status": "done", "commit": "327b69f"},
-    {"id": "21-04-T2", "name": "Pre-register 21-OPENBOOK-LOCK-RULE.md (committed BEFORE any spend) + independent adversarial review (review-openbook-nospend.md, CLEAN-WITH-NOTES, 67/67)", "status": "done", "commit": "59f8d4b"},
-    {"id": "21-04-fix", "name": "Fix 2 degenerate D-08 diagnostics (kappa/jaccard null + oof_consensus/oof_agreement); independent re-confirmation RESOLVED-no-regression", "status": "done", "commit": "4bc8298"},
-    {"id": "convention", "name": "Extend review convention to prompts + Markdown references (use OR publication) in .planning/PROJECT.md; GSD-alignment review PASS", "status": "done", "commit": "f51ac15"}
+    {"id": "21-04", "name": "Live-web open-book retrieval + frozen snapshot (sha256 9faee64a) + pre-registered lock-rule + adversarial review", "status": "done", "commit": "327b69f/59f8d4b/4bc8298"},
+    {"id": "21-05-T1", "name": "Pre-flight cost spike (LZ_SAMPLE=2 LZ_SPEND=1): 15.72 AI Credits / 2 controls (7.86/control); cleared the cost guard -> full-N authorized via a second human GO/NO-GO", "status": "done"},
+    {"id": "21-05-T2", "name": "Full-N open-book OOF gold (LZ_SPEND=1; 59.58 credits / 8 calls; 75.30 total) + two-sided re-score + frozen CP gate -> VOID-on-power-RAISE (validN 10 < 24; 20/30 oof-splits, 0 not-supported, 1 over-refusal)", "status": "done"},
+    {"id": "21-05-T3", "name": "21-OPENBOOK-CERT-RESULT.md written (VOID-on-power-RAISE; under-power finding; PROVISIONAL+D-05 scope limits; honest 75.30-credit disclosure; no-WORKS / Sonnet-ships / Haiku-deferred / arms-never-pooled) + 21-05-SUMMARY.md", "status": "done"}
   ],
   "remaining_tasks": [
-    {"id": "21-05-T1", "name": "Plan 05 pre-flight: 1-2 item OOF cost spike (LZ_SAMPLE=2 LZ_SPEND=1) -> disclose actual AI Credits -> HALT+RAISE if materially over the ~100-350 estimate", "status": "not_started"},
-    {"id": "21-05-T2", "name": "Full open-book OOF gold over the 30 (LZ_SPEND=1) -> two-sided re-score vs frozen Sonnet votes (openbook-rescore.mjs, no-spend) -> frozen CP gate vs TAU_OR 0.15", "status": "not_started"},
-    {"id": "21-05-T3", "name": "Write 21-OPENBOOK-CERT-RESULT.md (SCOPED-sensitivity-only | clean DOES-NOT-WORK | VOID-on-construct/power -> RAISE) + honest credit disclosure; kappa/jaccard reported null per the fix", "status": "not_started"},
-    {"id": "phase-close", "name": "After the cert: verify_phase_goal -> secure-phase -> validate-phase -> extract-learnings (per the global GSD phase-completion sequence)", "status": "not_started"}
+    {"id": "phase-close", "name": "verify_phase_goal (gsd-verifier -> 21-VERIFICATION.md) -> secure-phase -> validate-phase -> extract-learnings -> phase.complete (per the global GSD phase-completion sequence)", "status": "not_started"}
   ],
-  "blockers": [
-    {"description": "Plan 05 is the ONLY metered Copilot AI Credits spend; it is NOT yet authorized. The Plan-04 GO/NO-GO checkpoint is open.", "type": "human_action", "workaround": "Get explicit GO/NO-GO authorization (AskUserQuestion, per CLAUDE.md metered-out-of-family rule) BEFORE LZ_SPEND=1."},
-    {"description": "Copilot CLI must be available + AI Credits budget present; the OOF pair is gpt-5.5 + gemini-3.1-pro-preview (--effort high).", "type": "external", "workaround": "Confirm `copilot` CLI works; pipe prompt via stdin (memory reference_copilot_cli_invocation)."}
-  ],
-  "human_actions_pending": [
-    {"action": "Authorize the Plan 05 metered Copilot OOF spend (est. ~100-350 AI Credits; per-call ran ~3x estimate in Phase 20 -- M-1)", "context": "The cert is the v2.1.0 RAISE; the shippable Sonnet-default skill does NOT depend on the verdict. Pre-flight (LZ_SAMPLE) is the cost guard.", "blocking": true}
-  ],
+  "blockers": [],
+  "human_actions_pending": [],
   "decisions": [
-    {"decision": "Real lz-advisor:research-search-worker + research-extract-worker used (session restarted with --plugin-dir)", "rationale": "Highest fidelity to D-01; gsd-executor lacks Agent/WebSearch/WebFetch so retrieval is orchestrator-driven inline", "phase": "21"},
-    {"decision": "Net-new openbook-normalize-claims.mjs bridges worker output -> frozen builder contract (inject control claim from packets, never the voter excerpt; propagate top-level source per claim)", "rationale": "Under-specified plan gap: the gold driver reads rec.claim + the builder needs per-claim source, which the raw extract worker emits neither of", "phase": "21"},
-    {"decision": "OA-source preference for retrieval (PMC/arxiv/NOAA/ACP/Wikipedia)", "rationale": "Publisher pages (NEJM/Nature/Science/FDA/sciencedirect/ash) bot-block WebFetch", "phase": "21"},
-    {"decision": "kappa + evidence_jaccard reported null (not computable from frozen inputs); oof_per_model -> honest oof_consensus + oof_agreement; finding 3 (quote not substring-checked) accepted non-load-bearing", "rationale": "D-08 reported-only diagnostics; the frozen adjudicator exposes only consensus+split, voter packets carry no URLs; the CP gate is unaffected", "phase": "21"},
-    {"decision": "Review convention extended to prompts + Markdown references (review before use OR publication); recorded in .planning/PROJECT.md (NOT the GSD-managed CLAUDE.md conventions block)", "rationale": "Maintainer directive 2026-06-22; the convention edit itself passed an independent GSD-alignment review", "phase": "project-wide"}
+    {"decision": "Metered Plan 05 spend authorized via TWO explicit GO/NO-GO gates: (1) spike-only, then (2) full-N on a real per-item projection -- never the blind ~100-350 range", "rationale": "CLAUDE.md metered-out-of-family rule + the maintainer flagged 350 as too much; the staged spike is the cost guard (D-12/D-14)", "phase": "21"},
+    {"decision": "VOID-on-power-RAISE accepted as-output (validN 10 < N_CTRL_FLOOR 24)", "rationale": "Pre-registered verdict frame; one pass, TAU not relaxed, denominator not grown/shrunk, frozen primitives byte-identical", "phase": "21"},
+    {"decision": "The construct-matched open-book gold is UNDER-POWERED (20/30 oof-splits), a distinct finding from Phase 20's VOID-on-construct", "rationale": "Two strong models split on broader-literature open-book entailment for two-thirds of the closed-book-SELECTED controls, starving the SUPPORTED denominator to 10", "phase": "21"},
+    {"decision": "Total metered Copilot spend 75.30 AI Credits (verify on dashboard; M-1 per-call capture)", "rationale": "Well under estimate; the spike's 7.86/control was per-call-overhead-dominated, full 8-control batches amortized to ~2.1/control", "phase": "21"}
   ],
   "uncommitted_files": [],
-  "next_action": "In a FRESH session: confirm the GO/NO-GO authorization for the metered spend, then run the Plan 05 pre-flight cost spike: `LZ_SAMPLE=2 LZ_SPEND=1 node eval/.cache/p21-live/openbook-oof-gold.mjs` -> read eval/.cache/p21-live/openbook-gold-credits.json -> HALT and disclose actual per-item credits; only continue to full N if in range.",
-  "context_notes": "Phase 21 Wave 4 (Plan 21-04) is COMPLETE + no-spend; the frozen open-book evidence snapshot (openbook-evidence.json, sha256 9faee64a, 30/30 controls, 0 gaps, 0 blocklisted) is the pinned, pre-registered construct. The whole point of pausing is to run the metered Plan 05 in a FRESH context. DO NOT re-run retrieval or re-freeze the snapshot -- that would break the committed pre-registration (21-OPENBOOK-LOCK-RULE.md pins the sha256). All no-spend code is committed; gitignored eval/.cache/p21-live/ + .lz-research/p21-openbook/ persist on disk. Verdict ceiling is SCOPED-sensitivity-only (arm A is structurally void); full WORKS is out; Sonnet-default ships regardless; Haiku-first flip deferred."
+  "next_action": "Run the phase-close sequence: verify_phase_goal (gsd-verifier) -> /gsd-secure-phase 21 -> /gsd-validate-phase 21 -> /gsd-extract-learnings 21 -> state.complete-phase. The RAISE (a powered construct-matched over-refusal needs an open-book-NATIVE control set) is future work, not this milestone.",
+  "context_notes": "Phase 21 Plan 05 (the only metered spend) is COMPLETE. The frozen open-book evidence snapshot (sha256 9faee64a) was consumed read-only, never re-frozen. All metered-run artifacts are gitignored under eval/.cache/p21-live/ (D-13); only 21-OPENBOOK-CERT-RESULT.md + the lock-rule are tracked. The shippable Sonnet-default lz-deep-research skill never depended on the cert verdict."
 }
