@@ -185,7 +185,7 @@ test('scoreJudgeCells: a k outside PARITY_K_RANGE is a ContractError', () => {
   ];
 
   assert.throws(
-    () => scoreJudgeCells({ records, orderingMap: ORDERING_MAP }),
+    () => scoreJudgeCells({ records: tooMany, orderingMap: ORDERING_MAP }),
     ContractError,
   );
 });
