@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v2.1.0
 milestone_name: lz-deep-research skill
 status: executing
-stopped_at: Phase 22 context gathered (discuss-phase complete; eval design board-converged via research wave + 5-lens Opus panel + Opus/GPT-5.5/Gemini cross-family board). NEXT: /gsd-plan-phase 22 --research (chain auto-advancing). Deferred milestone-level: /gsd-audit-milestone covers 16-22 + reconcile the phases-19/20 In-Progress rows before /gsd-complete-milestone.
-last_updated: "2026-06-22T14:57:20.073Z"
-last_activity: 2026-06-22
+stopped_at: Phase 22 PLANNED (5 plans / 3 waves; plan-checker PASSED 0-blockers, decision-coverage 20/20). Wave 1-2 = no-spend eval-harness build + pre-registration FREEZE; Wave 3 = human-authorized Claude-pool spend (all autonomous:false). PAUSED before /gsd-execute-phase 22 so the maintainer reviews the plans + pre-registration before any pool spend (pool-heavy eval, spend behind a human gate). Sonnet-default ships regardless. Deferred milestone-level: /gsd-audit-milestone covers 16-22 + reconcile the phases-19/20 In-Progress rows before /gsd-complete-milestone.
+last_updated: "2026-06-22T15:39:00.378Z"
+last_activity: 2026-06-22 -- Phase 22 planning complete
 progress:
-  total_phases: 9
+  total_phases: 10
   completed_phases: 7
-  total_plans: 33
+  total_plans: 38
   completed_plans: 35
-  percent: 78
+  percent: 80
 ---
 
 # Project State
@@ -67,8 +67,8 @@ Items deferred across milestones (v1.0.1 close 2026-06-11; v2.0.0 additions tagg
 
 Phase: 22 (deep-research skill eval + built-in /deep-research parity) -- ADDED, NOT PLANNED
 Plan: 0 (run /gsd-discuss-phase 22 -> /gsd-plan-phase 22)
-Status: Phase 21 COMPLETE (VOID-on-power-RAISE; Sonnet-default ships; Haiku-first deferred). Phase 22 added 2026-06-22 -- blessed-aligned holistic parity eval (OOF-free, expert-dataset gold, NOT a CP component cert).
-Last activity: 2026-06-22
+Status: Ready to execute
+Last activity: 2026-06-22 -- Phase 22 planning complete
 
 ### Milestone v2.1.0 roadmap (REVISED 2026-06-15)
 
