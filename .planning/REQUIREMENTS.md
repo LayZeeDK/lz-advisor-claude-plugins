@@ -84,7 +84,7 @@ Derived 2026-06-22 (the ROADMAP Phase-22 "Requirements: TBD -- run /gsd-plan-pha
 - [ ] **PAR-04**: The Opus judge grades each report on the 5 Anthropic dimensions, per-dimension isolated, 0.0-1.0 + pass/fail (>= 0.7 default) + an "Unknown" escape hatch, using the claim-extraction bridge (D-12) for the factual/citation dimensions (extract claims+citations, score each against the report's OWN cited evidence), with blinding + mandatory position-swap (win only if both orders agree) + k=3-5 multi-sample at temp 0; NEVER a Sonnet judge on the factual/citation dimensions.
 - [ ] **PAR-05**: The two-layer verdict is emitted mechanically (off-model, frozen constants): the absolute quality FLOOR (the Sonnet skill passes factual AND citation on EVERY frozen question) + the comparative PARITY bar (D-07: zero clear LOSS on factual/citation, <= 1 clear LOSS across the rest), reported as raw per-cell verdicts per-direction, never only the aggregate, resolving to PARITY / SCOPED-PARITY / NAMED-GAP -- never a ship gate (D-03).
 - [ ] **PAR-06**: Slice A (AVeriTeC, judge-free) scores the verify-voter verdict-vs-gold DETERMINISTICALLY per-confusion-matrix-direction (never pooled), collapsing the 4-way label to `unrefuted|refuted` (exclude Conflicting/Cherry-picking, hold out NEI), honoring `claim_date` cutoffs, and runs DESCRIPTIVELY (not a pass/fail cert) ONLY if it clears the PAR-01-frozen feasibility gate (RESOLVED FEASIBLE; else the D-14 calibration-probe fallback applies); the 2020-dating + topical-narrowness limits are recorded as PROVISIONAL.
-- [ ] **PAR-07**: The architectural-parity write-up documents the built-in's design (votes-on-claims + adversarial cross-review + drops non-survivors -> collapses uncertainty) vs lz-deep-research's preserve-uncertainty design (first-class Contested/Unsupported + non-unanimity human abstention + disconfirming search + source-independence weighting + the two-assurance distinction), explicitly flagged docs-grounded (the built-in source is closed), citing Anthropic's holistic-eval philosophy.
+- [x] **PAR-07**: The architectural-parity write-up documents the built-in's design (votes-on-claims + adversarial cross-review + drops non-survivors -> collapses uncertainty) vs lz-deep-research's preserve-uncertainty design (first-class Contested/Unsupported + non-unanimity human abstention + disconfirming search + source-independence weighting + the two-assurance distinction), explicitly flagged docs-grounded (the built-in source is closed), citing Anthropic's holistic-eval philosophy.
 - [ ] **PAR-08**: Every eval SCRIPT is code-reviewed AND covered by code-reviewed unit tests, and every PROMPT/REFERENCE that steers an LLM task (the judge rubric prompt, the claim-extraction prompt, the baseline-capture driver, the architectural-parity write-up) is content-reviewed BEFORE it drives an LLM task OR ships; the eval tree NEVER ships (the one-directional eval -> runtime import boundary holds; jstat pinned in `eval/` only).
 
 ## Release Requirements (handled during `/gsd-complete-milestone`)
@@ -179,8 +179,8 @@ Which phase covers which requirement. Filled in during roadmap creation (2026-06
 | PAR-04 | Phase 22 | Pending |
 | PAR-05 | Phase 22 | Pending |
 | PAR-06 | Phase 22 | Pending (harness landed 22-02: lz-eval-sliceA-gold.mjs; behavioral Slice-A run is the 22-05 spend) |
-| PAR-07 | Phase 22 | Pending |
-| PAR-08 | Phase 22 | Pending |
+| PAR-07 | Phase 22 | Complete (22-03: eval/lz-eval-parity-architecture.md authored + content-reviewed/approved; docs-grounded built-in-vs-lz preserve-vs-collapse contrast; commit 780fc35) |
+| PAR-08 | Phase 22 | Pending (partial: the 22-03 architectural-parity write-up portion content-reviewed/approved; the phase-wide gate -- all eval scripts + tests + prompts -- closes across 22-04/22-05) |
 
 Release requirements (REL-01..03) are handled during `/gsd-complete-milestone`, not mapped to build phases.
 
