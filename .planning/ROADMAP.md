@@ -307,7 +307,7 @@ Plans:
 **Wave 1**
 
 - [x] 22-01-PLAN.md -- Deterministic SCORE+VERDICT core: lz-eval-parity-judge.mjs (position-swap agreement + SEM) + lz-eval-parity-verdict.mjs (two-layer floor+parity bar, frozen PARITY_BAR) [PAR-04/05] [wave 1, no-spend]
-- [ ] 22-02-PLAN.md -- Gold-anchoring modules: lz-eval-judge-calibration.mjs (MCC gate, D-13) + lz-eval-sliceA-gold.mjs (AVeriTeC collapse/filter/per-direction tally + frozen feasibility gate, D-11/14) + lz-eval-baseline-manifest.mjs (fail-closed CC-ver+model pin) [PAR-02/03/06] [wave 1, no-spend]
+- [x] 22-02-PLAN.md -- Gold-anchoring modules: lz-eval-judge-calibration.mjs (MCC gate, D-13) + lz-eval-sliceA-gold.mjs (AVeriTeC collapse/filter/per-direction tally + frozen feasibility gate, D-11/14) + lz-eval-baseline-manifest.mjs (fail-closed CC-ver+model pin) [PAR-02/03/06] [wave 1, no-spend] -- DONE 2026-06-22 (3 modules + 3 co-tests + 1 synthetic fixture; 41 tests green, discrimination-proven; the PAR-02/03/06 BEHAVIORAL satisfaction is the Wave-3 22-05 spend)
 - [ ] 22-03-PLAN.md -- Architectural-parity write-up (docs-grounded built-in-vs-lz preserve-vs-collapse contrast) + content-review gate [PAR-07/08] [wave 1, no-spend]
 
 **Wave 2** *(blocked on Wave 1 completion)*

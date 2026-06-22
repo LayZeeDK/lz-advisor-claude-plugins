@@ -174,11 +174,11 @@ Which phase covers which requirement. Filled in during roadmap creation (2026-06
 | OBG-08 | Phase 21 | Complete |
 | OBG-09 | Phase 21 | Complete |
 | PAR-01 | Phase 22 | Pending |
-| PAR-02 | Phase 22 | Pending |
-| PAR-03 | Phase 22 | Pending |
+| PAR-02 | Phase 22 | Pending (harness landed 22-02: lz-eval-judge-calibration.mjs; behavioral calibration is the 22-05 spend) |
+| PAR-03 | Phase 22 | Pending (harness landed 22-02: lz-eval-baseline-manifest.mjs; behavioral capture is the 22-05 spend) |
 | PAR-04 | Phase 22 | Pending |
 | PAR-05 | Phase 22 | Pending |
-| PAR-06 | Phase 22 | Pending |
+| PAR-06 | Phase 22 | Pending (harness landed 22-02: lz-eval-sliceA-gold.mjs; behavioral Slice-A run is the 22-05 spend) |
 | PAR-07 | Phase 22 | Pending |
 | PAR-08 | Phase 22 | Pending |
 
