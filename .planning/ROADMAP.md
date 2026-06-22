@@ -244,7 +244,7 @@ Phases execute in numeric order: 16 -> 17 -> 17.1 -> 18 -> 19 -> 20 -> 21
 | 19. Search + extract workers | v2.1.0 | 3/5 | In Progress|  |
 | 20. Orchestrator + scale | v2.1.0 | 6/7 | In Progress|  |
 | 21. Over-refusal gold + arm-B re-run | v2.1.0 | 5/5 | Complete | 2026-06-22 |
-| 22. Deep-research skill eval + built-in parity | v2.1.0 | TBD | Not planned |  |
+| 22. Deep-research skill eval + built-in parity | v2.1.0 | 0/5 | Planned     |  |
 
 v1.0 + v1.0.1 + v2.0.0 shipped (plugin 2.0.0). **Active milestone: v2.1.0 (lz-deep-research skill)** -- Phases 16-22 (Phase 21 added 2026-06-21; Phase 22 -- deep-research eval + built-in parity -- added 2026-06-22), roadmap revised 2026-06-15 (gating eval moved EARLY to Phase 18; EVAL-05 added -- Haiku prompt-engineering research must precede authoring any Haiku agent; the search worker's model tier follows the Phase-18 outcome). Release/publication (REL-01..03) is handled during `/gsd-complete-milestone` after `/gsd-audit-milestone` passes, not as a build phase. See `.planning/MILESTONES.md` for shipped-milestone summaries and `milestones/` for full detail.
 
@@ -259,7 +259,7 @@ v1.0 + v1.0.1 + v2.0.0 shipped (plugin 2.0.0). **Active milestone: v2.1.0 (lz-de
 - Pre-registration discipline carries: freeze the rubric + the question set + the parity bar BEFORE grading.
 
 **Depends on**: Phases 16-20 (the shipped lz-deep-research skill) + Phase 21 (the over-refusal RAISE that motivated a parity-based, blessed-aligned proof instead of a component cert).
-**Requirements**: TBD -- run /gsd-plan-phase 22 to derive (candidate family: PAR-* parity/eval).
+**Requirements**: PAR-01, PAR-02, PAR-03, PAR-04, PAR-05, PAR-06, PAR-07, PAR-08 (the Parity / Eval family -- derived 2026-06-22 from the goal + 22-CONTEXT.md D-01..D-20 + 22-RESEARCH.md; see REQUIREMENTS.md).
 
 **Success Criteria** (what must be TRUE):
   1. 2-3 baseline research reports are produced by the built-in `/deep-research` on a frozen, pre-registered question set (capped at 2-3 for cost); lz-deep-research runs on the SAME questions.
@@ -269,7 +269,11 @@ v1.0 + v1.0.1 + v2.0.0 shipped (plugin 2.0.0). **Active milestone: v2.1.0 (lz-de
   5. The eval spends ZERO GitHub AI Credits; all model use is the Claude pool; the eval tree never ships (zero-dep runtime; any pinned vetted stats lib lives in eval/ only).
   6. The outcome states plainly whether Sonnet-on-lz-deep-research is at parity (scoped) or has a named gap; Sonnet-default ships regardless.
 
-**Plans:** 0 plans
+**Plans:** 5 plans (3 waves)
 
 Plans:
-- [ ] TBD (run /gsd-plan-phase 22 to break down)
+- [ ] 22-01-PLAN.md -- Deterministic SCORE+VERDICT core: lz-eval-parity-judge.mjs (position-swap agreement + SEM) + lz-eval-parity-verdict.mjs (two-layer floor+parity bar, frozen PARITY_BAR) [PAR-04/05] [wave 1, no-spend]
+- [ ] 22-02-PLAN.md -- Gold-anchoring modules: lz-eval-judge-calibration.mjs (MCC gate, D-13) + lz-eval-sliceA-gold.mjs (AVeriTeC collapse/filter/per-direction tally + frozen feasibility gate, D-11/14) + lz-eval-baseline-manifest.mjs (fail-closed CC-ver+model pin) [PAR-02/03/06] [wave 1, no-spend]
+- [ ] 22-03-PLAN.md -- Architectural-parity write-up (docs-grounded built-in-vs-lz preserve-vs-collapse contrast) + content-review gate [PAR-07/08] [wave 1, no-spend]
+- [ ] 22-04-PLAN.md -- FREEZE the pre-registration (rubric + both question lists + collapse map + MCC bar + resolved D-14 gate + fallback + parity bar + k) + the session driver + anti-drift test; blocking content-review + timestamped freeze commit BEFORE any spend [PAR-01/08] [wave 2, no-spend gate]
+- [ ] 22-05-PLAN.md -- BLOCKING human-authorized Claude-pool spend (gated AFTER the freeze): Opus judge MCC calibration + headless built-in/lz baseline capture (n=2-3 x k=2) + per-dimension blind/swap claim-extraction grading + Slice-A descriptive run + the mechanical two-layer verdict -> 22-PARITY-RESULT.md; ZERO OOF spend [PAR-02/03/04/05/06] [wave 3, autonomous:false]

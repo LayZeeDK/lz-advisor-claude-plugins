@@ -74,6 +74,19 @@ Derived 2026-06-21 (the ROADMAP Phase-21 "Requirements: TBD -- run /gsd-plan-pha
 - [x] **OBG-08**: Copilot AI Credits are minimized -- batched closed-book OOF judgment over tightly-packaged evidence + reuse-30 + a human-authorized 1-2 item pre-flight cost spike that HALTs + RAISEs if the per-item cost is significantly above the disclosed estimate.
 - [x] **OBG-09**: Every script that runs or is used by an LLM task is code-reviewed AND covered by code-reviewed unit tests; the eval tree never ships (the one-directional eval -> runtime import boundary holds).
 
+### Parity / Eval (PAR) -- Phase 22 deep-research skill eval + built-in parity
+
+Derived 2026-06-22 (the ROADMAP Phase-22 "Requirements: TBD -- run /gsd-plan-phase 22 to derive"). A holistic, system-level LLM-as-judge parity eval (NOT the per-component Clopper-Pearson certification that structurally VOIDed across Phases 18-21): establish that the shipped `lz-deep-research` skill on Sonnet produces research at quality EQUIVALENT to Claude Code's blessed built-in `/deep-research`. Two tracks -- ARCHITECTURAL parity (documented) + MEASURED parity (graded on a frozen holistic rubric, factual/citation anchored on expert-labeled benchmark gold). ZERO out-of-family (Copilot/GPT/Gemini) spend inside the eval; the eval tree never ships. The Sonnet-default skill ships regardless of the outcome (confidence / operating-envelope work, never a ship gate). Family ratified from the 22-RESEARCH.md proposal; the 8 IDs map onto the 6 ROADMAP Phase-22 success criteria.
+
+- [ ] **PAR-01**: A frozen, timestamped pre-registration (`eval/lz-eval-parity-prereg.md` + `Object.freeze`d constants) commits the 5-dimension rubric, both question lists (the Slice-A AVeriTeC seed list + the Slice-B natural set), the verdict-collapse map, the judge-calibration MCC bar, the RESOLVED D-14 Slice-A feasibility gate (FEASIBLE), and the D-14 fallback rule BEFORE any grading; an anti-drift test asserts the prose matches the constants byte-for-byte.
+- [ ] **PAR-02**: The Opus judge is calibrated through the existing MCC machinery (`lz-eval-mcc.mjs`) over WiCE (incl. `partially_supported` subtle-overreach) + LLM-AggreFact (de-dup vs WiCE; verbatim-only fetch), closed-book, and CLEARS the pre-registered MCC bar BEFORE grading any report; an uncalibrated judge is a DISQUALIFIER, never a silent default.
+- [ ] **PAR-03**: The built-in `/deep-research` baseline is captured headless (n=2-3 questions x k=2 runs) into the gitignored run dir with a MANIFEST pinning the CC version + model from `system/init`, the workflow surface, the report.md path, and per-run cost; lz-deep-research is captured the same way in the same reset window. END-STATE grading; per-run spread reported; never average across CC versions.
+- [ ] **PAR-04**: The Opus judge grades each report on the 5 Anthropic dimensions, per-dimension isolated, 0.0-1.0 + pass/fail (>= 0.7 default) + an "Unknown" escape hatch, using the claim-extraction bridge (D-12) for the factual/citation dimensions (extract claims+citations, score each against the report's OWN cited evidence), with blinding + mandatory position-swap (win only if both orders agree) + k=3-5 multi-sample at temp 0; NEVER a Sonnet judge on the factual/citation dimensions.
+- [ ] **PAR-05**: The two-layer verdict is emitted mechanically (off-model, frozen constants): the absolute quality FLOOR (the Sonnet skill passes factual AND citation on EVERY frozen question) + the comparative PARITY bar (D-07: zero clear LOSS on factual/citation, <= 1 clear LOSS across the rest), reported as raw per-cell verdicts per-direction, never only the aggregate, resolving to PARITY / SCOPED-PARITY / NAMED-GAP -- never a ship gate (D-03).
+- [ ] **PAR-06**: Slice A (AVeriTeC, judge-free) scores the verify-voter verdict-vs-gold DETERMINISTICALLY per-confusion-matrix-direction (never pooled), collapsing the 4-way label to `unrefuted|refuted` (exclude Conflicting/Cherry-picking, hold out NEI), honoring `claim_date` cutoffs, and runs DESCRIPTIVELY (not a pass/fail cert) ONLY if it clears the PAR-01-frozen feasibility gate (RESOLVED FEASIBLE; else the D-14 calibration-probe fallback applies); the 2020-dating + topical-narrowness limits are recorded as PROVISIONAL.
+- [ ] **PAR-07**: The architectural-parity write-up documents the built-in's design (votes-on-claims + adversarial cross-review + drops non-survivors -> collapses uncertainty) vs lz-deep-research's preserve-uncertainty design (first-class Contested/Unsupported + non-unanimity human abstention + disconfirming search + source-independence weighting + the two-assurance distinction), explicitly flagged docs-grounded (the built-in source is closed), citing Anthropic's holistic-eval philosophy.
+- [ ] **PAR-08**: Every eval SCRIPT is code-reviewed AND covered by code-reviewed unit tests, and every PROMPT/REFERENCE that steers an LLM task (the judge rubric prompt, the claim-extraction prompt, the baseline-capture driver, the architectural-parity write-up) is content-reviewed BEFORE it drives an LLM task OR ships; the eval tree NEVER ships (the one-directional eval -> runtime import boundary holds; jstat pinned in `eval/` only).
+
 ## Release Requirements (handled during `/gsd-complete-milestone`)
 
 Satisfied at milestone completion -- AFTER `/gsd-audit-milestone` passes -- so any audit findings can be resolved before publishing. These are NOT mapped to build phases; the roadmapper does not cover them.
@@ -110,10 +123,12 @@ Explicitly excluded. Documented to prevent scope creep and to record the anti-fe
 | Full orchestrator-worker token blowup (~15x naive multi-agent) | Violates the load-bearing "Sonnet cost" promise; the whole design exists to avoid it. |
 | Embedding / semantic-dedup runtime dependency | Violates the zero-external-dependency constraint. |
 | Top-level `bin/` for the aggregator | `bin/` is for user-facing PATH executables; the aggregator is a skill-internal helper and belongs in `skills/lz-deep-research/scripts/` (verified 2026-06-15). |
+| Out-of-family (Copilot/GPT/Gemini) model spend inside the Phase-22 parity eval | D-18: ZERO OOF spend inside the eval; gold comes only from free expert-labeled public datasets, never the maintainer or a metered OOF model. |
+| A per-component Clopper-Pearson certification of the Phase-22 parity eval | D-01: that bar exceeds the blessed reference's own and structurally VOIDED across Phases 18-21; Phase 22 is a holistic system-level LLM-as-judge parity eval, not a pass/fail CP cert. |
 
 ## Traceability
 
-Which phase covers which requirement. Filled in during roadmap creation (2026-06-15) and revised the same day (gating eval moved early to Phase 18; EVAL-05 added). The original 32 v2.1.0 phased requirements map to Phases 16-20; Phase 21 (the RAISE, added 2026-06-21) adds the 9-item OBG family, for 41 phased requirements total.
+Which phase covers which requirement. Filled in during roadmap creation (2026-06-15) and revised the same day (gating eval moved early to Phase 18; EVAL-05 added). The original 32 v2.1.0 phased requirements map to Phases 16-20; Phase 21 (the RAISE, added 2026-06-21) adds the 9-item OBG family; Phase 22 (the parity eval, added 2026-06-22) adds the 8-item PAR family, for 49 phased requirements total.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
@@ -158,19 +173,28 @@ Which phase covers which requirement. Filled in during roadmap creation (2026-06
 | OBG-07 | Phase 21 | Complete |
 | OBG-08 | Phase 21 | Complete |
 | OBG-09 | Phase 21 | Complete |
+| PAR-01 | Phase 22 | Pending |
+| PAR-02 | Phase 22 | Pending |
+| PAR-03 | Phase 22 | Pending |
+| PAR-04 | Phase 22 | Pending |
+| PAR-05 | Phase 22 | Pending |
+| PAR-06 | Phase 22 | Pending |
+| PAR-07 | Phase 22 | Pending |
+| PAR-08 | Phase 22 | Pending |
 
 Release requirements (REL-01..03) are handled during `/gsd-complete-milestone`, not mapped to build phases.
 
 **Coverage:**
-- v2.1.0 phased requirements: 41 total (32 original + 9 OBG / Phase 21 RAISE)
-- Mapped to phases: 41 (100% -- no orphans, no duplicates)
+- v2.1.0 phased requirements: 49 total (32 original + 9 OBG / Phase 21 RAISE + 8 PAR / Phase 22 parity eval)
+- Mapped to phases: 49 (100% -- no orphans, no duplicates)
 - Unmapped: 0
 - Release requirements (completion-gated, not phased): 3
 
-**Per-phase counts:** Phase 16 = 5 (AGG-01/02/04/06, VERIF-04); Phase 17 = 2 (PIPE-07, VERIF-06); Phase 18 = 6 (VERIF-01/02/03, COST-02, EVAL-03/05); Phase 19 = 7 (PIPE-03/04/05, AGG-03, EVAL-01/02/04); Phase 20 = 12 (PIPE-01/02/06/08/09, VERIF-05, AGG-05, COST-01/03/04, INTEG-01/02); Phase 21 = 9 (OBG-01..09). 5 + 2 + 6 + 7 + 12 + 9 = 41. (REVISED 2026-06-16: EVAL-01/02/04 re-mapped Phase 18 -> 19 -- the definitive gating eval relocated to the Phase-19 staged autonomous-search pilot after the standalone synthesized-overreach gate VOIDed via saturation; the Phase-18 eval machinery is built and reused. AMENDED 2026-06-21: Phase 21 RAISE added; the 9-item OBG family derived from the goal + 21-CONTEXT.md.)
+**Per-phase counts:** Phase 16 = 5 (AGG-01/02/04/06, VERIF-04); Phase 17 = 2 (PIPE-07, VERIF-06); Phase 18 = 6 (VERIF-01/02/03, COST-02, EVAL-03/05); Phase 19 = 7 (PIPE-03/04/05, AGG-03, EVAL-01/02/04); Phase 20 = 12 (PIPE-01/02/06/08/09, VERIF-05, AGG-05, COST-01/03/04, INTEG-01/02); Phase 21 = 9 (OBG-01..09); Phase 22 = 8 (PAR-01..08). 5 + 2 + 6 + 7 + 12 + 9 + 8 = 49. (REVISED 2026-06-16: EVAL-01/02/04 re-mapped Phase 18 -> 19 -- the definitive gating eval relocated to the Phase-19 staged autonomous-search pilot after the standalone synthesized-overreach gate VOIDed via saturation; the Phase-18 eval machinery is built and reused. AMENDED 2026-06-21: Phase 21 RAISE added; the 9-item OBG family derived from the goal + 21-CONTEXT.md. AMENDED 2026-06-22: Phase 22 parity eval added; the 8-item PAR family derived from the goal + 22-CONTEXT.md + 22-RESEARCH.md.)
 
 ---
 *Requirements defined: 2026-06-15*
 *Last updated: 2026-06-15 -- traceability REVISED by roadmapper: gating eval moved EARLY (Phase 18, decoupled from the orchestrator), EVAL-05 (Haiku prompt-engineering research precedes any Haiku agent) added, EVAL-03 kill-path raised to the user. All 32 phased requirements mapped to Phases 16-20 (100% coverage). REL-01..03 left completion-gated.*
 *Updated 2026-06-16 -- Phase 18 COMPLETE (verified): VERIF-01/02/03, COST-02, EVAL-03, EVAL-05 met. EVAL-03 achieved via RAISE (the standalone synthesized-overreach gate VOIDed via saturation; owner decided to PURSUE Haiku-first via a staged autonomous-search pilot; Sonnet-default ships, Haiku OFF). EVAL-01/02/04 re-mapped to Phase 19 (the definitive eval relocated to the staged pilot). Count: Phase 18 6, Phase 19 7; 32 total unchanged.*
 *Updated 2026-06-21 -- Phase 21 RAISE: the 9-item OBG family (OBG-01..09) derived from the Phase-21 goal + 21-CONTEXT.md, filling the ROADMAP "Requirements: TBD -- run /gsd-plan-phase 21 to derive". Live-web open-book over-refusal gold + arm-B re-run; ceiling = SCOPED sensitivity-only or clean DOES-NOT-WORK. Phased total 32 -> 41. Sonnet-default ships regardless; Haiku-first flip deferred.*
+*Updated 2026-06-22 -- Phase 22 parity eval: the 8-item PAR family (PAR-01..08) derived from the Phase-22 goal + 22-CONTEXT.md (D-01..D-20) + 22-RESEARCH.md (PAR-* proposal + the RESOLVED D-14 feasibility gate), filling the ROADMAP "Requirements: TBD -- run /gsd-plan-phase 22 to derive". Holistic system-level LLM-as-judge parity vs the built-in /deep-research; ZERO OOF spend; the eval tree never ships; Sonnet-default ships regardless. Phased total 41 -> 49.*
