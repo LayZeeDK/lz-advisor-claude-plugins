@@ -1,0 +1,125 @@
+{
+  "_note": "SYNTHETIC AVeriTeC-shaped fixture for Plan 22-02 Task 2 (Slice-A filter/collapse/gate). These rows are PLAUSIBLE SYNTHETIC fabrications matching the AVeriTeC field shape (claim, label, justification, claim_date, speaker, fact_checking_article, questions). They are NOT copied from the CC-BY-NC AVeriTeC dataset. The leaky gold fields (justification, fact_checking_article, questions) exist ONLY to prove filterSliceA strips them before emitting the voter-facing record. ASCII-only, LF, no BOM.",
+  "claims": [
+    {
+      "claim_id": "syn-sup-01",
+      "claim": "The national rail operator completed the coastal line electrification project in late 2019.",
+      "label": "Supported",
+      "claim_date": "12-3-2020",
+      "speaker": "Transport Minister",
+      "justification": "Official rail authority records confirm the electrification finished in November 2019.",
+      "fact_checking_article": "https://example.org/factcheck/rail-electrification",
+      "questions": [{ "question": "When did the electrification finish?" }]
+    },
+    {
+      "claim_id": "syn-sup-02",
+      "claim": "Average household water consumption in the capital region fell by eight percent over the decade.",
+      "label": "Supported",
+      "claim_date": "5-7-2020",
+      "speaker": "Water Board chair",
+      "justification": "Utility consumption data shows a steady eight percent decline from 2010 to 2019.",
+      "fact_checking_article": "https://example.org/factcheck/water-consumption",
+      "questions": [{ "question": "How much did consumption fall?" }]
+    },
+    {
+      "claim_id": "syn-sup-03",
+      "claim": "The regional university opened a dedicated marine research station on the southern coast.",
+      "label": "Supported",
+      "claim_date": "18-9-2020",
+      "speaker": "University rector",
+      "justification": "The marine research station opened in March 2019 per the university gazette.",
+      "fact_checking_article": "https://example.org/factcheck/marine-station",
+      "questions": [{ "question": "Did the station open?" }]
+    },
+    {
+      "claim_id": "syn-ref-01",
+      "claim": "The city budget allocated forty percent of total spending to road maintenance last year.",
+      "label": "Refuted",
+      "claim_date": "22-1-2020",
+      "speaker": "City council member",
+      "justification": "The published budget allocated four percent, not forty, to road maintenance.",
+      "fact_checking_article": "https://example.org/factcheck/city-budget",
+      "questions": [{ "question": "What share went to roads?" }]
+    },
+    {
+      "claim_id": "syn-ref-02",
+      "claim": "The new agricultural subsidy doubled grain exports within a single growing season.",
+      "label": "Refuted",
+      "claim_date": "30-4-2020",
+      "speaker": "Agriculture spokesperson",
+      "justification": "Export volume rose by roughly three percent, far short of doubling.",
+      "fact_checking_article": "https://example.org/factcheck/grain-exports",
+      "questions": [{ "question": "Did exports double?" }]
+    },
+    {
+      "claim_id": "syn-ref-03",
+      "claim": "The coastal desalination plant supplied half of the province drinking water in its first year.",
+      "label": "Refuted",
+      "claim_date": "11-6-2020",
+      "speaker": "Provincial official",
+      "justification": "The plant supplied about five percent of provincial drinking water in year one.",
+      "fact_checking_article": "https://example.org/factcheck/desalination",
+      "questions": [{ "question": "What share did it supply?" }]
+    },
+    {
+      "claim_id": "syn-ref-leaky-04",
+      "claim": "The widely shared statistic about national literacy rates is a debunked hoax with no basis.",
+      "label": "Refuted",
+      "claim_date": "2-8-2020",
+      "speaker": "Education commentator",
+      "justification": "The figure originates from a fabricated chart and is a hoax.",
+      "fact_checking_article": "https://example.org/factcheck/literacy-hoax",
+      "questions": [{ "question": "Is the figure real?" }]
+    },
+    {
+      "claim_id": "syn-ref-pronoun-05",
+      "claim": "I personally guarantee that our regional economy grew faster than every neighboring state.",
+      "label": "Refuted",
+      "claim_date": "14-10-2020",
+      "speaker": "Regional governor",
+      "justification": "Growth trailed two of the four neighboring states.",
+      "fact_checking_article": "https://example.org/factcheck/regional-growth",
+      "questions": [{ "question": "Did it grow fastest?" }]
+    },
+    {
+      "claim_id": "syn-ref-toolong-06",
+      "claim": "The transit authority announced that the expanded metro network, which now spans three new districts and connects the airport, the harbor, the central business district, two university campuses, and the regional hospital, has reduced average commute times across the entire metropolitan area by a substantial margin since the latest phase opened.",
+      "label": "Refuted",
+      "claim_date": "9-11-2020",
+      "speaker": "Transit authority",
+      "justification": "Average commute times changed negligibly after the expansion.",
+      "fact_checking_article": "https://example.org/factcheck/metro-commute",
+      "questions": [{ "question": "Did commute times fall?" }]
+    },
+    {
+      "claim_id": "syn-conf-01",
+      "claim": "The proposed carbon tax would reduce regional emissions while raising overall employment.",
+      "label": "Conflicting Evidence/Cherrypicking",
+      "claim_date": "3-2-2020",
+      "speaker": "Policy analyst",
+      "justification": "Studies disagree on the employment effect; evidence is mixed.",
+      "fact_checking_article": "https://example.org/factcheck/carbon-tax",
+      "questions": [{ "question": "What is the net effect?" }]
+    },
+    {
+      "claim_id": "syn-nei-01",
+      "claim": "A previously unrecorded species of beetle was identified in the northern wetland reserve.",
+      "label": "Not Enough Evidence",
+      "claim_date": "27-5-2020",
+      "speaker": "Field biologist",
+      "justification": "No peer-reviewed confirmation exists for the species claim.",
+      "fact_checking_article": "https://example.org/factcheck/beetle-species",
+      "questions": [{ "question": "Was the species confirmed?" }]
+    },
+    {
+      "claim_id": "syn-nei-02",
+      "claim": "The historic bridge restoration used materials sourced entirely from within the municipality.",
+      "label": "Not Enough Evidence",
+      "claim_date": "1-12-2020",
+      "speaker": "Heritage trust",
+      "justification": "Sourcing records are incomplete; the claim cannot be verified.",
+      "fact_checking_article": "https://example.org/factcheck/bridge-restoration",
+      "questions": [{ "question": "Where were materials sourced?" }]
+    }
+  ]
+}
