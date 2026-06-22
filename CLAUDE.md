@@ -225,6 +225,16 @@ This repo ships a committed `.claude/settings.json` that disables the marketplac
 lz-advisor is installed at USER scope from the marketplace (`scope: user`, enabled globally), but its source lives here. The project-scoped `false` overrides the user-scoped `true` for this repo so the published copy cannot shadow or double-load the working-tree source under test -- which is always loaded explicitly via `--plugin-dir plugins/lz-advisor`. Verified via `claude plugin list --json`: `enabled: false` inside this repo, `enabled: true` elsewhere. No restart needed for `plugin list`; start a fresh session for skill-surfacing to re-resolve.
 
 **Apply the same disable temporarily to any OTHER repo used as an lz-advisor UAT target under the GSD workflow.** When a UAT exercises `/lz-advisor:*` against an external project (e.g. ngx-smart-components), the marketplace plugin is still enabled there and competes with the `--plugin-dir` build -- you can silently exercise the published version instead of your working tree. Before such a UAT, add the same `enabledPlugins` entry to the target repo's `.claude/settings.json`, then REMOVE it after the UAT so the target's own use of lz-advisor is restored. If the entry must stay uncommitted in the target, put it in that repo's `.claude/settings.local.json` -- but the key must ALSO exist in its committed `.claude/settings.json` (even as `"enabledPlugins": {}`), or the local override is silently dropped on merge (claude-code#27247).
+
+### Review before use or publication: scripts, prompts, and Markdown references for LLM tasks
+
+Every artifact that runs, is consumed by, or steers an LLM task MUST be independently reviewed BEFORE it is used to drive an LLM task OR published to the marketplace plugin. This extends the scripts rule (D-13) across the full prompt + reference surface: a prompt or a reference that steers an LLM task is as load-bearing as the code, so it ships under the same review gate.
+
+- **Scripts** (skill `scripts/*`, eval drivers, and any code an LLM task runs or imports): code review AND code-reviewed unit tests (FILE-form `node --test`, mutation-verified / discriminating). This is the existing D-13 MUST, unchanged.
+- **Prompts** (skill `SKILL.md` workflow bodies; agent `.md` system prompts, `description`, and `<example>` blocks; `references/` text that becomes a runtime prompt; and the context-packaging / task prompts that drive subagents): content review.
+- **Markdown references** (`references/*.md` and any progressive-disclosure doc a skill or agent loads at runtime): content review.
+
+"Review" = an independent pass against the contract -- a fresh-context reviewer subagent, a cross-AI consult, or, when independence is genuinely impractical, a deliberate self-review documented where the work is tracked. The gate fires at BOTH boundaries: nothing in the above surface is used to drive an LLM task, and nothing is published in the marketplace plugin, until it has been reviewed. Record the review where the work is tracked (a SUMMARY, a review artifact, or a phase verification).
 <!-- GSD:conventions-end -->
 
 <!-- GSD:architecture-start source:ARCHITECTURE.md -->
