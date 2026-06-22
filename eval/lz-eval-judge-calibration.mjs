@@ -46,6 +46,12 @@ import {
   mccFromPairs,
 } from './lz-eval-mcc.mjs';
 
+// The WiCE label remap (D-13). WICE_LABEL_MAP is module-PRIVATE in lz-eval-dataset.mjs -- we use the
+// public remapLabel (partially_supported -> { expected_verdict:'refuted', stratum:'subtle' }) to
+// DERIVE the subtle marker from a WiCE source label, so the calibration set's subtle substratum is
+// computed by the SAME canonical remap the dataset loader uses (never a re-implemented table).
+import { remapLabel } from './lz-eval-dataset.mjs';
+
 // Fail-closed BOM-stripping JSON read (the established eval-tree convention) -- used by the CLI to read
 // on-disk judge verdicts / gold.
 import { readJson } from './lz-eval-readjson.mjs';
@@ -64,6 +70,25 @@ export const JUDGE_MCC_BAR = Object.freeze({
   ALPHA: MCC_CI_ALPHA,
   LOWER_FLOOR: MCC_CI_LOWER_FLOOR,
 });
+
+// ---------------------------------------------------------------------------
+// goldFromWiceLabel({ id, wiceLabel }) -- build a calibration GOLD entry from a WiCE source label by
+// DELEGATING to remapLabel (the canonical lz-eval-dataset.mjs remap; WICE_LABEL_MAP is private). The
+// derived gold carries the frozen verdict enum value + the subtle marker (a WiCE partially_supported
+// item -- which remapLabel maps to { expected_verdict:'refuted', stratum:'subtle' } -- is the SUBTLE
+// substratum the judge calibration MUST include, D-13). This is the bridge between the WiCE corpus and
+// the { id, gold, subtle } shape judgeCalibrationGate validates -- the same remap the dataset loader
+// uses, never a re-implemented table. A null/unknown label fails closed via remapLabel.
+// ---------------------------------------------------------------------------
+export function goldFromWiceLabel({ id, wiceLabel } = {}) {
+  const mapped = remapLabel(wiceLabel);
+
+  return {
+    id,
+    gold: mapped.expected_verdict,
+    subtle: mapped.stratum === 'subtle',
+  };
+}
 
 // ---------------------------------------------------------------------------
 // dedupAgreFactVsWice({ wice, aggrefact }) -- LLM-AggreFact EMBEDS WiCE, so any AggreFact item whose

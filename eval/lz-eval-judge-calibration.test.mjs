@@ -38,6 +38,7 @@ import { MCC_BAR_POINT, MCC_CI_ALPHA, MCC_CI_LOWER_FLOOR } from './lz-eval-mcc.m
 import {
   JUDGE_MCC_BAR,
   dedupAgreFactVsWice,
+  goldFromWiceLabel,
   judgeCalibrationGate,
 } from './lz-eval-judge-calibration.mjs';
 
@@ -176,6 +177,31 @@ test('dedupAgreFactVsWice: with no overlap, the AggreFact array passes through u
   const aggrefact = [{ uid: 'a1' }, { uid: 'a2' }];
   const deduped = dedupAgreFactVsWice({ wice, aggrefact });
   assert.deepEqual(deduped.map((x) => x.uid).sort(), ['a1', 'a2']);
+});
+
+// ---------------------------------------------------------------------------
+// goldFromWiceLabel: DELEGATES to remapLabel to derive { id, gold, subtle } (D-13).
+// ---------------------------------------------------------------------------
+
+test('goldFromWiceLabel: partially_supported -> { gold: refuted, subtle: true } (the SUBTLE substratum)', () => {
+  const g = goldFromWiceLabel({ id: 'w1', wiceLabel: 'partially_supported' });
+  assert.equal(g.id, 'w1');
+  assert.equal(g.gold, 'refuted');
+  assert.equal(g.subtle, true, 'partially_supported is the subtle-overreach substratum');
+});
+
+test('goldFromWiceLabel: supported -> { gold: unrefuted, subtle: false }; not_supported -> { gold: refuted, subtle: false }', () => {
+  const sup = goldFromWiceLabel({ id: 'w2', wiceLabel: 'supported' });
+  assert.equal(sup.gold, 'unrefuted');
+  assert.equal(sup.subtle, false);
+
+  const not = goldFromWiceLabel({ id: 'w3', wiceLabel: 'not_supported' });
+  assert.equal(not.gold, 'refuted');
+  assert.equal(not.subtle, false);
+});
+
+test('goldFromWiceLabel: an unknown WiCE label fails closed via remapLabel (ContractError)', () => {
+  assert.throws(() => goldFromWiceLabel({ id: 'w4', wiceLabel: 'totally_unknown' }), ContractError);
 });
 
 // ---------------------------------------------------------------------------
