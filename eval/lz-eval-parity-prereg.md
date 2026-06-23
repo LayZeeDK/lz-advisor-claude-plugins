@@ -263,6 +263,78 @@ This amendment is committed in its OWN timestamped commit (the re-freeze timesta
 report is captured or graded under the amended set. See `eval/lz-eval-parity-driver.md` "Resumability +
 pacing" for the capture-resume protocol the feasibility constraint also motivated.
 
+## AMENDMENT RECORD 2 -- judge-calibration set: WiCE-only materialization (LLM-AggreFact RELOCATED, not dropped) (2026-06-23)
+
+WHAT CHANGED: the Stage-2 judge-calibration set is MATERIALIZED as WiCE-only (the 60 vendored WiCE
+items, including all 17 `partially_supported` subtle-overreach items). The 4 LLM-AggreFact items named
+in Section (iv) and in the committed manifest are RELOCATED (NOT dropped) -- carried forward as a
+pre-registered SEED for a future phase (see "RELOCATED, not dropped" below). NOTHING ELSE changed: the
+5-dimension rubric, the frozen NUMBERS (PARITY_BAR / JUDGE_MCC_BAR / SLICE_A_GATE / PARITY_K_RANGE), the
+verdict-collapse map, the MCC bar predicate, the Slice-A seed rule + feasibility gate, the two-layer
+parity bar, and the grading k are ALL UNCHANGED and the anti-drift co-test still passes byte-for-byte.
+There is NO frozen calibration-set N -- the MCC bar is N-agnostic (it requires only the point estimate
+>= `JUDGE_MCC_BAR.POINT` and a one-sided lower CI strictly > `JUDGE_MCC_BAR.LOWER_FLOOR`); the mandatory
+subtle-item requirement (`judgeCalibrationGate` enforces subtle count >= 1) is satisfied by WiCE's 17
+subtle items.
+
+WHY (feasibility, NOT result-shopping): the 4 LLM-AggreFact items existed in the committed manifest ONLY
+as placeholder uids (`llm-aggrefact-test-0000..0003`, source_label 1/1/0/0,
+`revision: PENDING_ENUMERATE_AT_EVAL_TIME`, `files: []`, no corpus text, no uid->row mapping). At
+eval-time enumeration the gated fetch SUCCEEDED (authenticated; revision
+`981dfd0bd8e58e7238a9ab92b2e6ea44bce918e4`; `data/test-00000-of-00001.parquet` sha256
+`ba6976c3da990a9d7b11670efaf4e3c93c1bd0530061ec742afd6b2d5bce698c`, 29320 rows), but the committed
+placeholder labels `[1,1,0,0]` map to NO recoverable rows (the first 4 test rows are all label 1), and
+NO deterministic row-selection rule was ever frozen for this calibration ministratum (Section (ii)'s
+Slice-A list HAS a frozen deterministic rule; this ministratum does NOT). Materializing the 4 would
+therefore require AUTHORING a NEW post-freeze selection rule -- methodology the pre-registration never
+contained. WiCE is vendored and self-contained, so the WiCE-only set is materializable as frozen with
+zero new selection decision.
+
+WHY IT IS STILL CLEAN PRE-REGISTRATION: the amendment was made at a genuinely OPEN zero-grades window --
+ZERO calibration verdicts and ZERO report grades exist at amendment time. No frozen NUMBER changes
+(above). The decision was reached by a 5-lens advisory panel (pre-registration integrity, statistical
+validity, planning fidelity, construct validity, pragmatic cost/reproducibility) that UNANIMOUSLY
+converged on this resolution, and is maintainer-ratified. It is committed in its OWN timestamped commit
+BEFORE any calibration spend -- the calibration-amendment timestamp of record. This mirrors the Slice-B
+feasibility re-freeze discipline above (a resolved feasibility amendment at an open window, not optional
+stopping or result tuning).
+
+RELOCATED, not dropped (the two-source intent is preserved across the phase boundary): D-13's
+"+ LLM-AggreFact" is NOT abandoned. The cross-dataset transfer signal is carried forward as a
+pre-registered SEED for a future phase: a SEPARATE, NON-gating, DESCRIPTIVE-ONLY (NO threshold)
+construct-transfer diagnostic with its OWN MCC, reported alongside but NEVER feeding the gate predicate,
+with an OPEN-BOOK construct PREFERRED (ideally the Phase-20 live arm's real production positives, which
+may make a gated LLM-AggreFact re-fetch unnecessary even then). It MUST be pre-registered as
+descriptive-only so a future phase cannot quietly promote it into a soft gate. The WiCE-only gate shipped
+by THIS phase is by feasibility, not by a methodology preference.
+
+THE FROZEN UNDER-POWER CONDITIONAL (resolved pre-grade; the ONLY remedy; Option B EXCLUDED): IF the
+informational pre-spend power probe (below) OR a mid-run read indicates the gate is near-bar
+under-powered for the realized judge (point estimate >= `JUDGE_MCC_BAR.POINT` but the one-sided lower CI
+straddling / near `JUDGE_MCC_BAR.LOWER_FLOOR`), the ONLY sanctioned remedy is to WIDEN the WiCE
+calibration draw -- additional rows from the UNGATED `jon-tow/wice` at the pinned revision
+`54f7976b8ce4fe0a9bfd35a4dd30af9d5b45d8a6`, SAME-distribution, selected by the SAME deterministic rule
+shape the Slice-A list uses (stable-key ascending sort by uid, head-slice, NO hand-picking), PRESERVING
+the supported/refuted balance and the subtle proportion, vendored so the set stays reproducible.
+Importing LLM-AggreFact (or any out-of-distribution corpus) into the GATE is EXCLUDED. This conditional,
+its trigger, and its selection rule are frozen HERE, before grading (a resolved pre-registered
+conditional, not a discretionary mid-run decision = not optional stopping).
+
+THE INFORMATIONAL POWER PROBE (NOT a gate; pre-registered here BEFORE running): a NO-SPEND synthetic
+sensitivity sweep over the already-frozen `mccFromPairs` + `bcaBootstrapLowerCI` engine. Grid (frozen
+here): true-MCC in {0.4, 0.5, 0.6, 0.7, 0.8, 0.9} x error-asymmetry FP:FN in {1:1, 2:1, 1:2, 3:1, 1:3},
+class balance 26 unrefuted / 34 refuted, BCa seed pinned. For each cell, compute the gate result for
+N=60 vs the four N=64 variants (the 4 hypothetical added items judged all-correct / all-wrong / 1-wrong
+/ 2-wrong) and report (a) the band of true-MCC over which the gate agrees for N=60 and ALL FOUR N=64
+variants, (b) the MINIMUM lower-CI margin to `JUDGE_MCC_BAR.LOWER_FLOOR` across the grid, and (c) the
+breakeven true-MCC where they diverge. The probe is INFORMATIONAL ONLY -- it NEVER gates or authorizes
+spend (the real gate runs on the real Stage-2 judge verdicts via `judgeCalibrationGate`). Its output is
+LABELED "simulated within-construct power/pivotality -- real-judge behavior and WiCE->live transfer NOT
+addressed" and must NEVER be cited as a real calibration result.
+
+This amendment is committed in its OWN timestamped commit BEFORE any calibration verdict is captured or
+graded. Provenance: maintainer-ratified 2026-06-23 on a unanimous 5-lens Opus advisory-panel convergence.
+
 ## Cross-reference
 
 - `eval/lz-eval-parity-verdict.mjs` -- the frozen `PARITY_BAR` + the two-layer `parityVerdict`.
