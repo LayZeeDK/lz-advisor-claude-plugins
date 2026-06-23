@@ -79,21 +79,24 @@ hand-picking -- anti-result-shopping). Both directions are populated.
 - `refuted` direction (Refuted -> refuted; the TN/FP axis): the first ~8-12 surviving Refuted claim_ids
   sorted ascending.
 
-### Slice-B natural research question set (head-to-head, judge-graded; D-16)
+### Slice-B natural research question set (head-to-head, judge-graded; D-16) [RE-FROZEN 2026-06-23 -- see AMENDMENT RECORD]
 
 The Slice-B set is n=3 GENERAL research questions (NOT fact-check claims, NOT date-locked to <= 2020):
-broad, open-ended research prompts on which BOTH the built-in `/deep-research` and lz-deep-research can
-find live, current sources, so the head-to-head judge-graded parity read is on natural research breadth.
-Each is captured headless k=2 runs per system, paired in the same reset window (D-16).
+bounded, single-facet research prompts on which BOTH the built-in `/deep-research` and lz-deep-research
+can find live, current sources AND that COMPLETE within one 5-hour pool window. The original broad,
+multi-facet set (preserved in the AMENDMENT RECORD) was empirically INFEASIBLE: a single built-in
+`/deep-research` run on a broad question did not finish inside a 5-hour window (two runs cost ~25.46 /
+~47.08 USD notional and were rate-limited before producing any report). The narrower set below is the
+feasibility amendment; the questions remain GENERAL and were NOT chosen against any grade (zero reports
+captured at amendment time). Each is captured headless k=1 run per system, paired in the same reset
+window (D-16).
 
-1. What are the leading approaches to long-context retrieval-augmented generation for large language
-   models, and what trade-offs do they make between retrieval quality, latency, and cost?
-2. How do modern battery-electric vehicles and hydrogen fuel-cell vehicles compare on lifecycle carbon
-   emissions, refueling infrastructure, and total cost of ownership?
-3. What does the current research say about the effectiveness and risks of intermittent fasting for
-   metabolic health in adults?
+1. What techniques do large language models use to extend their context window beyond 100K tokens?
+2. How does a solid-state battery differ from a conventional lithium-ion battery?
+3. What does recent research say about time-restricted eating and weight loss in adults?
 
-These are FROZEN. The realized questions cannot be swapped after capture begins (anti-result-shopping).
+These are FROZEN (as re-frozen per the AMENDMENT RECORD). The realized questions cannot be swapped after
+capture begins (anti-result-shopping).
 
 ## Section (iii) -- The verdict-collapse map (D-11)
 
@@ -224,6 +227,41 @@ report is captured or graded. The commit ref + the freeze timestamp are the pre-
 of record. No optional stopping; the bars are frozen in advance; the Slice-A branch is resolved
 pre-grade. The zero-grades window is genuinely open at this freeze (no report is captured or graded yet),
 so the pre-registration is clean, not result-shopping.
+
+## AMENDMENT RECORD -- Slice-B feasibility re-freeze (2026-06-23)
+
+WHAT CHANGED: the Slice-B question set (Section (ii)) was narrowed from 3 broad, multi-facet questions
+to 3 bounded, single-facet questions, and the per-system capture count was reduced from k=2 to k=1.
+NOTHING ELSE changed: the 5-dimension rubric, the frozen NUMBERS (PARITY_BAR / JUDGE_MCC_BAR /
+SLICE_A_GATE / PARITY_K_RANGE), the verdict-collapse map, the MCC bar, the Slice-A seed rule + feasibility
+gate, the two-layer parity bar, and the grading k (3..5, `PARITY_K_RANGE`) are ALL UNCHANGED and the
+anti-drift co-test still passes byte-for-byte.
+
+WHY (feasibility, NOT result-shopping): the original broad set was empirically infeasible to capture. Two
+built-in `/deep-research` smoke runs on the original question 1 ("leading approaches to long-context RAG +
+trade-offs") did NOT complete inside a 5-hour pool window -- they cost ~25.46 and ~47.08 USD notional
+(retry-inflated) and were rate-limited before emitting any report. A single broad built-in run exceeds a
+5-hour budget; the built-in is closed-source (its fan-out cannot be slimmed) and emits its report only on
+completion. The narrower questions let a run COMPLETE in-budget.
+
+WHY IT IS STILL CLEAN PRE-REGISTRATION: the amendment was made at a genuinely OPEN zero-grades window --
+ZERO reports have been captured or graded (both smoke runs produced no report). The new questions remain
+GENERAL research questions (not fact-check claims, not date-locked, not cherry-picked toward either
+system). This is a feasibility-driven re-freeze decided BEFORE any grade exists, maintainer-ratified,
+analogous to the D-14 resolved-conditional discipline -- not optional stopping or result tuning. The
+original broad set is preserved here for the record:
+
+  ORIGINAL (superseded, infeasible):
+  1. What are the leading approaches to long-context retrieval-augmented generation for large language
+     models, and what trade-offs do they make between retrieval quality, latency, and cost?
+  2. How do modern battery-electric vehicles and hydrogen fuel-cell vehicles compare on lifecycle carbon
+     emissions, refueling infrastructure, and total cost of ownership?
+  3. What does the current research say about the effectiveness and risks of intermittent fasting for
+     metabolic health in adults?
+
+This amendment is committed in its OWN timestamped commit (the re-freeze timestamp of record), BEFORE any
+report is captured or graded under the amended set. See `eval/lz-eval-parity-driver.md` "Resumability +
+pacing" for the capture-resume protocol the feasibility constraint also motivated.
 
 ## Cross-reference
 

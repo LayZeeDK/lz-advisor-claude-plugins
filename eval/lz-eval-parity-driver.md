@@ -73,8 +73,18 @@ byte-for-byte). No step below runs until that commit has landed and the human go
 
 ## Stage 1 -- capture the baseline + the candidate (the `capture` transport; session pool)
 
-Capture n=3 frozen Slice-B questions x k=2 runs each, for BOTH systems, paired in the SAME reset window
-(D-16). END-STATE grading: extract the report.md deliverable, NOT the process trace (D-16).
+Capture n=3 frozen Slice-B questions x k=1 run each (the 2026-06-23 feasibility re-freeze; was k=2 -- see
+the prereg AMENDMENT RECORD), for BOTH systems, paired in the SAME reset window (D-16). END-STATE grading:
+extract the report.md deliverable, NOT the process trace (D-16).
+
+EMPIRICAL CAPTURE REALITY (2026-06-23 smoke findings, RESEARCH Pitfall 4): the built-in `/deep-research`
+is an ASYNC, pool-HEAVY workflow. It (a) emits its report ONLY in the FINAL result event on COMPLETION --
+it does NOT write a report file to disk, so a run that does not finish yields NO report (and
+`validateManifest` correctly fail-closes on the missing report); and (b) a single broad question's run
+can exceed an entire 5-hour pool window (two broad smoke runs cost ~25.46 / ~47.08 USD notional and were
+rate-limited mid-run with no report). Hence the narrower questions (above) + PACING one capture per 5-hour
+window + the resume protocol below. Verify a NON-EMPTY report + a final non-error result before counting a
+capture as done.
 
 ### 1a. Built-in `/deep-research` baseline (closed-source workflow)
 
@@ -106,6 +116,43 @@ prompt `/lz-advisor:lz-deep-research <question>`. Its report.md lands in `.lz-re
 (copy it into the baseline run dir or MANIFEST-reference it). Verify the working-tree build is the one
 under test via the `system/init` `plugins` array in the stream (NOT model self-report); this repo's
 committed `.claude/settings.json` already disables the marketplace build here.
+
+## Resumability + pacing (the 5-hour-window discipline; 2026-06-23)
+
+Captures are pool-heavy and may not all fit one 5-hour window. The campaign is resumable at TWO levels so
+a window exhaustion never loses completed work:
+
+1. CAMPAIGN-LEVEL (cell-skip; the primary mechanism). Each (question x system) capture lands its own
+   stream + extracted report + a validated MANIFEST in `eval/.cache/p22-baseline/<system>/`. A captured
+   cell is DONE iff its MANIFEST passes `validateManifest` (non-empty report + system/init model + cost).
+   On resume, SKIP every cell that already has a passing MANIFEST and capture only the missing cells. This
+   makes the capture stage idempotent and window-spanning -- never re-capture a completed cell.
+2. PER-RUN (within one overflowing run). BOTH systems need this -- lz is cheaper (Sonnet-default) but is
+   itself a multi-phase run (scope -> search -> extract -> verify -> aggregate -> synthesize) that can
+   exceed a 5-hour window on a heavier question, so lz resumability is a co-equal REQUIRED mechanism, not
+   a theoretical nicety:
+   - lz-deep-research (REQUIRED, and the better-supported path): use the shipped resume affordance (the
+     `<resume>` slug-match + `run_state.json` / `decompose.json` per-phase skip guards from Phase 20,
+     validated end-to-end in Phase 20). CAPTURE MECHANICS: on first invocation, record the lz run dir
+     `.lz-research/<run-id>/` (from the stream / the created dir) into the cell's MANIFEST-in-progress. If
+     the window exhausts mid-run, on resume RE-INVOKE `/lz-advisor:lz-deep-research` with the resume
+     affordance targeting that SAME run-id, and VERIFY from `run_state.json` that the already-completed
+     phases are SKIPPED (the resume must ADVANCE, not restart -- confirm the phase pointer moved before
+     continuing, else the run is silently re-doing work and re-spending). Only the FINAL completed
+     `.lz-research/<run-id>/report.md` (with `run_state.json` showing synthesis complete) is graded;
+     a partial lz run is NOT a valid capture.
+   - built-in `/deep-research` (closed-source, NOT resumable by us): its session carries a `session_id`;
+     `claude -p --resume <session_id>` MAY continue an interrupted built-in run after a window reset --
+     treat this as an UNTESTED backstop (the built-in's background tasks may not resume cleanly). The
+     reliable mitigation is the narrower questions (so a built-in run COMPLETES in one window) + cell-skip
+     across windows; only fall back to `--resume` if a narrow run still overflows.
+
+PACING: capture at most what one 5-hour window safely holds (empirically a broad built-in run alone hit
+the wall; a narrow run should fit, but budget conservatively). Pair lz + built-in for the SAME question in
+the SAME window where possible (D-16); if the window cannot hold both, capture them in adjacent windows
+and record the window split in the MANIFEST (the per-direction parity read does not require same-window
+pairing, only same-frozen-question). HALT cleanly on any rate-limit/spend-limit result and resume after
+the window resets -- the cell-skip makes resumption a no-op for completed cells.
 
 ## Stage 2 -- calibrate the Opus judge (the `callJudge` transport; session pool; PAR-02 / D-13)
 
