@@ -1,38 +1,41 @@
 {
   "version": "1.0",
-  "timestamp": "2026-06-22T19:21:17.585Z",
+  "timestamp": "2026-06-23T05:57:02.684Z",
   "phase": "22",
   "phase_name": "deep-research-skill-eval-and-parity-baseline-with-built-in-d",
   "phase_dir": ".planning/phases/22-deep-research-skill-eval-and-parity-baseline-with-built-in-d",
-  "plan": null,
-  "task": 0,
-  "total_tasks": 12,
+  "plan": 5,
+  "task": 1,
+  "total_tasks": 3,
   "status": "paused",
   "completed_tasks": [
-    {"id": "discuss", "name": "discuss-phase: design converged (research wave + 5-lens Opus panel x2 + Opus/GPT-5.5/Gemini board); 22-CONTEXT.md D-01..D-20", "status": "done", "commit": "de334c5"},
-    {"id": "state-ctx", "name": "state: record context session (controlled-edit fix of state.* mutation)", "status": "done", "commit": "ef370a9"},
-    {"id": "research", "name": "research (D-14 RESOLVED: Slice A FEASIBLE) + validation strategy", "status": "done", "commit": "7e8f4ad"},
-    {"id": "plan", "name": "plan: 5 plans / 3 waves + PAR-01..08 family added to REQUIREMENTS.md", "status": "done", "commit": "4d23ea6"},
-    {"id": "check", "name": "plan-checker PASSED (0 blockers) + 2 checker fixes (D-01/D-08 citations, WICE_LABEL_MAP private) + decision-coverage 20/20", "status": "done", "commit": "de39ab4"}
+    {"id": "22-01", "name": "parity scorer + two-layer verdict", "status": "done", "commit": "a2d5b53"},
+    {"id": "22-02", "name": "MCC judge-calibration + Slice-A + baseline manifest", "status": "done", "commit": "af67585"},
+    {"id": "22-03", "name": "architectural-parity write-up (content-reviewed)", "status": "done", "commit": "9d9e531"},
+    {"id": "22-04", "name": "pre-registration FREEZE + anti-drift test", "status": "done", "commit": "ae7294d"},
+    {"id": "22-05-prep", "name": "Wave 3 feasibility re-freeze (narrower Slice-B + capture k=1) + resume protocol", "status": "done", "commit": "583ee34"}
   ],
   "remaining_tasks": [
-    {"id": "exec-wave1", "name": "EXECUTE Wave 1 (NO-SPEND): 22-01 scorer+verdict, 22-02 gold-anchoring modules (MCC calib / Slice-A / manifest), 22-03 architectural-parity write-up + content-review", "status": "not_started"},
-    {"id": "exec-wave2", "name": "EXECUTE Wave 2 (NO-SPEND): 22-04 pre-registration FREEZE + anti-drift test (BLOCKING; commit timestamped BEFORE any spend)", "status": "not_started"},
-    {"id": "exec-wave3", "name": "EXECUTE Wave 3 (CLAUDE-POOL SPEND, autonomous:false): 22-05 judge MCC calibration -> headless built-in + lz capture -> blind/swap claim-extraction grading -> Slice-A descriptive -> mechanical verdict -> 22-PARITY-RESULT.md", "status": "not_started"},
-    {"id": "phase-close", "name": "Post-execution close: verify -> secure -> validate -> extract-learnings", "status": "not_started"}
+    {"id": "22-05-smoke", "name": "narrow-question smoke (built-in q1) to confirm a run completes in one 5-hour window", "status": "not_started"},
+    {"id": "22-05-capture", "name": "paced 6-capture fan-out (3 questions x k=1 x 2 systems) with cell-skip resume", "status": "not_started"},
+    {"id": "22-05-calibrate", "name": "Opus judge MCC calibration over WiCE + LLM-AggreFact (HALT if not cleared)", "status": "not_started"},
+    {"id": "22-05-grade", "name": "Opus judge grading (per-dim isolated, blind, position-swap, k=3, claim-extraction bridge) + Slice A verify-voter + mechanical two-layer verdict + 22-PARITY-RESULT.md", "status": "not_started"},
+    {"id": "22-close", "name": "verify -> secure -> validate -> extract-learnings", "status": "not_started"}
   ],
-  "blockers": [],
+  "blockers": [
+    {"description": "Built-in /deep-research is pool-heavy: a single BROAD-question run exceeds an entire 5-hour pool window (two smoke runs cost ~25.46 / ~47.08 USD notional, rate-limited mid-run, no report). The CLI limit message always reads 'monthly spend limit' even for the 5-hour window.", "type": "external", "workaround": "Feasibility re-freeze to narrower single-facet questions + capture k=1 (583ee34); pace one capture per window; campaign cell-skip resume; built-in --resume is an untested backstop."},
+    {"description": "Two 5-hour budgets already consumed this session with no completed capture; the pool may be exhausted now.", "type": "external", "workaround": "Maintainer re-authenticates to reset the 5-hour window; resume captures only when a window is available."}
+  ],
   "human_actions_pending": [
-    {"action": "Authorize the Wave-3 Claude-pool spend (the metered eval runs: built-in /deep-research baseline capture, judge calibration + grading, Slice-A voter run)", "context": "Pool-heavy eval; model runs are human-gated by the project pattern. ZERO out-of-family spend (Copilot) inside the eval -- Claude session pool only.", "blocking": true},
-    {"action": "Confirm the 22-04 pre-registration is FROZEN + committed (timestamped) BEFORE any Wave-3 grading runs", "context": "Anti-result-shopping discipline (D-20) that kept Phases 18-21 honest", "blocking": true}
+    {"action": "Confirm a fresh 5-hour pool window is available before resuming the 22-05 captures", "context": "The next step is metered spend; do not blind-launch into an exhausted pool (2 budgets already burned).", "blocking": true},
+    {"action": "Spend remains maintainer-authorized ('Approve bulk Claude spending'); re-affirm if a new session", "context": "22-05 is the only spend boundary; Claude session pool only, ZERO out-of-family (D-18).", "blocking": false}
   ],
   "decisions": [
-    {"decision": "Holistic system-level LLM-as-judge parity eval, NOT a per-component Clopper-Pearson cert", "rationale": "That bar exceeds the blessed reference's own and VOIDed Phases 18-21 (D-01)", "phase": "22"},
-    {"decision": "Single OPUS judge (no panel) + blind + position-swap + gold-anchoring + k=3-5 multi-sample", "rationale": "Sonnet-judging-Sonnet biases toward our own Sonnet-driven system; eval-judge tier is independent of the skill's runtime cost profile -- advisor strategy is runtime-only, user-ratified (D-08/D-10)", "phase": "22"},
-    {"decision": "Feasibility-gated two-slice gold anchoring + claim-extraction bridge", "rationale": "Board-converged (Opus panel 4-1 + cross-family Opus/GPT/Gemini); D-14 resolved FEASIBLE (95 Supported / 216 Refuted in the AVeriTeC cache); the bridge closes the lean design's claim->report transfer gap (D-11/D-12/D-14)", "phase": "22"},
-    {"decision": "Built-in /deep-research is closed-source; captured headless via claude -p stream-json; architectural parity documented from published docs/blog", "rationale": "Verified absent from all public Anthropic repos; the built-in collapses uncertainty by deleting losing claims vs lz-deep-research preserves it (Contested/Unsupported + abstention) (D-15/D-16/D-17)", "phase": "22"}
+    {"decision": "Run the whole phase with worktrees OFF (sequential on main tree)", "rationale": "Wave 3 (22-05) cannot use worktrees -- it consumes the gitignored AVeriTeC cache + writes to gitignored output dirs that a worktree would strand; 22-02 needs gitignored jstat; marginal parallelism vs determinism for a freeze-gated eval.", "phase": "22"},
+    {"decision": "Feasibility re-freeze: narrow the 3 Slice-B questions to bounded single-facet questions + capture k=2 -> k=1", "rationale": "A broad built-in /deep-research run does not finish in a 5-hour window; maintainer-ratified; zero grades captured so the window is clean (anti-result-shopping intact); frozen NUMBERS/rubric/grading-k unchanged, anti-drift still 8/8.", "phase": "22"},
+    {"decision": "Resume protocol required for BOTH systems", "rationale": "lz resume is designed-in for headless -p (SKILL L93-94 slug-match, no AskUserQuestion; per-phase skip guards); built-in is closed-source so narrower questions + campaign cell-skip are the reliable mitigation, --resume an untested backstop.", "phase": "22"}
   ],
   "uncommitted_files": [],
-  "next_action": "Review the 5 plans + the pre-registration design (esp. 22-04 freeze + 22-05 spend boundary), then run /gsd:execute-phase 22 (Wave 1-2 build + freeze run autonomously; Wave 3 halts for spend authorization).",
-  "context_notes": "Full --chain ran discuss -> plan-phase --research, then PAUSED before execute (the user scoped the chain to plan-phase; the eval execution is pool-heavy + human-gated). Sonnet-default ships regardless of the parity outcome. CAVEAT: GSD state.* mutators (record-session, planned-phase) corrupted STATE.md twice this session (flipped status->completed, prematurely bumped completed_phases/completed_plans) -- corrected via controlled edits to status:executing / completed_phases:7 / completed_plans:35. Verify the STATE.md diff after any future state.* call. OOF spend this session = 17.92 GitHub AI Credits (the one cross-family board: GPT-5.5 13.0 + Gemini 4.92); plan-phase spent zero OOF."
+  "next_action": "Confirm a fresh 5-hour window is available, then run the narrow-question smoke: CLAUDE_CODE_PRINT_BG_WAIT_CEILING_MS=0 claude -p \"/deep-research What techniques do large language models use to extend their context window beyond 100K tokens?\" --permission-mode auto --allowedTools \"WebSearch,WebFetch\" --output-format stream-json --verbose < /dev/null > eval/.cache/p22-baseline/builtin/qB1-run1.stream.jsonl . Validate a NON-EMPTY report + final non-error result + valid system/init model; if it completes in-budget, proceed to the paced 6-capture fan-out + calibration + grading per eval/lz-eval-parity-driver.md.",
+  "context_notes": "Waves 1-2 are solid + committed; the pre-registration is re-frozen (583ee34, 2026-06-23T07:52:35+02:00) after the broad-question infeasibility finding. Full eval suite 622/622. The remaining work is purely the human-authorized measured run (22-05) + phase close. The Sonnet-default lz-deep-research skill ships regardless of the parity outcome (D-03); 22-05 is confidence / scientific-completeness work, not a ship gate. If the built-in stays cost-prohibitive even narrowed, descoping the MEASURED track (keeping the architectural-parity write-up + the frozen no-spend harness) is a clean fallback to raise with the maintainer. STATE.md Current Position has the full running log; the driver (eval/lz-eval-parity-driver.md) has the exact capture + resume + pacing protocol."
 }
