@@ -18,3 +18,6 @@ evals/**/outputs/
 
 # Deep-research run dirs (audit trail; retained on disk, never committed -- INTEG-02 / AGG-05)
 /.lz-research/
+
+# playwright-cli skill console logs (tool debris; regenerated per browser session)
+/.playwright-cli/
