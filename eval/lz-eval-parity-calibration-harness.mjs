@@ -245,7 +245,21 @@ export function readVerdict({ uid, outDir = CALIBRATION_OUT_DIR } = {}) {
     );
   }
 
-  return { id: uid, verdict: record.verdict };
+  // FAIL-CLOSED MODEL PIN (AMENDMENT RECORD 3; mirrors the D-15 pin the baseline-capture arm enforces
+  // in lz-eval-baseline-manifest.mjs). The judge is dispatched by ALIAS -- the Agent tool takes
+  // `model: opus`, never a pinned version -- so the alias silently re-points as generations ship, and a
+  // verdict that does not name its own judge cannot be attributed to one afterwards. The Opus 4.x set
+  // that DISQUALIFIED at mcc=0.4889 recorded only { uid, verdict, reasoning }, so its instrument had to
+  // be identified from file mtimes; that set is retained UNPINNED at calibration-opus4x/ as a record and
+  // is deliberately NOT re-scorable through this path. An unpinned run cannot be graded.
+  if (typeof record.model !== 'string' || record.model.length === 0) {
+    throw new ContractError(
+      'verdict file for uid ' + uid + ' has no judge model -- an unpinned verdict cannot be scored (AMENDMENT RECORD 3)',
+      'readVerdict',
+    );
+  }
+
+  return { id: uid, verdict: record.verdict, model: record.model };
 }
 
 // ---------------------------------------------------------------------------

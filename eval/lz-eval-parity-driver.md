@@ -162,7 +162,11 @@ WiCE). The session has the Opus judge label each calibration item closed-book (d
 the claim -> `unrefuted`, else `refuted`); the verdicts land on disk.
 
 1. The session spawns the Opus judge Agent sub-agent (`model: opus`, temp 0) per calibration item and
-   persists each verdict to disk.
+   persists each verdict to disk as `{ verdict, reasoning, model }` -- the `model` pin is MANDATORY
+   (AMENDMENT RECORD 3) and `readVerdict` FAILS CLOSED without it. Record the concrete model the alias
+   resolved to (e.g. `claude-opus-5`), not the alias: the Agent tool dispatches by ALIAS, so `model: opus`
+   silently re-points as generations ship, and a verdict that does not name its own judge cannot be
+   attributed to one afterwards. Read the resolved id from the session's own `system`/init, never assume.
 2. node scores from disk (NO SPEND): `judgeCalibrationGate({ verdicts, gold })`
    (`eval/lz-eval-judge-calibration.mjs`) computes the MCC point + the one-sided lower CI and returns
    `cleared`.

@@ -46,8 +46,9 @@ function mkTmp(prefix) {
 }
 
 // Write a verdict file for one uid into outDir (mirrors what the orchestrating session persists).
-function writeVerdict(outDir, uid, verdict) {
-  fs.writeFileSync(verdictPath(uid, outDir), JSON.stringify({ uid, verdict }) + '\n', 'utf8');
+// Carries a `model` pin because readVerdict fails closed without one (AMENDMENT RECORD 3).
+function writeVerdict(outDir, uid, verdict, model = 'claude-opus-5') {
+  fs.writeFileSync(verdictPath(uid, outDir), JSON.stringify({ uid, verdict, model }) + '\n', 'utf8');
 }
 
 // Write a minimal-but-valid WiCE record into a tmp records dir.
@@ -187,27 +188,76 @@ test('readVerdict: a missing verdict file and an out-of-enum verdict are both Co
   try {
     assert.throws(() => readVerdict({ uid: 'nope', outDir }), ContractError, 'missing file fails closed');
 
-    fs.writeFileSync(verdictPath('bad', outDir), JSON.stringify({ uid: 'bad', verdict: 'maybe' }) + '\n', 'utf8');
+    fs.writeFileSync(verdictPath('bad', outDir), JSON.stringify({ uid: 'bad', verdict: 'maybe', model: 'claude-opus-5' }) + '\n', 'utf8');
     assert.throws(() => readVerdict({ uid: 'bad', outDir }), ContractError, 'out-of-enum verdict fails closed');
   } finally {
     fs.rmSync(outDir, { recursive: true, force: true });
   }
 });
 
-test('readVerdict: accepts the judge\'s real { verdict, reasoning } object (uid from filename) and ignores extras', () => {
+test('readVerdict: accepts the judge\'s real { verdict, reasoning, model } object (uid from filename) and ignores extras', () => {
   // INTEROP: the prompt has the judge emit { "verdict", "reasoning" } (no uid); the session writes that
-  // verbatim under <uid>.verdict.json. readVerdict keys off the filename for the uid and reads only the
-  // verdict -- the reasoning + any stray uid body field are ignored, never distorting the gate.
+  // verbatim under <uid>.verdict.json, ADDING the judge model pin (AMENDMENT RECORD 3). readVerdict keys
+  // off the filename for the uid and reads only the verdict + the model -- the reasoning + any stray uid
+  // body field are ignored, never distorting the gate.
   const outDir = mkTmp('lz-calib-interop-');
 
   try {
     fs.writeFileSync(
       verdictPath('dev99999-0', outDir),
-      JSON.stringify({ verdict: 'refuted', reasoning: 'the evidence omits the second clause of the claim' }) + '\n',
+      JSON.stringify({ verdict: 'refuted', reasoning: 'the evidence omits the second clause of the claim', model: 'claude-opus-5' }) + '\n',
       'utf8',
     );
     const v = readVerdict({ uid: 'dev99999-0', outDir });
-    assert.deepEqual(v, { id: 'dev99999-0', verdict: 'refuted' }, 'returns { id (from filename), verdict }, ignoring reasoning');
+    assert.deepEqual(
+      v,
+      { id: 'dev99999-0', verdict: 'refuted', model: 'claude-opus-5' },
+      'returns { id (from filename), verdict, model }, ignoring reasoning',
+    );
+  } finally {
+    fs.rmSync(outDir, { recursive: true, force: true });
+  }
+});
+
+// AMENDMENT RECORD 3: an unpinned verdict (no judge model) cannot be scored. The Opus 4.x set that
+// DISQUALIFIED recorded only { uid, verdict, reasoning }, so its instrument had to be recovered from
+// file mtimes -- this guard makes that unrepeatable.
+test('readVerdict: a verdict with no model pin is a ContractError (AMENDMENT RECORD 3 fail-closed)', () => {
+  const outDir = mkTmp('lz-calib-nopin-');
+
+  try {
+    // The exact 4.x on-disk shape: a valid, in-enum verdict that simply never named its judge.
+    fs.writeFileSync(
+      verdictPath('dev00003-0', outDir),
+      JSON.stringify({ uid: 'dev00003-0', verdict: 'refuted', reasoning: 'evidence never mentions the subject' }) + '\n',
+      'utf8',
+    );
+    assert.throws(
+      () => readVerdict({ uid: 'dev00003-0', outDir }),
+      (err) => err instanceof ContractError && /no judge model/.test(err.message),
+      'an in-enum but unpinned verdict fails closed on the model pin, not on the enum',
+    );
+
+    // DISCRIMINATION: the same record WITH a pin reads fine, so the guard keys on the pin alone and is
+    // not rejecting the record for some unrelated reason.
+    fs.writeFileSync(
+      verdictPath('dev00003-1', outDir),
+      JSON.stringify({ uid: 'dev00003-1', verdict: 'refuted', reasoning: 'evidence never mentions the subject', model: 'claude-opus-5' }) + '\n',
+      'utf8',
+    );
+    assert.equal(readVerdict({ uid: 'dev00003-1', outDir }).model, 'claude-opus-5', 'the pinned twin reads through');
+
+    // An empty-string model is as unpinned as an absent one.
+    fs.writeFileSync(
+      verdictPath('dev00003-2', outDir),
+      JSON.stringify({ uid: 'dev00003-2', verdict: 'refuted', model: '' }) + '\n',
+      'utf8',
+    );
+    assert.throws(
+      () => readVerdict({ uid: 'dev00003-2', outDir }),
+      (err) => err instanceof ContractError && /no judge model/.test(err.message),
+      'an empty model string fails closed too',
+    );
   } finally {
     fs.rmSync(outDir, { recursive: true, force: true });
   }
