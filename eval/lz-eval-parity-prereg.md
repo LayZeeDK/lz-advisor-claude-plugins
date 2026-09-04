@@ -470,6 +470,20 @@ attestation. The single-instrument check in `assembleGateInput` then guarantees 
 that one string, and the write-once clause guarantees no verdict was produced under a different one and
 relabelled. If a future runtime exposes a per-subagent resolved id, it supersedes this route.
 
+TRANSPORT FIDELITY LIMIT ON TOOL ACCESS (recorded before the run, alongside the prompt file's existing
+temperature caveat, because it is the same class of honest deviation): the frozen prompt specifies that
+the judge sub-agent "has no file tools (read-only persona)". The Agent tool does not let a caller
+restrict a spawned agent's tools -- tools come from the agent definition -- so the judge runs on a
+general-purpose persona that DOES possess file tools. This matters because the WiCE gold labels are on
+disk at `eval/__fixtures__/wice-vendored/records/<uid>.json`; a tool-using judge could in principle read
+the held-back answer, which is precisely what the anti-leak presentation contract exists to prevent.
+Two mitigations are applied and pre-registered here: (a) each dispatch carries an explicit, emphatic
+instruction to use NO tools -- no file reads, no search -- and to answer solely from the supplied text;
+and (b) the dispatch OMITS the uid, so the judge is not handed the key that locates its own gold record.
+This is a mitigation, not a guarantee. It is a stated limit on the calibration's closed-book claim and
+MUST be carried into the result artifact rather than left implicit; if a future runtime allows a
+tool-restricted sub-agent, it supersedes this.
+
 PROVENANCE: maintainer-directed 2026-09-04, selecting Option 3 from five options presented alongside the
 zero-spend failure diagnosis. Reviewed pre-spend by an independent integrity reviewer, which returned
 APPROVE-WITH-CHANGES and re-derived every figure above from disk; all ten of its edits are folded in --
