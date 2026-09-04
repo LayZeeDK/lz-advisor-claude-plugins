@@ -335,6 +335,71 @@ addressed" and must NEVER be cited as a real calibration result.
 This amendment is committed in its OWN timestamped commit BEFORE any calibration verdict is captured or
 graded. Provenance: maintainer-ratified 2026-06-23 on a unanimous 5-lens Opus advisory-panel convergence.
 
+## AMENDMENT RECORD 3 -- forced judge-instrument replacement after the Opus 4.x gate DISQUALIFIED (2026-09-04)
+
+WHAT CHANGED: the Stage-2 judge INSTRUMENT, and nothing else. The pre-registered judge was an Opus
+4.x-generation Agent sub-agent; that generation is no longer addressable (the Agent tool accepts model
+ALIASES, not pinned versions, so `model: opus` now resolves to Opus 5). The re-calibration therefore runs
+on Opus 5. UNCHANGED: the 60 vendored WiCE items (byte-identical), the verdict-collapse map, the
+calibration prompt (`eval/lz-eval-parity-calibration-prompt.md`, byte-identical), the frozen NUMBERS
+(PARITY_BAR / JUDGE_MCC_BAR / SLICE_A_GATE / PARITY_K_RANGE), the `judgeCalibrationGate` predicate, the
+Slice-A seed rule + feasibility gate, the two-layer parity bar, and the grading k -- the anti-drift
+co-test still passes byte-for-byte. THE BAR IS NOT LOWERED.
+
+THE PRIOR RESULT STANDS IN THE RECORD (not discarded): the Opus 4.x calibration ran to completion over
+all 60 items and FAILED -- `mcc=0.4889 lowerCI=0.2722 cleared=false n=60`. Per PAR-02 that was a
+DISQUALIFIER and NO report was graded. Those 60 verdicts are preserved at
+`eval/.cache/p22-baseline/calibration-opus4x/` as the permanent record of the disqualified instrument.
+
+THE PRE-COMMITTED STOPPING RULE (what makes this a forced replacement rather than a second roll of the
+dice): this amendment authorizes EXACTLY ONE re-calibration, on the forced-replacement instrument, with
+the prompt and the item set unchanged. If that single run yields `cleared === false`, the phase HALTS --
+no third instrument, no prompt revision, no widening of the WiCE draw, no subgroup read. The remaining
+construct question is then deferred to a NEW phase under its OWN fresh pre-registration. This rule is
+frozen HERE, before the Opus 5 run.
+
+HONEST THREAT TO VALIDITY -- THIS AMENDMENT IS WEAKER THAN AMENDMENT RECORD 2 AND MUST BE REPORTED AS
+SUCH: AMENDMENT RECORD 2 was made at a genuinely OPEN window -- zero calibration verdicts existed, so no
+result could have influenced it. This one is NOT. A failed gate is visible at amendment time, so that
+defence is unavailable. What carries it instead is narrower, and `22-PARITY-RESULT.md` MUST state all
+four points rather than argue them away: (a) the instrument change is FORCED, not chosen -- the
+pre-registered judge cannot be invoked at all; (b) nothing is relaxed -- items, prompt, collapse map and
+bar predicate are byte-identical; (c) the single-attempt stopping rule above caps the instruments at two,
+pre-committed; (d) the 4.x failure is published, not buried. A reader may still discount the Opus 5
+result on these grounds.
+
+CONDITIONAL C IS NOT TRIGGERED (recorded so it cannot be invoked later): the frozen under-power
+conditional above triggers on a point estimate >= `JUDGE_MCC_BAR.POINT` with the one-sided lower CI
+straddling / near `JUDGE_MCC_BAR.LOWER_FLOOR`. The realized 4.x result is the OPPOSITE shape -- point
+BELOW the bar (0.4889) with the lower CI at 0.2722, far ABOVE the floor. N=60 was therefore adequate to
+establish the failure; this was NOT an under-powered near-miss. Widening the WiCE draw is NOT sanctioned
+here, and Option B (importing LLM-AggreFact into the gate) remains EXCLUDED.
+
+THE CLEAR-CUT SUBGROUP READ IS FORBIDDEN AS A PASS: a zero-spend diagnosis of the 60 stored 4.x verdicts
+shows the pooled failure decomposes as -- clear-cut items (n=43) mcc=0.5045; subtle items (n=17)
+mcc=0.0000 with tp=0 / fp=4 / tn=13 / fn=0. The clear-cut figure CLEARS the point bar. It MUST NOT be
+reported or used as a cleared gate: selecting it after seeing the pooled failure is post-hoc subgroup
+selection, which PAR-02's "NEVER relax the bar" forbids. It is admissible ONLY as descriptive diagnosis.
+
+NOTED INSTRUMENT DEFECT -- DESCRIPTIVE ONLY, DEFERRED, DOES NOT ALTER THIS GATE: the same diagnosis shows
+all 17 `partially_supported` subtle items collapse to gold `refuted`, so the subtle subset is
+SINGLE-POLE -- tp and fn are zero by construction, and it can contribute false-positive risk with no
+true-positive upside, systematically depressing any POOLED MCC. Whether the Stage-2 gate should instead
+be specified per-subset, or the subtle subset re-drawn two-poled, is a CONSTRUCT question. It is recorded
+here as a pre-registered SEED for a future phase (descriptive-only, NO threshold, exactly as the
+LLM-AggreFact relocation above); a future phase MUST NOT quietly promote it into a soft gate. It does NOT
+change the gate this phase runs.
+
+REQUIRED BEFORE THE RUN (provenance fix): the 4.x verdict files record `{uid, verdict, reasoning}` only
+-- no model pin -- so the disqualified instrument had to be identified from session context rather than
+from the artifact itself. The harness MUST write the judge model into every verdict file it persists from
+this amendment forward, mirroring the D-15 fail-closed model pin the baseline-capture arm already
+enforces.
+
+PROVENANCE: maintainer-directed 2026-09-04, selecting Option 3 from five options presented alongside the
+zero-spend failure diagnosis. Committed in its OWN timestamped commit BEFORE any Opus 5 calibration
+verdict is captured.
+
 ## Cross-reference
 
 - `eval/lz-eval-parity-verdict.mjs` -- the frozen `PARITY_BAR` + the two-layer `parityVerdict`.
