@@ -371,6 +371,46 @@ test('assembleGateInput: a partial set (any missing verdict) is a ContractError 
   }
 });
 
+// AMENDMENT RECORD 3 single-instrument check. `pendingItems` skips any uid that already has a verdict
+// file, so a resume straddling a model-alias change would silently yield a set judged by two
+// generations. An MCC over a mixed instrument measures nothing.
+test('assembleGateInput: a verdict set spanning TWO judge models is a ContractError (single-instrument)', () => {
+  const items = loadCalibrationItems();
+  const outDir = mkTmp('lz-calib-mixed-');
+
+  try {
+    // The realistic shape: a run that began on one generation and resumed on the next.
+    for (let i = 0; i < items.length; i += 1) {
+      const model = i < 40 ? 'claude-opus-4-8' : 'claude-opus-5';
+      writeVerdict(outDir, items[i].uid, items[i].gold.gold, model);
+    }
+
+    assert.throws(
+      () => assembleGateInput({ items, outDir }),
+      (err) => err instanceof ContractError && /spans 2 judge models/.test(err.message) && /claude-opus-4-8, claude-opus-5/.test(err.message),
+      'a two-generation set fails closed and names both models',
+    );
+
+    // DISCRIMINATION: the identical set under ONE model scores, and reports the pinned instrument --
+    // so the guard keys on the model spread alone, not on anything else about these verdicts.
+    const uniform = mkTmp('lz-calib-uniform-');
+
+    try {
+      for (const item of items) {
+        writeVerdict(uniform, item.uid, item.gold.gold, 'claude-opus-5');
+      }
+
+      const out = assembleGateInput({ items, outDir: uniform });
+      assert.equal(out.model, 'claude-opus-5', 'a single-instrument set reports its pinned model');
+      assert.equal(out.verdicts.length, items.length, 'and still assembles every item');
+    } finally {
+      fs.rmSync(uniform, { recursive: true, force: true });
+    }
+  } finally {
+    fs.rmSync(outDir, { recursive: true, force: true });
+  }
+});
+
 // ---------------------------------------------------------------------------
 // scoreCalibration: DISCRIMINATION over the REAL items -- near-perfect clears; always-refute does not.
 // ---------------------------------------------------------------------------

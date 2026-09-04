@@ -285,14 +285,28 @@ export function assembleGateInput({ items, outDir = CALIBRATION_OUT_DIR } = {}) 
 
   const verdicts = [];
   const gold = [];
+  const models = new Set();
 
   for (const item of items) {
-    const { verdict } = readVerdict({ uid: item.uid, outDir });
+    const { verdict, model } = readVerdict({ uid: item.uid, outDir });
     verdicts.push({ id: item.uid, verdict });
     gold.push({ id: item.uid, gold: item.gold.gold, subtle: item.gold.subtle });
+    models.add(model);
   }
 
-  return { verdicts, gold };
+  // SINGLE-INSTRUMENT CHECK (AMENDMENT RECORD 3). A per-file pin proves each verdict names A judge; it
+  // does NOT prove the SET shares ONE. Because `pendingItems` skips any uid whose verdict file already
+  // exists, a resume that straddles a model-alias change silently produces a set judged by two
+  // generations -- and an MCC over a mixed instrument measures nothing. One calibration, one judge.
+  if (models.size > 1) {
+    throw new ContractError(
+      'calibration set spans ' + models.size + ' judge models (' + [...models].sort().join(', ') +
+        ') -- an MCC over a mixed instrument is not a calibration (AMENDMENT RECORD 3)',
+      'assembleGateInput',
+    );
+  }
+
+  return { verdicts, gold, model: [...models][0] };
 }
 
 // ---------------------------------------------------------------------------

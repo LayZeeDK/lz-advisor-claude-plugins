@@ -29,6 +29,7 @@ corrected to match. Do NOT change a number in one place without changing it in t
 | `PARITY_BAR.MAX_LOSS_OTHER_DIMS` | 1 | `eval/lz-eval-parity-verdict.mjs` |
 | `JUDGE_MCC_BAR.POINT` | 0.5 | `eval/lz-eval-judge-calibration.mjs` |
 | `JUDGE_MCC_BAR.LOWER_FLOOR` | 0 | `eval/lz-eval-judge-calibration.mjs` |
+| `JUDGE_MCC_BAR.ALPHA` | 0.05 | `eval/lz-eval-judge-calibration.mjs` |
 | `SLICE_A_GATE.N_SUP_MIN` | 8 | `eval/lz-eval-sliceA-gold.mjs` |
 | `SLICE_A_GATE.N_REF_MIN` | 8 | `eval/lz-eval-sliceA-gold.mjs` |
 | `PARITY_K_RANGE.MIN` | 3 | `eval/lz-eval-parity-judge.mjs` |
@@ -343,13 +344,34 @@ ALIASES, not pinned versions, so `model: opus` now resolves to Opus 5). The re-c
 on Opus 5. UNCHANGED: the 60 vendored WiCE items (byte-identical), the verdict-collapse map, the
 calibration prompt (`eval/lz-eval-parity-calibration-prompt.md`, byte-identical), the frozen NUMBERS
 (PARITY_BAR / JUDGE_MCC_BAR / SLICE_A_GATE / PARITY_K_RANGE), the `judgeCalibrationGate` predicate, the
-Slice-A seed rule + feasibility gate, the two-layer parity bar, and the grading k -- the anti-drift
-co-test still passes byte-for-byte. THE BAR IS NOT LOWERED.
+Slice-A seed rule + feasibility gate, the two-layer parity bar, and the grading k. THE BAR IS NOT
+LOWERED, and the anti-drift co-test passes (it pins `PARITY_BAR`, `JUDGE_MCC_BAR.POINT` /
+`.LOWER_FLOOR` / `.ALPHA`, `SLICE_A_GATE` and `PARITY_K_RANGE`; `ALPHA` was added to its coverage by
+this amendment).
+
+"UNCHANGED" IS PINNED, NOT ASSERTED (matching AMENDMENT RECORD 2's sha256 discipline, which this
+amendment initially failed to carry): the frozen calibration prompt
+`eval/lz-eval-parity-calibration-prompt.md` is sha256
+`cb3d567a7ac099099453834f06db89f84c7b063c0eda317fd541e707747247e6`, and the 60 vendored WiCE records
+under `eval/__fixtures__/wice-vendored/records/` digest to
+`2353066d70c5a4b421bc9294a620ac98f42cd3566ec705d524961c6da7e82e6b`
+(`find ... -name '*.json' | sort | xargs sha256sum | sha256sum`). Both MUST be re-verified immediately
+before the Opus 5 run; a mismatch means "unchanged" is false and the run does NOT start.
+
+THE BCa KNOBS ARE PRE-REGISTERED HERE (they were previously code defaults only, which left the
+lower-CI reproducible only by accident): `alpha = 0.05`, `resamples = 2000`, `seed = 'bca'`, as
+implemented in `bcaBootstrapLowerCI` (`eval/lz-eval-mcc.mjs`). Measured jitter across plausible
+alternative seed/resample choices spans lowerCI 0.2580-0.2843 -- immaterial at the realized 0.2722,
+but decisive in exactly the near-bar band, which is why it is pinned before the run rather than after.
 
 THE PRIOR RESULT STANDS IN THE RECORD (not discarded): the Opus 4.x calibration ran to completion over
 all 60 items and FAILED -- `mcc=0.4889 lowerCI=0.2722 cleared=false n=60`. Per PAR-02 that was a
 DISQUALIFIER and NO report was graded. Those 60 verdicts are preserved at
-`eval/.cache/p22-baseline/calibration-opus4x/` as the permanent record of the disqualified instrument.
+`eval/.cache/p22-baseline/calibration-opus4x/` -- but `eval/.cache/` is GITIGNORED, so that copy dies
+with one `git clean -xdf`. The durable record is therefore COMMITTED at
+`eval/lz-eval-parity-calibration-opus4x-record.md`: the gate result, the decomposition, and all 60
+`{uid, verdict, gold, subtle, outcome}` rows (45 hit / 7 FP / 8 FN). "Published, not buried" means
+reproducible from a fresh clone, not merely a headline number in prose.
 
 THE PRE-COMMITTED STOPPING RULE (what makes this a forced replacement rather than a second roll of the
 dice): this amendment authorizes EXACTLY ONE re-calibration, on the forced-replacement instrument, with
@@ -357,6 +379,39 @@ the prompt and the item set unchanged. If that single run yields `cleared === fa
 no third instrument, no prompt revision, no widening of the WiCE draw, no subgroup read. The remaining
 construct question is then deferred to a NEW phase under its OWN fresh pre-registration. This rule is
 frozen HERE, before the Opus 5 run.
+
+WRITE-ONCE, AND WHEN THE ATTEMPT IS CONSUMED (this closes the hole that "one run" alone does not):
+`pendingItems` treats any existing `<uid>.verdict.json` as DONE, so deleting a handful of verdict files
+and re-dispatching those items is INDISTINGUISHABLE from a legitimate resume -- and because
+`eval/.cache/` is gitignored, such a deletion would leave no trace at all. Therefore: a landed verdict
+file is IMMUTABLE. Deleting or overwriting one is FORBIDDEN. Resumption may only ADD files for uids that
+have none. **The single authorized attempt is CONSUMED WHEN THE FIRST VERDICT FILE LANDS**, not when the
+run is declared finished -- so a run abandoned at item 12 has spent the attempt, and its 12 verdicts
+stand as part of the one authorized set. If a verdict must be discarded as malformed (unparseable JSON,
+out-of-enum), the uid and the reason MUST be recorded in the phase record before it is rewritten; a
+silent redo is the exact move this clause exists to prevent.
+
+THE SET MUST BE ONE INSTRUMENT: every verdict file carries a `model` pin, and `assembleGateInput` fails
+closed if the 60 do not share ONE identical model string. A per-file pin proves each verdict names A
+judge; it does not prove the set shares one, and an MCC over a set straddling two generations measures
+nothing. The realized instrument string is recorded in the result artifact as the instrument of record.
+
+CONDITIONAL C IS RETIRED FOR THIS PHASE, PROSPECTIVELY AS WELL AS RETROSPECTIVELY: the paragraph below
+disposes of C for the 4.x numbers, but that leaves the Opus 5 case open -- a result at, say, mcc 0.52
+with lowerCI 0.03 would CLEAR while sitting squarely on C's trigger shape, and a reader could argue the
+widening either way. Resolving that after seeing the number is precisely the post-hoc choice
+pre-registration exists to remove. So it is resolved NOW: **Conditional C is unavailable for the Opus 5
+result, whatever its shape.** A near-bar clear is reported as a near-bar clear, with the lower CI stated
+and the D-09 instrument-strength disclosure carried; the near-bar power question goes to the new phase
+along with the construct question.
+
+WHY RE-CALIBRATE AT ALL, GIVEN PAR-02's DEFAULT WAS STOP: because the DISQUALIFIER is a verdict about
+the INSTRUMENT, not about the systems under comparison, and the instrument it disqualified no longer
+exists. Accepting the halt would publish "no parity verdict" on the strength of a judge that cannot be
+run again by anyone, including a replicator -- an unfalsifiable null. One replication on the only
+addressable instrument, under an unchanged bar and a consumed-on-first-write cap, is the narrower claim.
+If it also fails, the null is then reported on a judge a replicator CAN re-run, which is a materially
+better result than the one available today.
 
 HONEST THREAT TO VALIDITY -- THIS AMENDMENT IS WEAKER THAN AMENDMENT RECORD 2 AND MUST BE REPORTED AS
 SUCH: AMENDMENT RECORD 2 was made at a genuinely OPEN window -- zero calibration verdicts existed, so no
@@ -376,10 +431,16 @@ establish the failure; this was NOT an under-powered near-miss. Widening the WiC
 here, and Option B (importing LLM-AggreFact into the gate) remains EXCLUDED.
 
 THE CLEAR-CUT SUBGROUP READ IS FORBIDDEN AS A PASS: a zero-spend diagnosis of the 60 stored 4.x verdicts
-shows the pooled failure decomposes as -- clear-cut items (n=43) mcc=0.5045; subtle items (n=17)
-mcc=0.0000 with tp=0 / fp=4 / tn=13 / fn=0. The clear-cut figure CLEARS the point bar. It MUST NOT be
-reported or used as a cleared gate: selecting it after seeing the pooled failure is post-hoc subgroup
-selection, which PAR-02's "NEVER relax the bar" forbids. It is admissible ONLY as descriptive diagnosis.
+shows the pooled failure decomposes as -- clear-cut items (n=43) mcc=0.5045 with lowerCI=0.2804; subtle
+items (n=17) mcc=0.0000 with tp=0 / fp=4 / tn=13 / fn=0. State the temptation at full strength rather
+than understating it: the clear-cut subset does not merely clear the point bar, it satisfies the ENTIRE
+predicate -- `cleared === true`. It MUST NOT be reported or used as a cleared gate. Selecting it after
+seeing the pooled failure is post-hoc subgroup selection, which PAR-02's "NEVER relax the bar" forbids.
+The operative ban: **NO subgroup figure -- this one or any other -- may authorize Stage-3 grading
+spend.** The code already refuses the read independently: the clear-cut subset contains zero subtle
+items, so `judgeCalibrationGate`'s D-13 shape check throws a `ContractError` demanding at least one
+WiCE `partially_supported` subtle item. The figure is admissible ONLY as descriptive diagnosis, and the
+same ban applies to any subgroup of the forthcoming Opus 5 set.
 
 NOTED INSTRUMENT DEFECT -- DESCRIPTIVE ONLY, DEFERRED, DOES NOT ALTER THIS GATE: the same diagnosis shows
 all 17 `partially_supported` subtle items collapse to gold `refuted`, so the subtle subset is
@@ -392,13 +453,30 @@ change the gate this phase runs.
 
 REQUIRED BEFORE THE RUN (provenance fix): the 4.x verdict files record `{uid, verdict, reasoning}` only
 -- no model pin -- so the disqualified instrument had to be identified from session context rather than
-from the artifact itself. The harness MUST write the judge model into every verdict file it persists from
-this amendment forward, mirroring the D-15 fail-closed model pin the baseline-capture arm already
-enforces.
+from the artifact itself. From this amendment forward the SESSION persists `{verdict, reasoning, model}`
+per item (the harness never writes verdicts; it reads them), and `readVerdict` FAILS CLOSED on a missing
+or empty `model` while `assembleGateInput` fails closed on a set spanning more than one -- mirroring the
+D-15 fail-closed model pin the baseline-capture arm already enforces. The recorded string MUST be the
+RESOLVED model id, never the alias and never the judge's self-report.
+
+PROVENANCE ROUTE FOR THE PIN, PRE-REGISTERED BECAUSE IT IS IMPERFECT: the Agent tool exposes no
+per-subagent `system`/init event, so the resolved id of an individual judge sub-agent is NOT directly
+observable the way a headless `claude -p` capture's is (that arm reads it from the stream, which is why
+D-15 could be strict there). The pin is therefore taken from the ORCHESTRATING session's own model
+identity at dispatch time -- the generation the `opus` alias resolves to for this account in this
+session -- and recorded as `claude-opus-5`. This is weaker than the capture arm's stream-read pin and
+MUST be disclosed as such in the result artifact: it establishes the GENERATION, not a per-call
+attestation. The single-instrument check in `assembleGateInput` then guarantees the whole set carries
+that one string, and the write-once clause guarantees no verdict was produced under a different one and
+relabelled. If a future runtime exposes a per-subagent resolved id, it supersedes this route.
 
 PROVENANCE: maintainer-directed 2026-09-04, selecting Option 3 from five options presented alongside the
-zero-spend failure diagnosis. Committed in its OWN timestamped commit BEFORE any Opus 5 calibration
-verdict is captured.
+zero-spend failure diagnosis. Reviewed pre-spend by an independent integrity reviewer, which returned
+APPROVE-WITH-CHANGES and re-derived every figure above from disk; all ten of its edits are folded in --
+the write-once clause, the prospective retirement of Conditional C, the single-instrument check, the
+sha256 pins, the committed 4.x record, the sharpened subgroup ban, the BCa knobs, and the answer to "why
+not simply accept the disqualification" -- none of which touched a bar, an item, or the prompt.
+Committed BEFORE any Opus 5 calibration verdict is captured.
 
 ## Cross-reference
 

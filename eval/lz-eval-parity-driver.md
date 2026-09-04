@@ -174,6 +174,15 @@ the claim -> `unrefuted`, else `refuted`); the verdicts land on disk.
    lower CI `> JUDGE_MCC_BAR.LOWER_FLOOR` 0). An uncalibrated judge is a DISQUALIFIER (PAR-02) -- STOP,
    do NOT grade, NEVER relax the bar.
 
+ONE-SHOT CAP (AMENDMENT RECORD 3 -- binding on THIS document, because this is the file a fresh session
+follows): the Opus 5 re-calibration is the SINGLE authorized attempt, and it is CONSUMED WHEN THE FIRST
+VERDICT FILE LANDS. A landed `<uid>.verdict.json` is IMMUTABLE -- never delete or overwrite one; resume
+by ADDING files only for uids that have none. `cleared === false` HALTS the phase: no third instrument,
+no prompt revision, no widening (Conditional C is retired for this phase, prospectively too), no
+subgroup read, and no subgroup figure may authorize Stage-3 spend. The construct question goes to a NEW
+phase with its own pre-registration. Before starting, re-verify the two sha256 pins in AMENDMENT
+RECORD 3 (the calibration prompt and the 60 vendored records); a mismatch means the run does not start.
+
 ## Stage 3 -- grade the reports (the `callJudge` transport; session pool; PAR-04)
 
 For EACH frozen Slice-B question, grade BOTH captured report.md files (built-in vs lz) on the 5
