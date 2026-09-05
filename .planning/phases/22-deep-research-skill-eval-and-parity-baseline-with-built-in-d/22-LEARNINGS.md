@@ -339,6 +339,19 @@ folded silently into the register.
 The measured-parity track is CLOSED with the gate uncleared and the authorized attempt spent. A
 successor phase needs its OWN fresh pre-registration and must carry, at minimum:
 
+> **Four of these are PLANTED SEEDS, not just prose here** -- they are Phase 23's declared inputs and
+> will auto-surface on `/gsd-new-milestone`. Read the seed file, not this summary line:
+>
+> | Seed | Item | Scope |
+> |------|------|-------|
+> | `SEED-002` | LLM-AggreFact open-book construct-transfer diagnostic (relocated by AMENDMENT RECORD 2, NOT dropped; must stay non-gating) | medium |
+> | `SEED-003` | The single-pole subtle subset -- 17 `partially_supported` items collapse to gold `refuted`, zero true-positive upside, can only depress a pooled MCC | medium |
+> | `SEED-004` | The two-token verdict contract scores the token, not the argument (3/60 self-contradicting) | small |
+> | `SEED-005` | Dispatch provenance -- the harness keeps no copy of the string actually sent to each judge | small |
+>
+> `SEED-003` carries an explicit warning against becoming the post-hoc subgroup read it exists to
+> question. `SEED-005` also carries the escalated T-22-15 `String.replace` substitution defect.
+
 1. The construct question: is a WiCE-collapsed MCC gate the right Stage-2 instrument for a
    deep-research parity comparison at all?
 2. The near-bar power question retired with Conditional C.
