@@ -5,7 +5,7 @@
 - **[SHIPPED] v1.0 MVP** -- Phases 1-10 (incl. 5.1-5.6), shipped 2026-06-01 at plugin 1.0.0. Full detail: [milestones/v1.0-ROADMAP.md](milestones/v1.0-ROADMAP.md). Requirements: [milestones/v1.0-REQUIREMENTS.md](milestones/v1.0-REQUIREMENTS.md). Audit: [milestones/v1.0-MILESTONE-AUDIT.md](milestones/v1.0-MILESTONE-AUDIT.md).
 - **[SHIPPED] v1.0.1 No review report shorthands** -- Phases 11-13, shipped 2026-06-11 at plugin 1.0.1 (PR #1 merged). Full detail: [milestones/v1.0.1-ROADMAP.md](milestones/v1.0.1-ROADMAP.md). Requirements: [milestones/v1.0.1-REQUIREMENTS.md](milestones/v1.0.1-REQUIREMENTS.md). Audit: [milestones/v1.0.1-MILESTONE-AUDIT.md](milestones/v1.0.1-MILESTONE-AUDIT.md).
 - **[SHIPPED] v2.0.0 Prefixed skill names** -- Phases 14-15 (incl. 14.1, 14.2), shipped 2026-06-14 at plugin 2.0.0 (PR #2 merged). Breaking `lz-` skill rename (de-shadow built-in `/plan` / `/review` / `/security-review`) + release. Full detail: [milestones/v2.0.0-ROADMAP.md](milestones/v2.0.0-ROADMAP.md). Requirements: [milestones/v2.0.0-REQUIREMENTS.md](milestones/v2.0.0-REQUIREMENTS.md). Audit: [milestones/v2.0.0-MILESTONE-AUDIT.md](milestones/v2.0.0-MILESTONE-AUDIT.md).
-- **[IN PROGRESS] v2.1.0 lz-deep-research skill** -- Phases 16-22, started 2026-06-15. Add a fifth skill `/lz-advisor:lz-deep-research` (de-shadowing the built-in `/deep-research`): decompose -> parallel search -> fetch -> extract -> adversarial-verify -> cited report. Built bottom-up, with the Haiku prompt-engineering research + gating eval moved EARLY (right after the schema) so the voter default is settled before the workers and orchestrator are authored.
+- **[IN PROGRESS] v2.1.0 lz-deep-research skill** -- Phases 16-23, started 2026-06-15. Add a fifth skill `/lz-advisor:lz-deep-research` (de-shadowing the built-in `/deep-research`): decompose -> parallel search -> fetch -> extract -> adversarial-verify -> cited report. Built bottom-up, with the Haiku prompt-engineering research + gating eval moved EARLY (right after the schema) so the voter default is settled before the workers and orchestrator are authored.
 
 ## Phases
 
@@ -60,7 +60,7 @@ Full phase details, success criteria, and decision logs are archived in [milesto
 
 </details>
 
-### [IN PROGRESS] v2.1.0 lz-deep-research skill (Phases 16-22)
+### [IN PROGRESS] v2.1.0 lz-deep-research skill (Phases 16-23)
 
 **Milestone Goal:** Add a fifth skill, `/lz-advisor:lz-deep-research` (the `lz-` prefix de-shadows the Claude Code built-in `/deep-research`), that applies the advisor strategy to research: decompose a question into ~5 sub-angles, fan out parallel cheap-tier web search/fetch/extract workers, adversarially verify the top claims with isolated skeptic voters, and emit a cited report with per-claim confidence -- at ~1.2-2x single-pass Sonnet cost, not the 4-220x of naive multi-agent designs. Built bottom-up against the converged design (`.planning/research/SESSION-DESIGN.md`, triangulated across 3 model lineages + 4 empirical spikes): a deterministic off-model `scripts/` aggregator does all dedup/rank/tally/quote-recheck at zero model tokens, and the existing Opus `advisor` is consulted read-only at exactly two high-leverage gates. The build is dependency-ordered: aggregator -> schema -> Haiku-prompt research + verify-voter + early gating eval -> search/extract workers -> orchestrator+scale. The gating eval is moved EARLY (right after the schema, decoupled from the orchestrator -- it drives the voter agent directly via the existing pilot harness, needing only the aggregator tally + the vote schema + a voter prompt + a labeled dataset) so the voter default and the Haiku/Sonnet model choice for ALL cheap-tier workers is settled BEFORE any worker or the orchestrator is authored. A dedicated deep-research pass on Haiku prompt engineering PRECEDES authoring any Haiku agent, so the eval tests a fair, research-grounded Haiku prompt -- never `model: haiku` on a Sonnet prompt; if the eval shows Haiku non-viable, the decision is raised to the user (Sonnet-default ships in the interim regardless). Release/publication (version sync, CHANGELOG/README, tag + GitHub Release; REL-01..03) is handled during `/gsd-complete-milestone` AFTER `/gsd-audit-milestone` passes -- it is NOT a build phase.
 
@@ -71,6 +71,8 @@ Full phase details, success criteria, and decision logs are archived in [milesto
 - [ ] **Phase 19: Search + extract worker agents** - The fetch/extract worker (immutable excerpt at fetch time) and the search worker, whose model tier is chosen from the Phase-18 Haiku research/eval outcome, each returning one-line receipts
 - [ ] **Phase 20: Orchestrator skill + headless scale confirmation** - The `lz-deep-research` skill that wires the full pipeline with the already-settled voter default, reuses the Opus advisor at two gates, wave-batches the fan-out (<=5 in-flight), and is empirically confirmed at real headless concurrency
 - [ ] **Phase 21: Live-web open-book over-refusal gold and arm-B re-run** - Build a live-web OPEN-BOOK over-refusal gold (adjudicators run the SAME live-web search the voter does, with per-item reasoning + bounded leakage) and re-run arm B (over-refusal) against it to validly resolve sensitivity -- the RAISE from the Plan 20-05 NOT WORKS verdict (construct mismatch surfaced after many Phase 19/20 re-plans); Sonnet-default ships regardless, the Haiku-first flip stays deferred
+- [ ] **Phase 22: Deep-research skill eval and parity baseline with built-in deep-research** - Holistic system-level parity eval vs the blessed built-in `/deep-research`, on two tracks (architectural + measured). ARCHITECTURAL track COMPLETE (PAR-07). MEASURED track TERMINAL 2026-09-05 -- the Stage-2 judge-calibration gate failed on both attempted instruments, so no report was ever graded; PAR-02/03/04/05/06 + the PAR-08 remainder stay OPEN and closure moves to Phase 23
+- [ ] **Phase 23: Judge-free confidence and operating envelope for lz-deep-research** - Successor to the terminated Phase-22 measured track. Build confidence from sources needing NEITHER a calibrated judge NOR closed-book gold (Slice A, a deterministic citation audit, MANIFEST admissibility, a capture-feasibility spike gating an optional head-to-head), and publish an operating envelope. Carries a three-branch termination clause under which a reasoned, evidenced "not establishable by method X" is a COMPLETED phase rather than a gap; Sonnet-default ships regardless (D-03)
 
 ## Phase Details
 
@@ -276,7 +278,7 @@ Phases execute in numeric order: 16 -> 17 -> 17.1 -> 18 -> 19 -> 20 -> 21
 | 21. Over-refusal gold + arm-B re-run | v2.1.0 | 5/5 | Complete | 2026-06-22 |
 | 22. Deep-research skill eval + built-in parity | v2.1.0 | 4/5 | In Progress |  |
 
-v1.0 + v1.0.1 + v2.0.0 shipped (plugin 2.0.0). **Active milestone: v2.1.0 (lz-deep-research skill)** -- Phases 16-22 (Phase 21 added 2026-06-21; Phase 22 -- deep-research eval + built-in parity -- added 2026-06-22), roadmap revised 2026-06-15 (gating eval moved EARLY to Phase 18; EVAL-05 added -- Haiku prompt-engineering research must precede authoring any Haiku agent; the search worker's model tier follows the Phase-18 outcome). Release/publication (REL-01..03) is handled during `/gsd-complete-milestone` after `/gsd-audit-milestone` passes, not as a build phase. See `.planning/MILESTONES.md` for shipped-milestone summaries and `milestones/` for full detail.
+v1.0 + v1.0.1 + v2.0.0 shipped (plugin 2.0.0). **Active milestone: v2.1.0 (lz-deep-research skill)** -- Phases 16-23 (Phase 21 added 2026-06-21; Phase 22 -- deep-research eval + built-in parity -- added 2026-06-22; Phase 23 -- judge-free confidence + operating envelope -- added 2026-09-06 after the Phase-22 measured track terminated), roadmap revised 2026-06-15 (gating eval moved EARLY to Phase 18; EVAL-05 added -- Haiku prompt-engineering research must precede authoring any Haiku agent; the search worker's model tier follows the Phase-18 outcome). Release/publication (REL-01..03) is handled during `/gsd-complete-milestone` after `/gsd-audit-milestone` passes, not as a build phase. See `.planning/MILESTONES.md` for shipped-milestone summaries and `milestones/` for full detail.
 
 ### Phase 22: Deep-research skill eval and parity baseline with built-in deep-research
 
@@ -317,3 +319,56 @@ Plans:
 **Wave 3** *(blocked on Wave 2 completion)*
 
 - [ ] 22-05-PLAN.md -- BLOCKING human-authorized Claude-pool spend (gated AFTER the freeze): Opus judge MCC calibration + headless built-in/lz baseline capture (n=2-3 x k=2) + per-dimension blind/swap claim-extraction grading + Slice-A descriptive run + the mechanical two-layer verdict -> 22-PARITY-RESULT.md; ZERO OOF spend [PAR-02/03/04/05/06] [wave 3, autonomous:false] -- **TERMINAL 2026-09-05, NOT complete.** The Stage-2 judge-calibration gate FAILED on both attempted instruments (Opus 4.x mcc=0.4889 / Opus 5 mcc=0.4531, against a frozen bar of MCC>=0.5 AND lowerCI>0). Per PAR-02 an uncalibrated judge is a DISQUALIFIER, so no report was graded, Stages 3-5 never ran, and `22-PARITY-RESULT.md` does NOT exist and must not be fabricated. The AMENDMENT RECORD 3 stopping rule HALTS the phase: no third instrument, no prompt revision, no widened WiCE draw, no subgroup read. The single authorized attempt is CONSUMED -- do NOT re-open this plan. PAR-02/03/04/05/06 + the PAR-08 remainder stay OPEN. Durable record: `eval/lz-eval-parity-calibration-opus5-record.md` (f288767). Closure requires a NEW phase under its OWN fresh pre-registration.
+
+### Phase 23: Judge-free confidence and operating envelope for lz-deep-research
+
+**Goal**: Produce defensible, honestly-bounded confidence in `lz-deep-research`'s research quality using confidence sources that require NEITHER a calibrated LLM judge NOR closed-book gold -- because both routes are now evidenced as structurally unable to deliver. Publish an OPERATING ENVELOPE (the region where the skill's output is evidenced, and the region routed to a human) together with an explicit statement of what was NOT established and why. Close the v2.1.0 measured-quality question under one of three sanctioned terminations (see the termination clause below). Sonnet-default ships regardless; D-03 carries unchanged -- nothing here is a ship gate.
+
+**Why this phase, and why it is NOT "Phase 22 again"** (full diagnosis: `.planning/notes/phase-22-diagnosis-two-root-causes.md`):
+
+- There are TWO recurring root causes across Phases 19-22, not four separate ones. Phases 19/20 failed on CONSTRUCT (closed-book gold, open-book live-web system). Phase 21 failed on POWER (validN 10 < floor 24). **Phase 22 failed on BOTH at once.**
+- CONSTRUCT: moving the closed-book gold from the grader to the grader's CALIBRATOR did not escape the Phase-19/20 mismatch -- it relocated it one layer up. An NLI scorer at AUROC 0.90 on short-claim attribution collapses to AUROC 0.53 (chance) on long-form, with per-dataset rankings inverting (Kendall tau -0.64; arXiv 2606.23915). **Even a PASS at MCC 0.6 would have carried no evidence forward to report grading.** The Phase-22 judge track had no successful branch.
+- POWER: a judge whose TRUE MCC sits exactly at the 0.50 bar fails a POINT-ESTIMATE gate ~47% of the time at n=60 (95% sampling interval [0.284, 0.728]; verified by in-session simulation over the realized 26/34 balance). Raising n narrows the interval but does NOT reduce the false-fail rate, because the median stays on the bar. The realized 0.4889 and 0.4531 are two draws from that distribution -- **not evidence the judge is inadequate, and not evidence it is adequate.**
+- Therefore Phase 23 selects only designs structurally immune to those two causes: no cross-construct gold, and no claim that requires statistical power this n cannot supply.
+- The reframe that makes this feasible: **the gold requirement was always downstream of the judge requirement.** Remove the judge and D-18's "gold from free expert-labeled datasets" constraint stops binding, because there is nothing left to anchor. A model-authored reference baseline is the field norm for deep-research evaluation (DeepResearch Bench's RACE references are Gemini-2.5-pro Deep Research output, score 0.5 = parity-with-a-model, arXiv 2506.11763; DeepConsult is reference-free pairwise win-rate against OpenAI Deep Research, order-flipped). The built-in `/deep-research` IS the reference.
+
+**Constraints**:
+
+- ZERO out-of-family spend (D-18 carries). Structurally satisfied and now permanently moot -- Copilot AI Credits are withdrawn account-wide; no OOF transport exists in any eval module. No maintainer-authored gold (declines on expertise grounds).
+- A FRESH pre-registration (D-20 discipline carries). Phase 22's is spent and its stopping rule is frozen: `22-05-PLAN.md` is TERMINAL and must NOT be re-opened, the single authorized calibration attempt is CONSUMED, and no subgroup figure from the Phase-22 data may authorize any spend here.
+- **No third judge instrument.** Phase 23 does not retry the Phase-22 calibration gate. If a judge is used at all (ENV-06), its agreement is REPORTED as a disclosed limitation, never used as a disqualifier -- and any calibration gate that is used must key on a LOWER-BOUND CI, never a point estimate.
+- The eval tree never ships (zero-dep runtime; the one-directional eval -> runtime import boundary holds).
+- **Contamination disclosure that binds ENV-04**: the `/gsd-explore` session that designed this phase read the head and both tails of the captured q1 report pair while checking whether a judge-free citation audit was feasible. Any citation-audit metric here was therefore proposed with partial sight of that pair. Phase 23 MUST either freeze that metric's bar on q2/q3 (fresh captures) or state this contamination in its own pre-registration. It must not pass silently.
+
+**Depends on**: Phase 22 (the frozen harness modules, the two q1 captures, the architectural-parity write-up PAR-07, and the terminal record that motivates this phase). Consumes seeds SEED-002, SEED-003, SEED-004, SEED-005.
+
+**Requirements**: ENV-01, ENV-02, ENV-03, ENV-04, ENV-05, ENV-06, ENV-07, ENV-08 (the Envelope / judge-free confidence family -- derived 2026-09-06; see REQUIREMENTS.md).
+
+**Success Criteria** (what must be TRUE):
+
+  1. Phase 23's pre-registration is frozen and committed in its own timestamped commit BEFORE any capture, vote, or score -- carrying the bar, the scripts, the item lists, the ENV-04 contamination disclosure, the termination clause, and the n<=5 ceiling statement from criterion 6.
+  2. Slice A runs: the verify-voter is scored against the frozen AVeriTeC seed list, tallied PER CONFUSION-MATRIX DIRECTION and never pooled, reported DESCRIPTIVELY (not a cert), with its PROVISIONAL limits carried into the artifact -- uniform 2020 `claim_date`, topical narrowness, and the evidence-set mismatch between a 2020-labeled gold and a live-2026-web voter.
+  3. A deterministic citation audit runs over every admissible captured report, on a citation-format-normalized basis fixed BEFORE any rate is computed, reporting link/identifier resolvability, verbatim-quote match against the fetched source, and uncited-claim counts per system.
+  4. Every report used in any reading carries a `validateManifest`-passing MANIFEST pinning CC version, model, and per-run cost. A report without one is NOT admissible -- this closes the Phase-22 gap where zero MANIFEST files existed and `extractSystemInit` could not pin a version from a real `system/init` event.
+  5. ZERO out-of-family spend; no maintainer-authored gold; the eval tree never ships.
+  6. The phase publishes an OPERATING ENVELOPE plus an explicit statement of what was not established and why. **No significance claim is made, and the pre-registration states IN ADVANCE that none is reachable:** at n<=5 paired questions the two-sided sign-test minimum is 2 x 0.5^5 = 0.0625, and a perfect 5-for-5 sweep yields only a 95% Clopper-Pearson lower bound of 0.549.
+
+**Termination clause** (frozen with the pre-registration; this is what keeps v2.1.0 from being held hostage to a pass no evidence says is reachable):
+
+> Phase 23 reaches RESOLUTION, and milestone v2.1.0 may close, on ANY of three equally valid terminations:
+>
+> **(a) MEASURED.** At least one pre-registered confidence source produced its planned reading; the phase publishes it with its stated limits.
+>
+> **(b) NOT-ESTABLISHABLE-BY-METHOD.** A pre-registered method was attempted and its result is unreachable or uninterpretable FOR A REASON IDENTIFIABLE INDEPENDENTLY OF THE RESULT -- insufficient item yield, a capture that cannot complete in budget, or a construct mismatch shown to defeat the inference. The phase publishes the named method, the evidence that it cannot deliver, and the operating envelope that stands without it. **This is a COMPLETED phase, not a gap**, and `/gsd-audit-milestone` must close it as such.
+>
+> **(c) NOT-ATTEMPTED-BY-BUDGET.** A method was descoped before spend on a recorded, maintainer-ratified decision, amended into the pre-registration AT THE TIME IT IS TAKEN -- never carried forward as a settled design. (This clause exists because Phase 22's n=3 -> n=1 reduction was an agent-side working posture that was never ratified; see the RETROSPECTIVE DEVIATION NOTE in `eval/lz-eval-parity-prereg.md`.)
+>
+> Phase 23 does NOT reach resolution if it produces no artifact for any source, or if it re-runs a method whose failure mode is already documented in the hope of a different draw.
+>
+> **The ceiling is stated up front, not discovered.** Phase 23 may report direction, raw per-cell verdicts, and an envelope; it may never report significance. A phase that ends without one has NOT fallen short.
+
+**Plans:** 0 plans
+
+Plans:
+
+- [ ] TBD (run /gsd-plan-phase 23 to break down)
