@@ -46,7 +46,7 @@ key-decisions:
 patterns-established:
   - "Synthetic gold fixtures for CC-BY-NC datasets: author plausible synthetic AVeriTeC-shaped rows (never copy the licensed corpus), with deliberate leaky-token/pronoun/over-long claims to exercise the filter exclusions offline"
 
-requirements-completed: [PAR-02, PAR-03, PAR-06]
+requirements-completed: []  # CORRECTED 2026-09-05 by 22-VERIFICATION.md G4. PAR-02 / PAR-03 / PAR-06 are satisfied at the module level only; all three requirement texts in REQUIREMENTS.md are BEHAVIORAL (PAR-02 "CLEARS the pre-registered MCC bar", PAR-03 "is captured headless ... with a MANIFEST", PAR-06 "runs DESCRIPTIVELY"), and 22-05 -- the plan that would have satisfied them -- HALTED with the gate uncleared. They stay OPEN. Matches the 22-01-SUMMARY.md precedent.
 
 # Metrics
 duration: 35min
