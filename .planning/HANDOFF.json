@@ -1,0 +1,47 @@
+{
+  "version": "1.0",
+  "timestamp": "2026-09-05T22:29:38.309Z",
+  "phase": "22",
+  "phase_name": "Deep-research skill eval and parity baseline with built-in deep-research",
+  "phase_dir": ".planning/phases/22-deep-research-skill-eval-and-parity-baseline-with-built-in-d",
+  "plan": 5,
+  "task": 6,
+  "total_tasks": 6,
+  "status": "paused",
+  "paused_at": "a clean boundary -- nothing is mid-flight. All 5 plans are summarized, every post-execution gate has run, the working tree is clean, and 13 commits landed this session. This is NOT a mid-task pause; there is no partial work to pick up.",
+  "phase_disposition": "TERMINALLY gaps_found (3/6 success criteria). Phase 22 can never reach `passed`: SC1/SC3/SC6 require a working measurement instrument, and the frozen AMENDMENT RECORD 3 stopping rule bans building one under this pre-registration. Do NOT run `/gsd-plan-phase 22 --gaps` -- 22-VERIFICATION.md says so explicitly. `update_roadmap` / `phase.complete` correctly did NOT run.",
+  "completed_tasks": [
+    {"id": 1, "name": "Blocking anti-pattern gate (7 blocking rows answered before any other work)", "status": "done", "commit": ""},
+    {"id": 2, "name": "Regression gate -- 700/700 pass, exit 0", "status": "done", "commit": ""},
+    {"id": 3, "name": "Code review (deep, opus, 23 files) + orchestrator adjudication", "status": "done", "commit": "3c31550, dce9780"},
+    {"id": 4, "name": "Phase verification (gsd-verifier, opus) -- gaps_found 3/6", "status": "done", "commit": "e534d5f"},
+    {"id": 5, "name": "Verification gaps G4/G5 closed (stale artifacts that would have closed open requirements or invited a banned re-run)", "status": "done", "commit": "a604406, b34518e"},
+    {"id": 6, "name": "CR-01 fixed -- NUL cell-key separator named, 3 discrimination-proven tests", "status": "done", "commit": "847fc2b"},
+    {"id": 7, "name": "Security audit (gsd-security-auditor, opus) -- threats_open 0, 15/18 closed", "status": "done", "commit": "767131d, 69c82c9"},
+    {"id": 8, "name": "Nyquist validation (gsd-nyquist-auditor, opus) -- PARTIAL, nyquist_compliant false", "status": "done", "commit": "37d083d, db982be"},
+    {"id": 9, "name": "Learnings extracted (10 decisions / 9 lessons / 8 patterns / 6 surprises); 103 pooled to ~/.gsd/knowledge/", "status": "done", "commit": "79dc1b3"},
+    {"id": 10, "name": "Both human_verification items resolved; retrospective deviation note on the un-ratified n=1 reduction", "status": "done", "commit": "4acb6a1"},
+    {"id": 11, "name": "SEED-002..005 planted -- Phase 23's declared inputs", "status": "done", "commit": "b763693"}
+  ],
+  "remaining_tasks": [
+    {"id": 12, "name": "/gsd-audit-milestone v2.1.0 -- carry PAR-02/03/04/05/06 + the PAR-08 remainder OPEN", "status": "not_started"},
+    {"id": 13, "name": "Phase 23 -- successor parity phase under its OWN fresh pre-registration (SEED-002..005 are its inputs)", "status": "not_started"}
+  ],
+  "blockers": [
+    {"description": "Phase 22 cannot reach `passed`. SC1 (only q1 of 3 captured, zero MANIFESTs), SC3 (no grading, no operating envelope), SC6 (the named gap is in the instrument, not the skill) are all unclosable inside this phase.", "type": "external", "workaround": "Not a blocker on the milestone. 22-05-SUMMARY.md: 'Nothing here blocks the milestone, provided PAR-02..PAR-06 and the PAR-08 remainder are carried as OPEN into /gsd-audit-milestone rather than closed.' Per D-03 the Sonnet-default skill ships regardless."},
+    {"description": "The single authorized re-calibration attempt is CONSUMED (write-once clause, spent at the first landed verdict). The stopping rule bans a third instrument, a prompt revision, a widened WiCE draw, and any subgroup read.", "type": "external", "workaround": "None by design. Closure requires a NEW phase with its own fresh pre-registration."},
+    {"description": "eval/lz-eval-baseline-manifest.mjs carries two live defects (B1: extractSystemInit reads event.version, real system/init carries claude_code_version, so NO MANIFEST is producible from any real capture; B2: validateManifest is existsSync-only so a zero-byte report validates). Both sit behind an 11/11 green co-test.", "type": "technical", "workaround": "Deliberately NOT fixed -- maintainer chose 'fix CR-01 now, defer the rest'. Captured executably in eval/__known-defects__/p22-baseline-manifest-defects.test.mjs (RED by design, outside the eval/*.test.mjs glob so the phase gate still reports the shipped contract's true state). Two-line fix; a discrimination-proven patched copy was verified 4/4 green then deleted."}
+  ],
+  "async_jobs": [],
+  "human_actions_pending": [],
+  "decisions": [
+    {"decision": "Did NOT take the workflow short-circuits that let the orchestrator self-certify a gate", "rationale": "secure-phase's Step-3 short-circuit (threats_open 0 + register authored at plan time + ASVS L1) and validate-phase's no-gap inline path would both have had the orchestrator write the artifact. House rule: gates with a dedicated auditor must be reached BY that auditor. Each was spawned and owns its verdict.", "phase": "22"},
+    {"decision": "Reverted state.begin-phase's STATE.md mutation instead of keeping it", "rationale": "It clobbered an accurate multi-paragraph last_activity with 'Phase 22 execution resumed (wave continue)' and bumped completed_phases 7->8 before verification had run. On the #2868 resume path it adds nothing -- no executor is dispatched. config.json also lost branching_strategy on that call and on every subsequent `query commit` (~6 times); reverted each time.", "phase": "22"},
+    {"decision": "CR-04 adjudicated as a FALSE POSITIVE and recorded as such in three places", "rationale": "The review searched only the sha256-pinned prompt file; the emphatic no-tools instruction is pre-registered at DISPATCH in AMENDMENT RECORD 3 (prereg:480-482), deliberately not in the pinned prompt, because editing that file is the banned prompt revision. The orchestrator initially relayed it as fact and repeated the same file-scoping error while 'confirming' it -- caught only after the maintainer pointed at 22-05-SUMMARY.md and the Opus 5 record.", "phase": "22"},
+    {"decision": "Retrospective deviation note for the n=3 -> n=1 Slice-B reduction, written as NON-AUTHORIZING", "rationale": "Maintainer instruction: 'if you decided on the reduction, leave a note'. Finding of fact -- they DEFERRED the full campaign; a prior session converted that into a settled n=1 design. The sibling scope change the same day (question narrowing + k=2->k=1) IS covered by AMENDMENT RECORD 1, which calls itself 'maintainer-ratified'. This one has no counterpart. The note amends nothing and changes no number; anti-drift co-test still 8/8 and the prompt sha256 is unchanged.", "phase": "22"},
+    {"decision": "Four deferred items planted as structured seeds rather than left as prose", "rationale": "Maintainer named them Phase 23's inputs. Prose in LEARNINGS.md is not an input -- /gsd-new-milestone scans .planning/seeds/. Enriched in one pass because the triggers are known exactly, and three of the four must fire BEFORE something is frozen or spent.", "phase": "22"}
+  ],
+  "uncommitted_files": [],
+  "next_action": "/gsd-audit-milestone v2.1.0 -- with PAR-02, PAR-03, PAR-04, PAR-05, PAR-06 and the PAR-08 remainder carried OPEN. Close only PAR-01 and PAR-07. Do NOT run /gsd-plan-phase 22 --gaps.",
+  "context_notes": "Phase 22 halted honestly and the whole session was about closing it truthfully rather than making it look finished. Three independent Opus auditors converged on the same two hidden defects in lz-eval-baseline-manifest.mjs, all behind a green co-test -- the session's recurring theme is that green tests are not coverage. Two of four reported code-review BLOCKERs did not survive adjudication, which is worth remembering the next time an agent report is relayed as fact. Constraint change this session: Copilot AI Credits are withdrawn and cross-family advisory is out of the question, so the cross-family board methodology this repo used in Phases 19-21 is now UNEXECUTABLE -- in-family Opus panels only, and any artifact leaning on them must say the independence is weaker. Phase 22's own .continue-here.md is a TERMINAL marker, NOT a resume point; it was deliberately preserved and extended this session rather than overwritten by this pause."
+}

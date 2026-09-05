@@ -119,6 +119,13 @@ human_verification:
 > AMENDMENT RECORD 1, which calls itself "maintainer-ratified" in its own words. This one has no
 > counterpart. Nothing was graded, so no result is tainted; the successor phase must either capture
 > q2/q3 or freeze a smaller set explicitly in its own pre-registration.
+>
+> **One observation below is now STALE, by design.** The report notes that `22-VALIDATION.md` is
+> `status: draft` with an unfilled `TBD` per-task map and that `/gsd-validate-phase` appears never to
+> have run. That was true when the verifier wrote it. `/gsd-validate-phase` has since run
+> (`gsd-nyquist-auditor`, opus): the map is filled with measured values, `status: validated`,
+> `wave_0_complete: true`, and `nyquist_compliant: false` set honestly because five behavioral
+> requirements remain unmet. Commits `37d083d` / `db982be`. Do not re-raise it at the milestone audit.
 
 ---
 
