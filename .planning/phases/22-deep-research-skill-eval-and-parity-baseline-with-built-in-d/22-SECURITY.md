@@ -8,7 +8,7 @@ asvs_level: 1
 created: 2026-09-05
 ---
 
-# Phase 22 — Security
+# Phase 22 -- Security
 
 > Per-phase security contract: threat register, accepted risks, and audit trail.
 >
@@ -71,11 +71,11 @@ reserved for research-integrity controls and for the one boundary that touches t
 | T-22-11 | Tampering (prompt injection) | hostile fetched report content steering the Opus judge | medium | accept | Accepted residual, now logged below. Backstops present and verified: `lz-eval-parity-prereg.md:205-209`; position-swap agreement at `lz-eval-parity-driver.md:189-193` and `cellVerdict` (both orderings must agree, cancelling single-source steering). UNEXERCISED -- Stage 3 never ran | closed (accepted; see log) |
 | T-22-15 | Tampering (prompt integrity) | dataset content injects substitution text into the judge prompt | medium | **ESCALATED -- unregistered** | Not in any `<threat_model>`; raised by the auditor, deliberately NOT closed silently. See the escalation section below | open -- below high threshold (non-blocking) |
 
-*Status: open - closed - open — below high threshold (non-blocking)*
-*Severity: critical > high > medium > low — only open threats at or above `workflow.security_block_on` count toward `threats_open`*
-*Disposition: mitigate (implementation required) - accept (documented risk) - transfer (third-party)*
+*Status: open | closed | open (below the high threshold, non-blocking)*
+*Severity: critical > high > medium > low -- only open threats at or above `workflow.security_block_on` count toward `threats_open`*
+*Disposition: mitigate (implementation required) | accept (documented risk) | transfer (third-party)*
 
-### Severity assignment — disclosed, because none of the registers carried a Severity column
+### Severity assignment -- disclosed, because none of the registers carried a Severity column
 
 None of the five `<threat_model>` blocks has a Severity column. The auditor assigned severity per
 threat by impact x likelihood rather than leaving any threat unranked, and recommended that basis.
@@ -90,7 +90,7 @@ pre-registration and none can be exercised until Stage 3 is rebuilt.
 
 ---
 
-## ESCALATED — proposed T-22-15 (unregistered; do not close silently)
+## ESCALATED -- proposed T-22-15 (unregistered; do not close silently)
 
 **Dataset content injects substitution text into the judge prompt via `String.prototype.replace`.**
 Severity medium. Category: Tampering (prompt integrity).
@@ -125,33 +125,33 @@ fixed before any dispatch is materialized again, and it belongs in the successor
 
 ---
 
-## Unregistered flags (WARNING — not threats, but they weaken specific claims)
+## Unregistered flags (WARNING -- not threats, but they weaken specific claims)
 
-**None of the five SUMMARY files contains a `## Threat Flags` section** — a process gap. The flags
+**None of the five SUMMARY files contains a `## Threat Flags` section** -- a process gap. The flags
 below are the auditor's, derived from reading and exercising the code.
 
-- **F1 — T-22-05 mitigation (a) has no code artifact.** The "emphatic no-tools instruction" exists as
+- **F1 -- T-22-05 mitigation (a) has no code artifact.** The "emphatic no-tools instruction" exists as
   pre-registered prose (`lz-eval-parity-prereg.md:480-482`) and as a claim in the records, but nothing
   materializes it: `renderDispatch` builds the body from the frozen prompt plus payload only.
   Mitigation (b), uid omission, IS mechanically enforced. (a) rests on session behavior with a
   measured outcome (`tool_uses: 0` x60) and no test that would catch its omission on a future run. The
   pre-registration concedes this itself: "a mitigation, not a guarantee."
-- **F2 — the BCa knobs sit outside the freeze perimeter** (code review CR-03). `alpha` /
+- **F2 -- the BCa knobs sit outside the freeze perimeter** (code review CR-03). `alpha` /
   `resamples = 2000` / `seed = 'bca'` are pre-registered in prose (`lz-eval-parity-prereg.md:361-365`)
   but are DEFAULT PARAMETERS of `bcaBootstrapLowerCI` (`lz-eval-mcc.mjs:254`) -- no frozen constant,
   absent from `antiDriftChecks()`, no co-test. The prereg itself records measured lowerCI jitter of
   0.2580-0.2843 across plausible alternatives, i.e. decisive in the near-bar band. This is the single
   unguarded result-shopping surface in an otherwise well-enforced freeze. Deferred by the maintainer
   to the successor phase.
-- **F3 — `validateManifest` is `existsSync`-only.** `lz-eval-parity-driver.md:127` states a cell is
+- **F3 -- `validateManifest` is `existsSync`-only.** `lz-eval-parity-driver.md:127` states a cell is
   done "iff its MANIFEST passes `validateManifest` (non-empty report + system/init model + cost)", but
   `lz-eval-baseline-manifest.mjs:185-190` checks existence only. A zero-byte `report.md` -- the classic
   truncation artifact T-22-13 exists to catch -- would pass.
-- **F4 — the capture control was never applied to the one real capture.** Both cache directories hold
+- **F4 -- the capture control was never applied to the one real capture.** Both cache directories hold
   a `qB1-run1.report.md` plus `.err`/resume streams, and NO MANIFEST anywhere. Nothing was graded, so
   no harm materialized. A successor phase inheriting this cache must run `validateManifest` (after
   fixing T-22-06) before treating either report as gradeable.
-- **F5 — transcription fidelity of the 60 dispatches is unverified.** `opus5-record.md:78-88`: the
+- **F5 -- transcription fidelity of the 60 dispatches is unverified.** `opus5-record.md:78-88`: the
   payload was hand-transcribed into each agent prompt, the recovery check came back INCONCLUSIVE (62
   of 63 transcripts are 0 bytes), and no harness persisted the outbound string. Consequence for
   T-22-05a: the mechanical anti-leak scan covers the materialized `item-NN.txt` files, NOT what each
@@ -174,11 +174,11 @@ plus T-22-SC and the escalated T-22-15.
 
 - [x] All threats have a disposition (mitigate / accept / transfer)
 - [x] Accepted risks documented in Accepted Risks Log (AR-22-01)
-- [x] `threats_open: 0` confirmed — no OPEN threat reaches the `high` block threshold
+- [x] `threats_open: 0` confirmed -- no OPEN threat reaches the `high` block threshold
 - [x] `status: verified` set in frontmatter
 - [ ] T-22-04, T-22-06, T-22-15 and flags F1-F5 carried into the successor phase's pre-registration
 
-**Approval:** verified 2026-09-05 — by `gsd-security-auditor`, not self-certified by the orchestrator.
+**Approval:** verified 2026-09-05 -- by `gsd-security-auditor`, not self-certified by the orchestrator.
 
 **Carry-forward:** the three open threats and the escalated T-22-15 are NOT closable in Phase 22 --
 the phase is TERMINAL and none of them can be exercised until Stage 3 is rebuilt. They belong in the
