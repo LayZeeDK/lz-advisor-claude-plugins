@@ -91,6 +91,37 @@ human_verification:
 
 # Phase 22: Deep-research skill eval and parity baseline with built-in deep-research -- Verification Report
 
+---
+
+> ## ORCHESTRATOR RESOLUTION of the two `human_verification` items (added 2026-09-06)
+>
+> The verifier's report below is unaltered. Both items it routed to a human have now been answered by
+> the maintainer. Recorded here so the milestone audit does not re-raise them.
+>
+> **Item 1 -- zero GitHub Copilot AI Credits during the 2026-09-05 calibration.** RESOLVED AS FAR AS IT
+> CAN BE, and permanently moot going forward. The maintainer stated on 2026-09-06 that **Copilot AI
+> Credits are no longer available at all and cross-family advisory is out of the question**. That does
+> not retroactively read the 2026-09-05 usage record, so the behavioral attestation stays exactly where
+> the verifier put it: unconfirmed from the repository. What IS verified, independently and twice, is the
+> structural half -- `gsd-security-auditor` found zero `callOof`, `copilot`, `child_process`, `execSync`,
+> `spawn`, `fetch(` or `http(s)://` occurrences across all seven Phase-22 modules (T-22-07 / T-22-12), and
+> the driver explicitly removes the live-cert driver's OOF transport. Since no OOF call is *possible*
+> from this code, and the capability is now withdrawn account-wide, D-18 is satisfied structurally and no
+> successor phase can breach it. Do not carry this as open debt.
+>
+> **Item 2 -- the n=3 -> n=1 Slice-B reduction.** RESOLVED: the maintainer directed that **if the agent
+> made the call, it gets a note**. It did. A `RETROSPECTIVE DEVIATION NOTE` is now appended to
+> `eval/lz-eval-parity-prereg.md`, with a pointer beside the frozen Slice-B set in Section (ii). It is
+> explicitly NON-AUTHORIZING -- it amends nothing and changes no number (anti-drift co-test still 8/8).
+> Finding of fact: the maintainer **deferred** the full campaign; the executing session then carried
+> `n=1` forward as a settled design. A deferral is not a ratified reduction. The contrast that decides
+> it: the sibling scope change made the same day (question narrowing + k=2 -> k=1) IS covered by
+> AMENDMENT RECORD 1, which calls itself "maintainer-ratified" in its own words. This one has no
+> counterpart. Nothing was graded, so no result is tainted; the successor phase must either capture
+> q2/q3 or freeze a smaller set explicitly in its own pre-registration.
+
+---
+
 **Phase Goal:** Establish that `lz-deep-research` on Sonnet produces research of quality EQUIVALENT to the built-in `/deep-research`, via a holistic system-level eval on two tracks (architectural parity + measured parity). Outcome: a scoped parity claim + operating envelope, OR an honest, named gap. Sonnet-default ships regardless.
 
 **Verified:** 2026-09-05

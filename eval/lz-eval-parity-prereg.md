@@ -99,6 +99,11 @@ window (D-16).
 These are FROZEN (as re-frozen per the AMENDMENT RECORD). The realized questions cannot be swapped after
 capture begins (anti-result-shopping).
 
+> **RETROSPECTIVE COVERAGE NOTE (added 2026-09-06; NON-AUTHORIZING -- this amends nothing).** In the
+> executed phase only **q1 was ever captured**, on either system. `n` REMAINS 3 here; no amendment
+> reduced it, and this note does not reduce it either. See the RETROSPECTIVE DEVIATION NOTE at the end
+> of this file for the provenance and for what a successor phase must do about it.
+
 ## Section (iii) -- The verdict-collapse map (D-11)
 
 The AVeriTeC 4-way label collapses to the binary verify-voter enum:
@@ -507,3 +512,60 @@ Committed BEFORE any Opus 5 calibration verdict is captured.
 - `22-CONTEXT.md` D-04/D-05/D-06/D-07 (rubric + verdict), D-08/D-09 (judge tier + disclosure), D-11/D-12
   (gold anchoring + claim-extraction bridge), D-13 (MCC calibration), D-14 (feasibility gate +
   fallback), D-18 (no OOF spend), D-19 (self-preference threat), D-20 (pre-registration discipline).
+
+## RETROSPECTIVE DEVIATION NOTE -- the n=3 -> n=1 Slice-B coverage reduction was never ratified (2026-09-06)
+
+**This is NOT an amendment.** It authorizes nothing, changes no bar, no item, no prompt, and no number.
+It is a disclosure, added after the phase halted, because the alternative -- leaving the record silent --
+would let a successor phase inherit `n=1` as though it had been a designed choice. It weakens the record
+rather than strengthening it, which is the only direction a post-hoc addition is allowed to run.
+
+### What the frozen design says, and what actually happened
+
+The Slice-B set is FROZEN at **n=3** (Section (ii), re-frozen 2026-06-23). **Only q1 was ever captured**,
+on either system. q2 and q3 have no capture on disk. The phase then halted at the Stage-2 judge gate, so
+nothing was ever graded.
+
+### Provenance -- what the record does and does not contain
+
+CONTAINS: on 2026-06-23, after the two-window capture protocol proved the built-in side would cost roughly
+1.4 pool windows per question (~6 resets, ~$200 notional for the full campaign), three options were RAISED
+to the maintainer -- (A) run the full paced 6-capture campaign, (B) keep a scoped q1-only measured track and
+descope q2/q3, (C) descope the measured track entirely. `.planning/STATE.md` then records:
+*"Option A (full n=3) remains **deferred** per the maintainer."*
+
+DOES NOT CONTAIN: any amendment covering the reduction, and any record of the maintainer ratifying `n=1`
+as the design. The contrast is sharp and is the reason this note exists: the *sibling* scope change made
+the same day -- narrowing the questions and cutting k=2 to k=1 -- IS covered by AMENDMENT RECORD 1, which
+states in its own words that it is **"maintainer-ratified"** and was committed in its own timestamped
+commit before any capture. This one has no counterpart.
+
+### The honest attribution
+
+A **deferral of the full campaign** is not the same thing as a **ratified reduction of the frozen set**.
+The maintainer deferred; the executing session then carried `n=1` forward as though it were settled --
+writing "`22-PARITY-RESULT.md` (scoped n=1)" into the forward plan and proceeding to Stage 2 on a q1-only
+cache. That conversion, from "deferred" to "the design is now n=1", was an **agent-side working posture,
+never ratified and never amended**. Recorded here at the maintainer's direction (2026-09-06) precisely
+because it was the agent's call, not theirs.
+
+### Why this changed nothing about the halted run
+
+Nothing was graded. The Stage-2 gate failed (`mcc=0.4531 lowerCI=0.2366 cleared=false n=60`) and the
+PAR-02 disqualifier fired before any report became admissible, so the frozen `n=3` analysis plan was never
+executed at n=1 or at any other n. **No result was produced under a reduced set, so no result is tainted
+by it.** The coverage shortfall is real (it is verification gap SC1, and PAR-03 is open because of it) but
+it is a gap in what was DONE, not a deviation in what was ANALYSED.
+
+### What a successor phase must do
+
+Do NOT inherit `n=1` from this cache by default. Either:
+
+1. capture q2 and q3 on both systems and honour the frozen `n=3`; or
+2. freeze a smaller set **explicitly, in the successor phase's own pre-registration**, with its power
+   implications stated up front -- and note that at n=1 no per-question generalisation is available at all,
+   which is a limit on the CLAIM, not merely on the confidence interval.
+
+Note also that the one existing q1 pair cannot currently be admitted as a validated capture regardless:
+zero MANIFEST files exist, and `extractSystemInit` cannot pin a CC version from a real `system/init` event
+(security T-22-06 / validation B1). Fix that before treating either report as gradeable.
