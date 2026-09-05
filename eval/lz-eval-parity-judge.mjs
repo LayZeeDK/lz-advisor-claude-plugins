@@ -48,6 +48,15 @@ export const PARITY_K_RANGE = Object.freeze({ MIN: 3, MAX: 5 });
 // outcome, not an error.
 const VALID_PREFERENCES = Object.freeze(['A', 'B', 'tie']);
 
+// The (question, dimension) composite-key separator. It must be a character that can never occur
+// inside either component, and it MUST be written as an escape rather than as a literal byte in
+// source. A literal NUL is invisible in an editor, is silently stripped or rewritten by most
+// formatters -- which would collapse the separator to the empty string and make `dimension`
+// undefined for every cell -- and makes this whole file read as BINARY to ripgrep, so a `rg` for
+// any symbol in it returns "binary file matches" and no lines. That is a silent false negative on
+// the module that decides win/tie/loss. Written as an escape, none of that applies.
+const CELL_KEY_SEP = '\u0000';
+
 // ---------------------------------------------------------------------------
 // cellVerdict: the position-swap agreement rule (D-06 / Pattern 3). Each argument is the RESOLVED
 // preference of one ordering, already mapped to 'lz' | 'builtin' | 'tie'. A win is recorded ONLY
@@ -180,7 +189,7 @@ export function scoreJudgeCells({ records, orderingMap }) {
   for (const rec of records) {
     validateRecord(rec, 'scoreJudgeCells');
 
-    const cellKey = rec.question + ' ' + rec.dimension;
+    const cellKey = rec.question + CELL_KEY_SEP + rec.dimension;
 
     if (!cells.has(cellKey)) {
       cells.set(cellKey, new Map());
@@ -209,7 +218,7 @@ export function scoreJudgeCells({ records, orderingMap }) {
         'a (question, dimension) cell requires exactly 2 orderings (the position swap); got ' +
           orderingLabels.length +
           ' for ' +
-          JSON.stringify(cellKey.replace(' ', ' / ')),
+          JSON.stringify(cellKey.replace(CELL_KEY_SEP, ' / ')),
         'scoreJudgeCells',
       );
     }
@@ -291,7 +300,7 @@ export function scoreJudgeCells({ records, orderingMap }) {
     const [oA, oB] = orderingLabels;
     const verdict = cellVerdict(resolved[oA], resolved[oB]);
 
-    const [question, dimension] = cellKey.split(' ');
+    const [question, dimension] = cellKey.split(CELL_KEY_SEP);
 
     out.push({
       question,

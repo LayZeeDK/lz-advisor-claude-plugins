@@ -27,6 +27,7 @@
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 
 import { ContractError } from '../plugins/lz-advisor/skills/lz-deep-research/scripts/lz-deep-research-aggregate.mjs';
 
@@ -242,4 +243,116 @@ test('scoreJudgeCells: multiple cells are grouped + sorted deterministically by 
   // (qA, factual): AB preferred B (builtin, lz is A), BA preferred A (builtin, lz is B) -> both
   // prefer builtin -> builtin-win.
   assert.equal(cells[0].verdict, 'builtin-win');
+});
+
+// ---------------------------------------------------------------------------
+// CR-01 REGRESSION GUARD (22-REVIEW.md): the (question, dimension) composite key separator.
+//
+// Until 2026-09-05 the separator was a LITERAL NUL byte typed into the source. Same runtime value
+// as the escape that replaced it -- so no test can distinguish the two spellings, and none should
+// try. What these tests guard is the FAILURE the literal invited: a formatter, editor, or
+// copy-paste silently dropping the invisible byte, collapsing the separator to '' (or a human
+// "fixing" it to a space). Every pre-existing fixture in this file uses a spaceless question id
+// ('q1', 'qA'), so the whole suite passes under a ' ' separator -- these do not.
+//
+// DISCRIMINATION (verified by inverting the fix): with CELL_KEY_SEP = ' ' the collision test throws
+// ContractError instead of returning 2 cells, and the round-trip test reports question 'latency' /
+// dimension 'budget'. With CELL_KEY_SEP = '' the round-trip test reports single characters. Both
+// fail loudly.
+// ---------------------------------------------------------------------------
+
+test('scoreJudgeCells: CR-01 -- a multi-word question round-trips intact through the cell key', () => {
+  const records = [
+    ...samples({
+      question: 'latency budget',
+      dimension: 'factual',
+      ordering: 'AB',
+      preferred: 'A',
+      scores: [0.8, 0.9, 1.0],
+    }),
+    ...samples({
+      question: 'latency budget',
+      dimension: 'factual',
+      ordering: 'BA',
+      preferred: 'B',
+      scores: [0.8, 0.9, 1.0],
+    }),
+  ];
+
+  const cells = scoreJudgeCells({ records, orderingMap: ORDERING_MAP });
+
+  assert.equal(cells.length, 1);
+  // A ' ' separator splits this into question 'latency' / dimension 'budget'; a '' separator
+  // splits it into single characters. Only a separator that cannot occur in either component
+  // round-trips both fields.
+  assert.equal(cells[0].question, 'latency budget');
+  assert.equal(cells[0].dimension, 'factual');
+  assert.equal(cells[0].verdict, 'lz-win');
+});
+
+test('scoreJudgeCells: CR-01 -- two cells whose space-joined keys collide stay distinct', () => {
+  // ('latency budget', 'factual') and ('latency', 'budget factual') both join to the string
+  // 'latency budget factual' under a ' ' separator. Merged, that single key carries 6 samples per
+  // ordering -- k=6, outside PARITY_K_RANGE -- so the scorer would throw instead of returning two
+  // cells. Under a separator that cannot occur in either component they remain two distinct cells.
+  const records = [
+    ...samples({
+      question: 'latency budget',
+      dimension: 'factual',
+      ordering: 'AB',
+      preferred: 'A',
+      scores: [0.8, 0.9, 1.0],
+    }),
+    ...samples({
+      question: 'latency budget',
+      dimension: 'factual',
+      ordering: 'BA',
+      preferred: 'B',
+      scores: [0.8, 0.9, 1.0],
+    }),
+    ...samples({
+      question: 'latency',
+      dimension: 'budget factual',
+      ordering: 'AB',
+      preferred: 'B',
+      scores: [0.5, 0.6, 0.7],
+    }),
+    ...samples({
+      question: 'latency',
+      dimension: 'budget factual',
+      ordering: 'BA',
+      preferred: 'A',
+      scores: [0.5, 0.6, 0.7],
+    }),
+  ];
+
+  const cells = scoreJudgeCells({ records, orderingMap: ORDERING_MAP });
+
+  assert.equal(cells.length, 2);
+
+  const byKey = new Map(cells.map((c) => [c.question + '|' + c.dimension, c]));
+
+  assert.ok(byKey.has('latency budget|factual'));
+  assert.ok(byKey.has('latency|budget factual'));
+  // Distinct cells keep distinct verdicts: the first pair agrees on lz, the second on builtin.
+  assert.equal(byKey.get('latency budget|factual').verdict, 'lz-win');
+  assert.equal(byKey.get('latency|budget factual').verdict, 'builtin-win');
+});
+
+test('scoreJudgeCells: CR-01 -- the module source carries no literal NUL byte', () => {
+  // The separator must be written as an escape. A literal NUL is invisible in an editor, is
+  // stripped or rewritten by most formatters, and makes the whole file read as BINARY to ripgrep
+  // -- so `rg` for any symbol in it returns "binary file matches" and no lines, a silent false
+  // negative on the module that decides win/tie/loss (CLAUDE.md, Content Search).
+  const src = readFileSync(new URL('./lz-eval-parity-judge.mjs', import.meta.url), 'utf8');
+
+  assert.equal(
+    src.includes(String.fromCharCode(0)),
+    false,
+    'lz-eval-parity-judge.mjs must contain no literal NUL byte',
+  );
+  assert.ok(
+    /const CELL_KEY_SEP = '\\u0000';/.test(src),
+    'the cell-key separator must be declared as an escape, not a literal byte',
+  );
 });
