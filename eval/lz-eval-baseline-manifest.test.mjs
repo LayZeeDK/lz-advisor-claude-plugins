@@ -441,3 +441,167 @@ test('ENV-02: the lz q1 MANIFEST built from the REAL capture validates (pinned, 
   assert.equal(manifest.costUsd, 18.1152213);
   assert.equal(validateManifest(manifest), true);
 });
+
+// ---------------------------------------------------------------------------
+// Plan 23-01 Task 2 -- Phase-22 validation defect B2 / security flag F4: a zero-byte report.md
+// currently VALIDATES, so a background-truncated capture can be graded as complete.
+// ---------------------------------------------------------------------------
+
+// A temp report.md with caller-chosen content, so the size guard has a real file to stat.
+function withReportOfSize(contents, fn) {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'lz-eval-manifest-size-'));
+  const reportPath = path.join(dir, 'report.md');
+  fs.writeFileSync(reportPath, contents, 'utf8');
+
+  try {
+    return fn(reportPath);
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+}
+
+function manifestForReport(reportPath) {
+  return buildManifest({
+    system: extractSystemInit(streamWithInit()),
+    reportPath,
+    costUsd: 1.23,
+    workflowSurface: 'built-in /deep-research, closed-source',
+    question: 'qB1',
+    qid: 'qB1',
+    runK: 1,
+  });
+}
+
+test('B2/F4: validateManifest REJECTS a zero-byte report.md with "report" in the message (the driver gate is "non-empty report")', () => {
+  withReportOfSize('', (reportPath) => {
+    assert.throws(() => validateManifest(manifestForReport(reportPath)), ContractError);
+    assert.throws(() => validateManifest(manifestForReport(reportPath)), /report/i);
+  });
+});
+
+test('B2/F4 control: a NON-empty report.md still validates -- the size guard must not over-reject', () => {
+  withReportOfSize('# Report\n\nSubstantive findings.\n', (reportPath) => {
+    assert.equal(validateManifest(manifestForReport(reportPath)), true);
+  });
+});
+
+test('B2/F4: a single-byte report.md validates -- the guard is zero-bytes, not a content heuristic', () => {
+  withReportOfSize('x', (reportPath) => {
+    assert.equal(validateManifest(manifestForReport(reportPath)), true);
+  });
+});
+
+test('B2/F4: the absent-reportPath and non-existent-file branches keep their own "report" messages', () => {
+  const manifest = manifestForReport(path.join(os.tmpdir(), 'does-not-exist-lz-eval-23-01', 'report.md'));
+
+  assert.throws(() => validateManifest(manifest), /report/i);
+
+  delete manifest.reportPath;
+  assert.throws(() => validateManifest(manifest), /report/i);
+});
+
+// ---------------------------------------------------------------------------
+// Plan 23-01 Task 2 -- the built-in q1 capture becomes admissible under an ENUMERATED cost rule.
+// ---------------------------------------------------------------------------
+
+test('T-23-12: the built-in q1 cost is the sum over exactly THREE enumerated streams (67.085261) and EXCLUDES the different-session broad-partial stream', (t) => {
+  const texts = readCaptures(t, [
+    CAPTURE.BUILTIN_COLD,
+    CAPTURE.BUILTIN_RESUME2,
+    CAPTURE.BUILTIN_RESUME3,
+    CAPTURE.BUILTIN_BROAD_PARTIAL,
+    CAPTURE.BUILTIN_REPORT,
+  ]);
+
+  if (texts === null) {
+    return;
+  }
+
+  const [cold, resume2, resume3, broadPartial] = texts;
+  const enumerated = [cold, resume2, resume3];
+  const costUsd = aggregateRunCost({ streamTexts: enumerated });
+
+  assert.equal(costUsd, 67.085261);
+
+  // DISCRIMINATION: the broad-partial stream sits in the SAME directory but is a different session_id
+  // from an earlier BROAD attempt. A directory-glob implementation would fold its 47.081383 in and
+  // roughly double the published figure -- which is exactly why aggregateRunCost takes the list from
+  // its caller (T-23-12).
+  assert.equal(extractTerminalCost(broadPartial), 47.081383);
+  assert.notEqual(
+    aggregateRunCost({ streamTexts: [...enumerated, broadPartial] }),
+    costUsd,
+    'including the broad-partial stream must change the total -- otherwise this test proves nothing',
+  );
+  assert.notEqual(costUsd, 114.166644, 'the built-in total must NOT include the broad-partial stream');
+
+  const manifest = buildManifest({
+    system: extractSystemInit(cold),
+    reportPath: CAPTURE.BUILTIN_REPORT,
+    costUsd,
+    costStreams: [
+      { path: 'qB1-run1.stream.jsonl', role: 'cold run', terminalCostUsd: extractTerminalCost(cold), isError: true },
+      {
+        path: 'qB1-run1.resume2.stream.jsonl',
+        role: 'report-recovery resume',
+        terminalCostUsd: extractTerminalCost(resume2),
+        isError: false,
+      },
+      {
+        path: 'qB1-run1.resume3.stream.jsonl',
+        role: 'verifier-completion resume',
+        terminalCostUsd: extractTerminalCost(resume3),
+        isError: false,
+      },
+    ],
+    resumeCycles: 3,
+    workflowSurface: 'built-in /deep-research, closed-source',
+    question: 'qB1',
+    qid: 'qB1',
+    runK: 1,
+  });
+
+  assert.equal(manifest.model, 'claude-opus-4-8');
+  assert.equal(manifest.ccVersion, '2.1.186');
+  assert.equal(manifest.costStreams.length, 3, 'exactly the three enumerated streams');
+  assert.equal(manifest.resumeCycles, 3);
+
+  for (const entry of manifest.costStreams) {
+    assert.equal(typeof entry.isError, 'boolean', 'every enumerated stream carries an is_error note');
+  }
+
+  assert.equal(validateManifest(manifest), true);
+});
+
+test('T-23-12: buildManifest threads costStreams / resumeCycles through, and omits them when the caller supplies none', () => {
+  const withProvenance = buildManifest({
+    system: extractSystemInit(streamWithInit()),
+    reportPath: 'x/report.md',
+    costUsd: 1,
+    costStreams: [{ path: 'a.jsonl', terminalCostUsd: 1, isError: false }],
+    costStreamsExcluded: [{ path: 'b.jsonl', reason: 'different session_id' }],
+    resumeCycles: 2,
+    workflowSurface: 's',
+    question: 'q',
+    qid: 'q',
+    runK: 1,
+  });
+
+  assert.equal(withProvenance.costStreams.length, 1);
+  assert.equal(withProvenance.costStreamsExcluded[0].reason, 'different session_id');
+  assert.equal(withProvenance.resumeCycles, 2);
+
+  // The pre-existing 8-field shape is unchanged for a caller that supplies no provenance.
+  const bare = buildManifest({
+    system: extractSystemInit(streamWithInit()),
+    reportPath: 'x/report.md',
+    costUsd: 1,
+    workflowSurface: 's',
+    question: 'q',
+    qid: 'q',
+    runK: 1,
+  });
+
+  assert.equal(bare.costStreams, undefined);
+  assert.equal(bare.resumeCycles, undefined);
+});
