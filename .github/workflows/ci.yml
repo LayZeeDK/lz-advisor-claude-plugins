@@ -46,6 +46,11 @@ jobs:
       # stub fetchers and therefore needs no network access on the runner. The citation-audit entry was
       # already registered by Plan 23-01 and is NOT duplicated here. The remaining unregistered
       # Phase-22 files are out of scope for Phase 23.
+      #
+      # Plan 23-04 appended lz-eval-p23-prereg.test.mjs in a SEPARATE commit from the artifact it
+      # tests, deliberately deviating from the same-task rule above. The ENV-01 freeze commit had to
+      # contain exactly three files so its timestamp reads unambiguously as the pre-registration
+      # timestamp of record; adding CI churn to it would have muddied what was frozen and when.
       - name: Restore eval/ dev dependencies (jstat)
         run: cd eval && (npm ci || npm install)
       - name: Run eval-tree tests (explicit file form, no coverage thresholds)
@@ -62,3 +67,4 @@ jobs:
           eval/lz-eval-p23-sliceA-draw.test.mjs
           eval/lz-eval-p23-sliceA-read.test.mjs
           eval/lz-eval-p23-verify-complete.test.mjs
+          eval/lz-eval-p23-prereg.test.mjs
