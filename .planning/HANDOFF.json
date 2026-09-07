@@ -1,0 +1,74 @@
+{
+  "version": "1.0",
+  "timestamp": "2026-09-07T19:46:13.362Z",
+  "phase": "23",
+  "phase_name": "judge-free-confidence-and-operating-envelope-for-lz-deep-res",
+  "phase_dir": ".planning/phases/23-judge-free-confidence-and-operating-envelope-for-lz-deep-res",
+  "plan": 4,
+  "task": 0,
+  "total_tasks": 9,
+  "status": "paused",
+  "unit_note": "plan and total_tasks count PLANS, not tasks: the phase paused CLEANLY BETWEEN plans (waves 1-3 done, wave 4 not started), so there is no partially-executed plan and no mid-plan task to resume.",
+  "completed_tasks": [
+    {"id": 1, "name": "23-01 ENV-02 Stage 0: q1 captures made admissible", "status": "done", "commit": "63373c3"},
+    {"id": 2, "name": "23-02 Slice-A draw, dispatch provenance, spike ceiling", "status": "done", "commit": "ca37ed7"},
+    {"id": 3, "name": "23-03 ENV-04 citation audit + published q1 dry run", "status": "done", "commit": "1bdb1ee"}
+  ],
+  "remaining_tasks": [
+    {"id": 4, "name": "23-04 FREEZE the ENV-01 pre-registration (one-way; blocking-human gate)", "status": "not_started", "autonomous": false},
+    {"id": 5, "name": "23-05 Run Slice A against the frozen 40-item seed list", "status": "not_started", "autonomous": false},
+    {"id": 6, "name": "23-06 Capture the fresh q2 pair + D-17 retention", "status": "not_started", "autonomous": false},
+    {"id": 7, "name": "23-07 Citation audit over q2; publish the ENV-04 reading", "status": "not_started", "autonomous": true},
+    {"id": 8, "name": "23-08 Conditional head-to-head grading, or publish the termination", "status": "not_started", "autonomous": false},
+    {"id": 9, "name": "23-09 Publish the operating envelope; close the review gate", "status": "not_started", "autonomous": true}
+  ],
+  "blockers": [],
+  "async_jobs": [],
+  "human_actions_pending": [
+    {
+      "action": "Correct four inputs to the Plan 23-04 freeze BEFORE running wave 4",
+      "context": "The freeze commit is one-way. (a) Quote 18 unique canonical sources, NOT 13 -- 13 is 23-RESEARCH's unique-marker-VALUE count, mislabelled by D-21; the canonical identifier set has 18 entries. (b) Scope the frozen-before-any-rate claim to RATIOS -- the 18-source integer is pinned in the Task-1 co-test because 23-03's own acceptance criterion required it there, so 'no measured figure precedes the freeze' is stronger than git supports. (c) Quote verbatim or sha256-pin the voter prompt template in eval/lz-eval-p23-sliceA-read.mjs, which drives every ENV-03 verdict in 23-05 and has had only executing-session review. (d) Disclose the q1/q2 MODEL GENERATION split as a third axis alongside the ENV-04 contamination clause.",
+      "blocking": true
+    },
+    {
+      "action": "Independent ENV-08 content review of eval/lz-eval-p23-citation-audit-q1-dryrun.md and the two new eval modules",
+      "context": "Tracked as OPEN defect id 1 in .planning/WINDOWS.md. The project review-before-publish MUST covers scripts, prompts AND Markdown references; these have had only executing-session review. With workflow.windows_enforce on, /gsd-ship blocks while open_count > 0. The record's four review properties are WORDING properties -- a content review is the honest verification, a grep is not.",
+      "blocking": false
+    },
+    {
+      "action": "Fix the factual error in 23-01-PLAN.md:159",
+      "context": "It states the lz q1 stream pins model 'claude-opus-4-8'. On disk it pins 'claude-sonnet-4-6[1m]'; claude-opus-4-8 is the BUILT-IN capture's model. Wave 1 asserted ground truth and recorded the correction, so no code is wrong -- only the plan text. Worth fixing before the freeze quotes anything adjacent.",
+      "blocking": false
+    },
+    {
+      "action": "Decide whether to push feat/deep-research",
+      "context": "60 commits ahead of origin/feat/deep-research, 21 of them from this session. Not pushed because it is outward-facing and was not requested.",
+      "blocking": false
+    }
+  ],
+  "decisions": [
+    {
+      "decision": "Executor isolation forced to none (sequential on the main working tree) for the whole of Phase 23, with .planning/config.json left byte-identical",
+      "rationale": "Worktrees cannot execute these plans: eval/.cache/ and .lz-research/ are gitignored, so a fresh worktree lacks the q1 captures and the AVeriTeC cache that plan preconditions HALT on, and MANIFEST writes into eval/.cache/ would be discarded with the worktree. Each wave holds exactly ONE plan, so worktree isolation buys no parallelism -- only the risk of git worktree remove --force recursing a symlinked cache and destroying threat T-23-06's irreplaceable data. Maintainer-ratified via AskUserQuestion; the config-untouched variant was chosen over persisting use_worktrees=false.",
+      "phase": "23"
+    },
+    {
+      "decision": "All NEW runs use Claude generation 5 models; 4.x strings surviving in artifacts are RECORDS of previous runs, never targets",
+      "rationale": "Maintainer directive. Waves 1-3 ran on Opus 5 via the opus alias. The 4.x strings in the q1 MANIFESTs (claude-opus-4-8 built-in, claude-sonnet-4-6[1m] lz, CC 2.1.186) are measured capture provenance required by ENV-02 admissibility -- rewriting them would be falsification. Forward-looking constraints moved to Sonnet 5 / Opus 5 in PROJECT.md + CLAUDE.md (commit 9942a4c); previous-run records and two verbatim Anthropic API-error quotes deliberately left on 4.x.",
+      "phase": "23"
+    },
+    {
+      "decision": "Three frozen-record discrepancies RECORDED, none reconciled; no Phase-22 artifact edited",
+      "rationale": "D-10: measured 83 unrefuted / 181 refuted against the Phase-22 pre-registration's 95/216. D-21: measured 69 markers against the diagnosis note's 26, and D-21's own '13 unique sources' is a mislabel of the unique-marker-value column. Third: the canonical identifier set holds 18, not 13. Bending extraction to hit an expected number is exactly the rule-tuned-to-a-number that 23-03's commit-ordering control exists to prevent.",
+      "phase": "23"
+    },
+    {
+      "decision": "Commit the pause handoff as docs(23):, not wip:",
+      "rationale": "The pause-work workflow template specifies a wip: prefix. The maintainer has rejected that prefix outright, so the recorded preference overrides the template.",
+      "phase": "23"
+    }
+  ],
+  "uncommitted_files": [],
+  "next_action": "Apply the four pre-freeze corrections in human_actions_pending item 1, then run: /gsd-execute-phase 23 --wave 4. Wave 4 is autonomous:false and carries a blocking-human gate immediately before the one-way freeze commit, so it wants a human present -- do not run it headless or under --auto.",
+  "context_notes": "This session executed waves 1-3 of 9 and stopped exactly where asked. All three plans are zero-model-spend machinery-building; nothing has been captured, voted or graded, and ENV-01's pre-registration is NOT yet frozen -- so the handoff's own no-spend-before-freeze constraint still holds. Registered eval tests went 129 -> 191 -> 225, all green; plugin tree 49/49 at 97.99/89.88/100 coverage. Phase-level gates deliberately did NOT run because the wave filter means the phase is incomplete: no VERIFICATION.md, no secure-phase, no validate-phase, no code-review, no extract-learnings, and verification status correctly reports 'missing'. A session usage limit killed the wave-2 executor mid-Task-2; it resumed cleanly from its own transcript because Task 1's RED and GREEN were already committed atomically -- the only casualty was one uncommitted module file. The single recurring operational annoyance is the dispatch-isolation sentinel's 10-minute TTL versus 20-40 minute executors: the ISOLATION=none pin expires during every wave, so the NEXT dispatch is denied once and needs a re-pin before retry. That is expected, not a new fault."
+}
