@@ -26,9 +26,10 @@
   "async_jobs": [],
   "human_actions_pending": [
     {
-      "action": "Correct four inputs to the Plan 23-04 freeze BEFORE running wave 4",
-      "context": "The freeze commit is one-way. (a) Quote 18 unique canonical sources, NOT 13 -- 13 is 23-RESEARCH's unique-marker-VALUE count, mislabelled by D-21; the canonical identifier set has 18 entries. (b) Scope the frozen-before-any-rate claim to RATIOS -- the 18-source integer is pinned in the Task-1 co-test because 23-03's own acceptance criterion required it there, so 'no measured figure precedes the freeze' is stronger than git supports. (c) Quote verbatim or sha256-pin the voter prompt template in eval/lz-eval-p23-sliceA-read.mjs, which drives every ENV-03 verdict in 23-05 and has had only executing-session review. (d) Disclose the q1/q2 MODEL GENERATION split as a third axis alongside the ENV-04 contamination clause.",
-      "blocking": true
+      "action": "RESOLVED 2026-09-07 in commit 32ebaaa -- four inputs to the Plan 23-04 freeze corrected; do NOT redo",
+      "context": "APPLIED as 23-04-PLAN.md revision 3. (a) Canonical-source count corrected at all four sites: the Wave-3 record's table reads 69 markers / 13 unique marker VALUES / 18 unique canonical sources, and the plan had collapsed the second into the third -- including in an acceptance criterion, which would have pushed an executor writing 18 back to 13. (b) The pre-freeze ordering claim is now scoped to RATIOS, with the 18-source co-test pin named as the stated exception and the stronger 'no measured figure precedes the freeze' explicitly forbidden. (c) The ENV-03 voter prompt is now frozen both ways -- quoted verbatim in the pre-registration and sha256-pinned in the co-test -- with the withheld-fields list recorded as the ENV-03 blinding. (d) The q1/q2 MODEL GENERATION split is disclosed as a third axis, the driver pins generation 5 (Sonnet 5 / Opus 5) per transport, and the q1 MANIFESTs' 4.x strings are recorded as measured provenance that must never be rewritten. The Task-2 checkpoint grew from seven questions to nine. Also folded in: the 23-01-PLAN.md:159 record correction listed separately below.",
+      "blocking": false,
+      "resolved_commit": "32ebaaa"
     },
     {
       "action": "Independent ENV-08 content review of eval/lz-eval-p23-citation-audit-q1-dryrun.md and the two new eval modules",
@@ -36,7 +37,7 @@
       "blocking": false
     },
     {
-      "action": "Fix the factual error in 23-01-PLAN.md:159",
+      "action": "RESOLVED 2026-09-07 in commit 32ebaaa -- the factual error in 23-01-PLAN.md:159 is fixed; do NOT redo",
       "context": "It states the lz q1 stream pins model 'claude-opus-4-8'. On disk it pins 'claude-sonnet-4-6[1m]'; claude-opus-4-8 is the BUILT-IN capture's model. Wave 1 asserted ground truth and recorded the correction, so no code is wrong -- only the plan text. Worth fixing before the freeze quotes anything adjacent.",
       "blocking": false
     },
