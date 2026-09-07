@@ -39,9 +39,10 @@ jobs:
       # or shell-glob form would diverge between CI and local runs. Add each new test file
       # here by name, in the same task that creates it.
       #
-      # Plan 23-01 Task 3 appended the last three entries, closing the Phase-23 share of the
-      # recorded Phase-22 CI gap in which 106 of 108 Phase-22 tests never executed on push.
-      # The remaining unregistered Phase-22 files are out of scope for Phase 23.
+      # Plan 23-01 Task 3 appended the first three entries below the pre-existing four, closing the
+      # Phase-23 share of the recorded Phase-22 CI gap in which 106 of 108 Phase-22 tests never
+      # executed on push. Plan 23-02 Task 3 appended the last three. The remaining unregistered
+      # Phase-22 files are out of scope for Phase 23.
       - name: Restore eval/ dev dependencies (jstat)
         run: cd eval && (npm ci || npm install)
       - name: Run eval-tree tests (explicit file form, no coverage thresholds)
@@ -54,3 +55,6 @@ jobs:
           eval/lz-eval-baseline-manifest.test.mjs
           eval/lz-eval-baseline-manifest-defects.test.mjs
           eval/lz-eval-p23-citation-audit.test.mjs
+          eval/lz-eval-p23-sliceA-draw.test.mjs
+          eval/lz-eval-p23-sliceA-read.test.mjs
+          eval/lz-eval-p23-verify-complete.test.mjs
