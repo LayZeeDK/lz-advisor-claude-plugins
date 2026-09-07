@@ -17,9 +17,23 @@
 //     distinct ContractError message).
 //   - validateManifest accepts a BUILT-IN run and an lz run symmetrically (both pin a version + model).
 //
-// DISCRIMINATION (the invert-the-fix proof, required by the plan):
+// EXTENDED (Plan 23-01, Tasks 1-2; NO-SPEND) with the ENV-02 Stage-0 behaviors:
+//   - extractSystemInit pins the CC version from a REAL system/init event, which carries
+//     `claude_code_version` and NOT `version` (D-11, confirmed empirically against both q1 captures).
+//   - extractTerminalCost reads the per-run cost from the LAST type=result event of a capture stream
+//     (D-22: that terminal event's total_cost_usd IS the resolved per-run cost source).
+//   - aggregateRunCost sums extractTerminalCost over a CALLER-ENUMERATED stream list (T-23-12: the
+//     enumeration is never discovered from the filesystem).
+//   - validateManifest rejects a zero-byte report.md (Phase-22 validation defect B2 / security F4).
+//
+// DISCRIMINATION (the invert-the-fix proofs, required by the plan):
 //   - validateManifest would WRONGLY accept a manifest with no system/init model if the fail-closed
 //     guard were removed (invert-the-fix proof).
+//   - extractTerminalCost over the REAL built-in q1 cold stream returns 48.5367785 and NOT
+//     0.7800860000000001 -- that stream carries TWO result events, and a first-result-event
+//     implementation would return the smaller figure. The not-equal assertion is what discriminates.
+//   - aggregateRunCost over the built-in q1 chain returns 67.085261 and NOT 114.166644 -- the latter
+//     is what folding the different-session broad-partial stream in would produce.
 //
 // HOST QUIRK (load-bearing): on this host the phase gate MUST target the explicit FILE form:
 //   node --test eval/lz-eval-baseline-manifest.test.mjs
@@ -30,14 +44,47 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 import { ContractError } from '../plugins/lz-advisor/skills/lz-deep-research/scripts/lz-deep-research-aggregate.mjs';
 
 import {
+  aggregateRunCost,
   buildManifest,
   extractSystemInit,
+  extractTerminalCost,
   validateManifest,
 } from './lz-eval-baseline-manifest.mjs';
+
+// Resolve the gitignored capture cache test-file-relative (NEVER process.cwd() -- cwd drifts under GSD
+// worktrees and headless `claude -p`). HERE is the repo-level eval/ dir.
+const HERE = path.dirname(fileURLToPath(import.meta.url));
+const CACHE = path.join(HERE, '.cache', 'p22-baseline');
+
+const CAPTURE = Object.freeze({
+  BUILTIN_COLD: path.join(CACHE, 'builtin', 'qB1-run1.stream.jsonl'),
+  BUILTIN_RESUME2: path.join(CACHE, 'builtin', 'qB1-run1.resume2.stream.jsonl'),
+  BUILTIN_RESUME3: path.join(CACHE, 'builtin', 'qB1-run1.resume3.stream.jsonl'),
+  BUILTIN_BROAD_PARTIAL: path.join(CACHE, 'builtin', 'qB1-run1.broad-partial-2026-06-22.stream.jsonl'),
+  BUILTIN_REPORT: path.join(CACHE, 'builtin', 'qB1-run1.report.md'),
+  LZ_COLD: path.join(CACHE, 'lz', 'qB1-run1.stream.jsonl'),
+  LZ_RESUME: path.join(CACHE, 'lz', 'qB1-run1.resume.stream.jsonl'),
+  LZ_REPORT: path.join(CACHE, 'lz', 'qB1-run1.report.md'),
+});
+
+// eval/.cache/ is gitignored and absent on a fresh clone -- every real-capture case skips rather than
+// fabricating a fixture (T-23-06).
+function readCaptures(t, paths) {
+  const missing = paths.filter((p) => !fs.existsSync(p));
+
+  if (missing.length > 0) {
+    t.skip('gitignored capture absent: ' + missing.map((p) => path.basename(p)).join(', '));
+
+    return null;
+  }
+
+  return paths.map((p) => fs.readFileSync(p, 'utf8'));
+}
 
 // A realistic stream-json capture: one JSON object per line. The FIRST event is the system/init line
 // carrying model + the CC version + the loaded plugins; subsequent lines are assistant / result events.
@@ -244,4 +291,153 @@ test('validateManifest: a manifest with no model is REJECTED -- the fail-closed 
     manifest.model = '';
     assert.throws(() => validateManifest(manifest), ContractError, 'an empty model must fail closed');
   });
+});
+
+// ---------------------------------------------------------------------------
+// Plan 23-01 Task 1 -- D-11: the REAL system/init field is `claude_code_version`.
+// ---------------------------------------------------------------------------
+
+test('D-11: extractSystemInit pins ccVersion from the REAL on-disk lz q1 capture (claude_code_version)', (t) => {
+  const texts = readCaptures(t, [CAPTURE.LZ_COLD]);
+
+  if (texts === null) {
+    return;
+  }
+
+  const info = extractSystemInit(texts[0]);
+
+  assert.equal(
+    info.ccVersion,
+    '2.1.186',
+    'the real system/init carries claude_code_version, not version -- reading only `version` throws here (T-22-06 / validation B1)',
+  );
+  // The lz surface runs the Sonnet executor by design (the advisor strategy), so this capture pins
+  // claude-sonnet-4-6[1m] -- NOT the built-in surface's claude-opus-4-8.
+  assert.equal(info.model, 'claude-sonnet-4-6[1m]');
+});
+
+test('D-11: extractSystemInit PREFERS claude_code_version when an event carries both fields', () => {
+  const stream =
+    JSON.stringify({
+      type: 'system',
+      subtype: 'init',
+      model: 'claude-opus-4-8',
+      claude_code_version: '2.1.186',
+      version: '2.1.185',
+      plugins: [],
+    }) + '\n';
+
+  assert.equal(extractSystemInit(stream).ccVersion, '2.1.186');
+});
+
+test('D-11: extractSystemInit still throws with "CC version" when NEITHER field is present', () => {
+  const stream = JSON.stringify({ type: 'system', subtype: 'init', model: 'claude-opus-4-8' }) + '\n';
+
+  assert.throws(() => extractSystemInit(stream), ContractError);
+  assert.throws(() => extractSystemInit(stream), /CC version/);
+});
+
+// ---------------------------------------------------------------------------
+// Plan 23-01 Task 1 -- D-22: the per-run cost source is the LAST type=result event.
+// ---------------------------------------------------------------------------
+
+test('D-22: extractTerminalCost reads the LAST result event of the real built-in q1 cold stream (48.5367785, NOT 0.7800860000000001)', (t) => {
+  const texts = readCaptures(t, [CAPTURE.BUILTIN_COLD]);
+
+  if (texts === null) {
+    return;
+  }
+
+  const cost = extractTerminalCost(texts[0]);
+
+  assert.equal(cost, 48.5367785);
+  // DISCRIMINATION: that stream carries TWO result events. A first-result-event implementation would
+  // return 0.7800860000000001 -- a fraction of the run's real cost.
+  assert.notEqual(
+    cost,
+    0.7800860000000001,
+    'the FIRST result event is not the terminal one -- LAST-wins is the whole point of the rule',
+  );
+});
+
+test('D-22: extractTerminalCost reads the real lz q1 cold stream terminal cost (8.927337350000004)', (t) => {
+  const texts = readCaptures(t, [CAPTURE.LZ_COLD]);
+
+  if (texts === null) {
+    return;
+  }
+
+  assert.equal(extractTerminalCost(texts[0]), 8.927337350000004);
+});
+
+test('D-22: extractTerminalCost throws a ContractError when the stream carries NO result event', () => {
+  const stream = JSON.stringify({ type: 'system', subtype: 'init', model: 'm', claude_code_version: '1.2.3' }) + '\n';
+
+  assert.throws(() => extractTerminalCost(stream), ContractError);
+  assert.throws(() => extractTerminalCost(''), ContractError);
+});
+
+test('D-22: extractTerminalCost throws when the terminal result event has no finite total_cost_usd (no default is substituted)', () => {
+  const absent = JSON.stringify({ type: 'result', subtype: 'success' }) + '\n';
+  const nonFinite = JSON.stringify({ type: 'result', subtype: 'success', total_cost_usd: null }) + '\n';
+  const negative = JSON.stringify({ type: 'result', subtype: 'success', total_cost_usd: -1 }) + '\n';
+
+  assert.throws(() => extractTerminalCost(absent), ContractError);
+  assert.throws(() => extractTerminalCost(nonFinite), ContractError);
+  assert.throws(() => extractTerminalCost(negative), ContractError);
+});
+
+test('T-23-12: aggregateRunCost sums the CALLER-ENUMERATED lz q1 stream list (cold + resume = 18.1152213)', (t) => {
+  const texts = readCaptures(t, [CAPTURE.LZ_COLD, CAPTURE.LZ_RESUME]);
+
+  if (texts === null) {
+    return;
+  }
+
+  assert.equal(aggregateRunCost({ streamTexts: texts }), 18.1152213);
+});
+
+test('T-23-12: aggregateRunCost is order-independent -- a shuffled stream list yields the identical total', (t) => {
+  const texts = readCaptures(t, [CAPTURE.LZ_COLD, CAPTURE.LZ_RESUME]);
+
+  if (texts === null) {
+    return;
+  }
+
+  const inOrder = aggregateRunCost({ streamTexts: texts });
+  const shuffled = aggregateRunCost({ streamTexts: texts.slice().reverse() });
+
+  assert.equal(shuffled, inOrder);
+  assert.equal(shuffled, 18.1152213);
+});
+
+test('T-23-12: aggregateRunCost requires a caller-supplied array -- it never discovers streams itself', () => {
+  assert.throws(() => aggregateRunCost({}), ContractError);
+  assert.throws(() => aggregateRunCost({ streamTexts: 'eval/.cache/p22-baseline/lz' }), ContractError);
+});
+
+// ---------------------------------------------------------------------------
+// Plan 23-01 Task 1 -- ENV-02: the lz q1 capture becomes ADMISSIBLE.
+// ---------------------------------------------------------------------------
+
+test('ENV-02: the lz q1 MANIFEST built from the REAL capture validates (pinned, costed, report present)', (t) => {
+  const texts = readCaptures(t, [CAPTURE.LZ_COLD, CAPTURE.LZ_RESUME, CAPTURE.LZ_REPORT]);
+
+  if (texts === null) {
+    return;
+  }
+
+  const manifest = buildManifest({
+    system: extractSystemInit(texts[0]),
+    reportPath: CAPTURE.LZ_REPORT,
+    costUsd: aggregateRunCost({ streamTexts: [texts[0], texts[1]] }),
+    workflowSurface: 'lz-advisor:lz-deep-research',
+    question: 'qB1',
+    qid: 'qB1',
+    runK: 1,
+  });
+
+  assert.equal(manifest.ccVersion, '2.1.186');
+  assert.equal(manifest.costUsd, 18.1152213);
+  assert.equal(validateManifest(manifest), true);
 });
