@@ -1037,9 +1037,16 @@ const rawVersion =
 
 ---
 
-## Open Questions
+## Open Questions (RESOLVED)
+
+All four were carried into planning and all four are closed. Q1 stays open as a fact about the world
+BY DESIGN -- it is resolved as a planning question by being pre-committed, with both branches frozen
+before the observation that selects one, which is the correct handling rather than an unresolved item.
 
 1. **Does the built-in's Workflow surface its sub-agents' fetched content anywhere retrievable?**
+   -- **RESOLVED BY PRE-COMMITMENT (D-19).** Both branches are written into the ENV-01 freeze by Plan
+   23-04 Task 1 before the spike runs, and the observation that selects one is Plan 23-06 Task 2's
+   FIRST post-retention action. The answer is not known at plan time and does not need to be.
    - Known: not in the parent `stream.jsonl` (verified -- only `{"Workflow":1}` as a tool_use).
    - Unclear: whether the per-subagent JSONL exists for a Workflow-hosted `/deep-research` and whether it
      records `WebFetch` result bodies.
@@ -1051,6 +1058,10 @@ const rawVersion =
 
 2. **Is `costUsd` recoverable for the q1 captures?** (= A1.) Resolve before writing the ENV-02 plan; it
    determines whether ENV-02 is fully zero-spend-closable or leaves a residual.
+   -- **RESOLVED (D-22).** Yes: the source is the LAST `type=result` event's `total_cost_usd` per
+   capture stream, summed over a caller-enumerated stream list. Implemented in Plan 23-01 as
+   `extractTerminalCost` and `aggregateRunCost`, with the last-not-first choice pinned by a real
+   on-disk two-result stream. ENV-02 is fully zero-spend-closable.
 
 3. **What is the q2 question?** Claude's discretion, but the constraint is sharp: bounded single-facet,
    matching AMENDMENT RECORD 1's narrowing (which is what made captures feasible at all), and it must
@@ -1059,6 +1070,9 @@ const rawVersion =
    question answered mostly from blogs and vendor pages would leave the identifier set dominated by the
    `url:` fallback and weaken the audit's comparability -- which would be a property of the question
    choice, not of either system.
+   -- **RESOLVED.** The chosen q2 question text is stated VERBATIM in the ENV-01 freeze by Plan 23-04
+   Task 1, together with its selection reasoning, and Plan 23-04's acceptance criteria require both.
+   The capture driver quotes the same text, so no capture can drift from it.
 
 4. **Should ENV-04's offline half run on q1 at all?** It can (extraction, canonicalization, unique-source
    count, uncited-unit count are all runnable offline today; only quote-match is not). Recommendation:
@@ -1066,6 +1080,9 @@ const rawVersion =
    set or check the bar** (D-02 puts the bar on q2). It de-risks the script before the paid capture and
    it produces a real ENV-04 reading even if ENV-05 does not clear, which materially improves the
    phase's floor under termination branch (b).
+   -- **RESOLVED (D-20).** Yes, and the recommendation was adopted as written: Plan 23-03 Task 3 runs
+   the q1 audit as a published dry run labelled not-bar-setting, and Plan 23-04's sequencing record
+   states that its rate landed pre-freeze under D-20 and set no bar.
 
 ---
 
