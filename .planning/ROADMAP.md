@@ -367,8 +367,42 @@ Plans:
 >
 > **The ceiling is stated up front, not discovered.** Phase 23 may report direction, raw per-cell verdicts, and an envelope; it may never report significance. A phase that ends without one has NOT fallen short.
 
-**Plans:** 0 plans
+**Plans:** 9 plans (9 waves)
 
 Plans:
 
-- [ ] TBD (run /gsd-plan-phase 23 to break down)
+**Wave 1** *(zero spend; may precede the ENV-01 freeze per D-16, and is reflected IN it)*
+
+- [ ] 23-01-PLAN.md -- ENV-02 Stage 0 + the phase TRACER: fix `extractSystemInit` to read `claude_code_version` (D-11), add `extractTerminalCost` / `aggregateRunCost` resolving the D-22 cost source, close Phase-22 defect B2 (zero-byte report validates), MANIFEST both q1 captures, promote the known-defect proofs into the suite, register in CI [ENV-02] [wave 1, zero spend]
+
+**Wave 2** *(zero spend; blocked on Wave 1)*
+
+- [ ] 23-02-PLAN.md -- ENV-03/ENV-05 Stage 0: re-verify the yield at 83/181 from disk (D-10), the deterministic balanced 20+20 seeded draw (D-08/D-09), the SEED-005 dispatch-provenance + never-pooled read module with the T-22-15 substitution fix, and the frozen verification-complete + spike-ceiling predicates (D-05/D-06) [ENV-03, ENV-05] [wave 2, zero spend]
+
+**Wave 3** *(zero spend; blocked on Wave 1)*
+
+- [ ] 23-03-PLAN.md -- ENV-04 Stage 0: the full offline citation audit on frozen normalization (D-13) in its own commit, the isolated live resolvability module with the tree's first network controls (D-12), then the D-20 published q1 dry run carrying the D-21 correction (69 markers / 13 sources, not 26/10) [ENV-04] [wave 3, zero spend]
+
+**Wave 4** *(THE FREEZE -- its own wave and its own commit, ahead of every spending task per D-16)*
+
+- [ ] 23-04-PLAN.md -- ENV-01: author + content-review + FREEZE `eval/lz-eval-p23-prereg.md` + `eval/lz-eval-p23-capture-driver.md` + the anti-drift co-test in ONE timestamped commit containing exactly three files; carries the bars, the realized 40-item draw, both recorded discrepancies, the contamination disclosure, the D-17 retention protocol, the D-19 two-branch conditional, the termination clause and the advance no-significance statement [ENV-01, ENV-08] [wave 4, autonomous:false -- blocking-human review before the freeze]
+
+**Wave 5** *(metered spend; blocked on the freeze)*
+
+- [ ] 23-05-PLAN.md -- ENV-03: dispatch the frozen 40 Slice-A items to the verify-voter with persisted provenance, then publish the never-pooled per-direction descriptive read with its three PROVISIONAL limits. Ordered FIRST among the metered readings deliberately -- cheapest and most certain, so a later pool exhaustion costs the comparative reading and not the phase's floor [ENV-03] [wave 5, autonomous:false]
+
+**Wave 6** *(metered spend, the phase's largest; blocked on Wave 5 for pool pacing)*
+
+- [ ] 23-06-PLAN.md -- ENV-05 spike + the fresh q2 pair: capture the built-in side on the frozen question, retain its evidence as the FIRST post-capture action (D-17), record the D-19 first observation, settle the frozen ceiling mechanically, then capture and retain the lz side and MANIFEST both q2 reports [ENV-05, ENV-02] [wave 6, autonomous:false]
+
+**Wave 7** *(no model spend; blocked on Wave 6)*
+
+- [ ] 23-07-PLAN.md -- ENV-04 reading of record: the offline q2 audit on unmodified frozen rules, the quote-match on whichever branch the spike selected, the dated live resolvability run, and the published record with the q1 dry-run rows carried separately and never averaged (D-02/D-04) [ENV-04] [wave 7]
+
+**Wave 8** *(metered spend, CONDITIONAL on the spike; blocked on Waves 6-7)*
+
+- [ ] 23-08-PLAN.md -- ENV-06: blinded, position-swapped, per-dimension grading against the built-in as a MODEL-AUTHORED reference baseline, with judge agreement reported and never gating and no third instrument calibrated -- OR, if the spike did not clear, the published branch-(b) termination naming the method and its result-independent reason [ENV-06] [wave 8, autonomous:false]
+
+**Wave 9** *(no spend; blocked on Waves 5, 7 and 8)*
+
+- [ ] 23-09-PLAN.md -- ENV-07 + ENV-08: publish `23-ENVELOPE.md` (evidenced region / human-routed region / warnings / NOT ESTABLISHED / exactly one resolved termination branch / not a ship gate), complete the review sweep with one row per artifact and no silent pass, and prove from git ancestry that the freeze preceded every capture, vote and score [ENV-07, ENV-08] [wave 9]
