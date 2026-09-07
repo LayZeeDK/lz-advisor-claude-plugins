@@ -232,8 +232,30 @@ export function aggregateRunCost({ streamTexts } = {}) {
 // result), the report.md path, the per-run cost (D-16), the workflow-surface note, and the question id
 // + run index. Returns the manifest object (it does NOT validate here -- validateManifest is the gate).
 // Fail-closed on a malformed `system` (the extractSystemInit shape is required).
+//
+// COST PROVENANCE (Plan 23-01 Task 2, T-23-12 -- three OPTIONAL fields, threaded from the caller):
+//   costStreams         : the ENUMERATED stream list `costUsd` was summed over, one entry per stream
+//                         carrying its own terminal cost and its `isError` note. Recording it is what
+//                         makes the figure auditable later; an implicit enumeration cannot be checked.
+//   costStreamsExcluded : streams present in the same run directory but deliberately NOT summed, each
+//                         with the reason. The built-in q1 directory holds a different-session stream
+//                         whose inclusion would roughly double the published figure.
+//   resumeCycles        : the realized resume count, because the retry history travels with every
+//                         later appearance of the cost number (ENV-02 transparency prohibition).
+// A caller that supplies none gets the pre-existing 8-field shape unchanged.
 // ---------------------------------------------------------------------------
-export function buildManifest({ system, reportPath, costUsd, workflowSurface, question, qid, runK } = {}) {
+export function buildManifest({
+  system,
+  reportPath,
+  costUsd,
+  costStreams,
+  costStreamsExcluded,
+  resumeCycles,
+  workflowSurface,
+  question,
+  qid,
+  runK,
+} = {}) {
   if (system == null || typeof system !== 'object') {
     throw new ContractError(
       'buildManifest requires a system object (the extractSystemInit result): ' + JSON.stringify(system),
@@ -249,7 +271,7 @@ export function buildManifest({ system, reportPath, costUsd, workflowSurface, qu
     throw new ContractError('buildManifest system is missing a ccVersion (D-15)', 'buildManifest');
   }
 
-  return {
+  const manifest = {
     ccVersion: system.ccVersion,
     model: system.model,
     plugins: Array.isArray(system.plugins) ? system.plugins.slice() : [],
@@ -260,6 +282,22 @@ export function buildManifest({ system, reportPath, costUsd, workflowSurface, qu
     qid,
     runK,
   };
+
+  // The provenance fields are recorded only when the caller supplies them, so the pre-existing shape
+  // is untouched for every existing caller. Arrays are defensively copied.
+  if (Array.isArray(costStreams)) {
+    manifest.costStreams = costStreams.slice();
+  }
+
+  if (Array.isArray(costStreamsExcluded)) {
+    manifest.costStreamsExcluded = costStreamsExcluded.slice();
+  }
+
+  if (Number.isInteger(resumeCycles)) {
+    manifest.resumeCycles = resumeCycles;
+  }
+
+  return manifest;
 }
 
 // ---------------------------------------------------------------------------
@@ -268,7 +306,8 @@ export function buildManifest({ system, reportPath, costUsd, workflowSurface, qu
 // field:
 //   - a missing/empty model      -> 'model' in the message (the run is unpinned -- cannot be graded).
 //   - a missing/empty ccVersion  -> 'CC version' in the message (cannot be pinned).
-//   - a missing reportPath / a non-existent report file -> 'report' in the message.
+//   - a missing reportPath / a non-existent report file / a ZERO-BYTE report file -> 'report' in the
+//     message.
 //   - a missing costUsd          -> 'cost' in the message (D-16 per-run cost).
 // Both surfaces (built-in + lz) validate symmetrically -- the workflowSurface is a note, not a gate.
 // ---------------------------------------------------------------------------
@@ -302,6 +341,19 @@ export function validateManifest(manifest) {
   if (!fs.existsSync(manifest.reportPath)) {
     throw new ContractError(
       'manifest report file does not exist (truncated/empty capture?): ' + manifest.reportPath,
+      'validateManifest',
+    );
+  }
+
+  // Phase-22 validation defect B2 / security flag F4 (Plan 23-01 Task 2): existsSync ALONE admitted a
+  // background-wait-truncated capture that wrote a zero-byte report.md, so a run with no report content
+  // validated as complete. eval/lz-eval-parity-driver.md documents the gate as "non-empty report +
+  // system/init model + cost", so the size IS part of the contract. The threshold is exactly zero bytes
+  // -- this is a truncation check, not a content heuristic, and a one-byte report still validates.
+  if (fs.statSync(manifest.reportPath).size === 0) {
+    throw new ContractError(
+      'manifest report file is empty (zero bytes -- a truncated capture cannot be graded): ' +
+        manifest.reportPath,
       'validateManifest',
     );
   }
