@@ -88,7 +88,19 @@ export function extractSystemInit(streamJsonlText) {
         );
       }
 
-      const ccVersion = typeof event.version === 'string' && event.version.length > 0 ? event.version : null;
+      // D-11 (Plan 23-01, verified empirically against BOTH q1 captures on disk): the REAL Claude Code
+      // system/init event carries `claude_code_version`; `event.version` is undefined there. Reading
+      // only `version` made the ContractError below fire on every real capture, so NO MANIFEST could
+      // ever be produced -- the mechanical cause of security T-22-06 / validation gap B1. Prefer the
+      // real field and keep `version` as a fallback so older/synthetic fixtures still parse. Same
+      // `typeof x === 'string' && x.length > 0` guard idiom as the model guard directly above.
+      let ccVersion = null;
+
+      if (typeof event.claude_code_version === 'string' && event.claude_code_version.length > 0) {
+        ccVersion = event.claude_code_version;
+      } else if (typeof event.version === 'string' && event.version.length > 0) {
+        ccVersion = event.version;
+      }
 
       if (ccVersion == null) {
         throw new ContractError(
@@ -107,6 +119,111 @@ export function extractSystemInit(streamJsonlText) {
     'no system/init event found in the stream-json capture (truncated/empty? -- it cannot be graded)',
     'extractSystemInit',
   );
+}
+
+// ---------------------------------------------------------------------------
+// extractTerminalCost(streamJsonlText) -- the RESOLVED per-run cost source (D-22). It scans every line
+// of a stream-json capture and keeps the LAST event whose `type` is `result`, then returns that event's
+// `total_cost_usd`.
+//
+// WHY LAST-WINS, and why it is the whole point: a capture stream can carry MORE THAN ONE result event.
+// The real built-in q1 cold stream carries two, and the FIRST reports 0.7800860000000001 -- a fraction
+// of the run's 48.5367785. A first-result-event implementation would silently under-report the run by
+// ~98%. The TERMINAL result event is the run's own final accounting; the earlier ones are not.
+//
+// FAIL-CLOSED (T-23-01): a stream with NO result event is a ContractError, and a terminal result event
+// whose `total_cost_usd` is absent, non-finite or negative is a ContractError. NO default is
+// substituted anywhere -- an unrecoverable cost must surface, never be imputed. Malformed (non-JSON)
+// lines are skipped while scanning but can never satisfy the guard.
+// ---------------------------------------------------------------------------
+export function extractTerminalCost(streamJsonlText) {
+  if (typeof streamJsonlText !== 'string') {
+    throw new ContractError(
+      'extractTerminalCost requires the stream-json text as a string: ' + JSON.stringify(streamJsonlText),
+      'extractTerminalCost',
+    );
+  }
+
+  const lines = streamJsonlText.split('\n');
+  let terminal = null;
+
+  for (const rawLine of lines) {
+    const line = rawLine.trim();
+
+    if (line.length === 0) {
+      continue;
+    }
+
+    let event;
+
+    try {
+      event = JSON.parse(line);
+    } catch {
+      // A non-JSON line (partial/garbage) is skipped while scanning for the terminal result event.
+      continue;
+    }
+
+    if (event == null || typeof event !== 'object') {
+      continue;
+    }
+
+    // LAST result event wins (D-22) -- keep overwriting so the final assignment is the terminal one.
+    if (event.type === 'result') {
+      terminal = event;
+    }
+  }
+
+  if (terminal == null) {
+    throw new ContractError(
+      'no type=result event found in the stream-json capture -- the per-run cost cannot be recovered (D-22)',
+      'extractTerminalCost',
+    );
+  }
+
+  const cost = terminal.total_cost_usd;
+
+  if (typeof cost !== 'number' || !Number.isFinite(cost) || cost < 0) {
+    throw new ContractError(
+      'terminal result event has no valid total_cost_usd (a non-negative finite number is required; no ' +
+        'default is substituted): ' +
+        JSON.stringify(cost),
+      'extractTerminalCost',
+    );
+  }
+
+  return cost;
+}
+
+// ---------------------------------------------------------------------------
+// aggregateRunCost({ streamTexts }) -- the per-run total: extractTerminalCost mapped over a
+// CALLER-SUPPLIED array of stream texts, summed (D-22 / D-16).
+//
+// THE ENUMERATION IS THE CALLER'S (T-23-12, repudiation): this function NEVER discovers which streams
+// belong to a run by globbing the filesystem. A cost figure whose stream enumeration is implicit cannot
+// be audited later, and a same-directory glob would silently fold in a DIFFERENT session's stream (the
+// built-in q1 directory holds exactly such a file). The caller enumerates, the MANIFEST records the
+// enumeration under `costStreams`, and the exclusions are recorded with their reason.
+//
+// FAIL-CLOSED: a non-array `streamTexts` is a ContractError; every element is validated by
+// extractTerminalCost, so one uncostable stream fails the whole aggregate rather than being skipped.
+// ---------------------------------------------------------------------------
+export function aggregateRunCost({ streamTexts } = {}) {
+  if (!Array.isArray(streamTexts)) {
+    throw new ContractError(
+      'aggregateRunCost requires a streamTexts array -- the CALLER enumerates which streams belong to a ' +
+        'run (T-23-12): ' +
+        JSON.stringify(streamTexts),
+      'aggregateRunCost',
+    );
+  }
+
+  let total = 0;
+
+  for (const streamText of streamTexts) {
+    total += extractTerminalCost(streamText);
+  }
+
+  return total;
 }
 
 // ---------------------------------------------------------------------------
