@@ -100,12 +100,60 @@ re-architecture (deferred to a later milestone); release/publication (handled at
 
 ### Auto-locked areas (`--auto`, outside the trap quadrant)
 
-- **D-12:** `[auto]` **Citation-audit evidence source** -- audit verbatim-quote match against the
-  **stored excerpts already captured**, using live re-fetch ONLY for link/identifier resolvability.
-  *Impact medium, confidence HIGH:* ENV-04 requires a DETERMINISTIC audit, and a script whose quote
-  matching depends on the live network is not reproducible (link rot, paywalls, content drift between
-  the 2026-06 capture and any later run). Resolvability is inherently a live check and is reported
-  separately, with its check date recorded.
+- **D-12 (REVISED 2026-09-07 -- supersedes the original auto-locked wording):** **Citation-audit
+  evidence source.** Verbatim-quote match runs against **stored excerpts obtained under a frozen
+  retention protocol (D-17)**, NOT against "stored excerpts already captured" -- the original wording
+  assumed a corpus that does not exist for both systems and is the reason the asymmetry below was
+  initially misdiagnosed as structural. Live re-fetch is used ONLY for link/identifier resolvability,
+  reported separately with its check date. *Rationale unchanged:* ENV-04 requires a DETERMINISTIC
+  audit, and quote matching that depends on the live network is not reproducible (link rot, paywalls,
+  content drift).
+
+### Capture-artifact retention and the ENV-04 asymmetry (verified 2026-09-07)
+
+- **D-17:** **A capture-artifact RETENTION PROTOCOL is frozen in ENV-01 and is a precondition of every
+  capture.** Immediately after any capture completes, copy BOTH the run directory AND
+  `~/.claude/projects/<cwd-hash>/<session-id>/subagents/` to a durable location before anything else.
+  **Evidence this is required, not precautionary:** the built-in q1 capture ran 2026-06-23 with
+  `cwd = D:\projects\github\LayZeeDK\lz-advisor-claude-plugins` and `session_id`
+  `6e92b80e-d807-43ea-89d1-e24bf40f3ab1`. That session no longer exists anywhere under
+  `~/.claude/projects` -- NO June-2026 session survives, and the oldest surviving session in this
+  repo's project directory is 2026-09-04. Sessions age out. An artifact not copied is an artifact
+  lost. — **Reversibility:** one-way — a capture whose artifacts aged out cannot be re-derived without
+  re-spending the capture.
+- **D-18:** **The ENV-04 quote-match asymmetry is a RETENTION failure, NOT a structural property of the
+  built-in.** Verified empirically: an ordinary subagent transcript DOES retain fetched web content --
+  this session's own researcher transcript is 915 KB with 57 `tool_result` lines, 29 WebFetch/WebSearch
+  calls, and 57 URL-bearing lines. So the built-in's fetched content was very likely recoverable at
+  capture time. What failed was keeping it. Do NOT plan around a permanent one-sided metric, and do NOT
+  drop quote-match on the belief that the built-in cannot supply excerpts. **Residual unknown (the real
+  open question):** the built-in is Workflow-hosted and its parent stream records `Workflow` as the only
+  tool call, so its workers may be spawned by the Workflow runtime rather than as ordinary subagents and
+  may write elsewhere or not at all.
+- **D-19:** **ENV-01 freezes ONE pre-committed conditional on that unknown, with BOTH branches written
+  before the spike runs.** The ENV-05 spike's FIRST observation records whether the built-in's workers
+  leave recoverable fetched content under the retention protocol. Branch A (they do): symmetric
+  quote-match runs on both systems for q2. Branch B (they do not): ENV-04's comparative bar uses only
+  the symmetric text-derived metrics (identifier resolvability + structural citation coverage), and the
+  lz quote-match is published as an explicitly-labelled SINGLE-SYSTEM diagnostic, never comparative.
+  Resolving this after seeing any rate is the post-hoc choice pre-registration exists to remove.
+- **D-20:** **The q1 lz-only quote-match runs as a published DRY RUN that does NOT set the bar.** The
+  lz q1 corpus survives (`.lz-research/20260623-094345-llm-context-window-extension/`: 15 excerpts,
+  14 claims, 60 votes, 12 sources, verbatim source text confirmed in `excerpts/w00.txt`). Auditing it
+  costs nothing, exercises the script before it matters, and materially raises the phase's floor under
+  termination branch (b). It is labelled not-bar-setting because the ENV-04 bar is frozen on the fresh
+  q2 pair (D-02) and because the designing session had partial sight of q1.
+- **D-21:** **A second frozen-record discrepancy, same shape as D-10 -- record, do not silently
+  reconcile.** `.planning/notes/phase-22-diagnosis-two-root-causes.md` records "26 numbered ref markers,
+  10-item source list" for the built-in q1 report; the full-file measurement is **69 markers / 13 unique
+  sources**. Also: the ENV-01 contamination disclosure must record that the Phase-23 research session ran
+  programmatic structure scans over BOTH q1 reports, which widens the D-02/ENV-04 contamination beyond
+  the original discuss-session read.
+- **D-22:** **ENV-02 is not fully closable offline until the plan names where `costUsd` comes from.**
+  `validateManifest` requires a per-run cost and `system/init` does not carry one. Resolve the source
+  (the stream's terminal result event, or an explicitly recorded manual figure) before writing the
+  ENV-02 plan; if it is unrecoverable for q1, say so and treat q1's MANIFEST accordingly rather than
+  inventing a value.
 - **D-13:** `[auto]` **Citation-format normalization** -- frozen BEFORE any rate is computed, per
   ENV-04 and the advisory anti-pattern. The two systems cite differently (built-in: numbered references
   to arXiv identifiers in prose, 0 inline URLs in q1; lz: full inline URLs). Normalize to a
@@ -222,6 +270,14 @@ re-architecture (deferred to a later milestone); release/publication (handled at
 ### Infrastructure Hazards
 - `eval/.cache/` is **gitignored**: one `git clean -xdf` destroys the AVeriTeC cache and both q1
   captures. Do not run it without re-fetch/re-capture budget.
+- **`.lz-research/` is ALSO gitignored (`.gitignore:20`) and holds the ONLY copy of the lz q1 evidence
+  corpus** (15 excerpts / 14 claims / 60 votes / 12 sources). Same `git clean -xdf` hazard. A
+  session-scratch backup was taken 2026-09-07 (111 files, 467 KB) but scratch is not durable --
+  D-17's retention protocol is the real fix.
+- **Claude session transcripts AGE OUT.** No June-2026 session survives under `~/.claude/projects`;
+  the oldest in this repo's project directory is 2026-09-04. Subagent transcripts live at
+  `~/.claude/projects/<cwd-hash>/<session-id>/subagents/` and DO retain fetched web content, but only
+  until the session is cleaned up. Copy immediately after a capture (D-17).
 - GSD SDK mutator verbs (`phase.*`, `state.*`, and even `query init.resume`) silently mutate
   `.planning/config.json` and `STATE.md`. Run `git diff .planning/config.json .planning/STATE.md` after
   any of them and revert unintended field changes before staging. Observed three times to date,
@@ -256,6 +312,14 @@ re-architecture (deferred to a later milestone); release/publication (handled at
 
 - **Reviving a calibrated judge gate** (and with it SEED-002/003/004) -- explicitly out of scope; the
   ROADMAP constraint forbids a third judge instrument in this phase.
+- **Recovering the built-in q1 fetched content** -- CLOSED as unrecoverable, not deferred. The session
+  aged out (D-17 evidence). Do not spend effort retrying this; the fix is retention on q2, not recovery
+  of q1.
+- **Semantic uncited-claim counting** -- ALCE/TRUE, RAGAS, and DeepResearch Bench's FACT all decompose
+  claims with an LLM (FACT additionally needs a live Jina API key), so a semantic count cannot be both
+  deterministic and judge-free. ENV-04's version must be a STRUCTURAL sentence-unit count under a frozen
+  attribution rule, labelled citation **coverage**, never citation **support** -- conflating them repeats
+  the construct error that voided Phases 19-22.
 - **q3 / the full frozen n=3 campaign** -- considered and declined at discuss time on cost (~2.8 pool
   windows on the built-in side, multi-day paced). Recorded as a ratified scope choice under D-01/D-03,
   NOT as an agent-side reduction. A later phase may capture q3 under its own pre-registration.
