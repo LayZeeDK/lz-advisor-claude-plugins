@@ -24,7 +24,7 @@ this wrong is the single most common error.
 
 | Transport | Mechanism | Model (Claude generation 5) | Pool | Node-wireable? |
 |---|---|---|---|---|
-| `voter` (the ENV-03 Slice-A verify-voter) | the verify-voter Agent sub-agent, spawned via the Agent tool, one drawn item per call | Sonnet 5 | the Claude SESSION pool | NO -- the Agent tool is UNAVAILABLE to a bare `node` process. SESSION-DRIVEN. |
+| `voter` (the ENV-03 Slice-A verify-voter) | a GENERIC Agent sub-agent, spawned via the Agent tool, receiving the `buildDispatchString` output VERBATIM as its whole prompt, one drawn item per call. NOT the shipped `research-verify-voter-sonnet` seat -- see AMENDMENT RECORD 1 | Sonnet 5 | the Claude SESSION pool | NO -- the Agent tool is UNAVAILABLE to a bare `node` process. SESSION-DRIVEN. |
 | `capture` (the built-in `/deep-research` and the lz-deep-research q2 report capture) | a headless `claude -p` subprocess -- a CAPTURE transport ONLY, never a voter or judge transport | built-in side: Opus 5. lz side: its Sonnet 5 executor with the Opus 5 advisor, per the advisor strategy | the Claude SESSION pool (shared 5-hour pool) | NO model SCORING -- the captured `report.md` lands on disk and node scores from disk. |
 | `grade` (the CONDITIONAL ENV-06 head-to-head grading) | the parity-judge Agent sub-agent, one dimension per call, blinded and position-swapped | Opus 5 | the Claude SESSION pool | NO -- SESSION-DRIVEN. Runs only if the ENV-05 spike clears. |
 
@@ -228,8 +228,15 @@ Paced against the captures above, because both draw the SAME 5-hour session pool
 
 For each of the 40 frozen drawn items, in the frozen order: render the dispatch string with
 `buildDispatchString({ claim, claimDate })`, persist it with `writeDispatchRecord` **at dispatch time**,
-then spawn the verify-voter Agent sub-agent with that exact string. `writeDispatchRecord` is write-once
-and refuses a second write to the same key, so a re-roll is distinguishable from a resume.
+then spawn a GENERIC Agent sub-agent on Sonnet 5 with that exact string as its ENTIRE prompt.
+`writeDispatchRecord` is write-once and refuses a second write to the same key, so a re-roll is
+distinguishable from a resume.
+
+**Do NOT route this through the shipped `research-verify-voter-sonnet` agent** (AMENDMENT RECORD 1,
+2026-09-08). That seat requires four inputs the pinned string does not carry -- an evidence excerpt, an
+attack mode, the arm and a vote-file path -- and is contracted to write a four-field vote JSON, while
+the pinned string demands exactly one lowercase word. The pinned string is self-contained and carries
+the voter role itself; the instrument IS the string, which is what its sha256 pin attests.
 
 Node then scores from disk: `readSliceAVerdicts` fails closed on a verdict with no dispatch record or a
 digest that disagrees with its stored string, and `sliceARead` emits the never-pooled per-direction read

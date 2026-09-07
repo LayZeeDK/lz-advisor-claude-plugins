@@ -700,7 +700,7 @@ You are a verify-voter. Decide whether the CLAIM below is REFUTED by the evidenc
 Judge the claim AS OF the cutoff date below, not as of today. Evidence published after the cutoff
 is out of scope.
 
-CUTOFF: {{CLAIM_DATE}}
+CUTOFF (day-month-year): {{CLAIM_DATE}}
 CLAIM: {{CLAIM}}
 
 Answer with exactly one word, lowercase, and nothing else: refuted, or unrefuted.
@@ -711,15 +711,18 @@ co-test asserts a sha256 of the string `buildDispatchString` actually renders; a
 review time, so the template is quoted above for the maintainer to read at the Task-2 checkpoint. Together
 they make "what was reviewed is what runs" a checkable claim rather than an assurance.
 
+The template above and both digests below were RE-PINNED by **AMENDMENT RECORD 1 (2026-09-08)**, taken
+before any dispatch with zero verdicts in existence. The superseded values are recorded there in full.
+
 The pinned digests, asserted by `eval/lz-eval-p23-prereg.test.mjs`:
 
 - The template as rendered above (obtained by rendering with each placeholder as its own literal value,
   which round-trips because the substitution is a single non-global scan through a replacer function and
   inserted text is never re-scanned):
-  `8a93c283591b1e81046a8d1d61da9d0e035ea922c5105afacf215b911309fe5a`
+  `a1cb493a980307271666597ac306d9cd383efdc9493acefefcf1aa159e7f1318`
 - A fixed synthetic instantiation (`claim` = `A synthetic pin claim that is not a corpus item.`,
   `claimDate` = `2020-01-01`):
-  `4a2c47f2a70009762addb16f2485d362a13eda8ed0490406ecd4f654f1aa4efe`
+  `e95cc436b092adbb596b4ae16a2a9016088ad28bb1603341609f22d2a7960430`
 
 ### What the template deliberately WITHHOLDS -- this is the ENV-03 blinding
 
@@ -883,6 +886,97 @@ Carried from `23-RESEARCH.md`. **Never promote an abstained item to settled pros
 ## AMENDMENT RECORD
 
 *(Empty at freeze. This is the convention, frozen with the document.)*
+
+### 1. 2026-09-08 -- the voter transport row was wrong, and the dispatched cutoff was ambiguous
+
+**Maintainer-ratified 2026-09-08. Taken BEFORE any dispatch, with ZERO verdicts in existence.** No
+result had been seen, because no result existed: `eval/.cache/p23-read/sliceA/` had not been created,
+no dispatch record had been written and no vote had been cast. This is the window an amendment is for
+-- both defects were found while checking the frozen instrument against disk ahead of the first
+dispatch, and both are fixed here rather than carried into the run and disclaimed afterwards.
+
+**No BAR moves in this amendment, and no item, seed, rule or reporting discipline changes.** The 40-item
+list, `DRAW.SEED` = `20260907`, the balanced 20/20 draw, the per-direction never-pooled reporting rule,
+the exact five-key output contract and the three PROVISIONAL limits are all untouched. The
+pre-registration never named a voter transport anywhere -- only
+`eval/lz-eval-p23-capture-driver.md` did -- so half (a) below changes an operating document, not a
+frozen bar.
+
+#### Half (a) -- the transport row named a seat that cannot run this dispatch
+
+`eval/lz-eval-p23-capture-driver.md`'s transport-split table specified the `voter` seat as the shipped
+verify-voter Agent sub-agent, and Plan 23-05 Task 2 directed a reader to
+`plugins/lz-advisor/agents/research-verify-voter-sonnet.md` "so the dispatched prompt matches what the
+agent expects". **Checked against disk, that rationale is false**, on two independent grounds:
+
+1. **The seat's contract contradicts the pinned string.** That agent requires four inputs the pinned
+   string does not carry -- an evidence excerpt, an assigned attack mode, the arm (open-book or
+   closed-book) and a vote-file path -- and it is contracted to WRITE A VOTE JSON in a four-field
+   schema. The pinned string supplies none of the four and demands the opposite output: exactly one
+   lowercase word.
+2. **It is not loadable where the dispatch runs.** The plugin is deliberately disabled in this
+   repository (`enabledPlugins: false`) so the marketplace build cannot shadow the working tree under
+   test, so the agent is absent from the executing session's registry.
+
+**Corrected to what will actually run:** a GENERIC Agent sub-agent on **Sonnet 5**, receiving the
+`buildDispatchString` output **verbatim**, one drawn item per call, on the Claude **session pool**,
+**SESSION-DRIVEN**. The pinned string is self-contained -- it opens `You are a verify-voter`, states the
+task, the as-of rule and the answer format -- so the seat's role comes from the PROMPT rather than from
+an agent definition. That is what makes the sha256 pin meaningful: the instrument is the string, and
+nothing outside it conditions the vote.
+
+**Every ABSOLUTE PROHIBITION is unchanged, in particular that `claude -p` is NEVER a voter or judge
+transport.** The corrected row still forbids a bare `node` process from dispatching, and the resolved
+model string is still recorded per the never-record-an-alias rule.
+
+This was found because the executing agent for Plan 23-05 had no Agent tool, halted at the transport
+precondition rather than substituting a permitted-looking one, and reported it. **It is the SIXTH
+plan-stated or record-stated figure in this phase to disagree with disk**, and the phase's standing
+discipline -- verify from disk, record the discrepancy, never bend the artifact to fit -- is what
+surfaced it.
+
+#### Half (b) -- the dispatched cutoff was ambiguous in a direction-biasing way
+
+The corpus emits `claim_date` in **day-month-year** order, and the frozen template dispatched that value
+under a bare `CUTOFF:` label. **16 of the 40 drawn items have a first field <= 12**, so `1-10-2020` is
+ambiguous between 1 October 2020 and 10 January 2020 to a reader given no field order.
+
+**The day-month-year reading is PROVEN from the draw itself, not assumed: 24 of the 40 items have a
+first field GREATER THAN 12, which is impossible for a month.** The format is therefore established by
+the data, and this amendment is a correction rather than a guess. All 40 values fall in 2020, so the
+first PROVISIONAL limit -- the uniform 2020 cutoff -- was and remains accurate.
+
+**Why it mattered enough to fix pre-spend rather than disclose post-hoc.** A month-day misreading lands
+EARLIER in the year, so it excludes evidence the voter was entitled to use. For a refuted claim the
+refuting evidence usually sits near the fact-check date, near the end of the admissible window; losing
+that window pushes the voter toward `unrefuted`. That is a **direction-biasing false negative
+concentrated on the refuted arm** -- not symmetric noise -- inside the phase's only guaranteed reading.
+
+The balanced 20/20 draw and the per-direction never-pooled reporting rule would have made the damage
+VISIBLE, as a lopsided refuted row rather than a diluted pooled figure, which is precisely what that
+design is for. **Preventing it still beat observing it**, because prevention was free here: the fix cost
+one label on one line, before the first verdict, and after the run it would have cost either a
+disclaimed reading or 40 re-dispatched votes.
+
+**The change is exactly one line of the frozen template**, from `CUTOFF: {{CLAIM_DATE}}` to
+`CUTOFF (day-month-year): {{CLAIM_DATE}}`. No date converter was added, no value was reformatted, and
+the T-22-15 replacer-function substitution is untouched -- it remains ONE non-global scan through a
+replacer function at ONE call site.
+
+#### The re-pinned digests, old and new
+
+Both pins in `eval/lz-eval-p23-prereg.test.mjs` were RECOMPUTED from the changed template, never
+hand-edited toward a guess:
+
+| Pin | Superseded (freeze `9ab9933`) | In force (this amendment) |
+|---|---|---|
+| Template round-trip | `8a93c283591b1e81046a8d1d61da9d0e035ea922c5105afacf215b911309fe5a` | `a1cb493a980307271666597ac306d9cd383efdc9493acefefcf1aa159e7f1318` |
+| Fixed synthetic instantiation | `4a2c47f2a70009762addb16f2485d362a13eda8ed0490406ecd4f654f1aa4efe` | `e95cc436b092adbb596b4ae16a2a9016088ad28bb1603341609f22d2a7960430` |
+
+Recording both directions is what makes the re-pin auditable: a later reader can confirm the superseded
+digest belonged to the superseded template rather than taking the new pin on trust. The
+discrimination proof was re-run against the NEW pin and its failure output is recorded in the Plan
+23-05 SUMMARY.
 
 **Any change to this pre-registration after a result is seen is a NUMBERED, DATED AMENDMENT recorded at the
 time it is taken, with the maintainer ratification noted -- NEVER an edit.** An amendment states what

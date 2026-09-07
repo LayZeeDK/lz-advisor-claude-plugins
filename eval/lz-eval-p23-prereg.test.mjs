@@ -162,8 +162,13 @@ test('ENV-01 anti-drift FLIPS RED on a deliberate prose-vs-constant mismatch (in
 // at review time AND a digest a later edit cannot slip past.
 // ---------------------------------------------------------------------------
 
-const VOTER_TEMPLATE_SHA256 = '8a93c283591b1e81046a8d1d61da9d0e035ea922c5105afacf215b911309fe5a';
-const VOTER_INSTANCE_SHA256 = '4a2c47f2a70009762addb16f2485d362a13eda8ed0490406ecd4f654f1aa4efe';
+// AMENDMENT RECORD 1 (2026-09-08, pre-spend, zero verdicts in existence) re-pinned BOTH digests when
+// the cutoff line gained its day-month-year label. The superseded pins were
+// 8a93c283591b1e81046a8d1d61da9d0e035ea922c5105afacf215b911309fe5a (template) and
+// 4a2c47f2a70009762addb16f2485d362a13eda8ed0490406ecd4f654f1aa4efe (instantiation); both are recorded
+// in the amendment so the change is auditable rather than merely asserted.
+const VOTER_TEMPLATE_SHA256 = 'a1cb493a980307271666597ac306d9cd383efdc9493acefefcf1aa159e7f1318';
+const VOTER_INSTANCE_SHA256 = 'e95cc436b092adbb596b4ae16a2a9016088ad28bb1603341609f22d2a7960430';
 const PIN_CLAIM = 'A synthetic pin claim that is not a corpus item.';
 const PIN_CLAIM_DATE = '2020-01-01';
 

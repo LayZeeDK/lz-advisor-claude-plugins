@@ -71,7 +71,7 @@ const VOTER_PROMPT_TEMPLATE = Object.freeze(
     'Judge the claim AS OF the cutoff date below, not as of today. Evidence published after the cutoff',
     'is out of scope.',
     '',
-    'CUTOFF: {{CLAIM_DATE}}',
+    'CUTOFF (day-month-year): {{CLAIM_DATE}}',
     'CLAIM: {{CLAIM}}',
     '',
     'Answer with exactly one word, lowercase, and nothing else: refuted, or unrefuted.',
