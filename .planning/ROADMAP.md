@@ -277,7 +277,7 @@ Phases execute in numeric order: 16 -> 17 -> 17.1 -> 18 -> 19 -> 20 -> 21
 | 20. Orchestrator + scale | v2.1.0 | 6/7 | In Progress|  |
 | 21. Over-refusal gold + arm-B re-run | v2.1.0 | 5/5 | Complete | 2026-06-22 |
 | 22. Deep-research skill eval + built-in parity | v2.1.0 | 4/5 | In Progress |  |
-| 23. Judge-free confidence + operating envelope | v2.1.0 | 4/9 | In Progress|  |
+| 23. Judge-free confidence + operating envelope | v2.1.0 | 5/9 | In Progress|  |
 
 v1.0 + v1.0.1 + v2.0.0 shipped (plugin 2.0.0). **Active milestone: v2.1.0 (lz-deep-research skill)** -- Phases 16-23 (Phase 21 added 2026-06-21; Phase 22 -- deep-research eval + built-in parity -- added 2026-06-22; Phase 23 -- judge-free confidence + operating envelope -- added 2026-09-06 after the Phase-22 measured track terminated), roadmap revised 2026-06-15 (gating eval moved EARLY to Phase 18; EVAL-05 added -- Haiku prompt-engineering research must precede authoring any Haiku agent; the search worker's model tier follows the Phase-18 outcome). Release/publication (REL-01..03) is handled during `/gsd-complete-milestone` after `/gsd-audit-milestone` passes, not as a build phase. See `.planning/MILESTONES.md` for shipped-milestone summaries and `milestones/` for full detail.
 
@@ -368,7 +368,7 @@ Plans:
 >
 > **The ceiling is stated up front, not discovered.** Phase 23 may report direction, raw per-cell verdicts, and an envelope; it may never report significance. A phase that ends without one has NOT fallen short.
 
-**Plans:** 4/9 plans executed (9 waves)
+**Plans:** 5/9 plans executed (9 waves)
 
 Plans:
 
@@ -390,7 +390,7 @@ Plans:
 
 **Wave 5** *(metered spend; blocked on the freeze)*
 
-- [ ] 23-05-PLAN.md -- ENV-03: dispatch the frozen 40 Slice-A items to the verify-voter with persisted provenance, then publish the never-pooled per-direction descriptive read with its three PROVISIONAL limits. Ordered FIRST among the metered readings deliberately -- cheapest and most certain, so a later pool exhaustion costs the comparative reading and not the phase's floor [ENV-03] [wave 5, autonomous:false]
+- [x] 23-05-PLAN.md -- ENV-03: dispatch the frozen 40 Slice-A items to the verify-voter with persisted provenance, then publish the never-pooled per-direction descriptive read with its three PROVISIONAL limits. Ordered FIRST among the metered readings deliberately -- cheapest and most certain, so a later pool exhaustion costs the comparative reading and not the phase's floor [ENV-03] [wave 5, autonomous:false]
 
 **Wave 6** *(metered spend, the phase's largest; blocked on Wave 5 for pool pacing)*
 
