@@ -277,7 +277,7 @@ Phases execute in numeric order: 16 -> 17 -> 17.1 -> 18 -> 19 -> 20 -> 21
 | 20. Orchestrator + scale | v2.1.0 | 6/7 | In Progress|  |
 | 21. Over-refusal gold + arm-B re-run | v2.1.0 | 5/5 | Complete | 2026-06-22 |
 | 22. Deep-research skill eval + built-in parity | v2.1.0 | 4/5 | In Progress |  |
-| 23. Judge-free confidence + operating envelope | v2.1.0 | 2/9 | In Progress|  |
+| 23. Judge-free confidence + operating envelope | v2.1.0 | 3/9 | In Progress|  |
 
 v1.0 + v1.0.1 + v2.0.0 shipped (plugin 2.0.0). **Active milestone: v2.1.0 (lz-deep-research skill)** -- Phases 16-23 (Phase 21 added 2026-06-21; Phase 22 -- deep-research eval + built-in parity -- added 2026-06-22; Phase 23 -- judge-free confidence + operating envelope -- added 2026-09-06 after the Phase-22 measured track terminated), roadmap revised 2026-06-15 (gating eval moved EARLY to Phase 18; EVAL-05 added -- Haiku prompt-engineering research must precede authoring any Haiku agent; the search worker's model tier follows the Phase-18 outcome). Release/publication (REL-01..03) is handled during `/gsd-complete-milestone` after `/gsd-audit-milestone` passes, not as a build phase. See `.planning/MILESTONES.md` for shipped-milestone summaries and `milestones/` for full detail.
 
@@ -368,7 +368,7 @@ Plans:
 >
 > **The ceiling is stated up front, not discovered.** Phase 23 may report direction, raw per-cell verdicts, and an envelope; it may never report significance. A phase that ends without one has NOT fallen short.
 
-**Plans:** 2/9 plans executed (9 waves)
+**Plans:** 3/9 plans executed (9 waves)
 
 Plans:
 
@@ -382,7 +382,7 @@ Plans:
 
 **Wave 3** *(zero spend; blocked on Wave 1)*
 
-- [ ] 23-03-PLAN.md -- ENV-04 Stage 0: the full offline citation audit on frozen normalization (D-13) in its own commit, the isolated live resolvability module with the tree's first network controls (D-12), then the D-20 published q1 dry run carrying the D-21 correction (69 markers / 13 sources, not 26/10) [ENV-04] [wave 3, zero spend]
+- [x] 23-03-PLAN.md -- ENV-04 Stage 0: the full offline citation audit on frozen normalization (D-13) in its own commit, the isolated live resolvability module with the tree's first network controls (D-12), then the D-20 published q1 dry run carrying the D-21 correction (69 markers / 13 sources, not 26/10) [ENV-04] [wave 3, zero spend]
 
 **Wave 4** *(THE FREEZE -- its own wave and its own commit, ahead of every spending task per D-16)*
 
