@@ -100,7 +100,7 @@ re-architecture (deferred to a later milestone); release/publication (handled at
 
 ### Auto-locked areas (`--auto`, outside the trap quadrant)
 
-- **D-12 (REVISED 2026-09-07 -- supersedes the original auto-locked wording):** **Citation-audit
+- **D-12:** REVISED 2026-09-07, superseding the original auto-locked wording. **Citation-audit
   evidence source.** Verbatim-quote match runs against **stored excerpts obtained under a frozen
   retention protocol (D-17)**, NOT against "stored excerpts already captured" -- the original wording
   assumed a corpus that does not exist for both systems and is the reason the asymmetry below was
