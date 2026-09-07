@@ -106,8 +106,8 @@ Milestone v2.1.0 (lz-deep-research skill) -- requirements being defined via `/gs
 
 - **Platform**: Claude Code marketplace plugin only -- no standalone API usage
 - **Dependencies**: Zero external dependencies -- Claude Code Agent tool is the only mechanism
-- **Model availability**: Requires user has access to Sonnet 4.6 (or later) and Opus 4.7 (or later). The `model: opus` alias auto-resolves to the current Opus generation.
-- **Prompt optimization**: Executor prompts optimized for Sonnet 4.6; advisor prompts optimized for Opus 4.7 (literal instruction following, lower baseline tool usage, task-calibrated response length).
+- **Model availability**: Requires user has access to Sonnet 5 (or later) and Opus 5 (or later). The `model: opus` alias auto-resolves to the current Opus generation. All NEW runs use Claude generation 5 models; a 4.x model string surviving in an artifact is a RECORD of a previous run, never a target.
+- **Prompt optimization**: Executor prompts optimized for Sonnet 5; advisor prompts optimized for Opus 5 (literal instruction following, lower baseline tool usage, task-calibrated response length -- traits characterized on Opus 4.7 and not yet re-verified on Opus 5).
 - **Cost**: Advisor consultations should be strategic (2-3 per task), not per-tool-call
 - **Review before use or publication (project-wide MUST)**: Every artifact that RUNS, is USED BY, or STEERS an LLM task -- in ALL phases/milestones of this project -- MUST be independently reviewed BEFORE it is used to drive an LLM task OR published to the marketplace plugin. A prompt or a reference that steers an LLM task is as load-bearing as the code, so it ships under the same gate. The surface:
   - **Scripts** -- the plugin's bundled `scripts/` helpers (e.g. `lz-deep-research-aggregate.mjs`), the repo-level `eval/` harness + driver scripts (`lz-eval-*.mjs`, the OOF/voter drivers + transport libs), and any future LLM-task runner/helper: code-reviewed AND covered by code-reviewed unit tests (the unit tests are in review scope too, not just the script).

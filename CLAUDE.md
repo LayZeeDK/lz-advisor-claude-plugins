@@ -11,8 +11,8 @@ A Claude Code marketplace plugin that implements the advisor strategy -- pairing
 
 - **Platform**: Claude Code marketplace plugin only -- no standalone API usage
 - **Dependencies**: Zero external dependencies -- Claude Code Agent tool is the only mechanism
-- **Model availability**: Requires user has access to both Sonnet 4.6 and Opus 4.6
-- **Prompt optimization**: Executor prompts optimized for Sonnet 4.6, advisor prompts optimized for Opus 4.6
+- **Model availability**: Requires user has access to both Sonnet 5 and Opus 5
+- **Prompt optimization**: Executor prompts optimized for Sonnet 5, advisor prompts optimized for Opus 5
 - **Cost**: Advisor consultations should be strategic (2-3 per task), not per-tool-call
 <!-- GSD:project-end -->
 
