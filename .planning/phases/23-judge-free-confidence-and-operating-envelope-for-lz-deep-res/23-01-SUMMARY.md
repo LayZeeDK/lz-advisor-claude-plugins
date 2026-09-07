@@ -200,7 +200,7 @@ Each task was committed atomically; Tasks 1 and 2 are TDD and carry a RED then a
 - `eval/lz-eval-baseline-manifest.test.mjs` — 17 new cases on top of the pre-existing 11 (28 total), all cache reads skip-if-absent.
 - `eval/lz-eval-p23-citation-audit.mjs` — **new.** `ARXIV_RE`, `DOI_RE`, frozen `KEEP_PARAMS`, `canonicalizeCitation`. ASCII-only, LF, no BOM, no package added, no CLI (Plan 23-03 adds the rest of the audit surface).
 - `eval/lz-eval-p23-citation-audit.test.mjs` — **new.** 9 cases.
-- `eval/lz-eval-baseline-manifest-defects.test.mjs` — **moved** from `eval/__known-defects__/p22-baseline-manifest-defects.test.mjs` via `git mv`. Header rewritten; every assertion, message and skip-if-absent guard kept verbatim. `eval/__known-defects__/` no longer exists.
+- `eval/lz-eval-baseline-manifest-defects.test.mjs` — **moved** from `eval/__known-defects__/p22-baseline-manifest-defects.test.mjs` via `git mv`. Header rewritten; every assertion, message and skip-if-absent guard kept verbatim. `eval/__known-defects__/` no longer exists (the now-empty directory was removed with `rmdir`, which refuses to act on a non-empty target — `git mv` leaves it behind on the filesystem because git does not track empty directories, and `git clean` is forbidden here).
 - `.github/workflows/ci.yml` — three explicit test-file entries appended to the eval-tree step.
 - `eval/.cache/p22-baseline/{lz,builtin}/qB1-run1.MANIFEST.json` — **new**, gitignored, regenerable (recipe below).
 
