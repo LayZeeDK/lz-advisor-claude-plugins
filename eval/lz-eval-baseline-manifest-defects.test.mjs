@@ -1,31 +1,43 @@
-// p22-baseline-manifest-defects.test.mjs
+// lz-eval-baseline-manifest-defects.test.mjs
 //
-// RED BY DESIGN -- this file is EXPECTED TO FAIL until eval/lz-eval-baseline-manifest.mjs is fixed.
+// THE STANDING REGRESSION GUARD for D-11 and Phase-22 validation defect B2. It runs inside the normal
+// eval/*.test.mjs suite glob and it is GREEN:
 //
-// It lives in eval/__known-defects__/ and NOT in eval/*.test.mjs deliberately: the phase gate
-// ("every eval/*.test.mjs green, FILE-form") must keep reporting the true state of the SHIPPED
-// contract, and a knowingly-red file inside that glob would either be silenced or would mask a real
-// regression. Run it explicitly:
+//   node --test eval/lz-eval-baseline-manifest-defects.test.mjs
 //
-//   node --test eval/__known-defects__/p22-baseline-manifest-defects.test.mjs
+// Provenance and why the file is shaped this way: it was authored by gsd-nyquist-auditor during Phase 22
+// validation against two THEN-OPEN defects found by the 2026-09-05 security audit (22-SECURITY.md
+// T-22-06 / F3 / F4). Both sat in a module whose own co-tests were green -- i.e. the existing tests did
+// not discriminate. These two did, which is why they were written and why they are kept verbatim.
 //
-// Provenance: authored by gsd-nyquist-auditor for Phase 22 validation, reproducing the two defects
-// found by the 2026-09-05 security audit (22-SECURITY.md T-22-06 / F3 / F4). Both defects sit in
-// modules whose co-tests are GREEN -- i.e. the existing tests do not discriminate. These two do.
+// It was deliberately PARKED OUTSIDE the suite glob, at eval/__known-defects__/, for as long as it was
+// knowingly red: the phase gate ("every eval/*.test.mjs green, FILE-form") must keep reporting the true
+// state of the contract, and a knowingly-red file inside that glob would either get silenced or mask a
+// real regression. That parking was always conditional -- Phase 22's own LEARNINGS record the closing
+// instruction to move the file into the normal suite once the defects were fixed.
 //
-// DEFECT 1 (22-SECURITY.md T-22-06, lz-eval-baseline-manifest.mjs:91-98)
-//   extractSystemInit reads `event.version`, but a real Claude Code system/init event carries
-//   `claude_code_version`. Verified against both real captures under eval/.cache/p22-baseline/:
-//   the streams carry `claude_code_version: 2.1.186` and extraction throws
-//   "system/init event has no CC version". Consequence: NO MANIFEST can ever be produced from a real
-//   capture, which is the mechanical cause of 22-VERIFICATION.md gap SC1.
+// Plan 23-01 FIXED BOTH, so the condition is discharged and the file has moved here (Task 3). Its
+// assertions are unchanged: every assertion, every message and both skip-if-absent guards are the
+// auditor's originals. They are the discrimination proofs and they are the value of the file -- what
+// makes them a regression guard rather than a historical note is precisely that they were proven to fail
+// against the pre-fix code.
 //
-// DEFECT 2 (22-SECURITY.md F4, lz-eval-baseline-manifest.mjs:185-190)
-//   validateManifest checks the report with existsSync ONLY, while eval/lz-eval-parity-driver.md:127
+// DEFECT 1 -- FIXED in Plan 23-01 Task 1 (22-SECURITY.md T-22-06; was lz-eval-baseline-manifest.mjs:91)
+//   extractSystemInit read `event.version`, but a real Claude Code system/init event carries
+//   `claude_code_version`. Verified against both real captures under eval/.cache/p22-baseline/: the
+//   streams carry `claude_code_version: 2.1.186` and extraction threw "system/init event has no CC
+//   version". Consequence: NO MANIFEST could ever be produced from a real capture, which was the
+//   mechanical cause of 22-VERIFICATION.md gap SC1. The fix reads `claude_code_version` and keeps
+//   `version` as a fallback.
+//
+// DEFECT 2 -- FIXED in Plan 23-01 Task 2 (22-SECURITY.md F4; was lz-eval-baseline-manifest.mjs:185-190)
+//   validateManifest checked the report with existsSync ONLY, while eval/lz-eval-parity-driver.md:127
 //   documents the gate as "non-empty report + system/init model + cost". A zero-byte report.md
-//   therefore validates, and a background-wait-truncated capture (T-22-13) can be graded as complete.
+//   therefore validated, and a background-wait-truncated capture (T-22-13) could be graded as complete.
+//   The fix adds an fs.statSync size check that throws with "report" in the message.
 //
-// Fixing the implementation is OUT OF SCOPE for the auditor; both defects are ESCALATED.
+// HOST QUIRK (load-bearing): on this host the phase gate MUST target the explicit FILE form above. The
+// directory form (`node --test <dir>`) spuriously exits 1 on this host even when every real test passes.
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -33,7 +45,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 
-import { extractSystemInit, buildManifest, validateManifest } from '../lz-eval-baseline-manifest.mjs';
+import { extractSystemInit, buildManifest, validateManifest } from './lz-eval-baseline-manifest.mjs';
 
 // The real system/init key set, reduced to the fields the extractor reads. Shape confirmed against
 // eval/.cache/p22-baseline/{builtin,lz}/qB1-run1.stream.jsonl (both carry claude_code_version, and

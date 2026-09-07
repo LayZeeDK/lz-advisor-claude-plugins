@@ -28,11 +28,20 @@ jobs:
           --test-coverage-functions=100
           "plugins/lz-advisor/skills/**/*.test.mjs"
       # Eval-tree gate (Plan 18-02): the repo-level eval/ dev tooling has its own pinned
-      # devDependency (jstat). Restore it from the committed lockfile, then run the three
+      # devDependency (jstat). Restore it from the committed lockfile, then run the
       # eval-tree tests by EXPLICIT file path -- WITHOUT the plugin-tree --test-coverage-*
       # thresholds (those are calibrated to the plugin tree and would false-fail the eval
       # scripts). These steps live in the SAME `test` job so test-act's `act -j test` keeps
       # simulating the whole gate with no act-command change.
+      #
+      # The FILE form is load-bearing, not a style choice: on the maintainer's host
+      # `node --test <dir>` spuriously exits 1 even when every test passes, so a directory
+      # or shell-glob form would diverge between CI and local runs. Add each new test file
+      # here by name, in the same task that creates it.
+      #
+      # Plan 23-01 Task 3 appended the last three entries, closing the Phase-23 share of the
+      # recorded Phase-22 CI gap in which 106 of 108 Phase-22 tests never executed on push.
+      # The remaining unregistered Phase-22 files are out of scope for Phase 23.
       - name: Restore eval/ dev dependencies (jstat)
         run: cd eval && (npm ci || npm install)
       - name: Run eval-tree tests (explicit file form, no coverage thresholds)
@@ -42,3 +51,6 @@ jobs:
           eval/lz-eval-dataset.test.mjs
           eval/lz-eval-packaging-boundary.test.mjs
           eval/lz-eval-worker-contract.test.mjs
+          eval/lz-eval-baseline-manifest.test.mjs
+          eval/lz-eval-baseline-manifest-defects.test.mjs
+          eval/lz-eval-p23-citation-audit.test.mjs
