@@ -65,9 +65,17 @@ The two identifier sets overlap on 4 sources (`arxiv:2306.15595`, `arxiv:2309.00
 `arxiv:2306.15595` is present in the canonical identifier set of BOTH reports. The built-in cites
 that paper as a bare identifier in prose (`arXiv 2306.15595`); lz cites it as an inline URL
 (`https://arxiv.org/abs/2306.15595`). Both collapse to one identifier. That is the whole reason a
-cross-format count is possible at all, and it is pinned by a test that asserts both halves in the
-SAME assertion -- a test exercising only the lz form would pass on a format-sensitive
-implementation.
+cross-format count is possible at all -- a test exercising only the lz form would pass on a
+format-sensitive implementation.
+
+The single-assertion protection is on SYNTHETIC fixtures, and naming the right test matters here.
+`D-13: two tokens canonicalizing to the same identifier MERGE into one set entry` in
+`eval/lz-eval-p23-citation-audit.test.mjs` puts BOTH surface forms in one input text and asserts the
+whole identifier set deep-equals the single entry `['arxiv:2306.15595']`, so a format-sensitive
+implementation fails that one assertion. The REAL-report test above it,
+`D-13 UNIFICATION: arxiv:2306.15595 is in the canonical identifier set of BOTH q1 reports`, checks the
+two reports in two separate `assert.ok` calls and SKIPS entirely when gitignored `eval/.cache/` is
+absent -- so it is the fixture test, not the real-report test, that keeps this claim in a fresh clone.
 
 ---
 
@@ -135,7 +143,7 @@ proves that by running with the global fetch replaced by a throwing stub.
 
 | Outcome | Count (union of 26) | Meaning |
 |---|---|---|
-| resolvable | 23 | A request returned 2xx within every frozen limit |
+| resolvable | 23 | 2xx, headers inside the per-hop deadline and body inside the read cap |
 | oversize | 3 | 2xx, but the body exceeded the 262,144-byte read cap; reading STOPPED at the cap |
 | dead / timeout / scheme-blocked / redirect-limit / network-error | 0 | none observed |
 
@@ -153,9 +161,10 @@ nothing here consumes. **Link rot is expected -- every outcome above is true as 
 and of no other date.** Resolvability is also not a measure of source quality.
 
 Frozen limits in force during the run: http and https schemes only (checked before any request and
-re-validated on every redirect hop), at most 3 redirect hops, a 10,000 ms deadline, a
-262,144-byte read cap. No credentials, no cookies, no authorization header, no referrer. No
-response body was executed, persisted or returned.
+re-validated on every redirect hop), at most 3 redirect hops, a 10,000 ms deadline per redirect hop,
+applied to the response headers; the body read is bounded by the 262,144-byte cap rather than by time.
+No credentials, no cookies, no authorization header, no referrer. No response body was executed,
+persisted or returned.
 
 ---
 

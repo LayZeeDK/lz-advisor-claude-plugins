@@ -115,8 +115,10 @@ Plan 23-06 resolved on option A. `eval/lz-eval-p23-prereg.md` is UNCHANGED since
 which Plan 23-05 wrote; Plan 23-06 wrote no amendment because none was required, and no amendment is
 required by this record either. **Publishing this as branch (c) would claim a descope that never
 happened; publishing a descope as branch (b) would claim evidence the phase never gathered.** Neither
-substitution is available, and the direction that matters is mechanically forbidden: with no spike
-record on disk, no method was ever attempted, so branch (b) fails the structural check outright.
+substitution is available, and the direction that matters is mechanically forbidden: WERE there no spike
+record on disk, no method would have been attempted and branch (b) would fail the structural check
+outright. Here the spike record exists (`41b70f5`, `87ed59f`), which is what makes branch (b) available
+at all.
 
 ENV-05 itself is a separate disposition and stands as **branch (a) MEASURED**: its pre-registered
 method ran at full cost and the frozen predicates returned its planned reading, which is "did not

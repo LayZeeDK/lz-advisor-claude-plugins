@@ -136,7 +136,10 @@ required.
 
 ### The cost figure, and an ambiguity that is disclosed rather than resolved by preference
 
-**Published per-run cost: 55.30793200000004 USD, with an upper bound of 79.32 disclosed alongside it.**
+**Published per-run cost: 55.30793200000004 USD, with an upper bound of 79.32313525000006 USD disclosed
+alongside it.** Both figures are given here at full precision, which is the form that travels. Where
+`55.31` and `79.32` appear below they are ROUNDED CONVENIENCES for exactly these two values and for no
+others -- an upper bound in particular must never be quoted in a form lower than the figure itself.
 
 The two streams share ONE `session_id` (`ac91e3d6-3f8f-4ed3-ac81-7b8ca4a9e7dd`), so whether the resume's
 terminal figure is CUMULATIVE for the session or PER-INVOCATION decides between two very different
@@ -170,7 +173,8 @@ should be amended to name the per-session case is left to the maintainer; nothin
 
 **Either figure is retry-inflated and is NEVER a clean per-run cost comparison.** Retry history: 1
 resume cycle across 2 reset windows, and BOTH streams end `is_error: true`. Every later appearance of
-55.31 must carry that history AND the 79.32 upper bound (ENV-02 transparency prohibition).
+55.30793200000004 must carry that history AND the 79.32313525000006 upper bound, at that precision
+(ENV-02 transparency prohibition).
 
 ### The completeness check, run mechanically
 
@@ -216,7 +220,7 @@ completeness half failed. So the correct sentence is **"the spike failed on comp
 wrong to write "the ceiling was exceeded" or "it ran out of resumes", and both were checked against the
 predicate rather than asserted.
 
-What IS exhausted is the WINDOW axis alone. A further resume would be reset window 3:
+What IS spent is the WINDOW axis alone. A further resume would be reset window 3:
 
 ```
 spikeCeilingCheck({ resumeCycles: 1, resetWindows: 3 }) -> cleared: false

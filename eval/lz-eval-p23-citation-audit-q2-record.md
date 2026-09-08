@@ -122,9 +122,10 @@ fresh pair or NOT SET.
 3. **The q1 built-in capture cost is retry-inflated** across three resume cycles plus an earlier
    billing-limit failure; the run's enumerated total is 67.085261, not the 48.5367785 that names the cold
    stream alone.
-4. **Two prior sessions had partial sight of q1** before the ENV-04 metric was designed -- one read roughly
-   8.9 KB of report prose, one ran programmatic structure scans over both full reports. A bar set on data
-   the designer has seen measures the designer.
+4. **Two sessions had partial sight of q1 before and during the metric's design; a third, the executing
+   session, read the reports to run the audit.** Of the first two, one read roughly 8.9 KB of report prose
+   and one ran programmatic structure scans over both full reports. A bar set on data the designer has
+   seen measures the designer. That is three sessions in total with partial sight of q1.
 
 ### Why q1 and q2 cannot be paired, even unaveraged
 
@@ -225,7 +226,7 @@ report contributed none.
 
 | Outcome | Count (union of 12) | Meaning |
 |---|---|---|
-| resolvable | **12** | A request returned 2xx within every frozen limit |
+| resolvable | **12** | 2xx, headers inside the per-hop deadline and body inside the read cap |
 | dead / oversize / timeout / scheme-blocked / redirect-limit / network-error | 0 | none observed |
 
 Per-system rows without re-fetching, from the envelope's attribution map: **lz q2 -- 12 of 12 resolvable.
@@ -233,7 +234,8 @@ built-in q2 -- not-run, no identifiers to check, because no report exists.** An 
 systems would appear once in the fetch and in both rows; here only one system cited anything.
 
 Frozen controls in force, unchanged: http and https only, checked before any request and re-validated on
-every one of at most 3 redirect hops; a 10,000 ms deadline; a 262,144-byte read cap; no credentials, no
+every one of at most 3 redirect hops; a 10,000 ms deadline per redirect hop, applied to the response
+headers, with the body read bounded by the 262,144-byte cap rather than by time; no credentials, no
 cookies, no authorization header, no referrer. **No response body was returned, persisted or executed** --
 every record is exactly the five-field object `{identifier, requestUrl, finalUrl, status, outcome}`,
 asserted on all 12.
@@ -285,9 +287,13 @@ set or check the bar.
 
 The comparison rests on **canonical identifiers, never surface markers.** `arxiv:2306.15595` is in the
 canonical identifier set of BOTH q1 reports, from a bare identifier in prose on one side and an inline URL
-on the other, which is asserted by a test that pins both halves in one assertion. So no format-sensitive
-count could have moved the reading, and the built-in's markers are resolved through its bibliography to
-identifiers before any counting.
+on the other. The both-halves-in-one-assertion pin is on a SYNTHETIC fixture rather than on the two real
+reports: `D-13: two tokens canonicalizing to the same identifier MERGE into one set entry` in
+`eval/lz-eval-p23-citation-audit.test.mjs` puts both surface forms in one input text and deep-equals the
+identifier set to the single entry `['arxiv:2306.15595']`. The real-report test uses two separate
+`assert.ok` calls and skips when gitignored `eval/.cache/` is absent, so the fixture test is what keeps
+this claim in a fresh clone. So no format-sensitive count could have moved the reading, and the built-in's
+markers are resolved through its bibliography to identifiers before any counting.
 
 ## Cost is an operating observation only
 

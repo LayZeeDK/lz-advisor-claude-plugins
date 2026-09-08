@@ -273,8 +273,9 @@ their durable record.
 - It does **not** establish that the voter's error profile is asymmetric in general. Two errors versus
   zero at n = 20 per arm is an observation about this draw.
 - It is **not** purely open-book: 10 of 40 items were decided without retrieval.
-- It carries no pooled rate, accuracy figure, confidence interval or pass/fail verdict, and none may be
-  derived from it and presented as this reading's result.
+- It carries no pooled **accuracy** rate, no accuracy figure, no confidence interval and no pass/fail
+  verdict, and none may be derived from it and presented as this reading's result. (The pooled
+  RETRIEVAL count of 30 of 40 above is a descriptive count of tool use, not an accuracy rate.)
 
 ## Review record
 
