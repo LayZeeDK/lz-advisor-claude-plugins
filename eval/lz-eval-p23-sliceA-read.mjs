@@ -217,7 +217,8 @@ export function writeDispatchRecord({ dir, drawIndex, direction, sent } = {}) {
 //   - a dispatch record whose stored sha256 disagrees with its stored string throws;
 //   - a verdict outside the unrefuted|refuted|null enum throws.
 // A `null` verdict is admissible on disk (an abstain) and is carried through; sliceARead is what
-// refuses to read a pool with too few DEFINITE verdicts.
+// refuses to read a pool whose DEFINITE verdicts are too few, too many, or unbalanced across the two
+// directions.
 //
 // Returns pairs sorted by direction then drawIndex, each
 // { direction, drawIndex, verdict, sent, sha256 }.
@@ -330,8 +331,11 @@ export function readSliceAVerdicts({ dispatchDir, verdictDir } = {}) {
 // direction by construction, so a disagreement means the join is wrong and reading on would silently
 // mis-score.
 //
-// A pool with fewer than DRAW.N_PER_DIRECTION * 2 DEFINITE verdicts is a ContractError, not a partial
-// read: a smaller-n tally looks exactly like a complete one and nothing downstream would know.
+// A pool that does not hold EXACTLY DRAW.N_PER_DIRECTION definite verdicts IN EACH DIRECTION is a
+// ContractError, not a partial read: a smaller-n tally looks exactly like a complete one and nothing
+// downstream would know, a larger one is a duplicate-verdict artifact, and a LOPSIDED one publishes an
+// empty per-direction row beside a complete-looking n. Both floors are checked, not just the total --
+// the total was the whole defect: 40 unrefuted plus 0 refuted satisfied it.
 //
 // Returns EXACTLY { unrefuted, refuted, n, drawSeed, provisionalLimits } -- see the module header for
 // why the absence of a pooled field is asserted as an exact key set rather than as named absences.
@@ -350,16 +354,48 @@ export function sliceARead({ pairs, gold, drawSeed } = {}) {
   const required = DRAW.N_PER_DIRECTION * 2;
   const definite = pairs.filter((p) => DIRECTIONS.includes(p.verdict));
 
-  if (definite.length < required) {
+  // EXACTLY, not at-least. `>=` let a pool LARGER than the pre-registered 40 through, and a larger
+  // pool is never a bigger sample here -- it is a duplicate-verdict artifact of a partial re-roll.
+  if (definite.length !== required) {
     throw new ContractError(
-      'sliceARead requires ' +
+      'sliceARead requires EXACTLY ' +
         required +
         ' definite verdicts and found ' +
         definite.length +
         ' (an incomplete pool is not a partial read -- a smaller-n tally is indistinguishable from a ' +
-        'complete one downstream)',
+        'complete one downstream -- and a LARGER pool is a duplicate-verdict artifact, not a bigger ' +
+        'sample: n is pre-registered)',
       'sliceARead',
     );
+  }
+
+  // The TOTAL says nothing about BALANCE. D-08's whole argument is that the per-direction split is what
+  // makes each direction's row informative, and drawBalanced enforces the split at DRAW time -- so the
+  // READ has to re-check it rather than assume it. Without this, 40 unrefuted and 0 refuted satisfies
+  // the total and publishes `refuted: {tn:0, fp:0}` -- an EMPTY row -- beside a complete-looking n=40.
+  // tallyPerDirection cannot catch that: it splits whatever cells it is given and has no floor.
+  const perDirection = { unrefuted: 0, refuted: 0 };
+
+  for (const pair of definite) {
+    if (DIRECTIONS.includes(pair.direction)) {
+      perDirection[pair.direction] += 1;
+    }
+  }
+
+  for (const direction of DIRECTIONS) {
+    if (perDirection[direction] !== DRAW.N_PER_DIRECTION) {
+      throw new ContractError(
+        'sliceARead requires EXACTLY ' +
+          DRAW.N_PER_DIRECTION +
+          ' definite verdicts in direction ' +
+          direction +
+          ' and found ' +
+          perDirection[direction] +
+          ' (D-08: an unbalanced read leaves a direction uninformative while the tally still looks ' +
+          'complete)',
+        'sliceARead',
+      );
+    }
   }
 
   const goldByKey = new Map();

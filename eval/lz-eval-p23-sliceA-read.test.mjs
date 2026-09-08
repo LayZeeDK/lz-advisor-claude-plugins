@@ -25,6 +25,9 @@
 //   - sliceARead carries the three PROVISIONAL limit strings, the first two owned by the frozen gold
 //     module.
 //   - an incomplete pool (fewer than 40 definite verdicts) is a ContractError, not a partial read.
+//   - n is PINNED at exactly 40: a 41-verdict pool is refused too, not read as a bigger sample.
+//   - the read re-checks BALANCE, not just the total: an all-one-direction pool of 40 is refused
+//     (23-REVIEW.md CR-01 -- accepting it published an EMPTY per-direction row as a measured one).
 //
 // DISCRIMINATION (the invert-the-fix proofs, required by the plan):
 //   - THE T-22-15 SUBSTITUTION DEFECT. A claim containing $&, $`, $' or $$ must round-trip VERBATIM.
@@ -407,6 +410,69 @@ test('ENV-03 DISCRIMINATION: an INCOMPLETE pool (fewer than 40 definite verdicts
       assert.ok(err instanceof ContractError);
       assert.equal(err.file, 'sliceARead');
       assert.match(err.message, new RegExp(String(N_TOTAL)), 'the message names the required count');
+
+      return true;
+    },
+  );
+});
+
+test('CR-01 DISCRIMINATION: an ALL-ONE-DIRECTION pool of 40 definite verdicts is refused -- a TOTAL of 40 is not a BALANCED 20/20', () => {
+  // DISCRIMINATION: the guard was a TOTAL (`definite.length < 40`) with nothing checking the split, so
+  // this pool was ACCEPTED as a complete read and published `refuted: {tn:0, fp:0}` -- an EMPTY row --
+  // beside a complete-looking n=40. drawBalanced enforces the split at DRAW time; the READ has to
+  // re-check it or D-08's per-direction argument says nothing (23-REVIEW.md CR-01).
+  const dirs = tempDirs();
+  const gold = [];
+
+  for (let i = 0; i < N_TOTAL; i += 1) {
+    const sent = buildDispatchString({
+      claim: 'A one-directional report-shaped claim at pool position ' + i + ' under test.',
+      claimDate: '2020-06-15',
+    });
+    writeDispatchRecord({ dir: dirs.dispatchDir, drawIndex: i, direction: 'unrefuted', sent });
+    writeVerdict(dirs.verdictDir, 'unrefuted', i, 'unrefuted');
+    gold.push({ direction: 'unrefuted', drawIndex: i, label: 'unrefuted' });
+  }
+
+  const pairs = readSliceAVerdicts({ dispatchDir: dirs.dispatchDir, verdictDir: dirs.verdictDir });
+  assert.equal(pairs.length, N_TOTAL, 'the fixture must really hold 40 definite verdicts');
+  assert.equal(pairs.filter((p) => p.direction === 'refuted').length, 0, 'and every one must be unrefuted');
+
+  assert.throws(
+    () => sliceARead({ pairs, gold, drawSeed: DRAW.SEED }),
+    (err) => {
+      assert.ok(err instanceof ContractError);
+      assert.equal(err.file, 'sliceARead');
+      assert.match(
+        err.message,
+        /direction unrefuted and found 40/,
+        'the message names the direction that is out of balance and the count it found there',
+      );
+      assert.match(err.message, /unbalanced/, 'and states why an unbalanced read is refused (D-08)');
+
+      return true;
+    },
+  );
+});
+
+test('CR-01: n is PINNED at 40 -- a pool of 41 definite verdicts is refused, not read as a bigger sample', () => {
+  // The guard was `>=`, so any pool at or above 40 passed the count check outright. A pool above 40 is
+  // a duplicate-verdict artifact of a partial re-roll, never a larger sample: 40 is pre-registered.
+  // A 41-pool is unbalanced by construction, so the per-direction floors above would also refuse it --
+  // what this case pins is that the n-pin is the guard that SPEAKS, naming the pre-registered n rather
+  // than reporting a lopsided split. Under `>=` the assertion below fails.
+  const dirs = tempDirs();
+  const gold = materializeRun({ ...dirs, verdictFor: ({ direction }) => direction });
+  const pairs = readSliceAVerdicts({ dispatchDir: dirs.dispatchDir, verdictDir: dirs.verdictDir });
+  const inflated = pairs.concat([{ ...pairs[0], verdict: 'refuted' }]);
+
+  assert.equal(inflated.length, N_TOTAL + 1, 'the fixture must really hold 41');
+  assert.throws(
+    () => sliceARead({ pairs: inflated, gold, drawSeed: DRAW.SEED }),
+    (err) => {
+      assert.ok(err instanceof ContractError);
+      assert.equal(err.file, 'sliceARead');
+      assert.match(err.message, /EXACTLY 40/, 'the message pins n rather than naming a floor');
 
       return true;
     },
