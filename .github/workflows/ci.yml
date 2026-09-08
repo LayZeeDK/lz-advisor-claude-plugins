@@ -51,6 +51,9 @@ jobs:
       # tests, deliberately deviating from the same-task rule above. The ENV-01 freeze commit had to
       # contain exactly three files so its timestamp reads unambiguously as the pre-registration
       # timestamp of record; adding CI churn to it would have muddied what was frozen and when.
+      #
+      # The Phase-23 gap closure appended lz-eval-p23-retain.test.mjs -- the T-23-07 retention path
+      # control, whose co-test touches no filesystem path at all and so needs nothing on the runner.
       - name: Restore eval/ dev dependencies (jstat)
         run: cd eval && (npm ci || npm install)
       - name: Run eval-tree tests (explicit file form, no coverage thresholds)
@@ -68,3 +71,4 @@ jobs:
           eval/lz-eval-p23-sliceA-read.test.mjs
           eval/lz-eval-p23-verify-complete.test.mjs
           eval/lz-eval-p23-prereg.test.mjs
+          eval/lz-eval-p23-retain.test.mjs
