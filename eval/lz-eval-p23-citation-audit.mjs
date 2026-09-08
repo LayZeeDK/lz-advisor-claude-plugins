@@ -279,7 +279,12 @@ function normalizeReportText(reportText) {
 // Strip fenced code sections BEFORE any matching, so a URL inside a fence is not a citation
 // [CITED: arXiv 2605.06635 s3.2 -- "Code block removal strips fenced code sections to prevent false
 // citation matches"].
-function stripFencedCode(text) {
+//
+// EXPORTED so lz-eval-p23-verify-complete.mjs can REUSE it rather than carry a second implementation
+// (23-REVIEW.md CR-04). Its ledger-heading scan had no fence handling at all, so a heading quoted
+// inside a fence GOVERNED the verdict and demoted the real ledger to `duplicateLedgerHeadings`. The two
+// modules must not diverge on what a fence is, which is why this is a shared export and not a copy.
+export function stripFencedCode(text) {
   const kept = [];
   let fenceChar = null;
 

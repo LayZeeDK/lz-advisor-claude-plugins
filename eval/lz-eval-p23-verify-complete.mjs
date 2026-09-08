@@ -45,6 +45,12 @@ import { fileURLToPath } from 'node:url';
 // one-directional, never the reverse).
 import { ContractError } from '../plugins/lz-advisor/skills/lz-deep-research/scripts/lz-deep-research-aggregate.mjs';
 
+// The SIBLING module's fence stripper, REUSED rather than reimplemented (23-REVIEW.md CR-04). Both
+// modules were written in the same wave and must not diverge on what a fence is; citation-audit.mjs's
+// version is the one already proven by its own co-test. This is an in-tree eval -> eval import and adds
+// no package and no network call.
+import { stripFencedCode } from './lz-eval-p23-citation-audit.mjs';
+
 // ---------------------------------------------------------------------------
 // LEDGER_HEADING_RE: the built-in's verification-ledger heading, capturing its two declared counts.
 // Observed form (eval/.cache/p22-baseline/builtin/qB1-run1.report.md:80):
@@ -109,9 +115,14 @@ function assertNonNegativeInteger(name, v, where) {
 // malformed report is a FINDING, not a crash a caller could mistake for a pass. Only a malformed READ
 // -- a non-string argument -- throws.
 //
+// FENCED CODE IS STRIPPED FIRST, reusing the sibling citation-audit module's `stripFencedCode`. A
+// heading quoted inside a fence is an EXAMPLE, not the ledger, and must not be scanned.
+//
 // When a report carries TWO ledger headings the FIRST one governs and the second is counted in
 // `duplicateLedgerHeadings`, so the ambiguity is surfaced rather than resolved silently. A duplicate
-// alone does not fail completeness; it is reported for the reader to weigh.
+// alone does not fail completeness; it is reported for the reader to weigh. That leniency is exactly
+// why the fence strip above is required rather than optional: without it a fenced example heading
+// governed and the REAL ledger became the "duplicate" that does not fail anything.
 // ---------------------------------------------------------------------------
 export function isVerificationComplete(reportText) {
   if (typeof reportText !== 'string') {
@@ -121,7 +132,13 @@ export function isVerificationComplete(reportText) {
     );
   }
 
-  const lines = reportText.split(/\r?\n/);
+  // FENCED CODE IS STRIPPED BEFORE THE SCAN (23-REVIEW.md CR-04). A /deep-research report that shows
+  // its own output format in a fenced block -- a common thing for a report to do -- put an example
+  // ledger heading BEFORE the real one, and since the FIRST match governs, the predicate certified the
+  // illustrative example as the verification ledger and demoted the real ledger to
+  // `duplicateLedgerHeadings`, which by design does not fail completeness. Every count in the published
+  // record would then have described the example.
+  const lines = stripFencedCode(reportText).split(/\r?\n/);
   let headingLine = -1;
   let declaredN = null;
   let confirmedN = null;

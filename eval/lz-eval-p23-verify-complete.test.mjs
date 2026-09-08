@@ -28,6 +28,9 @@
 //     complete false rather than a coerced integer.
 //   - a report carrying TWO ledger headings uses the FIRST and reports duplicateLedgerHeadings 1, so
 //     the ambiguity is surfaced rather than resolved silently.
+//   - a ledger heading QUOTED INSIDE a fenced block does not govern (23-REVIEW.md CR-04): fenced code
+//     is stripped first, reusing the sibling citation-audit module's proven stripFencedCode.
+//   - that fence strip does not disturb CRLF handling.
 //   - spikeCeilingCheck clears at 3 resume cycles / 2 reset windows and at any lower pair.
 //   - spikeCeilingCheck throws a ContractError on a non-integer or negative argument.
 //   - spikeCleared requires BOTH halves and its returned object names which half failed, carrying the
@@ -250,6 +253,66 @@ test('ENV-05: TWO ledger headings -- the FIRST governs and duplicateLedgerHeadin
   assert.equal(result.confirmedN, 25);
   assert.equal(result.tableRows, 25, 'and the FIRST heading\'s table is the one counted');
   assert.equal(result.complete, true, 'a duplicate heading is reported but does not by itself fail completeness');
+});
+
+test('CR-04 DISCRIMINATION: a ledger heading QUOTED INSIDE a fenced block does not govern -- the real ledger below it does', () => {
+  // DISCRIMINATION: the heading scan walked every line with NO fence handling, and the FIRST match
+  // wins. A report that shows its own output format in a fenced block therefore put an EXAMPLE heading
+  // ahead of the real one, and the predicate certified the example as the verification ledger while
+  // demoting the real 3/3 ledger to `duplicateLedgerHeadings` -- which by design does not fail
+  // completeness. Measured before the fix: complete=true declaredN=2 tableRows=2 dup=1, i.e. every
+  // count in the published record described the EXAMPLE (23-REVIEW.md CR-04).
+  const text = [
+    '# A report that documents its own format',
+    '',
+    '## Output format',
+    '',
+    'The ledger section looks like this:',
+    '',
+    '```markdown',
+    '## Complete verification ledger (2/2 confirmed)',
+    '',
+    '| # | Claim | Source | Vote |',
+    '|---|---|---|---|',
+    '| C1 | An illustrative claim | [1] | 3-0 |',
+    '| C2 | A second illustrative claim | [1] | 3-0 |',
+    '```',
+    '',
+    '## Complete verification ledger (3/3 confirmed)',
+    '',
+    '| # | Claim | Source | Vote |',
+    '|---|---|---|---|',
+    '| C1 | A real claim | [1] | 3-0 |',
+    '| C2 | A second real claim | [1] | 3-0 |',
+    '| C3 | A third real claim | [1] | 3-0 |',
+    '',
+    '## Sources',
+    '',
+  ].join('\n');
+  const result = isVerificationComplete(text);
+
+  assert.equal(result.declaredN, 3, 'the REAL ledger governs, not the fenced example');
+  assert.equal(result.confirmedN, 3);
+  assert.equal(result.tableRows, 3, 'and the real ledger table is the one counted');
+  assert.equal(result.duplicateLedgerHeadings, 0, 'a fenced example is not a duplicate heading at all');
+  assert.equal(result.complete, true);
+});
+
+test('CR-04: the fence strip preserves CRLF handling -- a CRLF report parses identically to LF', () => {
+  // stripFencedCode splits on \n and rejoins with \n, so the \r survives to the /\r?\n/ split here.
+  // Pinned because CR-04 inserted a second line-splitting stage into this path.
+  const lf = syntheticReport({ heading: '## Complete verification ledger (25/25 confirmed)', rows: 25 });
+  const withFence = lf.replace(
+    '## Direct answer',
+    '## Direct answer\n\n```text\n## Complete verification ledger (1/1 confirmed)\n```',
+  );
+
+  assert.deepEqual(
+    isVerificationComplete(withFence.replace(/\n/g, '\r\n')),
+    isVerificationComplete(withFence),
+    'CRLF and LF must produce the same result',
+  );
+  assert.equal(isVerificationComplete(withFence.replace(/\n/g, '\r\n')).declaredN, 25);
 });
 
 test('ENV-05: a non-string report is a ContractError (fail-closed; a malformed READ is not a malformed REPORT)', () => {
