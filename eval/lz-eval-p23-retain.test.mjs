@@ -1,13 +1,17 @@
 // lz-eval-p23-retain.test.mjs
 //
-// Co-test for the T-23-07 retention path control (Phase 23 gap closure; NO MODEL SPEND, NO NETWORK, NO
-// FILESYSTEM ACCESS OF ANY KIND).
+// Co-test for the T-23-07 retention path control (Phase 23 gap closure; NO MODEL SPEND, NO NETWORK).
 //
-// Not one case here creates, reads, copies or removes a path. `retainRunDirectory` is pure validation
-// and `path.resolve` works on paths that do not exist, so every case runs against composed strings
-// under os.tmpdir() that are never realized on disk. That matters more than usual in this tree:
-// eval/.cache/ holds irreplaceable retained capture evidence with no backup (T-23-06), and a co-test
-// for the control guarding it must not be able to touch it even when a case fails.
+// Every case but ONE runs against composed strings under os.tmpdir() that are never realized on disk:
+// `retainRunDirectory` is validation and `path.resolve` works on paths that do not exist. That matters
+// more than usual in this tree -- eval/.cache/ holds irreplaceable retained capture evidence with no
+// backup (T-23-06), and a co-test for the control guarding it must not be able to touch it even when a
+// case fails.
+//
+// THE ONE EXCEPTION is DISCRIMINATION PROOF 3 (23-REVIEW.md CR-07), which needs a destination that
+// really exists in order to prove the module refuses it. It creates one under its OWN mkdtempSync root,
+// passes that root as `cacheRoot` so no composed path can reach eval/.cache/, asserts the refused
+// evidence is still byte-identical afterwards, and removes only its own temp tree.
 //
 // Asserted behaviors (one named test each, never a tautology):
 //   - RUN_ID_RE and RETAIN_CACHE_ROOT are exported and Object.frozen.
@@ -17,6 +21,9 @@
 //   - DISCRIMINATION PROOF 1 (traversal): a `..`-bearing run-id throws, as do the other escape shapes.
 //   - DISCRIMINATION PROOF 2 (sibling prefix): a destRoot naming a SIBLING whose name begins with the
 //     cache root's name throws.
+//   - DISCRIMINATION PROOF 3 (occupied destination, 23-REVIEW.md CR-07): a destination that already
+//     exists throws, while a sibling run-id under the same destRoot is still admitted -- the guard
+//     refuses an occupied DESTINATION, not an occupied destRoot.
 //   - a destRoot fully outside the root, and the root itself as destRoot, are each handled.
 //   - a missing / non-string / empty runId, destRoot or cacheRoot is a ContractError.
 //
@@ -36,6 +43,7 @@
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 
@@ -152,6 +160,57 @@ test('a destRoot that climbs out with .. is refused after resolution', () => {
     () => retain(REALIZED_RUN_ID, path.join(CACHE_ROOT, '..', 'p23-baseline-evil')),
     (err) => err instanceof ContractError && /outside the retention cache root/.test(err.message),
   );
+});
+
+// ---------------------------------------------------------------------------
+// DISCRIMINATION PROOF 3 -- an OCCUPIED destination (23-REVIEW.md CR-07). Checks 1 and 2 both concern
+// WHERE the destination is; neither notices that retained evidence is already sitting there. This is
+// the only case in the file that realizes a path on disk, and it does so under a fresh mkdtemp root --
+// NEVER inside eval/.cache/, whose contents are irreplaceable and have no backup (T-23-06).
+// ---------------------------------------------------------------------------
+test('DISCRIMINATION: a destination that ALREADY EXISTS is refused -- the cp -r contract would MERGE into it', () => {
+  // DISCRIMINATION: the module returned a destination with no existence check at all, and the
+  // documented CLI contract pipes that path straight into `cp -r`, which merges into an existing
+  // directory and overwrites same-named files. A re-run with the same run-id, or a run-id an operator
+  // reuses after a failed first attempt, therefore aimed a merge at retained capture evidence. The
+  // pattern applied here is writeDispatchRecord's, from the same wave.
+  const realRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'lz-eval-p23-retain-occupied-'));
+
+  try {
+    const destRoot = path.join(realRoot, 'lz', 'q2');
+    const occupied = path.join(destRoot, REALIZED_RUN_ID);
+    fs.mkdirSync(occupied, { recursive: true });
+    fs.writeFileSync(path.join(occupied, 'q2-run1.report.md'), 'retained evidence already here\n', 'utf8');
+
+    assert.throws(
+      () => retainRunDirectory({ runId: REALIZED_RUN_ID, destRoot, cacheRoot: realRoot }),
+      (err) => {
+        assert.ok(err instanceof ContractError);
+        assert.match(err.message, /already exists/, 'the message names the occupied destination');
+        assert.match(err.message, /T-23-06/, 'and cites the no-backup record');
+
+        return true;
+      },
+    );
+
+    // And the SIBLING run-id under the same destRoot is still admitted, so the guard refuses an
+    // occupied destination rather than an occupied destRoot.
+    const fresh = retainRunDirectory({
+      runId: '20260908-105102-a-second-run',
+      destRoot,
+      cacheRoot: realRoot,
+    });
+    assert.equal(fresh.dest, path.join(destRoot, '20260908-105102-a-second-run'));
+
+    // The refusal is READ-ONLY: the evidence that was there is still there, byte for byte.
+    assert.equal(
+      fs.readFileSync(path.join(occupied, 'q2-run1.report.md'), 'utf8'),
+      'retained evidence already here\n',
+      'the guard must not touch what it refused to merge into',
+    );
+  } finally {
+    fs.rmSync(realRoot, { recursive: true, force: true });
+  }
 });
 
 test('a missing, non-string or empty argument is a ContractError', () => {

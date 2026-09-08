@@ -10,13 +10,16 @@
 // re-inspected, and the next operator repeating the retention gets the same unguarded composition. The
 // realized Phase-23 outcome was verified clean; the exposure closed here is PROSPECTIVE.
 //
-// PURE VALIDATION, BY CONSTRUCTION. Nothing in this file reads, writes, copies, moves or deletes a
-// single byte -- it resolves a destination and either returns it or throws. Retained capture evidence
-// under eval/.cache/ is irreplaceable and has no backup (T-23-06), so the control that guards the write
-// deliberately does not perform the write: the caller copies, using the destination this module
-// returned. The thin CLI at the bottom prints that destination and nothing else.
+// PURE VALIDATION, AND WRITE-FREE BY CONSTRUCTION. Nothing in this file writes, copies, moves or
+// deletes a single byte -- it resolves a destination and either returns it or throws. It does perform
+// ONE read, `fs.existsSync` on the composed destination (check 3 below), because a control that hands a
+// path to `cp -r` without checking whether something is already there is not guarding the write it
+// exists to guard. Retained capture evidence under eval/.cache/ is irreplaceable and has no backup
+// (T-23-06), so the control that guards the write deliberately does not perform the write: the caller
+// copies, using the destination this module returned. The thin CLI at the bottom prints that
+// destination and nothing else.
 //
-// THE TWO CHECKS, AND WHY BOTH ARE NEEDED:
+// THE THREE CHECKS, AND WHY EACH IS NEEDED:
 //   1. RUN_ID_RE, frozen. The run-id is untrusted because a model authored it. The pattern admits no
 //      path separator, no dot and no drive letter, so a `..`-bearing or absolute run-id is rejected
 //      before it can reach path composition at all.
@@ -24,8 +27,13 @@
 //      a bare `resolved.startsWith(root)` admits a SIBLING whose name merely begins with the root's
 //      name -- `eval/.cache-evil` passes a bare prefix test against `eval/.cache` while sitting
 //      entirely outside it. The co-test proves that case by weakening the guard.
+//   3. Destination non-existence, by `existsSync`. Checks 1 and 2 both concern WHERE the destination
+//      is; neither says anything about whether retained evidence is already sitting there. `cp -r`
+//      merges into an existing directory and overwrites same-named files, so a reused run-id turns the
+//      documented contract into a silent overwrite of irreplaceable evidence.
 // Check 1 alone would leave the destRoot argument unguarded; check 2 alone would admit a run-id that
-// resolved back inside the root by a longer route. Each is asserted separately.
+// resolved back inside the root by a longer route; checks 1 and 2 together still hand back an occupied
+// destination. Each is asserted separately.
 //
 // DOCUMENTED LIMITATION: containment is checked on the LEXICALLY resolved path. A pre-existing symlink
 // inside the cache root that points elsewhere would still redirect a caller's write, because detecting
@@ -38,6 +46,7 @@
 //
 // This source contains no literal byte-order mark and is strictly ASCII (per CLAUDE.md); LF endings.
 
+import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -105,9 +114,10 @@ function assertInside(root, candidate, label, where) {
 // retainRunDirectory({ runId, destRoot, cacheRoot }) -- validate a retention destination and return it.
 //
 // Throws a ContractError when `runId` does not match the frozen pattern, when `destRoot` resolves
-// outside the cache root, or when the composed destination does. Returns
-// { runId, cacheRoot, destRoot, dest } with every path absolute and resolved; `dest` is where the
-// caller may then copy `.lz-research/<runId>/`. This function itself touches no file.
+// outside the cache root, when the composed destination does, or when the composed destination ALREADY
+// EXISTS. Returns { runId, cacheRoot, destRoot, dest } with every path absolute and resolved; `dest` is
+// where the caller may then copy `.lz-research/<runId>/`. This function itself writes no file and reads
+// only the existence of `dest`.
 //
 // `cacheRoot` is injectable ONLY so the co-test can prove the sibling-prefix case against a scratch
 // root; production callers pass two arguments and get the frozen root.
@@ -134,6 +144,29 @@ export function retainRunDirectory({ runId, destRoot, cacheRoot = RETAIN_CACHE_R
   const root = path.resolve(cacheRoot);
   const resolvedDestRoot = assertInside(root, path.resolve(destRoot), 'destRoot', where);
   const dest = assertInside(root, path.resolve(resolvedDestRoot, runId), 'destination', where);
+
+  // CHECK 3: THE DESTINATION MUST NOT ALREADY EXIST (23-REVIEW.md CR-07). This module returned a path
+  // with no existence check at all, and the documented CLI contract hands that path straight to
+  // `cp -r`, which MERGES into an existing directory and overwrites same-named files. A re-run with the
+  // same run-id -- or a run-id an operator reuses after a failed first attempt -- therefore aimed a
+  // merge at a tree the project records as irreplaceable with no backup (T-23-06). The pattern to apply
+  // was already in the tree: writeDispatchRecord (sliceA-read.mjs) refuses to overwrite for exactly
+  // this reason, in the same wave, with the same ContractError idiom.
+  //
+  // `existsSync` READS. It writes, copies, moves and deletes nothing, so the module's write-free
+  // property is intact -- see the header, which is now stated as write-free rather than as touching no
+  // byte at all.
+  if (fs.existsSync(dest)) {
+    throw new ContractError(
+      where +
+        ' refuses a destination that already exists: ' +
+        JSON.stringify(dest) +
+        ' (retained capture evidence under eval/.cache/ is irreplaceable and has no backup, T-23-06; ' +
+        'the documented `cp -r` contract MERGES into an existing directory, so a repeat retention must ' +
+        'be a new run-id, never a merge into an existing one)',
+      where,
+    );
+  }
 
   return { runId, cacheRoot: root, destRoot: resolvedDestRoot, dest };
 }
