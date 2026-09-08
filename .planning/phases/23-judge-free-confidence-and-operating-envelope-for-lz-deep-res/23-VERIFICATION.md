@@ -366,3 +366,89 @@ excuse anything here.
 
 _Verified: 2026-09-08_
 _Verifier: Claude (gsd-verifier)_
+
+---
+
+## MAINTAINER DISPOSITIONS -- 2026-09-08
+
+Recorded after the verification above. **The verifier's verdict text is unaltered** -- it was reached at
+its own HEAD and stands as written. This section records dispositions on its `human_verification` items
+only.
+
+Of the seven human items the verifier raised, **five were content reviews now discharged** by an
+independent ENV-08 review (WINDOWS rows 1-5 marked fixed) whose findings were applied at `e3a840a`
+and `f778b13`. That review failed one record outright and held four more pending named edits, so it
+was a content review rather than a presence check. The two remaining items are dispositioned here.
+
+### ACCEPTED -- the WINDOWS row 7 review-before-use ordering failure
+
+**Disposition: accepted as a recorded historical defect. Waived in the ledger with its reason.**
+
+The finding is real and measured: the review record for `eval/lz-eval-p23-citation-audit.mjs` and
+`eval/lz-eval-p23-resolvability.mjs` (`1bdb1ee`) is NOT a git ancestor of their first-use commit
+`3189239`, so it does not count as before-use under the ENV-08 boundary rule. The verifier confirmed it
+in both directions: `1bdb1ee -> 3189239` exits 1, the reverse exits 0.
+
+**Why accepted rather than repaired.** The alternative the verifier offered -- re-review the two modules
+under a commit that precedes their next use -- cannot repair what was recorded. No later action makes
+`1bdb1ee` an ancestor of `3189239`; re-reviewing now would establish ordering for FUTURE use while the
+recorded breach concerns PAST use. Repair is not available, so the honest options are to record it or to
+obscure it.
+
+**Why accepting is not a loss of protection.** The substantive review has since been delivered. The
+independent ENV-08 content review read both modules and both co-tests and found three real defects in
+what they had claimed:
+
+1. the 10000 ms deadline described as a total when the race covers response headers PER HOP, with the
+   body bounded in bytes rather than in time;
+2. the both-forms unification claim pointing at the real-report test, which uses two separate
+   assertions and skips without the cache, when only the synthetic fixture test keeps the claim in a
+   fresh clone;
+3. a label guard whose regex passed only on inflection mismatch and would NOT have caught an
+   affirmative relabel to a support claim -- the exact substitution it exists to prevent.
+
+All three are fixed, and the guard fix is discrimination-proven. So the protection review-before-use
+exists to provide was provided -- late, and now recorded as late. That is a weaker position than having
+reviewed in order, and it is stated as such rather than smoothed over.
+
+**What a reader should take from it.** The ENV-08 ancestry rule caught its own authors. A control that
+fires on the people who wrote it is evidence it is real rather than decorative, and the phase records
+the hit instead of quietly re-dating the review.
+
+### ACCEPTED -- the envelope's length overshoot
+
+**Disposition: the recorded deviation is accepted. No disclosure is cut.**
+
+`23-ENVELOPE.md` is 190 lines / 2627 words against its own criterion of one page, at most two. Plan
+23-09 recorded this as Deviation 1 rather than concealing it, having compressed twice -- 3031 to 2734 to
+2627 words -- without dropping any mandated disclosure.
+
+**Why accepted.** The criterion and the mandated content list are mutually unsatisfiable: the section
+list the same requirement imposes -- what was measured, what was not established and why, each
+requirement with its branch, the operating observations with their retry history, the carried
+limitations, and the git-ancestry proof -- cannot be stated in one page without removing one of them.
+Cutting a mandated disclosure to reach a page target inverts the priority: the length target serves
+readability, the disclosures serve honesty, and where they conflict the disclosure wins.
+
+The correct remedy is to amend the criterion in a later phase so it matches the content it mandates,
+not to delete disclosures now. Recorded as a criterion defect, not an execution failure.
+
+### STILL OPEN -- WINDOWS row 6, the envelope usefulness read
+
+**Disposition: OPEN. Not delegated and not self-answered.**
+
+Row 6 asks for a maintainer read of `23-ENVELOPE.md` against the four verified prior-art formats in
+`23-RESEARCH.md` Pattern 6 -- the Model Facts label, Evaluation Cards, STARD items 26/27, and
+model/system cards -- deciding whether the warnings are specific rather than generic and whether the
+document is useful rather than boilerplate.
+
+The STRUCTURAL half is checkable and passes: eight non-empty sections, one `Resolved branch:` line, and
+a dedicated NOT ESTABLISHED section, which is what STARD items 26/27 exist to require. The section
+budget is `Warnings` 50 lines / 634 words and `NOT ESTABLISHED, and why` 27 lines / 584 words, so the
+two disclosure sections carry 46 percent of the document's words.
+
+**The judgement itself is not delegable.** Whether the document would actually help someone deciding
+whether to trust this skill is a usefulness property, and no structural check reaches it. The
+orchestrating session directed the work being judged, so its own read is the weakest available
+evidence -- which is the reason this row exists. It stays open, and `/gsd-extract-learnings` stays held
+behind it under the house rule that extraction runs only once the phase is genuinely done.
