@@ -1,10 +1,18 @@
 ---
 phase: 23-judge-free-confidence-and-operating-envelope-for-lz-deep-res
-verdict: OPEN_THREATS
-threats_open: 1
-threats_closed: 50
+verdict: SECURED
+verdict_as_audited: OPEN_THREATS
+threats_open: 0
+threats_open_as_audited: 1
+threats_closed: 51
 threats_unreachable: 3
 threats_total: 54
+blocker_closed_at: 8aaf967
+blocker_closed_note: >
+  The audit's verdict at HEAD 073d0f7 was OPEN_THREATS on T-23-07. That blocker was
+  remediated at 8aaf967 exactly as the auditor specified, and the closure was verified
+  by the orchestrator against that specification. The auditor did NOT re-audit; see
+  the REMEDIATION section for what was checked and what that does and does not prove.
 asvs_level: 1
 block_on: high
 audited_at_head: 073d0f74bb1509227fb378cb87990e7b211d2c0a
@@ -205,8 +213,61 @@ was read and no Phase-22 figure was used to authorize or excuse anything.
 **Nothing escalated.** The register was complete enough to verify every entry by disposition; no
 threat was blocked from verification.
 
+## REMEDIATION -- T-23-07 closed 2026-09-08 at `8aaf967`
+
+Recorded after the audit. **The audit's own verdict text above is unaltered** -- it was true at HEAD
+`073d0f7` and stays as the auditor wrote it.
+
+`eval/lz-eval-p23-retain.mjs` now implements both halves of the control the record had only claimed:
+
+- `RUN_ID_RE = Object.freeze(/^[0-9]{8}-[0-9]{6}-[a-z0-9-]+$/)` tested BEFORE any path composition;
+- `assertInside(root, candidate)` in ONE place, applied to both `destRoot` and the composed
+  destination, admitting a candidate only when it IS the root or sits under `root + path.sep`.
+
+The module is **write-free by design** -- it reads, writes, copies, moves and deletes nothing, which
+is what makes "the control cannot touch the evidence" airtight rather than argued. A guarded CLI
+returns the validated destination so a shell step gets the control without the module owning data.
+
+**Both discrimination proofs were RUN, not asserted**, with failure output recorded in the executor's
+report:
+
+| Proof | Guard weakened to | Result |
+|---|---|---|
+| traversal | `RUN_ID_RE` -> `/^.+$/` | 8 pass / 2 fail, exit 1 -- "Missing expected exception" on the `..`-bearing run-id |
+| sibling prefix | bare `candidate.startsWith(root)` | 8 pass / 2 fail, exit 1 -- a sibling root whose NAME merely prefixes the cache root is wrongly admitted |
+
+Both guards restored; the hazard also reproduces against the real frozen root via the CLI, which
+refuses `eval/.cache-evil/lz`. Co-test 10/10; `eval/lz-eval-p23-retain.test.mjs` registered in the CI
+eval list keeping every existing entry; full list 260/260 exit 0. No co-test case touches the
+filesystem -- every path is composed under the temp dir and never realized, so a failing case cannot
+reach `eval/.cache/`.
+
+Flag 4 was also fixed: the `PLACEHOLDER_RE` comment now describes the `/g` flag the code carries and
+says why it is required. **The claim was proven rather than trusted** -- dropping the flag fails 4 of
+23 T-23-04 cases; restored and diff-confirmed byte-identical. The regex, the replacer and all
+behaviour are untouched.
+
+Independently confirmed by the orchestrator after the closure: the control is present in code at the
+lines above, 33/33 across the new and the T-23-04 co-tests, `eval/.cache` still 217 MB with 40/40
+Slice-A records, no traversal artifact, no `eval/.cache-evil` left behind, and
+`git diff --exit-code` over config, STATE and ROADMAP returning zero.
+
+**What this does NOT prove.** The auditor did not re-run its 54-entry register against the new HEAD.
+The closure is verified against the auditor's own written specification and by the two discrimination
+proofs it asked for; it is not a fresh full audit. The remaining six unregistered flags stay open and
+non-blocking, and the two follow-ups below stay outstanding.
+
+### Follow-ups still outstanding
+
+1. `eval/lz-eval-p23-capture-driver.md` Stage 2b still names the retention destination without citing
+   this module. The driver is frozen in `9ab9933`, so pointing it at the control needs a numbered
+   maintainer-ratified AMENDMENT RECORD -- or the next capture plan referencing the module directly.
+2. The same superseded "non-global" wording survives at `eval/lz-eval-p23-prereg.md:720,748,963`
+   (frozen) and at `eval/lz-eval-p23-prereg.test.mjs:160-161`, neither of which flag 4 named.
+
 ## Review record
 
 ENV-08 content review: this artifact is an audit verdict authored by the dedicated auditor agent and
 persisted by the orchestrator. Its factual claims are the auditor's, each carried with the file and
-line evidence it found.
+line evidence it found. The REMEDIATION section is the orchestrator's, and it states explicitly which
+of its claims are verified and which would need a fresh audit.
