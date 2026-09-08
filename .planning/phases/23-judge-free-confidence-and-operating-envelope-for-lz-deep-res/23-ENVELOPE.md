@@ -125,6 +125,15 @@ ambiguous between two readings, and bought no report at all.
 - The q2 coverage figure is **at least in part a REPORT-FORMAT effect**: 19 of the 59 uncited units are
   `Confidence:` / `Assurance:` metadata lines and 10 of 23 body paragraphs end on one, against **zero
   such lines in q1**. It is not evidence that q2 cites worse than q1.
+- **The DENOMINATOR itself is qualified, amended 2026-09-08 and not re-derived.** The frozen unit rule
+  does not split at a Markdown list-item boundary, so a whole bullet list counts as ONE unit: **5 of the
+  67 units are multi-sentence collapses**, the largest holding about six sentence-enders, and a
+  per-sentence denominator would be roughly **75**. `59 of 67` stands as published because the unit rule
+  is frozen in the pre-registration and re-choosing the unit after seeing a rate is the post-hoc choice
+  pre-registration exists to remove. **This is a SEPARATE effect from the metadata-line one above** --
+  that explains why so many units are uncited, this qualifies how many units there are -- and the
+  earlier caveat does not cover it. Raised as WR-02 by the code review; recorded in full in
+  `eval/lz-eval-p23-citation-audit-q2-record.md`.
 - q1 and q2 differ on **three axes at once** -- contamination, question identity, and **both model
   generation AND CC version** -- so no q1-versus-q2 difference is attributable to any one of them.
 - **A named retention gap:** the q1 evidence corpus is gone for BOTH systems; the June-2026 built-in

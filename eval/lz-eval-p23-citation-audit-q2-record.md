@@ -174,6 +174,40 @@ passage-attribution rule -- a citation at the end of a passage covers the preced
 passage -- a paragraph ending on a metadata line is not marked cited, so each of its remaining prose units
 is tested on its own. The frozen rule was applied unchanged and the count was then measured.
 
+#### AMENDMENT, 2026-09-08: the DENOMINATOR is qualified, and the figure is NOT re-derived
+
+Raised as WR-02 by the Phase-23 code review (`23-REVIEW.md`, `status: issues_found`) and recorded here
+as a dated amendment rather than a silent recomputation -- the same discipline this phase applies to a
+re-seed.
+
+**The frozen unit rule does not split at a Markdown list-item boundary.** `SENTENCE_SPLIT_RE` requires
+the next unit to begin with an optional opening delimiter followed by `[A-Z]`; a bullet begins `- ` or
+`* `, so no split occurs across `\n- ` and a whole bullet list collapses into ONE "sentence-level text
+unit". Measured consequence on this report: **5 of the 67 units are multi-sentence collapses**, the
+largest holding roughly 983 characters and six sentence-enders. A per-sentence denominator would be
+approximately **75** rather than 67.
+
+**`59 of 67` stands as published and is NOT restated.** Three reasons, in order:
+
+1. **The unit rule is FROZEN.** `eval/lz-eval-p23-prereg.md` defines the unit as "a sentence-level text
+   unit inside the report's body sections" and states the passage-attribution rule alongside it.
+   Changing the rule to split at a list-item boundary would amend a frozen artifact, which requires its
+   own numbered, dated, maintainer-ratified AMENDMENT RECORD -- a larger action than this finding
+   warrants, and not one an audit may take on its own authority.
+2. **The reading does not move.** Coverage is low on this report either way; `59/67` and a per-sentence
+   `~75` denominator support the same conclusion. What changes is the exact pair, not what it says.
+3. **Recomputing quietly would be the error the phase exists to avoid.** A published figure that shifts
+   without a dated record is indistinguishable from a figure tuned after the fact.
+
+**This is a DIFFERENT effect from the metadata-line effect above, and the two are not the same
+disclosure.** The metadata effect explains why so many units are uncited; this one qualifies how many
+units there are. A reader who took the existing format-effect caveat as covering the denominator would
+be wrong, which is why this amendment is stated separately rather than folded into it.
+
+Not established either way: whether a per-sentence denominator is the more faithful unit for this
+metric. The frozen rule was pre-registered before any rate was computed, and re-choosing the unit after
+seeing a rate is exactly the post-hoc choice pre-registration removes.
+
 **This is a REPORT-FORMAT effect at least in part, not a citation-behaviour finding**, and the format
 changed with the model generation, which is one of the three axes above. It is therefore not evidence that
 q2 cites worse than q1, and it is not read that way here.
