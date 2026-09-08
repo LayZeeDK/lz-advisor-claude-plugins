@@ -179,7 +179,29 @@ test('ENV-04: UNCITED is Object.frozen alongside the three 23-01 constants (anti
   assert.ok(Object.isFrozen(UNCITED), 'UNCITED must be Object.frozen');
   assert.equal(UNCITED.MAX_RANGE_SPAN, 32);
   assert.match(UNCITED.LABEL, /citation COVERAGE/, 'the label must say COVERAGE, not support');
-  assert.doesNotMatch(UNCITED.LABEL, /\bsupported\b|\bgrounded\b/i);
+
+  // The label must never make an AFFIRMATIVE support or groundedness claim, while its existing NEGATIVE
+  // phrasing ("NOT factual support, NOT groundedness") must still pass. So every occurrence of a
+  // support/groundedness word has to carry a NOT immediately in front of it.
+  //
+  // DISCRIMINATION (proven empirically 2026-09-08, see 23-09-SUMMARY.md): the previous guard was
+  // `assert.doesNotMatch(UNCITED.LABEL, /\bsupported\b|\bgrounded\b/i)`, which passed on inflection
+  // mismatch alone -- the label literally contains "factual support" and "groundedness" -- and so would
+  // NOT have caught an affirmative relabel to "factual support: 12/40". Relabelling UNCITED.LABEL that
+  // way fails the assertion below and passed the old one.
+  const affirmativeSupportClaims = [
+    ...UNCITED.LABEL.matchAll(
+      /(NOT\s+)?\b(factual\s+support|support(?:s|ed|ing)?|grounded(?:ness)?|grounding)\b/gi,
+    ),
+  ]
+    .filter((match) => match[1] === undefined)
+    .map((match) => match[0]);
+
+  assert.deepEqual(
+    affirmativeSupportClaims,
+    [],
+    'the label may mention support or groundedness ONLY under a NOT -- never as an affirmative claim',
+  );
 });
 
 test('D-13: a URL inside a fenced code block is NOT a citation (fenced sections are stripped first)', () => {
