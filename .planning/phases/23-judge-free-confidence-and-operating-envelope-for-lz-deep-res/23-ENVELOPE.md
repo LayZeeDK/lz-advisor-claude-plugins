@@ -43,7 +43,7 @@ AMENDMENT RECORD 1 for why the substitution was made before any verdict existed.
 
 | Reading | Result | What a reader may take from it | Its named limits |
 |---|---|---|---|
-| **ENV-03** Slice A, judge-free, per direction, never pooled | gold `unrefuted` n=20: **tp 18 / fn 2**. gold `refuted` n=20: **tn 20 / fp 0**. n=40, `drawSeed` 20260907 | on claims of this shape the voter falsely upheld nothing in this draw, and both errors were false refutes | the three PROVISIONAL limits below, plus a fourth measured here: retrieval fired on only **30 of 40** items |
+| **ENV-03** Slice A, judge-free, per direction, never pooled | gold `unrefuted` n=20: **tp 18 / fn 2**. gold `refuted` n=20: **tn 20 / fp 0**. n=40, `drawSeed` 20260907 | on claims of this shape the voter falsely upheld nothing in this draw, and both errors were false refutes | **measured on a PROXY seat, not the shipped voter** (see above), so this says nothing about a printed confidence label -- see NOT ESTABLISHED row 12; plus the three PROVISIONAL limits below and a fourth measured here: retrieval fired on only **30 of 40** items |
 | **ENV-04** the q2 citation reading of reference, `ENV-04 status: PARTIAL-Q2` | **lz q2 only**: 12 canonical sources, 0 unmatched, 0 `[n]` markers, citation COVERAGE **59 uncited of 67** units, quote match **1 of 8**, resolvability **12 of 12** @ 2026-09-08T09:30:52.465Z | one system's q2 report cites resolvable identifiers and quotes its one genuine source quotation verbatim | **single-system, so no comparative q2 bar and none was set**; quote match is a SINGLE-SYSTEM diagnostic; see the format effect under Warnings |
 | **ENV-02** admissibility | lz q2 **ADMISSIBLE** (`model=claude-sonnet-5 ccVersion=2.1.263`); built-in q2 **INADMISSIBLE** | every figure above stands on a report with a validating MANIFEST | the exclusion is mechanical, from the module's own error: `manifest report file does not exist (truncated/empty capture?): .../builtin/q2/q2-run1.report.md` |
 | **ENV-05** the capture-feasibility spike -- **MEASURED** | the method ran at full cost and the frozen predicates returned its planned reading: **did NOT clear, failing on COMPLETENESS, not ceiling exhaustion** | the ceiling half CLEARED at 1 resume across 2 reset windows (frozen limits 3 and 2); no report was produced | "the ceiling was exceeded" and "it ran out of resumes" are both wrong, and both were checked against the predicate rather than asserted |
@@ -205,7 +205,37 @@ generic, and whether this document is useful rather than boilerplate, is a maint
 four prior-art skeletons in `23-RESEARCH.md` Pattern 6 (Model Facts label; STARD 2015 items 26 and 27;
 Evaluation Cards; model/system cards) and nothing mechanical.
 
-**Status: OWED and OPEN.** Written by the Plan 23-09 executing session, which for a published artifact
-is not review. Carried as a named gap in the Plan 23-09 ENV-08 sweep and in `.planning/WINDOWS.md`,
-alongside the owed independent reviews of the five records this envelope rests on. Recording the gap
-beats closing it silently; a presence check must never stand in for a content review.
+**Status: REVIEWED and CLOSED, 2026-09-08.** Reviewer: five independent fresh-context agents plus
+maintainer ratification of the resulting corrections. Verdict: the warnings ARE specific rather than
+generic; the document was NOT boilerplate but DID fail the usefulness criterion as first published, on
+three defects now corrected at `f030aef`.
+
+Written originally by the Plan 23-09 executing session, which for a published artifact is not review.
+What the review found, recorded because the corrections change what this document says about its own
+measurement:
+
+1. **This document contradicted itself about what ENV-03 measured.** The header table above already
+   recorded the Slice-A seat as `Explore`/`sonnet`; "What this covers" said the claims were "judged by
+   the shipped verify-voter". The header was right. Corrected, with the substitution and its reason
+   stated where the claim is made, and the ENV-03 row's limits cell now names the proxy too.
+2. **`NOT ESTABLISHED` read exhaustive and omitted the gap a reader would act on** -- the calibration
+   of the published confidence labels the routing section instructs the reader to act on. Added as row
+   12. `High` previously appeared nowhere in this document despite driving the re-vote audit sample.
+3. **N7's stated reason was false** ("no significance reachable at this n"). Corrected to the observed
+   effect size, with Fisher `p = 0.49` observed and `p = 0.008` reachable at the same n, both
+   independently recomputed by a confirming reader; the Section (ii) policy ceiling carries the
+   conclusion instead of the n=5 paired-question arithmetic, which is a different unit of analysis.
+
+**On the form of this review.** `PROJECT.md` names a fresh-context reviewer subagent as its FIRST valid
+form of independent review, and this row was closed on that basis with the maintainer ratifying the
+wording rather than re-deriving the findings. That is weaker evidence than a maintainer's own read of
+the prose, and it is recorded as such rather than presented as equivalent. A presence check never stood
+in for a content review: the review failed the document and named what to change.
+
+Row 6's framing overstated its own source, which is worth carrying: of the four prior-art formats, only
+the Model Facts label has a scorable section list. Pattern 6 itself directs that Evaluation Cards be
+used as a completeness checklist rather than as this document's layout, and the model/system-cards
+section list is an unverified assumption (`23-RESEARCH.md` Assumptions Log A3). One genuinely absent
+Model Facts section remains -- *Mechanism of risk score calculation* -- which Pattern 6's own
+recommended skeleton dropped and this document inherited; row 12 now carries the part of it a reader
+needs.

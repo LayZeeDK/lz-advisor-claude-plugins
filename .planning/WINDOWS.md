@@ -1,10 +1,10 @@
 ---
 schema_version: 1
-open_count: 1
+open_count: 0
 waived_count: 1
-fixed_count: 5
+fixed_count: 6
 total_count: 7
-last_updated: 2026-09-08T13:45:31.503Z
+last_updated: 2026-09-08T14:29:44.785Z
 ---
 
 # Broken Windows Ledger
@@ -20,7 +20,7 @@ last_updated: 2026-09-08T13:45:31.503Z
 | 3 | 23 | deviation | eval/lz-eval-p23-env06-record.md |  | The published ENV-06 branch-(b) termination has had only executing-session content review; the independent ENV-08 review is still open (project review-before-publish MUST) and must check that the termination is never worded as MEASURED, that branch (b) is never presented as branch (c) or vice versa, and that no cost figure appears without its retry history and 79.32 upper bound; closes in Plan 23-09 | fixed |  | 2026-09-08T11:52:00.000Z | 2026-09-08T11:58:55.415Z |
 | 4 | 23 | deviation | eval/lz-eval-p23-sliceA-read-record.md |  | The published ENV-03 Slice-A read record has had only executing-session content review; the independent ENV-08 review is still open (project review-before-publish MUST) and must check that no pooled rate, accuracy figure, interval or pass/fail verdict is implied and that the 2-versus-0 asymmetry is never presented as established | fixed |  | 2026-09-08T10:17:19.871Z | 2026-09-08T11:58:55.891Z |
 | 5 | 23 | deviation | eval/lz-eval-p23-spike-record.md |  | The published ENV-05 spike record has had only executing-session content review; the independent ENV-08 review is still open and must check that the failure is worded as COMPLETENESS rather than ceiling exhaustion and that 55.30793200000004 never appears without its retry history and the 79.32313525000006 upper bound | fixed |  | 2026-09-08T10:17:20.386Z | 2026-09-08T11:58:56.398Z |
-| 6 | 23 | deviation | .planning/phases/23-judge-free-confidence-and-operating-envelope-for-lz-deep-res/23-ENVELOPE.md |  | The published operating envelope has had only executing-session review; the maintainer read against the four prior-art skeletons (23-RESEARCH Pattern 6) that decides whether it is useful rather than boilerplate is OWED -- the structural section check does not cover it | open |  | 2026-09-08T10:17:20.915Z |  |
+| 6 | 23 | deviation | .planning/phases/23-judge-free-confidence-and-operating-envelope-for-lz-deep-res/23-ENVELOPE.md |  | The published operating envelope has had only executing-session review; the maintainer read against the four prior-art skeletons (23-RESEARCH Pattern 6) that decides whether it is useful rather than boilerplate is OWED -- the structural section check does not cover it | fixed |  | 2026-09-08T10:17:20.915Z | 2026-09-08T14:29:44.785Z |
 | 7 | 23 | deviation | eval/lz-eval-p23-citation-audit.mjs |  | ENV-08 ordering finding measured in Plan 23-09: the review record for lz-eval-p23-citation-audit.mjs and lz-eval-p23-resolvability.mjs (23-03-SUMMARY, commit 1bdb1ee) is NOT a git ancestor of their first-use commit 3189239, so it does not count as before-use under the ENV-08 boundary rule | waived | Accepted as a recorded historical defect: the ordering cannot be repaired retroactively (no later action makes 1bdb1ee an ancestor of 3189239), and the independent ENV-08 review has since read both modules and their co-tests and found three real defects, all fixed at e3a840a and f778b13. Full reasoning in 23-VERIFICATION.md MAINTAINER DISPOSITIONS. | 2026-09-08T10:17:21.452Z | 2026-09-08T13:45:31.503Z |
 
 ````json
@@ -92,10 +92,10 @@ last_updated: 2026-09-08T13:45:31.503Z
     "file": ".planning/phases/23-judge-free-confidence-and-operating-envelope-for-lz-deep-res/23-ENVELOPE.md",
     "line": null,
     "description": "The published operating envelope has had only executing-session review; the maintainer read against the four prior-art skeletons (23-RESEARCH Pattern 6) that decides whether it is useful rather than boilerplate is OWED -- the structural section check does not cover it",
-    "status": "open",
+    "status": "fixed",
     "reason": "",
     "recorded_at": "2026-09-08T10:17:20.915Z",
-    "resolved_at": null
+    "resolved_at": "2026-09-08T14:29:44.785Z"
   },
   {
     "id": 7,
