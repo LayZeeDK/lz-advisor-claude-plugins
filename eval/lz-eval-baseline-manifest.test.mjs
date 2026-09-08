@@ -20,6 +20,8 @@
 // EXTENDED (Plan 23-01, Tasks 1-2; NO-SPEND) with the ENV-02 Stage-0 behaviors:
 //   - extractSystemInit pins the CC version from a REAL system/init event, which carries
 //     `claude_code_version` and NOT `version` (D-11, confirmed empirically against both q1 captures).
+//   - a TRUNCATED final result line is a ContractError, never a promotion of the earlier
+//     under-reporting result event (23-REVIEW.md CR-06), while garbage in the MIDDLE is still skipped.
 //   - extractTerminalCost reads the per-run cost from the LAST type=result event of a capture stream
 //     (D-22: that terminal event's total_cost_usd IS the resolved per-run cost source).
 //   - aggregateRunCost sums extractTerminalCost over a CALLER-ENUMERATED stream list (T-23-12: the
@@ -385,6 +387,48 @@ test('D-22: extractTerminalCost throws when the terminal result event has no fin
   assert.throws(() => extractTerminalCost(absent), ContractError);
   assert.throws(() => extractTerminalCost(nonFinite), ContractError);
   assert.throws(() => extractTerminalCost(negative), ContractError);
+});
+
+test('CR-06 DISCRIMINATION: a TRUNCATED final result line is a ContractError -- it must NOT promote the earlier under-reporting result event', () => {
+  // DISCRIMINATION: the scanner skipped an unparseable line with `continue` and kept last-result-wins,
+  // so a capture whose final line is a partially flushed result object silently made the
+  // SECOND-TO-LAST result event terminal. On the real built-in q1 shape -- two result events, the first
+  // reporting 0.78 against the run's 48.54 -- that under-reports by ~98% with no error and no signal.
+  // The skip is safe for the GUARD and unsafe for the SELECTION (23-REVIEW.md CR-06).
+  const first = JSON.stringify({ type: 'result', subtype: 'success', total_cost_usd: 0.7800860000000001 });
+  const truncatedTail = '{"type":"result","subtype":"success","total_cost_us';
+  const stream = first + '\n' + truncatedTail;
+
+  assert.throws(
+    () => extractTerminalCost(stream),
+    (err) => {
+      assert.ok(err instanceof ContractError);
+      assert.equal(err.file, 'extractTerminalCost');
+      assert.match(err.message, /truncated/, 'the message names truncation, not a missing result event');
+      assert.match(err.message, /no earlier result event is substituted/, 'and refuses to impute');
+
+      return true;
+    },
+  );
+
+  // The refusal must be about the SELECTION, so the same tail after a SINGLE result event is refused
+  // too -- there is no readable terminal event either way.
+  assert.throws(() => extractTerminalCost(first + '\n' + truncatedTail + '\n'), ContractError);
+});
+
+test('CR-06: garbage in the MIDDLE of a stream is still skipped -- only a malformed tail is refused', () => {
+  // The distinction is the whole fix: a malformed line BEFORE the terminal result event cannot change
+  // which event is terminal, so refusing it would break every capture that carries a stray log line.
+  const lines = [
+    JSON.stringify({ type: 'system', subtype: 'init', model: 'm', claude_code_version: '1.2.3' }),
+    'this line is not JSON at all',
+    JSON.stringify({ type: 'result', subtype: 'success', total_cost_usd: 0.78 }),
+    '{"type":"result","subtype":"success","total_cost_us',
+    JSON.stringify({ type: 'result', subtype: 'success', total_cost_usd: 48.5367785 }),
+    '',
+  ];
+
+  assert.equal(extractTerminalCost(lines.join('\n')), 48.5367785, 'the LAST readable result event wins');
 });
 
 test('T-23-12: aggregateRunCost sums the CALLER-ENUMERATED lz q1 stream list (cold + resume = 18.1152213)', (t) => {

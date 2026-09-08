@@ -133,8 +133,13 @@ export function extractSystemInit(streamJsonlText) {
 //
 // FAIL-CLOSED (T-23-01): a stream with NO result event is a ContractError, and a terminal result event
 // whose `total_cost_usd` is absent, non-finite or negative is a ContractError. NO default is
-// substituted anywhere -- an unrecoverable cost must surface, never be imputed. Malformed (non-JSON)
-// lines are skipped while scanning but can never satisfy the guard.
+// substituted anywhere -- an unrecoverable cost must surface, never be imputed.
+//
+// A malformed (non-JSON) line is skipped while scanning, WITH ONE EXCEPTION that matters (CR-06): a
+// malformed non-empty line at or after the last readable result event is a ContractError, because
+// skipping THAT line is what would promote an earlier, under-reporting result event to terminal. The
+// skip being safe for the GUARD -- a malformed line can never satisfy the cost check -- says nothing
+// about the SELECTION, which is where the ~98% under-report lives.
 // ---------------------------------------------------------------------------
 export function extractTerminalCost(streamJsonlText) {
   if (typeof streamJsonlText !== 'string') {
@@ -146,6 +151,10 @@ export function extractTerminalCost(streamJsonlText) {
 
   const lines = streamJsonlText.split('\n');
   let terminal = null;
+  // Whether an unparseable non-empty line has been seen AT OR AFTER the last readable result event.
+  // Garbage in the MIDDLE of a stream cannot change which result event is terminal; garbage at the END
+  // can, and silently. See the truncation guard below the loop.
+  let malformedAfterLastResult = false;
 
   for (const rawLine of lines) {
     const line = rawLine.trim();
@@ -159,7 +168,9 @@ export function extractTerminalCost(streamJsonlText) {
     try {
       event = JSON.parse(line);
     } catch {
-      // A non-JSON line (partial/garbage) is skipped while scanning for the terminal result event.
+      // A non-JSON line (partial/garbage) is skipped while scanning, but the fact that one appeared
+      // after a readable result event is remembered rather than discarded.
+      malformedAfterLastResult = terminal !== null;
       continue;
     }
 
@@ -170,12 +181,31 @@ export function extractTerminalCost(streamJsonlText) {
     // LAST result event wins (D-22) -- keep overwriting so the final assignment is the terminal one.
     if (event.type === 'result') {
       terminal = event;
+      malformedAfterLastResult = false;
     }
   }
 
   if (terminal == null) {
     throw new ContractError(
       'no type=result event found in the stream-json capture -- the per-run cost cannot be recovered (D-22)',
+      'extractTerminalCost',
+    );
+  }
+
+  // TRUNCATION AT THE END IS NOT THE SAME AS GARBAGE IN THE MIDDLE (23-REVIEW.md CR-06). The skip above
+  // is safe for the GUARD -- a malformed line can never satisfy the total_cost_usd check -- and unsafe
+  // for the SELECTION. Skipping the LAST line does not fail; it makes the second-to-last result event
+  // terminal. That matters exactly as much as the header says last-wins matters: the real built-in q1
+  // cold stream carries two result events and the first reports 0.7800860000000001 against the run's
+  // 48.5367785, so promoting an earlier one under-reports by ~98% with no error and no signal. A capture
+  // whose final line is a partially flushed result object hits that path, and the published built-in q2
+  // run ended in error on both streams, which makes a truncated tail a live scenario rather than a
+  // hypothetical. Refuse instead: no earlier result event is substituted.
+  if (malformedAfterLastResult) {
+    throw new ContractError(
+      'the stream carries an unparseable line AFTER the last readable result event -- the capture may ' +
+        'be truncated and the terminal cost cannot be established (D-22; no earlier result event is ' +
+        'substituted)',
       'extractTerminalCost',
     );
   }
