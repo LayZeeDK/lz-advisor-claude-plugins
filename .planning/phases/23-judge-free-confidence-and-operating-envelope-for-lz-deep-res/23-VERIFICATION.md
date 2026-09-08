@@ -4,7 +4,7 @@ verified: 2026-09-09T00:00:00Z
 status: gaps_found
 score: 5/6 ROADMAP success criteria verified (SC2 unmet as written); ENV-08's content-review half now discharged; 3 requirements-ledger rows still not level with the evidence
 behavior_unverified: 0
-overrides_applied: 0
+overrides_applied: 1
 re_verification:
   previous_status: gaps_found
   previous_score: "6/6 ROADMAP success criteria verified; 6/8 ENV requirements met, 1 PARTIAL-Q2, 1 PARTIAL"
@@ -93,6 +93,28 @@ deferred: []
 behavior_unverified_items: []
 coincidental_reliance_items: []
 human_verification: []
+overrides:
+  - must_have: "Slice A runs: the verify-voter is scored against the frozen AVeriTeC seed list, tallied per confusion-matrix direction and never pooled, reported descriptively with its PROVISIONAL limits"
+    accepted_by: "Lars Gyrup Brink Nielsen (maintainer)"
+    accepted_at: "2026-09-09"
+    reason: >-
+      Accepted as offered in `overrides_suggested` below, on the verifier's own reasoning and without
+      amendment. What ENV-03 and ROADMAP Success Criterion 2 measured is the reviewed verify-voter
+      PROMPT carried verbatim in the frozen dispatch string, not the shipped agent wrapper: the
+      shipped `research-verify-voter-sonnet` seat structurally cannot execute this dispatch on two
+      independent grounds the verifier established from disk before any verdict existed -- its input
+      contract requires four fields the pinned string does not carry, and its output contract is a
+      four-field vote JSON where the string demands one lowercase word -- and the plugin is
+      deliberately disabled in this repository, so the seat is absent from the executing session's
+      registry. AMENDMENT RECORD 1 (`eval/lz-eval-p23-prereg.md:890-935`) substituted a generic Agent
+      sub-agent on Sonnet receiving the pinned string verbatim, pre-verdict and maintainer-ratified,
+      with no bar, item, seed or reporting rule moved.
+      This override records a real NARROWING of what ENV-03 measured and upgrades nothing. The
+      narrowing is already published, not hidden: `23-ENVELOPE.md:31-40` leads with it and NOT
+      ESTABLISHED row 12 states that no reading in this phase connects ENV-03 to the shipped label.
+      Scoring the shipped seat is not deferred work on this phase -- it would require redesigning the
+      dispatch contract and re-enabling the plugin in this repository, which is new scope.
+    scope: "ENV-03 / ROADMAP Success Criterion 2 only. Does not extend to any other ENV requirement or success criterion."
 overrides_suggested:
   - must_have: "Slice A runs: the verify-voter is scored against the frozen AVeriTeC seed list, tallied per confusion-matrix direction and never pooled, reported descriptively with its PROVISIONAL limits"
     reason: >-
