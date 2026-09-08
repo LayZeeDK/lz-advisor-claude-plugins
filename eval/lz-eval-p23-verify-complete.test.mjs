@@ -31,6 +31,10 @@
 //   - a ledger heading QUOTED INSIDE a fenced block does not govern (23-REVIEW.md CR-04): fenced code
 //     is stripped first, reusing the sibling citation-audit module's proven stripFencedCode.
 //   - that fence strip does not disturb CRLF handling.
+//   - a 0/0 confirmed ledger over an EMPTY table is NOT complete (23-REVIEW.md CR-05): both equalities
+//     the predicate checks hold at zero, so a report that verified NOTHING used to certify. The guard
+//     rejects exactly zero and nothing above it -- 1/1 over one row still completes -- and a 0/0 report
+//     fails spikeCleared even when the ceiling half passes.
 //   - spikeCeilingCheck clears at 3 resume cycles / 2 reset windows and at any lower pair.
 //   - spikeCeilingCheck throws a ContractError on a non-integer or negative argument.
 //   - spikeCleared requires BOTH halves and its returned object names which half failed, carrying the
@@ -253,6 +257,45 @@ test('ENV-05: TWO ledger headings -- the FIRST governs and duplicateLedgerHeadin
   assert.equal(result.confirmedN, 25);
   assert.equal(result.tableRows, 25, 'and the FIRST heading\'s table is the one counted');
   assert.equal(result.complete, true, 'a duplicate heading is reported but does not by itself fail completeness');
+});
+
+test('CR-05 DISCRIMINATION: a 0/0 confirmed ledger over an EMPTY table is NOT verification-complete', () => {
+  // DISCRIMINATION: the predicate required declaredN === confirmedN and tableRows === declaredN, and
+  // BOTH hold at zero -- so a report that verified NOTHING certified as verification-complete, and
+  // spikeCleared turned that into a cleared ENV-05 spike whenever the ceiling half also cleared. There
+  // was no declaredN > 0 guard and no test at the zero boundary, in a suite that otherwise proves every
+  // cap at its own limit. Measured before the fix: complete=true declared=0 rows=0 dup=0
+  // (23-REVIEW.md CR-05).
+  const text = syntheticReport({ heading: '## Complete verification ledger (0/0 confirmed)', rows: 0 });
+  const result = isVerificationComplete(text);
+
+  assert.equal(result.complete, false, 'a report that verified nothing must not certify as complete');
+  assert.equal(result.declaredN, 0, 'the realized counts are still published (D-07)');
+  assert.equal(result.confirmedN, 0);
+  assert.equal(result.tableRows, 0, 'and the empty table is still counted, not reported as absent');
+  assert.match(result.reason, /verified nothing/, 'the reason names what is wrong with 0/0');
+  assert.match(result.reason, /truncated BEFORE the first verify/, 'and the run shape that produces it');
+});
+
+test('CR-05: the zero guard does not weaken the spike -- a 0/0 report fails spikeCleared even inside the ceiling', () => {
+  const text = syntheticReport({ heading: '## Complete verification ledger (0/0 confirmed)', rows: 0 });
+  const result = spikeCleared({ reportText: text, resumeCycles: 0, resetWindows: 1 });
+
+  assert.equal(result.ceiling.cleared, true, 'the ceiling half PASSES -- a zero-resume single-window run');
+  assert.equal(result.completeness.complete, false, 'so the completeness half is the only thing refusing');
+  assert.equal(result.cleared, false, 'and the spike does NOT clear');
+});
+
+test('CR-05: a NON-zero ledger at its own lower boundary (1/1 over one row) still completes', () => {
+  // The zero guard must reject exactly zero and nothing above it -- a one-row ledger is a real
+  // verification, not a truncation.
+  const result = isVerificationComplete(
+    syntheticReport({ heading: '## Complete verification ledger (1/1 confirmed)', rows: 1 }),
+  );
+
+  assert.equal(result.complete, true);
+  assert.equal(result.declaredN, 1);
+  assert.equal(result.tableRows, 1);
 });
 
 test('CR-04 DISCRIMINATION: a ledger heading QUOTED INSIDE a fenced block does not govern -- the real ledger below it does', () => {

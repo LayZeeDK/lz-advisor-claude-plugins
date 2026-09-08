@@ -106,10 +106,11 @@ function assertNonNegativeInteger(name, v, where) {
 // isVerificationComplete(reportText) -- the FROZEN mechanical completeness predicate. Returns
 //   { complete, declaredN, confirmedN, tableRows, duplicateLedgerHeadings, reason }
 //
-// A report is COMPLETE iff the FIRST ledger heading declares two EQUAL counts AND the table
-// immediately following that heading has EXACTLY that many data rows. Equality of the heading pair
-// alone is NOT sufficient: a 25/25 heading over a 5-row table is precisely the shape a run truncated
-// mid-verify produces.
+// A report is COMPLETE iff the FIRST ledger heading declares two EQUAL and NON-ZERO counts AND the
+// table immediately following that heading has EXACTLY that many data rows. Equality of the heading
+// pair alone is NOT sufficient: a 25/25 heading over a 5-row table is precisely the shape a run
+// truncated mid-verify produces, and a 0/0 heading over an empty table -- which satisfies both
+// equalities -- is the shape a run truncated BEFORE the first verification produces.
 //
 // Every failure path returns complete false with a NAMED `reason` instead of throwing, because a
 // malformed report is a FINDING, not a crash a caller could mistake for a pass. Only a malformed READ
@@ -227,6 +228,26 @@ export function isVerificationComplete(reportText) {
         ' selected vs ' +
         confirmedN +
         ' confirmed), which is an incomplete verification',
+    };
+  }
+
+  // THE ZERO BOUNDARY (23-REVIEW.md CR-05). `declaredN === confirmedN` and `tableRows === declaredN`
+  // both hold at zero, so a `0/0 confirmed` heading over an empty table certified as
+  // verification-complete -- a report that verified NOTHING, which spikeCleared would then turn into a
+  // cleared ENV-05 spike as long as the ceiling half cleared too. This is the ONE failure mode a frozen
+  // mechanical predicate exists to prevent: the concern stated three checks below is a run "truncated
+  // mid-verify", and a run truncated BEFORE the first verification produces precisely 0/0 over an empty
+  // table.
+  if (declaredN === 0) {
+    return {
+      complete: false,
+      declaredN,
+      confirmedN,
+      tableRows,
+      duplicateLedgerHeadings,
+      reason:
+        'the ledger declares 0/0 confirmed over an empty table -- a report that verified nothing is ' +
+        'not verification-complete (this is the shape a run truncated BEFORE the first verify produces)',
     };
   }
 
