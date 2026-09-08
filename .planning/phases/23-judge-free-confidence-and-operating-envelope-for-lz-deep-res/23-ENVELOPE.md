@@ -23,10 +23,21 @@ AMENDMENT RECORD 1 at `0b4e479`); `eval/lz-eval-p23-sliceA-read-record.md`;
 ## What this covers
 
 Two question shapes, both declared EXPLORATORY in advance by the pre-registration: fact-check-style
-binary claims with a 2020 cutoff judged by the shipped verify-voter (40 items, balanced 20/20 per
-direction), and long-form research reports on bounded single-facet technical questions -- **n=2
-questions, q1 and q2, as separate rows, never averaged.** At n=2 **no per-question generalisation is
-available, and that is a limit on the CLAIM, not on an interval** (D-04).
+binary claims with a 2020 cutoff (40 items, balanced 20/20 per direction), and long-form research
+reports on bounded single-facet technical questions -- **n=2 questions, q1 and q2, as separate rows,
+never averaged.** At n=2 **no per-question generalisation is available, and that is a limit on the
+CLAIM, not on an interval** (D-04).
+
+**What judged the 40 binary claims was a PROXY seat, not the shipped voter, and the difference matters
+to how you read the cells below.** Each item was dispatched to a generic `Explore` Agent sub-agent on
+Sonnet 5 carrying the frozen one-word dispatch string, which is what AMENDMENT RECORD 1 specifies. It
+was **not** the shipped `research-verify-voter-sonnet` seat: that seat cannot consume the pinned string
+at all, because it requires an evidence excerpt, an attack mode, an arm and a vote-file path the string
+does not carry, and it is contracted to write a four-field vote JSON where the string demands one
+lowercase word. So ENV-03 measured a proxy under the reviewed prompt, and any inference from it to the
+shipped seat's behaviour is an inference the phase did not test. See
+`eval/lz-eval-p23-sliceA-read-record.md` for the seat as dispatched and `eval/lz-eval-p23-prereg.md`
+AMENDMENT RECORD 1 for why the substitution was made before any verdict existed.
 
 ## Where the output is evidenced
 
@@ -75,10 +86,19 @@ this run: **30 of 40** items retrieved, so roughly a quarter was decided closed-
 limit holds for 30 of 40 rather than universally.
 
 **The no-significance ceiling was stated IN ADVANCE, in the freeze commit, not discovered afterwards.**
-The two-sided sign-test minimum at n=5 paired questions is `2 x 0.5^5 = 0.0625`, already above a
-conventional 0.05 threshold; a perfect 5-for-5 sweep yields only a 95% Clopper-Pearson lower bound of
-`0.05^(1/5) = 0.549`. So **Slice A's 2-versus-0 asymmetry is NOT significant and NOT established** --
-an observation about this draw. **A phase ending without a significance claim has NOT fallen short.**
+It is a POLICY binding every reading in this phase, and the pre-registration's Section (ii) states it
+for the QUESTION-level design: the two-sided sign-test minimum at n=5 paired questions is
+`2 x 0.5^5 = 0.0625`, already above a conventional 0.05 threshold, and a perfect 5-for-5 sweep yields
+only a 95% Clopper-Pearson lower bound of `0.05^(1/5) = 0.549`.
+
+**That arithmetic is about paired QUESTIONS and does not by itself settle Slice A**, which is 40 items
+at 20 per arm -- a different n and a different unit of analysis. On its own table, **Slice A's
+2-versus-0 asymmetry is not significant on the observed effect: Fisher exact two-sided gives
+`p = 0.49`.** Note what that does and does not say: significance IS reachable at this n on a larger
+split -- `[[13,7],[20,0]]` at the same n gives `p = 0.008` -- so the barrier is the observed effect
+size, NOT the sample size. Independently of either calculation, the Section (ii) ceiling bars any
+significance claim in this phase, so the asymmetry is **NOT established** either way -- an observation
+about this draw. **A phase ending without a significance claim has NOT fallen short.**
 
 **D-07, the realized capture ceiling -- an operating observation about the reference system, measured
 rather than descoped.** On a deliberately narrowed, bounded single-facet q2 question the built-in
@@ -128,11 +148,12 @@ not-measured are different published claims. Every reason is identifiable indepe
 | 4 | Symmetric verbatim-quote match across both systems on q2 | **(b)** | No built-in q2 report to extract spans from. NOT branch B's premise: branch B assumes the built-in leaves no recoverable content, and it demonstrably does. |
 | 5 | The q2 citation-format asymmetry between the systems | **(b)** | An asymmetry needs both sides. The only measured instance is the q1 dry-run row, which sets no bar. |
 | 6 | Verbatim-quote match on the built-in q1 report | **(b)** | No corpus was retained and the session aged out of the transcript store. Closed, not deferred. |
-| 7 | Whether the voter's error profile is asymmetric IN GENERAL | not established | 2 against 0 at n=20 per arm, with no significance reachable at this n. |
+| 7 | Whether the voter's error profile is asymmetric IN GENERAL | not established | 2 against 0 at n=20 per arm; Fisher exact two-sided `p = 0.49` on the observed table. Significance IS reachable at this n on a larger split (`p = 0.008` at `[[13,7],[20,0]]`), so the barrier is the observed effect size, not the sample size -- and the pre-registration's Section (ii) ceiling independently bars any significance claim in this phase. |
 | 8 | Whether the built-in surface can reach a verification-complete report at all | not established | One narrowed question in one ratified envelope is a single observation, not an impossibility claim. Re-running a documented failure mode is excluded as a route to resolution. |
 | 9 | Never-existed versus died-since, for an unresolvable identifier | **(b)**, by design | Requires a second third-party archive lookup ENV-04 does not require and that would widen the network surface. |
 | 10 | Per-question generalisation across the two questions | not established | D-04: at n=2 this is a limit on the CLAIM. |
 | 11 | A clean per-run cost comparison between the systems | not established | Retry-inflated, one figure ambiguous between 55.31 and 79.32, one side bought no report. Forbidden by the ENV-02 transparency prohibition. |
+| 12 | **Calibration of the published `High` / `Medium` / `Low` / `Unsupported` / `Contested` confidence labels -- the labels the routing section above tells you to act on** | not established | **No reading in this phase connects ENV-03 to the shipped label.** ENV-03 measured ONE proxy seat (a generic `Explore` sub-agent, not the shipped voter) on BINARY claims against KNOWN gold. The published label is produced by a THREE-seat tally plus a `load_bearing` re-vote wave (`SKILL.md:278`, `:289`) over OPEN-ENDED research claims with NO gold. Nothing measures the error rate of a printed `High`, and the 18/2 and 20/0 cells must not be read as if it did. This row is listed because the section it sits in reads exhaustive, and an exhaustive-looking list missing the gap a reader would act on is worse than no list. |
 
 **Nothing in this phase is branch (c).** No method was descoped before spend and no AMENDMENT RECORD
 records one; AMENDMENT RECORD 1 is a pre-dispatch instrument correction taken with zero verdicts in
