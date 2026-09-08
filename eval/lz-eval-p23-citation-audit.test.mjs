@@ -15,6 +15,12 @@
 //   - ARXIV_RE / DOI_RE / KEEP_PARAMS are exported module-level constants (KEEP_PARAMS Object.frozen).
 //   - the three surface forms of the SAME arXiv paper collapse to one identifier.
 //   - the arXiv rule covers the abs / pdf / html URL shapes and the version suffix.
+//   - the arXiv rule is ANCHORED and REQUIRES its prefix (23-REVIEW.md CR-03), so a DOI with a
+//     dot-separated numeric suffix stays a DOI, two distinct DOIs sharing a digit window do not merge,
+//     and an unrelated URL holding an NNNN.NNNN segment does not collapse onto a real arXiv paper.
+//   - the bare-arXiv SCANNER is anchored the same way: it does not slide into a longer token.
+//   - an arxiv.org SUBDOMAIN mirror (ar5iv.labs.arxiv.org/html/<id>) is the SAME source as the bare
+//     identifier -- the published lz q2 unique-source count of 12 depends on that merge.
 //   - a DOI token canonicalizes lowercased with trailing punctuation stripped.
 //   - a scheme-less host/path canonicalizes to url:host/path (the built-in bare-host form).
 //   - the scheme case, www., a trailing slash and a fragment are all normalized away.
@@ -126,6 +132,72 @@ test('D-13: the three surface forms of the same arXiv paper collapse to ONE iden
 test('D-13: the arXiv rule also covers the pdf and html URL shapes and the version suffix', () => {
   assert.equal(canonicalizeCitation('https://arxiv.org/pdf/2306.15595v3.pdf'), 'arxiv:2306.15595');
   assert.equal(canonicalizeCitation('https://arxiv.org/html/2309.00071'), 'arxiv:2309.00071');
+});
+
+test('CR-03 DISCRIMINATION: a DOI whose suffix carries a dot-separated numeric tail is a DOI, not an arXiv identifier', () => {
+  // DISCRIMINATION: ARXIV_RE's prefix alternation used to be OPTIONAL with no anchor around the
+  // captured group, so any token holding an NNNN.NNNN substring ANYWHERE became an arXiv identifier and
+  // the DOI rule below it never ran for the two most common ML/AI DOI shapes (23-REVIEW.md CR-03).
+  // Measured before the fix: 10.1145/3442188.3445922 => arxiv:2188.34459.
+  assert.equal(canonicalizeCitation('10.1145/3442188.3445922'), 'doi:10.1145/3442188.3445922', 'ACM');
+  assert.equal(canonicalizeCitation('10.1007/978-3-030-12345.67890'), 'doi:10.1007/978-3-030-12345.67890', 'Springer');
+  assert.equal(canonicalizeCitation('10.5555/1234.56789'), 'doi:10.5555/1234.56789');
+  assert.equal(canonicalizeCitation('https://doi.org/10.1145/3442188.3445922'), 'doi:10.1145/3442188.3445922');
+});
+
+test('CR-03 DISCRIMINATION: two DISTINCT DOIs sharing a digit window do NOT merge onto one identifier', () => {
+  // DISCRIMINATION: both of these used to canonicalize to arxiv:2188.34459 -- the digit window the
+  // engine happened to land on is shared -- so the unique-source COUNT, a headline figure, silently
+  // dropped by one. The assertion is inequality, which is what a merge violates.
+  const acm = canonicalizeCitation('10.1145/3442188.3445922');
+  const other = canonicalizeCitation('10.9999/9992188.3445922');
+
+  assert.notEqual(acm, other, 'two distinct DOIs must never collapse into one identifier');
+  assert.equal(new Set([acm, other]).size, 2, 'and the identifier SET must carry both');
+});
+
+test('CR-03 DISCRIMINATION: an unrelated URL holding an NNNN.NNNN path segment does NOT collapse onto a real arXiv paper', () => {
+  // DISCRIMINATION: https://other.example/2023.12345-x used to canonicalize to arxiv:2023.12345,
+  // merging a non-arXiv page with a real arXiv paper. The canonicalizer exists to stop the comparison
+  // being a FORMAT artifact; unanchored it made it a DIGIT-COINCIDENCE artifact instead.
+  assert.equal(canonicalizeCitation('https://other.example/2023.12345-x'), 'url:other.example/2023.12345-x');
+  assert.equal(canonicalizeCitation('https://blog.eleuther.ai/2023.12345-yarn'), 'url:blog.eleuther.ai/2023.12345-yarn');
+  assert.notEqual(canonicalizeCitation('https://other.example/2023.12345-x'), 'arxiv:2023.12345');
+});
+
+test('CR-03 DISCRIMINATION: the bare-arXiv SCANNER does not slide into a longer token either', () => {
+  // DISCRIMINATION: anchoring ARXIV_RE alone left the other half open. BARE_ARXIV_SCAN_RE matched on a
+  // digit SHAPE with only `\b` in front, so it emitted a spurious arxiv: identifier ALONGSIDE the real
+  // one -- ["arxiv:2023.12345","doi:10.1007/2023.12345"] from a single DOI token. A bare identifier
+  // counts only where it STARTS a token, never as a substring of a DOI suffix or a URL path.
+  assert.deepEqual(extractCitationTokens('10.1007/2023.12345').identifiers, ['doi:10.1007/2023.12345']);
+  assert.deepEqual(
+    extractCitationTokens('See https://other.example/2023.12345-x here.').identifiers,
+    ['url:other.example/2023.12345-x'],
+  );
+  // ... while the form the scanner exists for still resolves, sentence-final period included.
+  assert.deepEqual(extractCitationTokens('The paper arXiv 2306.15595.').identifiers, ['arxiv:2306.15595']);
+});
+
+test('CR-03: an arxiv.org SUBDOMAIN mirror is the same source as its bare identifier (the published q2 count depends on it)', () => {
+  // The realized lz q2 report cites paper 2508.16785 both bare and as the ar5iv mirror URL. The old
+  // unanchored rule merged them by accident, as a substring match; a `(?:www\.)?arxiv\.org` host rule
+  // would split them and move the published unique-source count from 12 to 13. The subdomain form
+  // states the merge deliberately, on identity grounds.
+  assert.equal(canonicalizeCitation('https://ar5iv.labs.arxiv.org/html/2508.16785'), 'arxiv:2508.16785');
+  assert.equal(canonicalizeCitation('https://www.arxiv.org/abs/2306.15595'), 'arxiv:2306.15595');
+  assert.deepEqual(
+    extractCitationTokens('Mirror https://ar5iv.labs.arxiv.org/html/2508.16785 and bare 2508.16785 too.').identifiers,
+    ['arxiv:2508.16785'],
+    'the mirror URL and the bare identifier are ONE source',
+  );
+
+  // The anchor still holds: a host that merely CONTAINS arxiv.org is not arXiv.
+  assert.equal(
+    canonicalizeCitation('https://arxiv.org.evil.example/abs/1234.5678'),
+    'url:arxiv.org.evil.example/abs/1234.5678',
+  );
+  assert.equal(canonicalizeCitation('https://evilarxiv.org/abs/1234.5678'), 'url:evilarxiv.org/abs/1234.5678');
 });
 
 test('D-13: a DOI token canonicalizes lowercased with trailing punctuation stripped', () => {

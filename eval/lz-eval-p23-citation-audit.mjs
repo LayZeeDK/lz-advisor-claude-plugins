@@ -62,15 +62,37 @@ import { fileURLToPath } from 'node:url';
 import { ContractError } from '../plugins/lz-advisor/skills/lz-deep-research/scripts/lz-deep-research-aggregate.mjs';
 
 // ---------------------------------------------------------------------------
-// ARXIV_RE: the arXiv identifier rule (D-13). It matches the bare new-style identifier with an OPTIONAL
-// leading `arxiv:` / `arXiv ` prefix or an `arxiv.org/{abs,pdf,html}/` URL path, captures the
-// NNNN.NNNNN identifier in group 1, and tolerates a trailing `vN` version suffix and a `.pdf` extension.
-// The version suffix is deliberately NOT part of the identifier: v1 and v2 of one paper are one source.
-// This rule runs FIRST, before the URL rule, precisely so the URL form and the bare form converge.
+// ARXIV_RE: the arXiv identifier rule (D-13). The token must be an `arxiv:` / `arXiv ` prefixed
+// identifier or an `arxiv.org/{abs,pdf,html}/` URL path -- one of the two -- and the WHOLE token must be
+// that and nothing else. Group 1 captures the NNNN.NNNNN identifier; a trailing `vN` version suffix and
+// a `.pdf` extension are tolerated. The version suffix is deliberately NOT part of the identifier: v1
+// and v2 of one paper are one source.
+//
+// ANCHORED, AND THE PREFIX IS REQUIRED (23-REVIEW.md CR-03). The rule used to make the whole prefix
+// alternation OPTIONAL with no `\b` or anchor around the captured group, so any token holding an
+// NNNN.NNNN substring ANYWHERE became an arXiv identifier: `10.1145/3442188.3445922` canonicalized to
+// `arxiv:2188.34459`, which (a) made DOI_RE unreachable for the ACM and Springer shapes, (b) merged two
+// DISTINCT DOIs onto one identifier because they happened to share the digit window the engine landed
+// on, and (c) collapsed unrelated URLs such as `https://other.example/2023.12345-x` onto a real arXiv
+// paper. The identity rule the doc always stated is the right one; it simply was not enforced.
+//
+// A BARE identifier in prose is still recognized -- by BARE_ARXIV_SCAN_RE, which finds it and emits an
+// explicit `arxiv:<id>` token for this rule to accept. The scanner asserts the identity; the
+// canonicalizer no longer infers it from a digit shape.
+//
+// THE HOST RULE ADMITS ANY arxiv.org SUBDOMAIN, and that is not incidental. The realized lz q2 report
+// cites paper 2508.16785 BOTH as a bare identifier and as the ar5iv mirror URL
+// `https://ar5iv.labs.arxiv.org/html/2508.16785`. The unanchored rule merged the two by accident, as a
+// substring match; a `(?:www\.)?arxiv\.org` host rule would split them and move the published
+// unique-source count from 12 to 13. `ar5iv.labs.arxiv.org/html/<id>` IS arXiv paper `<id>`, so the
+// merge is the right answer on identity grounds, and the subdomain form states it deliberately. The
+// anchor still holds: `arxiv.org.evil.example/abs/1234.5678` and `evilarxiv.org/abs/...` both fail,
+// because the host must be followed immediately by `/{abs,pdf,html}/` and preceded only by
+// dot-terminated labels.
 // ---------------------------------------------------------------------------
 // Object.freeze so the rule cannot be mutated in place by a later import (anti-drift, T-23-02c).
 export const ARXIV_RE = Object.freeze(
-  /(?:arxiv[:\s]*|arxiv\.org\/(?:abs|pdf|html)\/)?(\d{4}\.\d{4,5})(v\d+)?(?:\.pdf)?/i,
+  /^(?:arxiv[:\s]*|(?:https?:\/\/)?(?:[a-z0-9-]+\.)*arxiv\.org\/(?:abs|pdf|html)\/)(\d{4}\.\d{4,5})(v\d+)?(?:\.pdf)?$/i,
 );
 
 // ---------------------------------------------------------------------------
@@ -93,10 +115,15 @@ export const KEEP_PARAMS = Object.freeze(['id', 'v', 'page']);
 // ---------------------------------------------------------------------------
 // canonicalizeCitation(rawToken) -- map ONE raw citation token to a single system-agnostic identifier.
 //
-// Rule order is frozen and load-bearing: arXiv, then DOI, then URL, then the `raw:` fallback bucket.
-// arXiv precedes URL so that `https://arxiv.org/abs/2306.15595` and the bare `arXiv 2306.15595` produce
-// the SAME value; if URL ran first the two forms would never converge and the whole comparison would be
-// format-sensitive again.
+// Rule order is frozen and required: DOI, then arXiv, then URL, then the `raw:` fallback bucket. Both
+// identifier rules precede URL so that `https://arxiv.org/abs/2306.15595` and the bare
+// `arXiv 2306.15595` produce the SAME value; if URL ran first the two forms would never converge and
+// the whole comparison would be format-sensitive again.
+//
+// DOI now runs FIRST (23-REVIEW.md CR-03). ARXIV_RE being anchored is what actually stops a DOI being
+// read as an arXiv identifier; testing DOI first is the second line of defense, so a future widening of
+// the arXiv rule cannot make the DOI rule unreachable again. No arXiv surface form can match DOI_RE --
+// it requires a literal `10.<4-9 digits>/` prefix.
 //
 // The URL branch lowers the scheme (it is not part of the identity -- one page served over http and
 // https is one source), lowers the host, strips a leading `www.`, drops the fragment (a same-page anchor
@@ -118,16 +145,16 @@ export function canonicalizeCitation(rawToken) {
   // NFC only -- never NFKC (UAX #15).
   const token = rawToken.normalize('NFC').trim();
 
-  const arxiv = token.match(ARXIV_RE);
-
-  if (arxiv) {
-    return 'arxiv:' + arxiv[1];
-  }
-
   const doi = token.match(DOI_RE);
 
   if (doi) {
     return 'doi:' + doi[1].toLowerCase().replace(/[.,;)\]]+$/, '');
+  }
+
+  const arxiv = token.match(ARXIV_RE);
+
+  if (arxiv) {
+    return 'arxiv:' + arxiv[1];
   }
 
   // The built-in emits scheme-less host/path forms (e.g. blog.eleuther.ai/yarn); supply a scheme so
@@ -199,8 +226,30 @@ const BARE_URL_SCAN_RE = /https?:\/\/[^\s"'<>)\]},]+/g;
 // A scheme-less host/path string. The label before the slash must be alphabetic so version strings
 // (Llama-3.1-8B/70B) and ratios cannot be mistaken for hosts.
 const HOST_PATH_SCAN_RE = /\b(?:[a-z0-9-]+\.)+[a-z]{2,24}\/[^\s"'<>)\]},]+/gi;
-const BARE_ARXIV_SCAN_RE = /(?:arxiv[:\s]*)?\b\d{4}\.\d{4,5}(?:v\d+)?\b/gi;
+// The bare-arXiv-in-prose form (the built-in's). Group 1 is the identifier, so scannedToken below can
+// hand ARXIV_RE an explicit `arxiv:<id>` token: since CR-03 the canonicalizer's arXiv branch REQUIRES
+// the prefix, and it is this scanner -- not a digit shape -- that asserts the identity.
+//
+// THE LEADING LOOKBEHIND CARRIES THE SAME DISCIPLINE AS THE ANCHOR ON ARXIV_RE (23-REVIEW.md CR-03).
+// `\b` alone let the scanner slide INTO a longer token: `10.1007/2023.12345` and
+// `https://other.example/2023.12345-x` each emitted a spurious `arxiv:2023.12345` ALONGSIDE their real
+// identifier, so anchoring the canonicalizer without anchoring the scanner would have left half the
+// finding open. A bare identifier counts only where it starts a token -- not where it is a substring of
+// a DOI suffix or a URL path. The trailing side stays `\b` on purpose: a sentence-final
+// `... arXiv 2306.15595.` must still be found, so the period may follow.
+const BARE_ARXIV_SCAN_RE = /(?:arxiv[:\s]*)?(?<![\w./-])(\d{4}\.\d{4,5})(?:v\d+)?\b/gi;
 const DOI_SCAN_RE = /\b10\.\d{4,9}\/[^\s"<>)\]]+/gi;
+
+// One scanner match -> the token handed to canonicalizeCitation. Every scanner but the bare-arXiv one
+// yields a token that already carries its own identity (a URL, a DOI, a host/path); the bare-arXiv
+// scanner deliberately matches an identifier with NO prefix, so it states the identity explicitly here.
+function scannedToken(scanner, match) {
+  if (scanner === BARE_ARXIV_SCAN_RE) {
+    return 'arxiv:' + match[1];
+  }
+
+  return match[1] === undefined ? match[0] : match[1];
+}
 
 // Every scanner that can stand alone as evidence that a text unit carries a citation.
 const PRESENCE_SCANNERS = Object.freeze([
@@ -275,7 +324,7 @@ function splitBibliography(text) {
 function firstIdentifierIn(line) {
   for (const scanner of [BARE_URL_SCAN_RE, HOST_PATH_SCAN_RE, BARE_ARXIV_SCAN_RE, DOI_SCAN_RE]) {
     for (const match of line.matchAll(scanner)) {
-      const identifier = canonicalizeCitation(match[0]);
+      const identifier = canonicalizeCitation(scannedToken(scanner, match));
 
       if (!identifier.startsWith('raw:')) {
         return identifier;
@@ -398,8 +447,7 @@ export function extractCitationTokens(reportText) {
     DOI_SCAN_RE,
   ]) {
     for (const match of text.matchAll(scanner)) {
-      const raw = match[1] === undefined ? match[0] : match[1];
-      const identifier = canonicalizeCitation(raw);
+      const identifier = canonicalizeCitation(scannedToken(scanner, match));
 
       if (identifier.startsWith('raw:')) {
         unmatched.add(identifier);
