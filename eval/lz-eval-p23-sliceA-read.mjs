@@ -17,8 +17,8 @@
 // The claim that reaches the voter is then not the claim in the corpus. Measured in Phase 22: 27 of 60
 // records carried a dollar sign and NONE carried a hazardous sequence, so that run was not corrupted;
 // this fix lands before the first Phase-23 verdict. Every substitution here goes through a REPLACER
-// FUNCTION, in ONE call site, over a single non-global scan -- so inserted text is never re-scanned and
-// a claim containing a placeholder literal cannot be re-substituted either.
+// FUNCTION, in ONE call site, in a single scan -- and `replace` never re-scans the text a replacer
+// inserts, so a claim containing a placeholder literal cannot be re-substituted either.
 //
 // NEVER POOLED (ENV-03 / D-11): sliceARead composes the frozen gold module's tallyPerDirection and
 // returns EXACTLY { unrefuted, refuted, n, drawSeed, provisionalLimits } -- no pooled rate, no
@@ -78,8 +78,13 @@ const VOTER_PROMPT_TEMPLATE = Object.freeze(
   ].join('\n'),
 );
 
-// The ONE substitution scan. Non-global and applied once per key set, so inserted text is never
-// re-scanned -- a claim containing the literal string {{CLAIM_DATE}} cannot be re-substituted.
+// The ONE substitution scan, and it is GLOBAL BY REQUIREMENT. The template carries TWO placeholders
+// ({{CLAIM_DATE}} and {{CLAIM}}); without /g only the first would be replaced and the dispatched prompt
+// would still carry a literal {{CLAIM}}.
+//
+// The /g flag does NOT weaken the T-22-15 fix below. `replace` scans the ORIGINAL string once and never
+// re-scans the text a replacer inserts, so global-vs-non-global has no bearing on re-substitution: a
+// claim containing the literal string {{CLAIM_DATE}} cannot itself be substituted either way.
 const PLACEHOLDER_RE = /\{\{(CLAIM|CLAIM_DATE)\}\}/g;
 
 // ---------------------------------------------------------------------------
