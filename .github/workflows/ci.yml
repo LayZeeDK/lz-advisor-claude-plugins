@@ -54,6 +54,17 @@ jobs:
       #
       # The Phase-23 gap closure appended lz-eval-p23-retain.test.mjs -- the T-23-07 retention path
       # control, whose co-test touches no filesystem path at all and so needs nothing on the runner.
+      #
+      # The Phase-23 validation gap closure appended lz-eval-p23-sliceA-gate.test.mjs -- the half of
+      # Plan 23-05 Task 2's discrimination proof its SUMMARY recorded as NOT-EXERCISED. It extracts the
+      # Task 2 gate verbatim from the committed plan text and runs it against scratch fixtures in the OS
+      # temp tree, so it needs no network and realizes no path inside eval/.cache/.
+      #
+      # The same gap closure registered the pre-existing lz-eval-sliceA-gold.test.mjs. That module is
+      # not Phase-23 net-new, but ENV-03 depends on it directly: lz-eval-p23-sliceA-draw.mjs imports
+      # `filterSliceA` and lz-eval-p23-sliceA-read.mjs imports `tallyPerDirection` -- the never-pooled
+      # per-direction tally the published ENV-03 read rests on. Its 18 tests were passing locally and
+      # not running on push. The remaining unregistered files are Phase 16-22 debt, out of scope here.
       - name: Restore eval/ dev dependencies (jstat)
         run: cd eval && (npm ci || npm install)
       - name: Run eval-tree tests (explicit file form, no coverage thresholds)
@@ -72,3 +83,5 @@ jobs:
           eval/lz-eval-p23-verify-complete.test.mjs
           eval/lz-eval-p23-prereg.test.mjs
           eval/lz-eval-p23-retain.test.mjs
+          eval/lz-eval-p23-sliceA-gate.test.mjs
+          eval/lz-eval-sliceA-gold.test.mjs
