@@ -1,0 +1,11 @@
+{
+  "name": "lz-eval",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "license": "UNLICENSED",
+  "description": "Dev-only eval/dev tooling for lz-advisor (statistics + dataset harness). NEVER shipped: lives outside plugins/lz-advisor/ so no dependency can leak into the marketplace package (D-11). The distributed plugin runtime stays strictly zero-dep.",
+  "devDependencies": {
+    "jstat": "1.9.6"
+  }
+}

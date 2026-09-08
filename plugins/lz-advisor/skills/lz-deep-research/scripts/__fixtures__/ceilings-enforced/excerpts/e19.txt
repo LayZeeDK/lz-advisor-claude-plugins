@@ -1,0 +1,1 @@
+Reported observation: sierra metric rises 19 units in the controlled run.

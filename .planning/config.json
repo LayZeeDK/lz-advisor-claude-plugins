@@ -47,9 +47,9 @@
     "discuss_mode": "discuss",
     "skip_discuss": false,
     "code_review": true,
-    "code_review_depth": "standard",
+    "code_review_depth": "deep",
     "use_worktrees": true,
-    "_auto_chain_active": true
+    "_auto_chain_active": false
   },
   "hooks": {
     "context_warnings": true
@@ -60,5 +60,9 @@
   "mode": "yolo",
   "granularity": "standard",
   "branching_strategy": "none",
-  "quick_branch_template": null
+  "quick_branch_template": null,
+  "features": {
+    "global_learnings": true
+  },
+  "context_window": 1000000
 }

@@ -1,0 +1,737 @@
+// lz-eval-dataset.test.mjs
+//
+// Validation fixture for the zero-hand-authoring eval DATASET LOADER (Plan 18-04).
+// Dev-only eval-tree test: imports the SCRIPT under test (which imports the SHIPPED runtime
+// aggregator's hardening primitives across trees, one-directional eval -> runtime) plus node
+// stdlib only. No jstat is needed here, but the loader's cross-tree import means this test
+// transitively requires the plugin-tree runtime aggregator to resolve; eval/node_modules/ must
+// exist for consistent module resolution (`cd eval && npm install`).
+//
+// The dataset loader MUST run fully OFFLINE: every assertion below is driven by the committed
+// vendored WiCE fixtures + the committed derived manifest -- NO network and NO HF_TOKEN. The
+// hf-CLI fetch path is exercised only at eval time (Plan 18-05), never here.
+//
+// Asserts the EVAL-01 / D-02d / D-04 / Pitfall-2 load-bearing behaviors (each a DISTINCT named
+// test that genuinely exercises the behavior, never a tautology):
+//   - remapLabel: supported -> unrefuted; partially_supported -> refuted (tagged SUBTLE);
+//     not_supported -> refuted; an unknown label throws ContractError (fail closed).
+//   - the remap is DISCRIMINATING (partially_supported -> refuted is NOT supported -> unrefuted).
+//   - verifySha256 fails closed (/checksum mismatch/ naming the file) on a wrong buffer and passes
+//     on a matching one -- so a tampered/HTML-error body never silently verifies.
+//   - the gated-401 / missing-token path throws an actionable /HF_TOKEN/ (or `hf auth login`)
+//     error naming the gated dataset and does NOT retry as transient.
+//   - loadManifest maps a committed row to { source, stratum, book, expected_verdict }; a
+//     malformed manifest fails closed via ContractError (never a bare JSON.parse crash).
+//   - stratify produces the EVAL-01 fractions (~40% supported / ~60% bad, ~half the bad SUBTLE)
+//     within tolerance on an offline pool.
+//   - the manifest/vendor DRIFT GATE (Task 2): every manifest WiCE uid is covered by a vendored
+//     record AND each vendored file's recomputed sha256 matches the manifest -- fail-closed.
+//
+// HOST QUIRK (load-bearing): on this host (Node v24.13.0 / Windows arm64 / Git Bash) the phase
+// gate MUST target the explicit FILE form:
+//   node --test eval/lz-eval-dataset.test.mjs
+// The directory form (`node --test <dir>`) spuriously exits 1 on this host even when every real
+// test passes. The suite is one file, so the file form is the equivalent reliable gate.
+//
+// The byte-order mark is code point U+FEFF. In this source it appears ONLY via
+// String.fromCharCode(0xFEFF) -- NEVER as a literal byte (ASCII-only source per CLAUDE.md).
+
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import { createHash } from 'node:crypto';
+import { fileURLToPath } from 'node:url';
+
+import {
+  remapLabel,
+  verifySha256,
+  preflightToken,
+  loadManifest,
+  stratify,
+  fetchDataset,
+  STRATA_FRACTIONS,
+} from './lz-eval-dataset.mjs';
+
+// RE-PLAN-7 W1/F7: the NET-NEW WiCE CLOSED-BOOK trap arm (the trap BULK). The WiCE-heavy assertion is
+// wired to THIS real WiCE-native path (assembleWiceTraps over the vendored records), NOT a non-existent
+// WiCE-through-AVeriTeC pipeline (WiCE has no dated-URL KS -- it is closed-book-native).
+import { assembleWiceTraps } from './lz-eval-wice-traps.mjs';
+
+// Resolve fixtures test-file-relative (NEVER process.cwd() -- cwd drifts under GSD worktrees and
+// headless `claude -p`).
+const HERE = path.dirname(fileURLToPath(import.meta.url));
+const MANIFEST = path.join(HERE, '__fixtures__', 'lz-eval-manifest.json');
+
+// ---------------------------------------------------------------------------
+// D-02d: WiCE label remap to the FROZEN verdict enum (unrefuted | refuted). The remap is the
+// spine of the gate; the test proves it actually FLIPS (not a tautology) and fails closed on an
+// unknown label.
+// ---------------------------------------------------------------------------
+
+test('D-02d remapLabel maps the three WiCE labels to the frozen enum (subtle tag on partially_supported)', () => {
+  assert.equal(remapLabel('supported').expected_verdict, 'unrefuted', 'supported -> unrefuted');
+  assert.equal(
+    remapLabel('partially_supported').expected_verdict,
+    'refuted',
+    'partially_supported -> refuted (the SUBTLE substratum)',
+  );
+  assert.equal(remapLabel('not_supported').expected_verdict, 'refuted', 'not_supported -> refuted');
+
+  // partially_supported is tagged the SUBTLE substratum (the false-uphold trap).
+  assert.equal(remapLabel('partially_supported').stratum, 'subtle', 'partially_supported is tagged subtle');
+  assert.equal(remapLabel('supported').stratum, 'supported', 'supported stratum tag');
+  assert.equal(remapLabel('not_supported').stratum, 'not-supported', 'not_supported stratum tag');
+});
+
+test('D-02d remapLabel is DISCRIMINATING: partially_supported -> refuted is NOT supported -> unrefuted', () => {
+  // A tautological remap (always returning the same verdict) would pass the prior test if it
+  // returned 'refuted' for everything. This guard proves the supported branch genuinely differs
+  // from the partially_supported branch -- the remap flips.
+  const sup = remapLabel('supported').expected_verdict;
+  const ps = remapLabel('partially_supported').expected_verdict;
+  assert.notEqual(sup, ps, 'supported and partially_supported must remap to DIFFERENT verdicts');
+  assert.equal(sup, 'unrefuted');
+  assert.equal(ps, 'refuted');
+});
+
+test('D-02d remapLabel fails closed on an unknown label (ContractError, no silent default)', () => {
+  assert.throws(
+    () => remapLabel('mostly_true'),
+    (err) => err.name === 'ContractError' && /unknown wice label/i.test(err.message),
+    'an unknown source label must throw ContractError, never default-coerce',
+  );
+});
+
+// ---------------------------------------------------------------------------
+// D-04 / T-18-DATATAMPER: sha256 verify fails closed on a mismatch (never hash an HTML error
+// page and pass). The fixture writes the bad/good buffers in-memory -- no committed bad fixture.
+// ---------------------------------------------------------------------------
+
+test('D-04 verifySha256 throws /checksum mismatch/ naming the file on a wrong buffer', () => {
+  const buf = Buffer.from('the real downloaded bytes', 'utf8');
+  const wrongSha = 'deadbeef'.repeat(8); // 64 hex chars, deliberately wrong.
+
+  assert.throws(
+    () => verifySha256(buf, wrongSha, 'data/subclaim_dev.jsonl'),
+    (err) =>
+      err.name === 'ContractError' &&
+      /checksum mismatch/i.test(err.message) &&
+      err.file === 'data/subclaim_dev.jsonl',
+    'a sha256 mismatch must fail closed with the offending file named',
+  );
+});
+
+test('D-04 verifySha256 passes (returns the digest) when the buffer matches the expected sha', () => {
+  const buf = Buffer.from('the real downloaded bytes', 'utf8');
+  const expected = createHash('sha256').update(buf).digest('hex');
+  const got = verifySha256(buf, expected, 'data/subclaim_dev.jsonl');
+  assert.equal(got, expected, 'a matching buffer verifies and returns its digest');
+});
+
+test('D-04 verifySha256 fails closed on a non-buffer buf (ContractError carrying .file, not a native TypeError -- F9)', () => {
+  const sha = createHash('sha256').update('x', 'utf8').digest('hex');
+  assert.throws(
+    () => verifySha256(null, sha, 'data/x.jsonl'),
+    (err) => err.name === 'ContractError' && err.file === 'data/x.jsonl',
+    'a null buf must fail closed as a ContractError with .file (preserving the error discipline)',
+  );
+});
+
+// ---------------------------------------------------------------------------
+// Pitfall 2 / T-18-TOKENLEAK: a gated dataset without a token surfaces an actionable HF_TOKEN
+// error naming the gated dataset and does NOT retry as transient.
+// ---------------------------------------------------------------------------
+
+test('Pitfall-2 preflightToken throws an actionable /HF_TOKEN/ error for a gated repo with no token', () => {
+  // Simulate the absent-token environment WITHOUT mutating the real process env: pass an explicit
+  // empty token resolver. The error must name the gated dataset and mention HF_TOKEN / hf auth login.
+  assert.throws(
+    () => preflightToken('lytang/LLM-AggreFact', { gated: true, resolveToken: () => null }),
+    (err) =>
+      err.name === 'ContractError' &&
+      /HF_TOKEN/.test(err.message) &&
+      /hf auth login/.test(err.message) &&
+      /lytang\/LLM-AggreFact/.test(err.message),
+    'a gated repo with no token must surface an actionable HF_TOKEN error naming the dataset',
+  );
+});
+
+test('Pitfall-2 preflightToken passes for a gated repo WHEN a token is present', () => {
+  // A present token clears the pre-flight (returns the token). No retry logic is involved.
+  const tok = preflightToken('lytang/LLM-AggreFact', { gated: true, resolveToken: () => 'hf_xxx' });
+  assert.equal(tok, 'hf_xxx', 'a present token clears the gated pre-flight');
+});
+
+test('Pitfall-2 preflightToken does NOT require a token for an UNGATED repo (WiCE closed-book gate)', () => {
+  // The WiCE spine is ungated, so the closed-book SUBTLE gate runs with NO token. preflightToken
+  // returns null (no token needed) without throwing.
+  const tok = preflightToken('jon-tow/wice', { gated: false, resolveToken: () => null });
+  assert.equal(tok, null, 'an ungated repo needs no token (WiCE closed-book runs without HF_TOKEN)');
+});
+
+// ---------------------------------------------------------------------------
+// EVAL-01: the committed derived manifest maps a uid -> { source, stratum, book, expected_verdict };
+// a malformed manifest fails closed (ContractError, never a bare JSON.parse crash).
+// ---------------------------------------------------------------------------
+
+test('EVAL-01 loadManifest maps the committed manifest rows to a uid -> row index', () => {
+  const m = loadManifest(MANIFEST);
+  assert.ok(Array.isArray(m.examples) && m.examples.length >= 60, 'manifest has >= 60 examples');
+
+  // Every example exposes the load-bearing fields.
+  for (const ex of m.examples) {
+    assert.equal(typeof ex.uid, 'string', 'uid is a string');
+    assert.ok(ex.expected_verdict === 'unrefuted' || ex.expected_verdict === 'refuted', 'frozen verdict enum');
+    assert.equal(typeof ex.stratum, 'string', 'stratum present');
+    assert.ok(ex.book === 'open' || ex.book === 'closed', 'book is open|closed');
+  }
+
+  // byUid lookup resolves a known WiCE row to its remapped fields.
+  const someWice = m.examples.find((e) => e.source === 'wice');
+  assert.ok(someWice, 'manifest contains WiCE rows');
+  const row = m.byUid.get(someWice.uid);
+  assert.equal(row.source, 'wice');
+  assert.equal(row.expected_verdict, someWice.expected_verdict);
+});
+
+test('EVAL-01 loadManifest fails closed on a malformed manifest (ContractError, not a bare crash)', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'lz-eval-manifest-'));
+
+  try {
+    const bad = path.join(dir, 'manifest.json');
+    fs.writeFileSync(bad, 'not json at all', 'utf8');
+    assert.throws(
+      () => loadManifest(bad),
+      (err) => err.name === 'ContractError' && /malformed JSON|cannot read/.test(err.message),
+      'a malformed manifest must fail closed via ContractError',
+    );
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('EVAL-01 loadManifest fails closed when examples[] is missing/not an array', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'lz-eval-manifest-shape-'));
+
+  try {
+    const bad = path.join(dir, 'manifest.json');
+    fs.writeFileSync(bad, JSON.stringify({ schema_version: 1, examples: 'oops' }), 'utf8');
+    assert.throws(
+      () => loadManifest(bad),
+      (err) => err.name === 'ContractError' && /examples/i.test(err.message),
+      'a manifest without an examples[] array must fail closed',
+    );
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('EVAL-01 loadManifest fails closed when an example is missing book or has an empty stratum (the LOADER validates them, not just the fixture)', () => {
+  // DISCRIMINATING vs the prior coverage: the "maps rows" test asserts stratum/book on the COMMITTED
+  // (well-formed) fixture, so it would pass even if the loader ignored those fields. These rows are
+  // malformed -- a loader that skips stratum/book validation would NOT throw and this test would fail.
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'lz-eval-manifest-strat-'));
+
+  try {
+    const noBook = path.join(dir, 'no-book.json');
+    fs.writeFileSync(
+      noBook,
+      JSON.stringify({ sources: [{ id: 'wice' }], examples: [{ uid: 'x1', expected_verdict: 'unrefuted', stratum: 'supported' }] }),
+      'utf8',
+    );
+    assert.throws(
+      () => loadManifest(noBook),
+      (err) => err.name === 'ContractError' && /book/i.test(err.message),
+      'an example missing book must fail closed',
+    );
+
+    const badStratum = path.join(dir, 'bad-stratum.json');
+    fs.writeFileSync(
+      badStratum,
+      JSON.stringify({ sources: [{ id: 'wice' }], examples: [{ uid: 'x1', expected_verdict: 'refuted', stratum: '', book: 'closed' }] }),
+      'utf8',
+    );
+    assert.throws(
+      () => loadManifest(badStratum),
+      (err) => err.name === 'ContractError' && /stratum/i.test(err.message),
+      'an example with an empty stratum must fail closed',
+    );
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('EVAL-01 loadManifest fails closed on a malformed sources[] entry (null / missing id) -- a diagnosable ContractError, not a downstream TypeError', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'lz-eval-manifest-src-'));
+
+  try {
+    const nullSrc = path.join(dir, 'null-src.json');
+    fs.writeFileSync(
+      nullSrc,
+      JSON.stringify({ sources: [null], examples: [{ uid: 'x1', expected_verdict: 'unrefuted', stratum: 'supported', book: 'closed' }] }),
+      'utf8',
+    );
+    assert.throws(
+      () => loadManifest(nullSrc),
+      (err) => err.name === 'ContractError' && /source entry/i.test(err.message),
+      'a null source entry must fail closed via ContractError (not a later TypeError on s.id)',
+    );
+
+    const noId = path.join(dir, 'no-id.json');
+    fs.writeFileSync(
+      noId,
+      JSON.stringify({ sources: [{ repo: 'x/y' }], examples: [{ uid: 'x1', expected_verdict: 'unrefuted', stratum: 'supported', book: 'closed' }] }),
+      'utf8',
+    );
+    assert.throws(
+      () => loadManifest(noId),
+      (err) => err.name === 'ContractError' && /string id/i.test(err.message),
+      'a source entry missing a string id must fail closed',
+    );
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+// ---------------------------------------------------------------------------
+// EVAL-01 / D-02d: programmatic stratification produces the EVAL-01 fractions (~40% supported /
+// ~60% bad, ~half the bad SUBTLE). Driven by an offline labeled pool.
+// ---------------------------------------------------------------------------
+
+test('EVAL-01 stratify yields ~40% supported / ~60% bad with ~half the bad SUBTLE (within tolerance)', () => {
+  // Build an offline labeled pool with plenty of each WiCE label so the sampler can hit the
+  // target fractions. The sampler is deterministic given a fixed target size.
+  const pool = [];
+
+  for (let i = 0; i < 200; i += 1) {
+    pool.push({ uid: 'sup-' + i, source_label: 'supported' });
+  }
+
+  for (let i = 0; i < 200; i += 1) {
+    pool.push({ uid: 'ps-' + i, source_label: 'partially_supported' });
+  }
+
+  for (let i = 0; i < 200; i += 1) {
+    pool.push({ uid: 'ns-' + i, source_label: 'not_supported' });
+  }
+
+  const N = 60;
+  const sample = stratify(pool, N);
+  assert.equal(sample.length, N, 'stratify returns exactly N examples');
+
+  const supported = sample.filter((e) => e.expected_verdict === 'unrefuted').length;
+  const bad = N - supported;
+  const subtle = sample.filter((e) => e.stratum === 'subtle').length;
+
+  // ~40% supported (0.40) within a +/-0.10 band; ~60% bad is the complement.
+  const supFrac = supported / N;
+  assert.ok(supFrac >= 0.3 && supFrac <= 0.5, 'supported fraction ~40% (got ' + supFrac.toFixed(2) + ')');
+
+  // ~half the bad is SUBTLE (partially_supported) within tolerance.
+  const subtleFracOfBad = subtle / bad;
+  assert.ok(
+    subtleFracOfBad >= 0.4 && subtleFracOfBad <= 0.6,
+    '~half the bad is SUBTLE (got ' + subtleFracOfBad.toFixed(2) + ')',
+  );
+
+  // The exported fractions are the frozen contract the loader stratifies to.
+  assert.equal(STRATA_FRACTIONS.SUPPORTED_FRACTION, 0.4);
+  assert.equal(STRATA_FRACTIONS.BAD_FRACTION, 0.6);
+  assert.equal(STRATA_FRACTIONS.SUBTLE_FRACTION_OF_BAD, 0.5);
+});
+
+test('EVAL-01 stratify is DISCRIMINATING: a supported-only pool cannot satisfy the bad fraction', () => {
+  // A pool with NO bad claims cannot meet the ~60% bad target -- stratify must fail closed rather
+  // than silently returning an all-supported (tautological) sample.
+  const pool = [];
+
+  for (let i = 0; i < 100; i += 1) {
+    pool.push({ uid: 'sup-' + i, source_label: 'supported' });
+  }
+
+  assert.throws(
+    () => stratify(pool, 60),
+    (err) => err.name === 'ContractError' && /insufficient|stratum/i.test(err.message),
+    'a pool that cannot satisfy a stratum must fail closed, not return a degenerate sample',
+  );
+});
+
+test('EVAL-01 stratify fails closed on an UNRECOGNIZED source_label (schema drift, not a silent drop -- F5)', () => {
+  const pool = [];
+
+  for (let i = 0; i < 100; i += 1) {
+    pool.push({ uid: 'sup-' + i, source_label: 'supported' });
+    pool.push({ uid: 'ps-' + i, source_label: 'partially_supported' });
+    pool.push({ uid: 'ns-' + i, source_label: 'not_supported' });
+  }
+
+  // Inject one item with a non-null but UNKNOWN label. Pre-fix it was silently dropped (and a short
+  // pool would then misreport "insufficient pool"); now it must fail closed naming the bad label.
+  pool.push({ uid: 'weird-0', source_label: 'mostly_true' });
+
+  assert.throws(
+    () => stratify(pool, 60),
+    (err) => err.name === 'ContractError' && /unknown source_label/i.test(err.message),
+    'an unrecognized source_label must fail closed (diagnosable schema drift), not be silently dropped',
+  );
+});
+
+// ---------------------------------------------------------------------------
+// D-04 (drift fails closed at Wave 2 -- Task 2): the manifest's WiCE uid set is COVERED by the
+// vendored records under eval/__fixtures__/wice-vendored/ and each vendored file's recomputed
+// sha256 MATCHES its manifest entry. Any miss or mismatch fails the test (ContractError). The
+// coverage assertion is discriminating (matched count >= 1 AND equals the manifest WiCE uid count
+// -- a vacuous empty scan cannot pass). This is the gate that makes manifest/vendor drift fail at
+// Wave 2, not at the costly live eval run.
+// ---------------------------------------------------------------------------
+
+const WICE_DIR = path.join(HERE, '__fixtures__', 'wice-vendored');
+const WICE_RECORDS = path.join(WICE_DIR, 'records');
+
+test('D-04 manifest/vendor DRIFT GATE: every manifest WiCE uid is vendored AND its sha256 matches', () => {
+  const m = loadManifest(MANIFEST);
+
+  // The WiCE source row carries the per-vendored-file sha256.
+  const wiceSource = m.sources.find((s) => s.id === 'wice');
+  assert.ok(wiceSource, 'manifest has a WiCE source entry');
+  assert.equal(wiceSource.vendored, true, 'WiCE is marked vendored');
+
+  const manifestWiceUids = m.examples.filter((e) => e.source === 'wice').map((e) => e.uid);
+  assert.ok(manifestWiceUids.length >= 1, 'there is at least one WiCE example (non-vacuous)');
+
+  // (a) COVERAGE: every manifest WiCE uid has a matching vendored record under records/.
+  let matched = 0;
+
+  for (const uid of manifestWiceUids) {
+    const recPath = path.join(WICE_RECORDS, uid + '.json');
+    assert.ok(fs.existsSync(recPath), 'manifest WiCE uid is vendored: ' + uid);
+    matched += 1;
+  }
+
+  assert.equal(
+    matched,
+    manifestWiceUids.length,
+    'matched-uid count must equal the manifest WiCE uid count (no vacuous empty-set pass)',
+  );
+
+  // (b) sha256 MATCH: recompute sha256 over each vendored file (raw committed bytes) and assert it
+  // equals the manifest's recorded sha256 for that file. verifySha256 fails closed on mismatch.
+  for (const sf of wiceSource.files) {
+    const recPath = path.join(WICE_DIR, sf.file);
+    assert.ok(fs.existsSync(recPath), 'manifest source file is vendored: ' + sf.file);
+    const buf = fs.readFileSync(recPath);
+    // verifySha256 throws ContractError /checksum mismatch/ on any divergence.
+    const got = verifySha256(buf, sf.sha256, sf.file);
+    assert.equal(got, sf.sha256, 'recomputed sha256 matches the manifest for ' + sf.file);
+  }
+
+  // The vendored uid set must equal the manifest source-file set (no orphan vendored records and
+  // none missing).
+  const vendoredUids = fs
+    .readdirSync(WICE_RECORDS)
+    .filter((f) => f.endsWith('.json'))
+    .map((f) => f.slice(0, -'.json'.length))
+    .sort();
+  const manifestUidSet = [...manifestWiceUids].sort();
+  assert.deepEqual(vendoredUids, manifestUidSet, 'no orphan vendored records and none missing');
+});
+
+test('D-04 DRIFT GATE is DISCRIMINATING: a tampered vendored buffer fails the sha256 check', () => {
+  // Prove the drift gate would FIRE on a real regression: a single flipped byte in a vendored
+  // record yields a different sha256, and verifySha256 throws. (We do NOT mutate the committed
+  // tree; we tamper an in-memory copy of a real vendored file against its manifest sha.)
+  const m = loadManifest(MANIFEST);
+  const wiceSource = m.sources.find((s) => s.id === 'wice');
+  const sf = wiceSource.files[0];
+  const recPath = path.join(WICE_DIR, sf.file);
+  const buf = fs.readFileSync(recPath);
+  const tampered = Buffer.from(buf);
+  tampered[0] = tampered[0] === 0x7b ? 0x20 : 0x7b; // flip the leading byte
+
+  assert.throws(
+    () => verifySha256(tampered, sf.sha256, sf.file),
+    (err) => err.name === 'ContractError' && /checksum mismatch/i.test(err.message),
+    'a tampered vendored record must fail the drift gate (sha256 mismatch)',
+  );
+});
+
+// ---------------------------------------------------------------------------
+// Plan 19-03 / EVAL-01 / D-07: the manifest gains the AVeriTeC OPEN-BOOK CLOSED-BOOK JUDGMENT-difficulty
+// strata rows (buried / evidence-absent / date-sensitive). The drift gate is extended to cover them
+// (W-1, 19-04-REPLAN-DECISION-3: the difficulty axis is closed-book JUDGMENT, NOT retrieval
+// orchestration -- corrected in lockstep with the lock-rule/manifest prose; the stratum NAMES are
+// unchanged, so the membership/count/no-text/recipe guards below are intact):
+//   - every AVeriTeC example uid is covered (and the matched-count == uid-count discriminating guard
+//     holds -- no vacuous empty-set pass);
+//   - NO AVeriTeC row carries a `text` field (the CC-BY-NC license-clean assertion -- mutated NC
+//     text lives ONLY in gitignored eval/.cache/, never the committed manifest, D-07/Pitfall 5);
+//   - the UPDATED 'averitec' source row is gated:false + repoType:'model' (D-12), repoType-
+//     discriminable from WiCE, with a pinned revision + per-file sha256, and there is EXACTLY ONE
+//     chenxwh/AVeriTeC source entry (the existing wrong-gated row was corrected in place, not
+//     duplicated).
+// The OQ-1 leakage probe (lz-eval-traps.mjs leakageProbe) screened the dev-KS seeds CLEAN BEFORE this
+// manifest was locked; that gate is exercised in lz-eval-traps.test.mjs (the probe DISCRIMINATES) and
+// was run on the real seeds at construction time (exit 0).
+// ---------------------------------------------------------------------------
+
+test('EVAL-01 AVeriTeC open-book DRIFT GATE: every AVeriTeC uid is covered AND the strata discriminate', () => {
+  const m = loadManifest(MANIFEST);
+
+  const avtRows = m.examples.filter((e) => e.source === 'averitec');
+  assert.ok(avtRows.length >= 1, 'there is at least one AVeriTeC example (non-vacuous)');
+
+  // (a) COVERAGE: every AVeriTeC uid is a non-empty string, and all uids are unique.
+  // The uniqueness check is discriminating: it would fail if loadManifest regressed and emitted
+  // duplicate uids. The non-empty-string check would fail if the loader emitted a blank uid.
+  const avtUids = avtRows.map((e) => e.uid);
+
+  for (const uid of avtUids) {
+    assert.equal(typeof uid, 'string', 'AVeriTeC uid is a string');
+    assert.ok(uid.length > 0, 'AVeriTeC uid is non-empty');
+  }
+
+  // No duplicate AVeriTeC uids (loadManifest already fails closed on dupes; assert here too).
+  assert.equal(new Set(avtUids).size, avtUids.length, 'AVeriTeC uids are unique');
+
+  // (b) THE TWO OFFLINE ARMS (RE-PLAN-5): the open-book rows span EXACTLY {evidence-absent,
+  // positive-control} -- a refuted-trap arm AND an interleaved gold=unrefuted positive-control arm
+  // (Finding 1). buried is DROPPED from the offline gate (construct-invalid offline,
+  // 19-04-REPLAN-DECISION-4 D-RP4-1) and date-sensitive is DEFERRED -- both STILL absent (Phase-20 live).
+  // (The uid-coverage / no-text / recipe guards above + below are intact; only the membership flips.)
+  const strata = new Set(avtRows.map((e) => e.stratum));
+
+  assert.ok(strata.has('evidence-absent'), 'the AVeriTeC open-book set includes the evidence-absent (refuted-trap) offline stratum');
+  assert.ok(strata.has('positive-control'), 'the AVeriTeC open-book set includes the interleaved positive-control arm (RE-PLAN-5 Finding 1)');
+  assert.equal(strata.size, 2, 'EXACTLY {evidence-absent, positive-control} (two arms); buried DROPPED + date-sensitive DEFERRED to Phase-20 live');
+  assert.equal(strata.has('buried'), false, 'no buried example row is assembled in the offline gate (DROPPED -- construct-invalid offline, D-RP4-1)');
+  assert.equal(strata.has('date-sensitive'), false, 'no date-sensitive example row is assembled in the offline gate (still deferred to Phase-20)');
+});
+
+test('EVAL-01 license-clean: NO AVeriTeC row carries a `text` field; the recipe assertion is SCOPED to non-positive-control rows (B-1, RE-PLAN-5)', () => {
+  const m = loadManifest(MANIFEST);
+  const avtRows = m.examples.filter((e) => e.source === 'averitec');
+
+  // The no-NC-`text` assertion stays over ALL averitec rows (control rows are license-clean too): the
+  // committed manifest NEVER carries the mutated/native NC claim prose. A `text` field is a violation.
+  for (const row of avtRows) {
+    assert.equal('text' in row, false, 'AVeriTeC row ' + row.uid + ' must NOT carry a text field (NC license)');
+  }
+
+  // B-1: the recipe assertion is SCOPED to NON-positive-control averitec rows. The RE-PLAN-5 positive
+  // controls are NATIVE (NO mutateOverreach), so they carry NO recipe; an unscoped loop would THROW and
+  // red the suite that Task 4 gates on. The refuted-trap (non-positive-control) rows DO carry the recipe.
+  const trapRows = avtRows.filter((r) => r.stratum !== 'positive-control');
+  assert.ok(trapRows.length >= 1, 'the recipe assertion is non-vacuous (>= 1 non-positive-control AVeriTeC row)');
+
+  for (const row of trapRows) {
+    assert.ok(row.recipe && typeof row.recipe === 'object', 'AVeriTeC trap row ' + row.uid + ' carries the mutation recipe');
+    assert.equal(typeof row.recipe.transform, 'string', 'the recipe records the transform class');
+    assert.equal(typeof row.recipe.uid_seed, 'number', 'the recipe records the source seed claim_id');
+    assert.equal(row.expected_verdict, 'refuted', 'a refuted-trap row is refuted-gold');
+  }
+
+  // DISCRIMINATING (B-1, a real partition, not a blanket skip): the positive-control rows carry NO recipe
+  // (native, unmutated) AND expected_verdict 'unrefuted' (the inverse of the trap rows' 'refuted' + recipe).
+  const controlRows = avtRows.filter((r) => r.stratum === 'positive-control');
+  assert.ok(controlRows.length >= 1, 'there is at least one positive-control averitec row (RE-PLAN-5)');
+
+  for (const row of controlRows) {
+    assert.equal('recipe' in row, false, 'a positive-control row carries NO recipe (native, unmutated, RE-PLAN-5)');
+    assert.equal(row.expected_verdict, 'unrefuted', 'a positive-control row is unrefuted-gold (vs the trap refuted)');
+  }
+
+  // DISCRIMINATING: a vacuous empty AVeriTeC set would pass the loops trivially -- assert non-empty.
+  assert.ok(avtRows.length >= 1, 'the no-text assertion is non-vacuous (>= 1 AVeriTeC row)');
+});
+
+test('D-12 the AVeriTeC source row is gated:false + repoType:model, distinct from WiCE, NOT duplicated', () => {
+  const m = loadManifest(MANIFEST);
+
+  // EXACTLY ONE chenxwh/AVeriTeC source entry (the wrong-gated row was corrected in place, not added).
+  const avtSources = m.sources.filter((s) => s.repo === 'chenxwh/AVeriTeC');
+  assert.equal(avtSources.length, 1, 'exactly one chenxwh/AVeriTeC source entry (no duplicate add)');
+
+  const avt = avtSources[0];
+  assert.equal(avt.id, 'averitec', 'the AVeriTeC source id is averitec');
+  assert.equal(avt.gated, false, 'AVeriTeC is gated:false (D-12: an ungated model repo, token-free)');
+  assert.equal(avt.repoType, 'model', 'AVeriTeC repoType is model (D-12)');
+  assert.equal(avt.vendored, false, 'AVeriTeC is fetch-only (never vendored)');
+  assert.equal(avt.license, 'CC-BY-NC-4.0', 'AVeriTeC license is CC-BY-NC-4.0');
+
+  // The revision is pinned (NOT the placeholder, NOT a moving ref).
+  assert.ok(/^[0-9a-f]{40}$/.test(avt.revision), 'AVeriTeC revision is a pinned 40-hex commit (not PENDING/main)');
+  assert.notEqual(avt.revision, 'PENDING_ENUMERATE_AT_EVAL_TIME', 'the placeholder revision was replaced');
+
+  // Per-file sha256 is pinned for the fetch-only KS files (the integrity guard) -- valid 64-hex.
+  assert.ok(Array.isArray(avt.files) && avt.files.length >= 1, 'AVeriTeC carries pinned files');
+
+  for (const f of avt.files) {
+    assert.ok(/^[0-9a-f]{64}$/.test(f.sha256), 'AVeriTeC file ' + f.file + ' has a valid 64-hex sha256');
+  }
+
+  // DISCRIMINATING (repoType differs from WiCE -- not a blanket flip): WiCE stays dataset.
+  const wice = m.sources.find((s) => s.id === 'wice');
+  assert.notEqual(avt.repoType || 'dataset', wice.repoType || 'dataset', 'AVeriTeC repoType differs from WiCE (per-source, not blanket)');
+  assert.equal(wice.repoType || 'dataset', 'dataset', 'WiCE stays a dataset repo');
+});
+
+test('RE-PLAN-7 WiCE-heavy (W1/F7): the trap BULK is sourced from the WiCE CLOSED-BOOK arm (assembleWiceTraps over the vendored records), NOT a WiCE-through-AVeriTeC pipeline; the AVeriTeC evidence-absent stratum is DISTINCT', async () => {
+  // The trap arm is predominantly WiCE: the closed-book-native WiCE arm carries the BULK of the traps
+  // (de-risking the AVeriTeC median-5 collapse). DISCRIMINATING: the WiCE-native trap count strictly
+  // exceeds the AVeriTeC evidence-absent example-row count in the manifest (the WiCE arm is the majority).
+  const records = fs
+    .readdirSync(WICE_RECORDS)
+    .filter((f) => f.endsWith('.json'))
+    .sort()
+    .map((f) => JSON.parse(fs.readFileSync(path.join(WICE_RECORDS, f), 'utf8')));
+
+  const agreeProbe = async ({ expectedEntailment }) => ({ accepted: true, reason: 'agree', entails: expectedEntailment });
+  const fooledSubject = async () => 'unrefuted';
+
+  const wice = await assembleWiceTraps({
+    records,
+    probes: [agreeProbe],
+    subjectDifficultyProbe: fooledSubject,
+  });
+
+  const wiceTrapCount = wice.strata['evidence-absent'].length;
+  assert.ok(wiceTrapCount >= 3, 'the WiCE-native trap arm builds the trap BULK (>= 3 refuted traps; closed-book-native)');
+
+  // The WiCE arm does NOT route through the AVeriTeC dateFilter/survivor pipeline -- it builds from the
+  // GIVEN closed-book evidence. The AVeriTeC evidence-absent stratum (the manifest example rows) is a
+  // SEPARATE, distinct arm.
+  const m = loadManifest(MANIFEST);
+  const avtEvidenceAbsent = m.examples.filter((e) => e.source === 'averitec' && e.stratum === 'evidence-absent').length;
+
+  // DISCRIMINATING: the WiCE trap BULK exceeds the AVeriTeC evidence-absent example-row count (WiCE is the
+  // majority of the trap arm; the AVeriTeC evidence-absent stratum is the distinct, smaller separate arm).
+  assert.ok(
+    wiceTrapCount > avtEvidenceAbsent,
+    'the WiCE-native trap arm (' + wiceTrapCount + ') is the MAJORITY of the trap arm vs the distinct AVeriTeC evidence-absent stratum (' + avtEvidenceAbsent + ') -- WiCE-heavy (F7)',
+  );
+
+  // The WiCE rows are recipe-not-text + license-clean (ODC-BY/MIT): NO recipe, NO text field.
+  for (const row of wice.strata['evidence-absent']) {
+    assert.equal('recipe' in row, false, 'a WiCE trap row carries NO overreach recipe (native partially/not_supported claim)');
+    assert.equal('text' in row, false, 'a WiCE trap row carries NO text field (license-clean, the closed-book evidence stays out of the manifest)');
+    assert.equal(row.book, 'closed', 'a WiCE row is book:closed (closed-book-native)');
+  }
+});
+
+test('EVAL-01 the existing WiCE drift-gate assertions are UNCHANGED by the AVeriTeC extension', () => {
+  // Re-assert the WiCE coverage + sha256 invariants hold after the manifest extension (no relaxation).
+  const m = loadManifest(MANIFEST);
+  const wiceSource = m.sources.find((s) => s.id === 'wice');
+  assert.equal(wiceSource.vendored, true, 'WiCE stays vendored');
+
+  const manifestWiceUids = m.examples.filter((e) => e.source === 'wice').map((e) => e.uid);
+  assert.ok(manifestWiceUids.length >= 1, 'WiCE examples remain present');
+
+  for (const uid of manifestWiceUids) {
+    const recPath = path.join(WICE_RECORDS, uid + '.json');
+    assert.ok(fs.existsSync(recPath), 'WiCE uid still vendored after the AVeriTeC extension: ' + uid);
+  }
+
+  // A spot sha256 recompute on the first WiCE file still matches (no relaxation of the integrity gate).
+  const sf = wiceSource.files[0];
+  const buf = fs.readFileSync(path.join(WICE_DIR, sf.file));
+  const got = verifySha256(buf, sf.sha256, sf.file);
+  assert.equal(got, sf.sha256, 'WiCE sha256 integrity is intact after the AVeriTeC extension');
+});
+
+// ---------------------------------------------------------------------------
+// D-12 (loader fix -- per-source parameterization, NOT a blanket flip): fetchDataset must thread a
+// per-source `repoType` (default 'dataset') and emit it as the `--repo-type` arg, so AVeriTeC fetches
+// as a 'model' repo while WiCE stays 'dataset'. A capturing `runner` (the existing injectable seam)
+// records the argv WITHOUT shelling out. The assertions are DISCRIMINATING (assert.notEqual style):
+// they prove the per-source value actually FLIPS, never that fetchDataset emits a constant.
+// ---------------------------------------------------------------------------
+
+// A capturing runner: records the argv passed to `hf` and returns a clean exit (status 0) so
+// fetchDataset completes without touching the network. The download dir is never created.
+function captureRunner() {
+  const calls = [];
+  const runner = (cmd, args) => {
+    calls.push({ cmd, args });
+
+    return { status: 0, stdout: '', stderr: '' };
+  };
+
+  return { runner, calls };
+}
+
+// Pull the value following a flag out of an argv array (e.g. flagValue(args, '--repo-type')).
+function flagValue(args, flag) {
+  const i = args.indexOf(flag);
+
+  return i >= 0 && i + 1 < args.length ? args[i + 1] : undefined;
+}
+
+test('D-12 fetchDataset emits --repo-type model for an AVeriTeC-shaped (model+ungated) call', () => {
+  const { runner, calls } = captureRunner();
+  // chenxwh/AVeriTeC is an UNGATED `model` repo (D-12): repoType:'model', gated:false -> token-free.
+  fetchDataset('chenxwh/AVeriTeC', {
+    revision: 'a'.repeat(40),
+    repoType: 'model',
+    gated: false,
+    runner,
+  });
+
+  assert.equal(calls.length, 1, 'fetchDataset shelled out exactly once');
+  assert.equal(flagValue(calls[0].args, '--repo-type'), 'model', 'AVeriTeC fetches as --repo-type model');
+  assert.equal(calls[0].args[0], 'download', 'hf download invocation');
+  assert.ok(calls[0].args.includes('chenxwh/AVeriTeC'), 'the repo is the AVeriTeC repo');
+});
+
+test('D-12 fetchDataset emits --repo-type dataset for a WiCE-shaped (dataset+ungated) call', () => {
+  const { runner, calls } = captureRunner();
+  // jon-tow/wice stays a real `dataset` repo (Pitfall 6: a blanket --repo-type model flip would 404).
+  fetchDataset('jon-tow/wice', {
+    revision: 'b'.repeat(40),
+    repoType: 'dataset',
+    gated: false,
+    runner,
+  });
+
+  assert.equal(flagValue(calls[0].args, '--repo-type'), 'dataset', 'WiCE fetches as --repo-type dataset');
+});
+
+test('D-12 fetchDataset DISCRIMINATES: the --repo-type flips per source (model vs dataset)', () => {
+  // The load-bearing anti-blanket-flip assertion: the SAME function emits DIFFERENT --repo-type
+  // values for the two sources. A blanket flip (or a hardcode) would make these equal.
+  const avt = captureRunner();
+  fetchDataset('chenxwh/AVeriTeC', { revision: 'a'.repeat(40), repoType: 'model', gated: false, runner: avt.runner });
+  const wice = captureRunner();
+  fetchDataset('jon-tow/wice', { revision: 'b'.repeat(40), repoType: 'dataset', gated: false, runner: wice.runner });
+
+  const avtType = flagValue(avt.calls[0].args, '--repo-type');
+  const wiceType = flagValue(wice.calls[0].args, '--repo-type');
+  assert.notEqual(avtType, wiceType, 'the per-source --repo-type values must DIFFER (not a blanket flip)');
+  assert.equal(avtType, 'model');
+  assert.equal(wiceType, 'dataset');
+});
+
+test('D-12 fetchDataset defaults repoType to dataset when omitted (back-compat)', () => {
+  const { runner, calls } = captureRunner();
+  // No repoType passed -> the default is 'dataset' (existing WiCE callers are byte-unaffected).
+  fetchDataset('jon-tow/wice', { revision: 'c'.repeat(40), gated: false, runner });
+
+  assert.equal(flagValue(calls[0].args, '--repo-type'), 'dataset', 'omitted repoType defaults to dataset');
+});
+
+test('D-12 fetchDataset does NOT throw for an ungated repo with no token (preflightToken returns null)', () => {
+  const { runner } = captureRunner();
+  // An ungated source with no token must clear the pre-flight (no HF_TOKEN required) and proceed.
+  assert.doesNotThrow(
+    () =>
+      fetchDataset('chenxwh/AVeriTeC', {
+        revision: 'a'.repeat(40),
+        repoType: 'model',
+        gated: false,
+        runner,
+      }),
+    'an ungated AVeriTeC fetch needs no token (gated:false -> preflightToken returns null)',
+  );
+});

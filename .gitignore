@@ -5,8 +5,25 @@
 /.claude/tmp/
 /.claude/worktrees/
 
+# Ephemeral GSD run state (dispatch-isolation sentinel; 10-min TTL, per-machine).
+# Bare pattern, matching at any depth, because the sentinel is written to the
+# CWD of whichever tree dispatches -- hooks/lib/isolation-sentinel.js documents
+# this entry as the reason `.gsd` never reaches git status.
+.gsd/
+
 # Eval pipeline outputs (regenerated on re-run)
 evals/**/outputs/
 
+# Eval dataset cache (fetched at eval time; license-compliant local-only; never committed)
+/eval/.cache/
+# Eval dev dependencies (pinned in eval/package-lock.json; restored via `cd eval && npm install`; never shipped)
+/eval/node_modules/
+
 # Transient /lz-plan side-effect output (plan files written to cwd by skill)
 /plans/
+
+# Deep-research run dirs (audit trail; retained on disk, never committed -- INTEG-02 / AGG-05)
+/.lz-research/
+
+# playwright-cli skill console logs (tool debris; regenerated per browser session)
+/.playwright-cli/

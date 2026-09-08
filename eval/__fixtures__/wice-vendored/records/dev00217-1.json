@@ -1,0 +1,54 @@
+{
+  "label": "partially_supported",
+  "supporting_sentences": [
+    [
+      8
+    ],
+    [
+      7,
+      8
+    ]
+  ],
+  "claim": "The round included additional investments from Andreessen Horowitz, 8VC, Thrive Capital, and Sway Ventures.",
+  "evidence": [
+    "(meta data) TITLE: OpenGov Picks Up $25 Million More And Adds Marc Andreessen To The Board \u2013 TechCrunch",
+    "(meta data) AUTHOR: Sarah Buhr",
+    "(meta data) PUBLISHER: https://www.facebook.com/techcrunch",
+    "# OpenGov Picks Up $25 Million More And Adds Marc Andreessen To The Board",
+    "Sarah Buhr",
+    "4 years",
+    "OpenGov announced the close of a refreshingly sized $25 million in additional financing today.",
+    "The startup initiative to provide government financial data closed its Series B round of $15 million, led by Andreessen Horowitz, a year-and-a-half ago.",
+    "A16z, along with previous investors Formation8, Thrive Capital and AITV, has now padded OpenGov with another shot of financing to help scale the sales side of the business.",
+    "The new round pulled in some new and noteworthy investors, too.",
+    "Glynn Capital, Intuit founder Scott Cook, as well as Ashton Kutcher and Guy Oseary's new outfit Sound Ventures all jumped in.",
+    "Also, notably, OpenGov has added Marc Andreessen to the OpenGov board.",
+    "\"The company definitely has good potential as a business, but I also think it has potential to affect outcome, particularly in how government spends money, which is a central issue for government and taxpayers,\" Andreessen told TechCrunch in an interview.",
+    "Watching the democratic debates, these are very abstract debates about all this money getting spent.",
+    "I think it would be much more helpful to everyone involved if they were actually looking at the data and understanding the data and I think OpenGov could help with that.",
+    "Marc Andreessen",
+    "The Libertarian-leaning Andreessen has reason to take an interest in an organization that tracks government spending.",
+    "Some might even call the co-founder of one of the most well-known VC firms in Silicon Valley a Republican.",
+    "Andreessen supported Mitt Romney's bid for president with $100,000.",
+    "But those conservative tendencies were once affiliated with the Democratic party \u2013 he supported both Bill Clinton and Al Gore, and even Barack Obama, before flipping to Mitt.",
+    "The Andreessen Horowitz co-founder shifted political gears a few years back, telling CNBC, \"I turned 40 last year and so I figured it was time to make the switch.\"",
+    "Andreessen sees his investment in and board seat participation with OpenGov important for both sides of the political isle.",
+    "As he explained over the phone, \"Democrats want to highlight government spending because they want to show that it's productive.",
+    "And then of course Republicans tend to want to do the opposite.",
+    "They want to shrink the spending, expose it in a way that makes it clear to taxpayers how much is being spent and if it's wastefully, they need to shrink the spending.\"",
+    "OpenGov works on the local city and county government level for now.",
+    "Those in Palo Alto can access budget and finance data, for example, on OpenGov's Palo Alto portal.",
+    "The platform has grown at a rapid pace in the last year, doubling its customer base to provide financial intelligence and transparency tools in more than 500 governments in 44 states, according to OpenGov.",
+    "Part of that was a major push in Ohio to open the financials up in every city and county this September.",
+    "Andreessen foresees growing OpenGov on a national scale, too.",
+    "\"Watching the Democratic debates, these are very abstract debates about all this money getting spent.",
+    "I think it would be much more helpful to everyone involved if they were actually looking at the data and understanding the data and I think OpenGov could help with that.\"",
+    "OpenGov plans to use the money to hire more in sales and other areas and continue scaling the company in local governments for now, as well as further developing and improving the platform."
+  ],
+  "meta": {
+    "id": "dev00217-1",
+    "claim_title": "OpenGov",
+    "claim_section": "Funding.",
+    "claim_context": "OpenGov has raised $47\u00a0million from venture capital and angel investors. A $3\u00a0million Series A round in 2012 included venture funds 8VC, Founder Collective, Valiant Capital, and \"a number of high-profile angel investors.\" In 2013, the company raised $4\u00a0million in further investment from 8VC and new investor Thrive Capital. \n On May 15, 2014, OpenGov announced a new $15 million Series B round of funding including investments from Andreessen Horowitz, 8VC, SGVC, Streamlined Ventures, Sway Ventures, and Thrive Capital. \n An additional $25 million Series B round was in October 2015."
+  }
+}

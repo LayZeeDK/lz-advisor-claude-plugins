@@ -1,0 +1,1115 @@
+{
+  "schema_version": 1,
+  "description": "Derived, pre-registered, stratified eval dataset manifest (EVAL-01). WiCE rows are vendored under wice-vendored/ (ODC-BY/MIT, the only commit-safe corpus). AVeriTeC (CC-BY-NC) and LLM-AggreFact (CC-BY-ND) are FETCH-ONLY: this manifest carries only their IDs + remapped labels + pinned revision + sha256, never the raw corpus text (D-04 license compliance). The remap target is the FROZEN verdict enum unrefuted|refuted.",
+  "stage1_pre_registration": {
+    "task6_run_config": {
+      "note": "Task-6 run-config PIN (additive; the zero-votes window is still open -- no Stage-1 vote has been cast). The three under-specified parameters fixed BEFORE the screen. nControls is a free draw-size (N is frozen post-screen, so a generous draw is not result-shopping); the two F5 tolerances adopt the frozen code-defaults. NONE of these alters a RE-PLAN-7/8 key or a frozen primitive.",
+      "nControls": 40,
+      "nControls_justification": "The TRAP arm is the binding constraint -- it is the OOF screen's active drop target (lower retention). nControls=40 demands the lowest trap retention r_t>=0.60 of any option while controls still clear r_c>=0.77; best pessimistic-corner joint margin; the largest trap pool stabilizes the F5 stats. 60 risks failing the trap floor under a culling screen; 50 is an unconfirmed interpolation.",
+      "covariateOverlapTolerance": 0.5,
+      "covariateOverlapTolerance_justification": "The frozen code-default (assembleStage1Traps/assembleWiceTraps). A post-screen VOID guard (trap/control claim-length overlap), not a tuning knob.",
+      "subjectDifficultyMaxCatchRate": 0.5,
+      "subjectDifficultyMaxCatchRate_justification": "The frozen code-default. A symmetric midpoint: a held-out-Claude reference catching > 50% of the retained traps voids the set as too easy (VOID-difficulty).",
+      "partition_rule": "controlSeeds = supported.slice(len - nControls) (the trailing nControls Supported AVeriTeC seeds, ascending claim_id); trapSeeds = the remaining qualifying Supported seeds. nControls reserves trailing seeds FROM the shared trap pool (a seed used as a trap is never reused as a control). Verified against assembleStage1Traps.",
+      "feasibility_at_40": "Pre-screen pools (real assemblers, accept-all stubs): AVeriTeC 42 traps + 20 controls; WiCE (F6 cluster-collapsed) 18 traps + 11 controls -> combined ~60 traps (>=36) + ~31 controls (>=24). Reachable with margin; the control arm is the tighter post-screen constraint.",
+      "averitec_ncontrols_superseded_by_replan9": {
+        "value": 0,
+        "note": "RE-PLAN-9 supersedes the nControls=40 pin (9b16c60) -- AVeriTeC nControls=0 (ALL AVeriTeC seeds are traps); controls come from the entailment-native FEVER+VitaminC source (NOT reserved AVeriTeC native seeds). The zero-votes window is STILL OPEN (the gold VOIDed at the gold-build BEFORE any subject vote), so this is pre-registration-clean, NOT result-shopping. The original nControls=40 pin + nControls_justification above are PRESERVED + annotated SUPERSEDED, never deleted. The trigger: AVeriTeC 'Supported' is an aggregate human judgment over the full evidence base, NOT strict excerpt-entailment, so native AVeriTeC controls drop under the strict OOF screen (~7 << N_CTRL_FLOOR 24; 19-04-T-SPEND-1-OUTCOME.md). The assembler CODE is unchanged (nControls=0 is the existing trap-only path)."
+      }
+    },
+    "note": "Pre-registered in the ZERO-VOTES window BEFORE any Stage-1 vote (anti result-shopping, T-19-15). The construct-validity-corrected offline gating read (19-04-REPLAN-DECISION-4, AMENDING -3 / -2; UNANIMOUS cross-family board, 5/5, OPTION A): ONE offline CLOSED-BOOK JUDGMENT-difficulty stratum (evidence-absent); buried is DROPPED (construct-invalid offline, D-RP4-1: the synthetic disconfirmer flag is text-unverified; the count-vs-rank predicate error D-RP4-2 mis-classified all 62 seeds as buried) and date-sensitive DEFERRED to Phase-20 live (its post-cutoff-leak arm is unobservable offline) -- both deferred to the Phase-20 live shadow. The offline gate measures CLOSED-BOOK JUDGMENT (resist-uphold-on-absence), NOT retrieval orchestration (which is not cleanly + leak-safely measurable offline and defers to the Phase-20 live operational shadow). EVAL_THRESHOLDS numbers are byte-unchanged.",
+    "url_date_rule": "(19|20)\\d{2}\\/(0[1-9]|1[0-2])\\/(0[1-9]|[12]\\d|3[01])(\\/|$)",
+    "url_date_rule_note": "The byte-locked strict path-only RegExp source the KS-enrichment layer (eval/lz-eval-trap-assembler.mjs extractUrlDate) uses; range-checked through the FROZEN safeParse. An archive-wrapped URL yields the INNER publication date (the 14-digit wrapper timestamp has no slash separators); a no-match / out-of-range / implausibly-future date returns null (fail closed, DROP only, never leak). The aggregate anti-drift test asserts this string equals URL_DATE_RULE.source byte-for-byte.",
+    "seed_selection": "Deterministic: ALL qualifying Supported AVeriTeC-dev seeds by ASCENDING claim_id (no hand-picking). A seed is qualifying iff its claim_date normalizes (single-digit-day zero-pad at the assembly layer; the FROZEN parseAvtDate stays frozen and still throws on a raw single-digit day) AND >= 5 strictly-pre-cutoff dated docs survive the frozen dateFilter.",
+    "scoring_reconciliation": "The SCORED quantity is the MODEL voter's free-text vote.verdict over the date-filtered KS text (persisted in {unrefuted,refuted}, read by countFalseUpholds). searchAndStop's flag-driven mechanical verdict enum {judge-result,'refuted-default','insufficient'} is the TRACE + the mechanical minimums ONLY and NEVER overrides the recorded vote; the decisive/disconfirmer/verdict flags drive ONLY searchAndStop's trace + classifySeed's stratum assignment (T-19-19).",
+    "no_abstention_rule": "The offline-read dispatch prompt REQUIRES a definite refuted/unrefuted verdict (the gating read measures the BINARY false-uphold). A null/abstain/unparseable vote is NOT persisted (persistVote rejects non-{unrefuted,refuted}) and is RE-CAST until a definite vote lands, so each seat's pool completes only with definite votes and readDelta proceeds only at a complete exactly-nPooled pool.",
+    "survivor_rule": ">= 5 strictly-pre-cutoff dated surviving docs per seed (else the seed is excluded -- min-not-met must not silently change the trap); >= 3 distinct surviving claims per stratum (so nPooled >= reliableTrials=15 at k=5).",
+    "cutoff_rule": "STRICT cutoff -- NO date-shift, NO claimDate-1 imputation (rejected by all three reviewers). Undated + same-day (== claimDate) docs are DROPPED by the strict `<` in the frozen dateFilter.",
+    "k_to_1_reduction_rule": "The dispatch persists k votes/claim keyed seat-uid-k; readDelta consumes ONE pooled record/claim keyed by the claim uid (the F3/F4 realized-count guard). The reduction is reducePooledVerdict (the dispatch Workflow SHARED block, Task 2). The chosen false-uphold-over-k rule is ANY-UPHOLD (stated explicitly, locked before any vote): a claim's pooled verdict is a FALSE-UPHOLD (unrefuted on a refuted-gold trap) if ANY of its k votes upholds -- NOT majority. Rationale: a single silent uphold-on-absence is exactly the failure the gate hunts; the conservative any-uphold rule mirrors the shipped pipeline tally's downgrade-not-delete posture (I2, 19-04-REPLAN-DECISION-3).",
+    "construct_scope_boundary": "The offline gate measures CLOSED-BOOK JUDGMENT (resist-uphold-on-absence) over an orchestrator-supplied date-window evidence packet, NOT retrieval orchestration. A closed-book PASS tests JUDGMENT difficulty, NOT query-formulation / search-depth / premature-stop. Retrieval is NOT cleanly + leak-safely measurable offline (the frozen staticKsAdapter ignores the query; a leak-safe model-driven offline retrieval would need a net-new ranked top-k index over a thin median-5 corpus -> poor ROI). Retrieval DEFERS to the Phase-20 LIVE operational shadow (shadow -> canary -> tier-1; ROADMAP SC-6), which is OPERATIONAL, not a clean leak-controlled gold-known retrieval eval -- so retrieval is NEVER silently assumed-covered and a closed-book PASS NEVER certifies retrieval (19-04-REPLAN-DECISION-3 item 4).",
+    "buried_dropped_rule": "buried is DROPPED ENTIRELY from the offline gate (construct-invalid offline, RE-PLAN-4 D-RP4-1; NOT auto-gated, NOT auto-dropped at run time -- removed from the strata definition). evidence-absent is the SOLE offline arm (resist-uphold-on-absence). WHY: the synthetic disconfirmer=true flag on an arbitrary deep surviving doc is TEXT-UNVERIFIED -- the doc's text almost never refutes the SPECIFIC mutated overreach, so a blind probe would reject most synthetic-buried; it measures a FAKE construct. Deep-refuter detection is retrieval-adjacent / context-attention, deferred to the Phase-20 live shadow. Dropping buried does NOT materially weaken the gate (evidence-absent is the one genuinely-new arm). The SINGLE evidence-absent stratum FAILS CLOSED below the floor (degenerate corpus / a below-floor RETAINED set after the gold-blind probe drops = the documented VOID).",
+    "gold_blind_validity_probe": "The MANDATORY mitigation (load-bearing -- FATAL if omitted; board guardrails 1+2+4+6). Before any verify-vote, screen every candidate evidence-absent packet with a PRE-REGISTERED, GOLD-BLIND model judge (NO AVeriTeC label, NO mutation knowledge). It reads ONLY the date-filtered surviving SUPPORTING docs + the mutated OVERREACH claim and answers 'do these docs explicitly state OR directly entail the one-step OVERREACH, or only the weaker ORIGINAL Supported claim?'. DISQUALIFY (drop; REPORT the count in attrition.probeDropped, never silently absorb) any packet where the survivors plausibly entail/license the overreach (there unrefuted is a legitimate read and gold=refuted is indefensible -- the defect that killed buried). RETAIN as valid gold=refuted ONLY packets whose survivors support the ORIGINAL claim but do NOT entail the overreach (resist-uphold-on-absence). The probe is GOLD-BLIND so it does NOT bootstrap the gold it validates (else it breaks closed-book). The retained-gold floor is >= perStratumFloor (3); the RETAINED set < floor AFTER the probe drops = a documented VOID (the corpus cannot honestly build the PRIMARY arm). NEVER tune the probe threshold toward a desired N (result-shopping) -- the floor is load-bearing, not a knob (board guardrail 5, D-RP4-3). The assembler consumes it via the injected validityProbe({trap, enrichedKs, stratum, decisiveRank}) at SCREEN 2.",
+    "count_vs_rank_correction": "The count-vs-rank predicate error (D-RP4-2, the principled basis for the RE-PLAN-4 amendment) + the synthetic-disconfirmer finding (D-RP4-1). The RE-PLAN-3 assembler assigned the stratum by isBuried = (INDEX of the deepest surviving doc in the 0..99 KS list >= BURIED_RANK_FLOOR=20), conflating survivor COUNT (median 5) with survivor RANK/position (0..99). The ~8.6% dated survivors scatter across positions 0..99 so the DEEPEST survivor index is almost always >= 20 (measured 97/97/96/80/76) -> ALL 62 qualifying seeds classified buried, ZERO evidence-absent -> the assembler HARD-THREW on the PRIMARY floor and the calibrator could not run. The committed RE-PLAN-3 'rank-20 burial is impossible at median-5' claim is empirically FALSE. This is the SECOND construct defect on this instrument (C1 -- the dispatch object/text return -- was first). Re-pre-registration timing guardrail: this amendment is SOUND in the ZERO-VOTES window (no votes -> no result to shop); the corrected spec locks BEFORE any vote (board guardrail 1).",
+    "no_mcp_build_decision": "The offline gate is CLOSED-BOOK judgment (Option A); the dev MCP + a NET-NEW ranked-retrieval index (Option B) is NOT built -- bounded downside (it gates only an OFF-by-default flag; Sonnet ships regardless) + a thin/low-fidelity median-5 corpus + redundancy with the Phase-20 live pilot make the index build poor ROI (three independent consult rounds converged; 19-04-REPLAN-DECISION-3). A clean offline retrieval gate is a CONDITIONAL follow-on (separately pre-registered; NOT in 19-04/19-05), triggered only if evidence-absent discriminates AND the owner signs off AND a >= 100-doc leak-safe trap set proves feasible.",
+    "scope_limit_haiku_on": "A closed-book PASS does NOT certify retrieval; Haiku stays OFF pending live evidence. Turning the Haiku-first flag ON requires BOTH (a) an offline closed-book PASS on evidence-absent (the strata must DISCRIMINATE -- a non-saturated calibrator) AND (b) live shadow -> canary operational evidence on retrieval within a pre-committed tolerance of Sonnet. On a closed-book PASS ALONE the flag STAYS OFF, with retrieval as the NAMED pre-registered precondition for any future flip (EVAL-03 raise-to-user). OFF-by-default + pre-committed rollback throughout.",
+    "no_refuter_ranks": {
+      "note": "RE-PLAN-4: there are NO decisive/disconfirmer ranks offline -- buried is DROPPED, so the assembler attaches NO refuter flag (decisiveRank=-1, disconfirmerRank=-1). The evidence-absent packet is the date-filtered ORIGINAL supporting docs (plausible supporting text, no in-corpus refuter). The EXAMPLE evidence-absent rows below (averitec-dev-0006/0007) are seed claim_ids; the mutated prose + enriched KS live in the gitignored run artifact under eval/.cache/ (recipe-not-text), never the committed manifest (no NC text)."
+    },
+    "positive_controls": "RE-PLAN-5 Finding 1 (mandatory power/plumbing check). With EVERY retained trap gold=refuted, a 0-false-uphold result is CONFOUNDED -- observationally identical to a DEGENERATE ALWAYS-REFUTE prior (a voter that refutes everything on thin evidence scores a perfect 0 for the WRONG reason and measures nothing). The assembler interleaves gold=unrefuted POSITIVE CONTROLS -- native UNMUTATED AVeriTeC-Supported seeds whose date-filtered survivors GENUINELY ENTAIL the claim (the inverse of the trap screen: ALL probes agree entails=true; NO mutateOverreach) -- indistinguishable to the voter. The voter SHOULD vote unrefuted on them; if Sonnet REFUTES them too -> ALWAYS-REFUTE-ARTIFACT -> VOID/uninterpretable, NOT a clean saturation. The positive-control floor is >= 3 (its OWN floor, INDEPENDENT of the evidence-absent trap floor; below = VOID-on-control-floor -- the read cannot prove the voter CAN uphold). scorePositiveControls reads ONLY 'unrefuted'-gold records and FAILS CLOSED on a 'refuted'-gold record in the control voteDir (W-2). The tolerance is ZERO: ANY control refute voids the saturation read.",
+    "out_of_family_probe_consensus": "RE-PLAN-5 Finding 2 (mandatory, all-agree-retain; the highest-leverage de-confounder). The in-family gold-blind probe is SAME-FAMILY with the voter (Opus GENERATEs, Opus PROBEs, Sonnet VOTES) and is DEMONSTRABLY TOO LENIENT -- PROVEN on pilot seed 75 (overreach 'income DOUBLED'; survivors '$200K -> millions' EXCEED 2x, so the survivors plausibly ENTAIL 'doubled'; the in-family probe RETAINED it ONLY by a strict-literal 'no explicit 2x ratio' reading; a Sonnet voter reading it loosely would CORRECTLY vote unrefuted -> a FAKE false-uphold, the T-19-17 defect). MANDATORY: a SECOND, OUT-OF-FAMILY gold-blind probe pass (GPT-5.5 + Gemini) via 'cat <prompt> | copilot --model {gpt-5.5|gemini-3.1-pro-preview} --effort high' (NO -p, NO --allow-all-tools; output captured to gitignored eval/.cache/). RETAIN a TRAP packet only if ALL probes agree entails=false; RETAIN a CONTROL only if ALL agree entails=true; ANY split DISQUALIFIES (drop, REPORT the count in attrition.probeDropped + probeSplitDropped). OUT-OF-FAMILY GENERATE is DEFERRED with rationale (board guardrail 7): generation is gold-aware and inspection already found real one-step overreaches; the bigger same-family risk is the PROBE, which IS moved out-of-family; out-of-family generate is a secondary nice-to-have.",
+    "probe_strictness_rubric": "RE-PLAN-5 (pre-registered BEFORE any vote). A packet whose survivors support MORE than the overreach (e.g. the survivors entail >2x when the overreach says 'doubled') is DISQUALIFIED -- the survivors ENTAIL the overreach, so gold=refuted is indefensible there. RETAIN ONLY packets whose survivors support the ORIGINAL claim STRICTLY but do NOT entail the overreach. The seed-75 example ('income DOUBLED'; survivors '$200K -> millions' EXCEED 2x) is the canonical DISQUALIFY case.",
+    "k_and_seat_diversity": "RE-PLAN-5 (board UNANIMOUS-2; picked ONCE here). Raise k above the MIN_K=5 floor to k=9 (zone 9-11; k is AT-OR-ABOVE the frozen MIN_K floor, NOT a threshold change -- the DISPATCH DEFAULT becomes 9, kFloorAtLeast still admits any explicit k>=MIN_K). Under any-uphold each extra vote is one more independent opportunity to expose a false-uphold -> strictly MORE conservative for a saturation/accept-the-null gate; diminishing returns past ~11. The extra k is spent on SEAT DIVERSITY across distinct attack-modes (the ATTACK_MODES rotation: factual-contradiction / scope-causality-overclaim / source-provenance / absence-of-evidence / quantifier-scope / causality-certainty / contradiction-vs-support), NOT identical re-draws. k is chosen ONCE here -- re-choosing after seeing Stage-1 would be result-shopping.",
+    "non_zero_decision_rule": "RE-PLAN-5 Finding 3 (pre-registered BEFORE vote 1; the engine returns only saturated-vs-below-ceiling and does NOT fix what '1 false-uphold over N' MEANS). EXACT wording: 'A Sonnet false-uphold over the retained N counts as a GENUINE below-ceiling PROCEED signal ONLY IF (i) the packet survived the ALL-PROBES-AGREE consensus (in-family Opus + GPT-5.5 + Gemini all said entails=false), (ii) the per-vote search trace is min-MET (minQueries+minDocs satisfied) and stop_reason is exhausted or decisive-evidence (NEVER min-not-met / truncated / quota-killed), and (iii) the positive controls were UPHELD (not an always-refute artifact). A false-uphold failing (i)/(ii) is an ARTIFACT-to-investigate (void/redo that vote), never a below-ceiling PROCEED. 0 false-upholds with positive-controls UPHELD on clean traces is a LEGITIMATE evidence-justified SATURATED->VOID; 0 false-upholds with positive-controls REFUTED is an ALWAYS-REFUTE-ARTIFACT->VOID/uninterpretable.' classifyCalibration encodes this rule and returns ONE of FOUR terminal labels: SATURATED-VOID / ALWAYS-REFUTE-ARTIFACT-VOID / BELOW-CEILING-PROCEED / ARTIFACT-VOID-REDO. The min-not-met leg of (ii) is DERIVED MECHANICALLY by classifyCalibration from the pooled trace stop_reason over upheld claims (W-3); ONLY the truncated/quota-killed leg is human-inspection. classifyCalibration WRAPS calibratorGate byte-identical -- it never edits it.",
+    "cp_n_gate_statistic": "RE-PLAN-5 (UNANIMOUS-3). The gate statistic is CP(0, N_claims) two-sided upper bound on the POOLED per-claim rate (matches the frozen engine -- calibratorGate.trials = N pooled claims; every CP value is a LABEL, never a clustered CI). Do NOT report CP over N*k as if independent (the k votes share one packet/claim/prompt -- positively correlated); per-vote 0/(N*k) is a LABELED SECONDARY diagnostic only. Report the PER-CLASS breakdown (~one per attack-mode, ~equal split of N_retained) so a globally-clean pooled rate cannot mask a single weak class. READ THE FULL retained N (RELIABLE_TRIALS=15 is a reportability FLOOR, not a stopping target; CP(0,60)~=0.05 vs CP(0,15)~=0.218 -- a ~4.6x tighter ceiling for free; a sub-full cap is a pure validity loss). FREEZE N_retained (the post-consensus denominator) the instant the consensus probe finishes, before vote 1; the run artifact records a partition checksum calibratorGate.trials(traps) + nControls == frozen N_retained(total) (W-2). Audit the min-not-met trace on every uphold (board guardrail 4).",
+    "absolute_per_model_design": "RE-PLAN-7 (the PIVOT, board-converged; re-registered in the ZERO-VOTES window before any vote). The offline READ is PIVOTED from a RELATIVE Haiku-MINUS-Sonnet delta (Sonnet assumed-good baseline) to an ABSOLUTE PER-MODEL verdict: prove, for BOTH Haiku 4.5 AND Sonnet 4.6 (AND Opus 4.6 as the measured REFERENCE), WHETHER each WORKS as the lz-deep-research verify-voter. Sonnet is a SUBJECT on trial, NOT the yardstick. Per model M, voter role, TWO estimands pooled PER-CLAIM (denominator N_claims, NEVER N*k -- the k=9 votes share one packet, positively correlated): ESTIMAND A = FALSE-UPHOLD rate over the retained refuted-gold traps, statistic clopperPearsonUpperOneSided(x_FU, N_trap) (ONE-SIDED 95% upper, F2), PASS_A iff CP1s <= TAU_FU (0.10); ESTIMAND B = OVER-REFUSAL rate over the gold=unrefuted positive controls (the F1 always-refute detector), CP1s(x_OR, N_ctrl), PASS_B iff CP1s <= TAU_OR (0.15). VERDICT(M) = WORKS iff PASS_A AND PASS_B; DOES-NOT-WORK if either CI exceeds its TAU; VOID-on-power if N below its floor; VOID-artifact on an always-refute / min-not-met-trace collapse; VOID-difficulty / VOID-covariate from the F5 floors. SATURATION-as-PASS: a clean EARNED 0 on a hard, covariate-matched set with the controls upheld + the CI tight certifies WORKS (the RE-PLAN-5 SATURATED-VOID framing is RETIRED). certifyModel + decisionMatrix encode this in eval/lz-eval-offline-read.mjs (Task 2); the EVAL_THRESHOLDS existing numbers are byte-unchanged (only TAU_FU/TAU_OR + N_TRAP_FLOOR/N_CTRL_FLOOR are ADDED).",
+    "tau_fu": 0.10,
+    "tau_or": 0.15,
+    "n_trap_floor": 36,
+    "n_ctrl_floor": 24,
+    "ci_convention": "one-sided 95% upper (F2): clopperPearsonUpperOneSided(x,n) = jStat.beta.inv(1 - alpha, x+1, n-x), alpha=0.05 (the 0.95 quantile, a one-directional ceiling) -- the convention the ABSOLUTE per-model gate reads. The two-sided clopperPearsonUpper (1 - alpha/2) stays the recorded run-artifact LABEL for the carried relative read. Verified against the actual engine: CP1s(0,36)=0.0798 <= TAU_FU (the 0-miss N_trap floor 36); CP1s(1,46)=0.0990 <= TAU_FU (a 1-miss arm needs N_trap >= 46); CP1s(0,24)=0.1173 <= TAU_OR (the F1-corrected N_ctrl floor 24); CP1s(0,18)=0.1533 > TAU_OR (the OLD floor 18 mathematically FAILS, F1). The TAU/floor brackets are recomputed against this one-sided convention; NEVER relax a TAU to fit a realized N.",
+    "decision_matrix": "RE-PLAN-7 (the four Opus-voter nuances). decisionMatrix({haiku, sonnet, opus}) -> the SHIP cell is the Haiku x Sonnet cross-product ONLY (nuance i -- Opus is NOT a ship cell): both / only-sonnet / only-haiku / neither, with a subject VOID surfaced explicitly. opusReference = { verdict, opusFailsBar } (nuance ii -- Opus is the reference ROW; opusFailsBar = opus.verdict !== WORKS is a NEW first-class MAJOR finding: the quality anchor the plugin leans on is below its own gate -> the near-Opus thesis is in question -> RAISE TO USER). nearOpusDiagnostic is CONDITIONAL on Opus clearing the bar (nuance iii -- suppressed/flagged not-meaningful when Opus does NOT work; tracking a wrong model is not reassurance). Opus-voter at k=9 is the priciest Claude-pool tier (nuance iv -- paced). framing is always 'clears-the-closed-book-SCREEN' (F4 -- never 'production-safe'); raiseToUser is always true (settle-OR-raise; a both-WORKS cell still does NOT auto-flip Haiku ON -- the Phase-20 live shadow is the named precondition).",
+    "out_of_family_only_retain": "RE-PLAN-7 #3/F3 (Opus DROPPED from the gold-DECIDER, ADDED as a measured voter). The assembler RETAIN predicate is the OUT-OF-FAMILY all-probes-agree consensus (GPT-5.5 + Gemini) ONLY -- the in-family Opus probe is recorded as a NON-GATING annotation per packet (the OOF-vs-in-family agreement count is a diagnostic, never a gate). The gold is INDEPENDENT of the family on trial (it cannot grade Claude on a curve drawn by Claude). F3 framing correction: under all-agree AND, dropping the in-family conjunct LOOSENS the AND -> retains MORE -> higher N + purer (family-independent) gold (the 'drop Opus = lower N' framing was backwards). Opus is ADDED as a THIRD MEASURED VOTER on the same OUT-OF-FAMILY-screened gold (a clean cross-family measurement -- tested, not testing -- so it does NOT reintroduce the gold-curation bias #3 removed); it VALIDATES the quality anchor + yields the near-Opus diagnostic.",
+    "subject_difficulty_floor": "RE-PLAN-7 F5 (NET-NEW). A held-out Claude reference verifier (subjectDifficultyProbe) is run over the RETAINED refuted-trap set; if its catch-rate exceeds a pre-registered max (subjectDifficultyMaxCatchRate) the retained set is too easy for the subject family to certify capability -> a documented VOID-difficulty (NOT a silent pass). The prior difficulty floor was calibrated against the weak-verifier + OOF axis only; this ADDS the subject-family axis. The floor is load-bearing, never tuned toward a desired N.",
+    "covariate_overlap_check": "RE-PLAN-7 F5 (NET-NEW). The trap-arm vs control-arm distributions (claim length / survivor count / token-complexity) must OVERLAP within a pre-registered covariateOverlapTolerance, so a model cannot pass by STYLE (systematically longer/more-complex traps) rather than judgment. Below tolerance -> a documented VOID-covariate. certifyModel requires covariateOverlapMet (and difficultyFloorMet) for WORKS.",
+    "cluster_independence": "RE-PLAN-7 F6 (NET-NEW). One PRIMARY claim per source/seed cluster is retained (or the cluster fails as a unit), so the per-claim CP denominator is not anti-conservative -- the k=9 votes share one packet (positively correlated) and same-cluster sub-claims are also correlated. For WiCE the cluster is the dev<NNNNN> source id (one Wikipedia claim, several sub-claims); for AVeriTeC the cluster is the source fact-check URL. reducePooledVerdict applies any-uphold SYMMETRICALLY on both arms (any-seat-false-uphold on a trap = fail; any-seat-refute on a control = the over-refusal event).",
+    "evidence_absent_stratum_floor": "RE-PLAN-7 F7 (NET-NEW). The evidence-absent sub-construct has its own pre-registered per-stratum minimum (certifyModel requires evidenceAbsentStratumMet === true for WORKS; an unmet stratum is VOID-on-power scoped to evidence-absent, NOT a silent WORKS over a sub-construct WiCE cannot supply). The WiCE-heavy trap BULK does NOT launder WiCE power into an evidence-absent claim: WiCE carries the trap BULK (closed-book-native) while the AVeriTeC arm supplies the SEPARATE evidence-absent trap stratum + native controls. If the evidence-absent stratum floor cannot be met offline it is explicitly DEFERRED to Phase-20 by name.",
+    "per_model_prompt_shas": {
+      "note": "RE-PLAN-7 #2/F8 (PER-MODEL FAIR PROMPTS, not a shared prompt). Each per-model voter prompt is FROZEN + sha256'd here in the zero-votes window; the dispatch records the selected model + the frozen prompt-sha per seat, and the anti-drift test asserts each recorded sha matches the agent file. A per-model verdict is 'works UNDER ITS OWN BEST PROMPT' (the deployment-realistic question; the principled resolution of ATTACK-7). The Opus prompt is best-effort-engineered, NOT a verbatim Sonnet copy (a thin mirror would under-test Opus and corrupt the reference anchor, W4).",
+      "sonnet": "883b67578aab7b80535f653266b051f64fe78f5e43edf1bd177b6fd7a769bac6",
+      "haiku": "fcc5533f0781801b73124d21574af879da745b4947fa5fb0bba057216f43d2b3",
+      "opus": "f19f2d244fcda014f1c94fca4b3aa7dae1c6b980e7e965e3bbe6de66840f9c95"
+    },
+    "wice_closed_book_trap_arm": "RE-PLAN-7 W1/F7 (NET-NEW). The WiCE CLOSED-BOOK trap+control arm (eval/lz-eval-wice-traps.mjs, assembleWiceTraps) carries the trap BULK -- it is closed-book-NATIVE and CANNOT run the AVeriTeC dateFilter / >=5-survivor / staticKsAdapter pipeline (WiCE has no dated-URL KS; book:'closed'). It REUSES the committed Phase-18 vendored WiCE data (eval/__fixtures__/wice-vendored/records) + loader (remapLabel: supported->unrefuted / partially_supported|not_supported->refuted). A WiCE TRAP = { claim + its GIVEN closed-book evidence + the human partially_supported|not_supported label -> gold=refuted }; a WiCE CONTROL = { supported -> gold=unrefuted }. It is screened by the SAME OUT-OF-FAMILY all-agree consensus + the F5 difficulty/covariate floors + F6 cluster independence; its rows are recipe-not-text + license-clean (WiCE ODC-BY/MIT). The AVeriTeC date-filtered EVIDENCE-ABSENT trap stays a SEPARATE stratum with its own build-floor. The trap arm is predominantly WiCE (the dataset-test 'trap arm predominantly WiCE' assertion is wired to THIS real WiCE-native path, NOT a non-existent WiCE-through-AVeriTeC path).",
+    "floor_site_split": "RE-PLAN-7 W2/W3. TWO floor sites of intentionally different magnitudes: (1) the assembler BUILD-FLOOR default stays perStratumFloor:3 / positiveControlFloor:3 ('can we even build an arm'); (2) the adequacy POWER-FLOOR (N_TRAP_FLOOR=36 / N_CTRL_FLOOR=24) is enforced ONLY at certifyModel's VOID-on-power gate (Task 2) + the Task-4 N-freeze, NEVER as the assembler default. certifyModel is the AUTHORITATIVE power gate. A regression that raised the assembler default to 36/24 would break the carried 3-trap build tests.",
+    "prompt_fairness_gate": "RE-PLAN-7 W4 + the ATTACK-7 resolution (pre-registered BEFORE any vote, load-bearing for the Haiku verdict). A prompt-sensitivity step runs on a HELD-OUT TUNING SPLIT (a disjoint slice of the corpus that is NEVER scored -- carved BEFORE the N-freeze; the tuning-split uids are recorded here and are DISJOINT from the scored-set uids). For EACH model a 2nd reasonable prompt variant is run over the tuning split and compared to the primary prompt. LOCKED RULE: a DOES-NOT-WORK verdict for ANY model (load-bearing for Haiku) CANNOT be finalized until this fairness check clears -- i.e. confirms the failure is the MODEL, not the prompt (the primary prompt is not anomalously weak vs the 2nd variant on the tuning split). A NEW Haiku deep-research pass is triggered ONLY IF the check shows the current Haiku prompt is weak (the operator's 'exhaust all reasonable options before abandoning Haiku'). The fairness check is run at the Task-4 settle (T-spend-2) and NEVER touches the scored set (no contamination).",
+    "screen_not_certificate_framing": "RE-PLAN-7 F4/F9 (load-bearing). This is a closed-book SCREEN feeding the Phase-20 live shadow, NOT a ship certificate. The decision-matrix cells read 'clears the closed-book SCREEN', NEVER 'WORKS=production-safe'. An offline PASS NEVER auto-flips Haiku ON; retrieval + end-to-end + the actual flip DEFER to Phase-20 by name; Sonnet-default ships in EVERY case. If the build team ever treats an offline 'both work' as a ship green-light the verdict flips to REDESIGN -- the framing is load-bearing.",
+    "oof_bulk_batching": {
+      "note": "RE-PLAN-8 DP1-DP3 (ADDITIVE, board-converged; UNFROZEN operational latitude -- no primitive amendment). The OUT-OF-FAMILY gold-screen consults are BULK-BATCHED to cut ~260-290 per-packet Copilot calls (dominated by a measured ~21k fixed input-token overhead per call) to ~35-40 batched calls (~85% off). The batched adapter (eval/lz-eval-oof-batch.mjs makeBatchedOofProbe) returns ONE element per OOF model for the EXISTING runProbeConsensus probes array -- the gating consensus logic is UNCHANGED. The OOF gold-decider identity (gpt-5.5 + gemini-3.1-pro-preview, --effort high) is byte-identical. The expected direction (trap=false/control=true) + the per-packet expectedEntailment stay in the parser/consensus, NEVER in the prompt (the prompt is the gold-blind entailment rubric).",
+      "batch_size": 8,
+      "hard_cap": 10,
+      "hard_near_boundary_batch": 6,
+      "opaque_non_ordinal_ids": true,
+      "per_call_per_model_order_reshuffle": true,
+      "recorded_seed": true,
+      "json_array_output_via_score_mjs_slice": true,
+      "fail_closed_to_drop": "a per-packet defect (missing/extra/duplicate id, non-boolean entails, truncation, or a batch-level summary) -> that packet UNRESOLVED = a probe-decline = counted in attrition.probeDropped; NEVER a fabricated retain",
+      "whole_batch_rerun_once_then_split": true
+    },
+    "contamination_gate": {
+      "note": "RE-PLAN-8 DP4 (ADDITIVE). Run ONCE at T-spend-1 BEFORE trusting bulk: exact single-vs-batched entails agreement PER MODEL on a 12-packet hardest slice, INCLUDING one reversed-order variant; record the agreement rate. 11/12=91.7% tolerates one benign near-determinism flip; 100% would false-trip. No separate distractor check (order robustness is otherwise covered by the pilot's k=5 reshuffles). runContaminationGate returns { agreement, pass, directive }.",
+      "threshold": "11/12",
+      "reversed_order_variant": true,
+      "on_fail": "batch size 5 + re-validate"
+    },
+    "cheaper_model_pilot": {
+      "note": "RE-PLAN-8 DP7-DP9 (ADDITIVE; operator decision 1 -- run it as PART of T-spend-1). A SEPARATE NON-GATING pilot (eval/lz-eval-cheaper-pilot.mjs runCheaperPilot) over the gold candidates; its output NEVER enters the retain AND. The reference label is the FROZEN-PAIR all-agree consensus on the sampled packets; k=5 by order reshuffle (the recorded seed). The pilot informs a future cost amendment; it does NOT change the gold (the gold N_trap/N_ctrl freeze is computed ONLY from the gating frozen-pair screen + the F5/F6 floors).",
+      "n": 66,
+      "n_trap": 36,
+      "n_ctrl": 30,
+      "hard_near_boundary_traps": ">=18 incl. more-than-doubled",
+      "k": 5,
+      "reshuffle": true,
+      "measured_models": ["gpt-5-mini", "gemini-3.5-flash", "gpt-5.4-mini"],
+      "frozen_pair_anchor": ["gpt-5.5", "gemini-3.1-pro-preview"],
+      "statistic": "one-sided CP per-arm packet counts (false-accepts/36 traps; false-vetoes/30 controls), NOT n*k (Pitfall 3)",
+      "thresholds": {
+        "diagnostic_annotator": "self-consistency >= 95% AND frozen-pair agreement >= 60/66",
+        "pre_filter": "frozen-pair agreement >= 62/66 AND zero false-accepts on the 36 traps (only if ever membership-neutral, DP5)",
+        "decider": "AMENDMENT-ONLY: 0 false-accepts on the 36 traps (CP1s(0,36)=0.0798<=0.10; one fails) AND control-arm CP1s(falseVetoes,30)<=0.15 AND <=1 k=5 self-split AND frozen-pair agreement >= 62/66"
+      },
+      "gating": false
+    },
+    "k1_stability_certificate": {
+      "note": "RE-PLAN-8 DP10 (ADDITIVE; operator decision 2 -- adopt the k=1 lever).",
+      "rule": "frozen-pair 100% self-consistent across the pilot k=5 -> main gold-screen k=1; gating-stability only; per-voter k=9 arm UNCHANGED"
+    },
+    "cheaper_as_decider_not_adopted": {
+      "value": true,
+      "note": "amendment-only -- DP6: the cheapest pair after batching saves only ~$2 vs the frozen pair batched at a family-independence/validity cost; the frozen pair (gpt-5.5 + gemini-3.1-pro-preview, --effort high) remains the SOLE gating retain decider; bulk-batching is the ONLY operational change."
+    },
+    "control_source": {
+      "note": "RE-PLAN-9 (board-converged; ADDITIVE, the STILL-OPEN zero-votes window). The ENTAILMENT-NATIVE positive-control source REPLACES the now-VOIDED AVeriTeC-native-control source (T-spend-1: AVeriTeC 'Supported' is an aggregate human judgment over the full evidence base, NOT strict excerpt-entailment, so native controls drop ~7 << N_CTRL_FLOOR 24). The probe tries BOTH sources; verifies EACH license + a defensible per-claim PRE-DATE cutoff IN the probe; a source with no usable date is DROPPED (verifyControlSourceDate -> null). SUPPORTS -> positive-control gold (the inverse of the trap remap); NEI/REFUTES are NOT controls. The date-filter mirrors the FROZEN strict-`<` cutoff. The committed manifest carries ONLY ids + remapped labels + pinned revision + sha256 (no raw CC-BY-SA text). NOT reserved AVeriTeC native seeds. Exports loadControlSource / verifyControlSourceLicense / verifyControlSourceDate / remapControlLabel (eval/lz-eval-control-source.mjs).",
+      "sources": [
+        { "id": "fever", "repo": "fever/fever", "license": "CC-BY-SA-3.0", "date_cutoff": "wikipedia dump revision" },
+        { "id": "vitaminc", "repo": "tals/vitaminc", "license": "CC-BY-SA-3.0", "date_cutoff": "wiki_revision_id" }
+      ],
+      "both_tried_drop_on_no_date": true,
+      "remap": "SUPPORTS -> positive-control gold; NEI/REFUTES not controls",
+      "not_reserved_averitec": true,
+      "superseded_by_replan12": "SUPERSEDED-BY-RE-PLAN-12: the synthetic positive-control source (FEVER/VitaminC) is RETIRED (RE-PLAN-9/10/11 DESCOPED twice -- thin yield, difficulty-confound, negative-EV; board-unanimous). The offline verdict mechanism is now the MCC SCREEN over manual contrastive minimal-pairs (see stage1_pre_registration.contrastive_construction + mcc_screen). The over-refusal CP gate MOVES to the Phase-20 live arm. This RE-PLAN-9 block + its sources are PRESERVED as the record; the source is NOT fetched."
+    },
+    "control_construction": {
+      "note": "RE-PLAN-9 (ADDITIVE). The PRE-SPECIFIED control-construction rule (NEVER a post-hoc rescue of weak controls). constructControls (eval/lz-eval-control-construction.mjs) bins candidates into the 6 trap-matched covariate strata, REJECTS exact-substring overlap >= substring_reject_max_chars (40) + applies a complexity/length filter at min_complexity_tokens (12) to force SEMANTIC entailment, and enforces a >=1/3 HARD-POSITIVE stratum. The two threshold constants + the 1/3 fraction are PRE-REGISTERED module-level constants, NEVER tuned toward N. constructControls produces CANDIDATES only; the strict OOF all-agree decider (makeBatchedOofProbe -> runProbeConsensus, entails=true) is the SOLE retain decider.",
+      "covariate_strata": ["domain", "date-cutoff", "excerpt-count", "claim-length", "specificity", "retrieval-sparsity"],
+      "substring_reject": true,
+      "substring_reject_max_chars": 40,
+      "complexity_length_filter": true,
+      "min_complexity_tokens": 12,
+      "hard_positive_fraction": ">=1/3",
+      "thresholds_pre_registered_not_tuned": true,
+      "candidates_only_oof_decides_retain": true,
+      "superseded_by_replan12": "SUPERSEDED-BY-RE-PLAN-12: the synthetic-from-source control construction is RETIRED; RE-PLAN-12 authors MANUAL contrastive minimal-pairs on the SAME 12 dense trap evidence bundles (expanded-synthetic positives are REJECTED). The construction constants are PRESERVED as the record but the constructor is NOT run."
+    },
+    "survival_probe": {
+      "note": "RE-PLAN-9 (ADDITIVE). A single pre-registered SURVIVAL PROBE scored by the UNCHANGED strict OUT-OF-FAMILY all-agree screen (the SAME on both arms -- entails=true for a control, entails=false for a trap; NO asymmetric criterion) + a trap-vs-control COVARIATE-MATCH check + a HUMAN confirmation of the retained set. runSurvivalProbe (eval/lz-eval-survival-probe.mjs) is NON-GATING for the trap arm. The N_CTRL_FLOOR=24 stays FROZEN; the probe TARGETS ~30+ retained for CI headroom.",
+      "n": "~50",
+      "target_retained": "~30+",
+      "n_ctrl_floor": 24,
+      "n_ctrl_floor_frozen": true,
+      "screen": "strict OOF all-agree (SAME on both arms)",
+      "covariate_match_check": true,
+      "human_confirmation": true,
+      "superseded_by_replan12": "SUPERSEDED-BY-RE-PLAN-12: the synthetic-control survival probe is RETIRED. RE-PLAN-12 replaces it with the dual-baseline artifact guard (NO-SPEND) + the MCC SCREEN over the 24 contrastive items. The probe machinery is PRESERVED as the record but NOT run."
+    },
+    "control_decision_rule": {
+      "note": "RE-PLAN-9 (ADDITIVE). The PRE-REGISTERED build-OR-descope decision rule, FIXED before the probe runs; the probe outcome (a fact) decides the branch (decideControlArm, eval/lz-eval-survival-probe.mjs).",
+      "clears": "retained >= 24 (frozen) AND covariate-matched AND license/date usable AND NOT selection-easy/substring-dominated -> BUILD the over-refusal arm at the frozen 24 floor",
+      "fails_any": "-> AUTO-DESCOPE to the Phase-20 live shadow + offline trap-only + explicitly incomplete + DEMOTE SATURATION-as-WORKS to PROVISIONAL until the live stage clears TAU_OR",
+      "no_floor_relaxation": true,
+      "no_asymmetric_criterion": true,
+      "no_auto_lock": true,
+      "dead_paths": "Path A (relax the 24 floor) + Path B (a looser support criterion for controls only) -- DEAD by board consensus",
+      "ci_headroom": "CP1s(0,24)=0.1173 <= 0.15; CP1s(1,24)=0.1829 > 0.15; CP1s(1,30)=0.1486 <= 0.15",
+      "superseded_by_replan12": "SUPERSEDED-BY-RE-PLAN-12: the synthetic build-OR-descope decision rule is RETIRED. The offline decision rule is now stage1_pre_registration.screen_decision_rule (guard + MCC bar -> SCREEN-PASS gate to live; else DEMOTE to a non-gating diagnostic + trap-only + PROVISIONAL; offline NEVER WORKS). The over-refusal CP gate MOVES to the live arm (stage1_pre_registration.over_refusal_moved_to_live). This rule is PRESERVED as the record."
+    },
+    "contrastive_construction": {
+      "note": "RE-PLAN-12 (board-converged; ADDITIVE, re-registered in the STILL-OPEN ZERO-VOTES window). The ONLY substantive change to the positive arm: MANUAL contrastive minimal-pairs authored on the SAME 12 dense trap EVIDENCE bundles already used by the HEALTHY false-uphold arm -> a 24-item corpus, difficulty-matched BY CONSTRUCTION (same multi-doc density + reasoning depth; only the label-determining edit differs). The edit is on the EVIDENCE (or symmetric across the pair), NOT claim-side (kills the F3 myopia claim-side artifact). Expanded-synthetic positives are REJECTED (they scale the superficial-conjunction skew the audit caught + stay non-difficulty-matched).",
+      "construction": "manual minimal-pairs on the SAME 12 dense trap evidence bundles",
+      "edit_on": "evidence (or symmetric), NOT claim-side",
+      "expanded_synthetic_rejected": true,
+      "n_pairs": 12,
+      "n_items": 24,
+      "min_n": 24,
+      "below_min": "diagnostic-only"
+    },
+    "mcc_screen": {
+      "note": "RE-PLAN-12 (ADDITIVE). The confound-robust METRIC + the PRE-REGISTERED bar (FROZEN + TIMESTAMPED here BEFORE any pair is authored or scored -- the bar is literature-unspecified per the RESEARCH GAPS, so pre-registration is the ONLY defense against result-shopping). MCC structurally breaks the always-refute confound (a degenerate single-class judge = MCC 0, F4) WITHOUT a separately-hand-built positive corpus. The constants match eval/lz-eval-mcc.mjs byte-for-byte.",
+      "metric": "MCC",
+      "bar": "mcc_point >= 0.5 AND ci_lower_one_sided_95 > 0 AND permutation_mcc_gt_0",
+      "mcc_bar_point": 0.5,
+      "mcc_ci_alpha": 0.05,
+      "mcc_ci_lower_floor": 0,
+      "ci_method": "BCa bootstrap",
+      "significance": "label-permutation MCC > 0",
+      "bar_pre_registered_before_authoring": true,
+      "pre_registered_timestamp": "2026-06-19T16:07:00Z",
+      "f4_breaks_always_refute_confound": true,
+      "offline_never_works": true
+    },
+    "dual_baseline_guard": {
+      "note": "RE-PLAN-12 (ADDITIVE). The MECHANICAL artifact guard (the SKEPTIC's sufficiency condition; no discretionary knob). BOTH a lexical TF/bag-of-words baseline (claim+evidence) AND a claim-only no-evidence baseline must be AT CHANCE on separating the pairs. The matches eval/lz-eval-baseline-guard.mjs byte-for-byte.",
+      "lexical_tfidf": true,
+      "claim_only_no_evidence": true,
+      "both_at_chance_required": true,
+      "at_chance": "separation-MCC one-sided BCa lower CI <= 0 (chance for MCC is 0, NOT 0.5)",
+      "chance_value": 0,
+      "either_separates": "lower CI > 0 -> AUTO-DEMOTE to a non-gating diagnostic + offline trap-only",
+      "mechanical": true
+    },
+    "screen_decision_rule": {
+      "note": "RE-PLAN-12 (ADDITIVE). The PRE-REGISTERED SCREEN-PASS/DEMOTE rule (NO auto-lock -- the gate-vs-demote is HUMAN-CONFIRMED at the T-spend checkpoint; decideContrastiveScreen returns the recommendation). The guard runs FIRST. Offline NEVER earns WORKS (the SDT positive-trials constraint, F5/F7): a SCREEN-PASS GATES progression to the Phase-20 live stage (where WORKS is certified); a DEMOTE reverts offline to trap-only + explicitly incomplete. EITHER WAY the label is SCREEN-PASS / PROVISIONAL.",
+      "gate": "guardPasses AND mcc >= 0.5 AND mccLowerCI > 0 AND permutationP < 0.05 -> SCREEN-PASS, gate to the Phase-20 live stage",
+      "demote": "-> DEMOTE to a non-gating diagnostic + offline trap-only + explicitly incomplete + PROVISIONAL (the MCC/over-refusal verdict defers to the live stage)",
+      "offline_never_works": true,
+      "no_auto_lock": true
+    },
+    "over_refusal_moved_to_live": {
+      "note": "RE-PLAN-12 (ADDITIVE). The over-refusal CP gate (CP-upper of the over-refusal rate <= TAU_OR 0.15, N_ctrl >= 24) MOVES OUT of 19-04 to the Phase-20 LIVE arm -- the adjudicated production-distribution positives are the only difficulty-matched-AND-real positives. The engine struct is UNCHANGED (TAU_OR + N_CTRL_FLOOR=24 byte-identical, FROZEN, applied at the live arm). The RE-PLAN-9 synthetic control arm (control_source/control_construction/survival_probe/control_decision_rule) is SUPERSEDED-BY-RE-PLAN-12 + preserved (see each key's superseded_by_replan12 annotation).",
+      "cp_upper_le_tau_or": 0.15,
+      "n_ctrl_floor": 24,
+      "applies_at": "live (Phase 20)",
+      "engine_struct_unchanged": true,
+      "synthetic_control_arm_superseded": true
+    }
+  },
+  "strata": {
+    "supported": {
+      "expected_verdict": "unrefuted",
+      "note": "WiCE supported (the unrefuted control arm)."
+    },
+    "subtle": {
+      "expected_verdict": "refuted",
+      "note": "WiCE partially_supported -- the SUBTLE-overreach spine; the false-uphold trap (D-02)."
+    },
+    "not-supported": {
+      "expected_verdict": "refuted",
+      "note": "WiCE not_supported (the easy-flip bad arm)."
+    },
+    "open-book": {
+      "expected_verdict": "varies",
+      "note": "AVeriTeC open-book + leakage-test arm; revised KS post-2024-11-15, per-claim date cutoff (D-05). Conflicting/Cherry-picking EXCLUDED from the hard gate. Reduced to ONE offline CLOSED-BOOK JUDGMENT-difficulty stratum (evidence-absent); buried DROPPED (construct-invalid offline, D-RP4-1) + date-sensitive DEFERRED, both to Phase-20 live, so the offline read stresses CLOSED-BOOK JUDGMENT (resist-uphold-on-absence), NOT claim subtlety and NOT retrieval orchestration (which defers to the Phase-20 live shadow) (19-RESEARCH.md lines 319-360; re-planned per 19-04-REPLAN-DECISION-4)."
+    },
+    "evidence-absent": {
+      "expected_verdict": "refuted",
+      "note": "The refuted-trap arm (RE-PLAN-4; RE-PLAN-5 adds an interleaved positive-control arm). AVeriTeC open-book: a one-step-overreach mutation of a Supported seed whose refutation is NOT in the KS (no in-corpus disconfirmer); the packet retains the original unmutated SUPPORTING docs as plausible text (a genuine temptation to false-uphold). Targets the no-counter-evidence-found -> default-uphold failure (the voter must return refuted/insufficient on ABSENCE -- resist-uphold-on-absence). Every retained candidate is screened by the MULTI-PROBE ALL-AGREE-RETAIN consensus (in-family Opus + GPT-5.5 + Gemini all agree entails=false) before any vote (see stage1_pre_registration.gold_blind_validity_probe + out_of_family_probe_consensus)."
+    },
+    "positive-control": {
+      "expected_verdict": "unrefuted",
+      "note": "The interleaved gold=unrefuted POSITIVE-CONTROL arm (RE-PLAN-5 Finding 1, the mandatory power/plumbing check). NATIVE UNMUTATED AVeriTeC-Supported seeds (NO mutateOverreach -- the claim is the ORIGINAL Supported claim, gold=unrefuted by construction) whose date-filtered survivors GENUINELY ENTAIL the claim (ALL probes agree entails=true -- the inverse of the trap screen). Dispatched indistinguishably to the voter (the gold is never in the prompt); the voter SHOULD vote unrefuted. If Sonnet REFUTES the controls -> ALWAYS-REFUTE-ARTIFACT -> VOID/uninterpretable (a 0-false-uphold trap rate is confounded without them). Its OWN floor (>= 3, INDEPENDENT of the evidence-absent trap floor; below = VOID-on-control-floor). The control rows carry NO overreach recipe (native) + expected_verdict 'unrefuted'; the EXAMPLE control rows below (averitec-dev-0040/0041) are seed claim_ids with NO recipe + NO text (recipe-not-text; the native claim text lives in the gitignored run artifact under eval/.cache/)."
+    },
+    "buried": {
+      "expected_verdict": "refuted",
+      "note": "DROPPED from the offline gate (construct-invalid offline, RE-PLAN-4 D-RP4-1) and DEFERRED to the Phase-20 live shadow alongside date-sensitive. NOT an offline gate stratum -- the assembler builds NO buried rows; there are NO buried example rows. The synthetic disconfirmer=true flag on an arbitrary deep surviving doc is TEXT-UNVERIFIED (the doc's text almost never refutes the SPECIFIC mutated overreach), and the count-vs-rank predicate error (D-RP4-2) mis-classified all 62 seeds as buried. The DEFINITION is retained here only for Phase-20 (deep-refuter detection is retrieval-adjacent / context-attention): AVeriTeC open-book, a decisive pre-cutoff in-corpus disconfirmer ranked DEEP behind topically-similar distractors -- the premature-stop failure."
+    },
+    "date-sensitive": {
+      "expected_verdict": "refuted",
+      "note": "DEFERRED to the Phase-20 live phase (post-cutoff-leak arm unobservable offline -- the static KS adapter applies dateFilter before any voter sees a doc, so a post-cutoff leak is dropped identically for both seats and neither can false-uphold from it; 19-04-REPLAN-DECISION-2 item 1). The stratum DEFINITION is retained here for Phase-20; NO date-sensitive example rows are assembled in the offline gate. AVeriTeC open-book: the decisive disconfirmer is date-gated (post-cutoff docs EXCLUDED by the per-claim cutoff, or a pre-cutoff disconfirmer easy to miss). The axis the prior pilots NEVER tested (the cutoff was not enforced)."
+    },
+    "stress": {
+      "expected_verdict": "varies",
+      "note": "LLM-AggreFact held-out verbatim stress set (D-02b)."
+    }
+  },
+  "sources": [
+    {
+      "id": "wice",
+      "repo": "jon-tow/wice",
+      "revision": "54f7976b8ce4fe0a9bfd35a4dd30af9d5b45d8a6",
+      "license": "ODC-BY (annotations) / MIT (code)",
+      "vendored": true,
+      "gated": false,
+      "files": [
+        {
+          "file": "records/dev00004-1.json",
+          "sha256": "47e96debdad9c5af365e046654f33b77af4949278c26db8b6ddf066a5ef732be"
+        },
+        {
+          "file": "records/dev00016-0.json",
+          "sha256": "7ede42856d6da22c05dcece98a8f03337c55e3115a41b087dfeecf0ce4400697"
+        },
+        {
+          "file": "records/dev00016-1.json",
+          "sha256": "0b26f4c444d486747abd29b922680396aca6a876643c5bd5e3ba802dcc58235c"
+        },
+        {
+          "file": "records/dev00018-0.json",
+          "sha256": "0cd8eedcc2e0aad2f048cae1fba9f1487f541e681827f8b0400513d405bd1c23"
+        },
+        {
+          "file": "records/dev00018-1.json",
+          "sha256": "fcbdbeda76ddb9c4f8644404b540d9dec420f4cf7d781209c2e4e343268d8ef4"
+        },
+        {
+          "file": "records/dev00025-1.json",
+          "sha256": "639f68fd7963464674982e9e7b40686fd673d0b3dc89b03c45fb9f6f40bfd88f"
+        },
+        {
+          "file": "records/dev00028-0.json",
+          "sha256": "674be0dc076a9250b11759f2efea8722d26b7eca2ccef895a11b7880c6cf3d50"
+        },
+        {
+          "file": "records/dev00028-1.json",
+          "sha256": "22d45c695501bfa6bbcc3d1c8c22ce94b4cd991217e4a5bc918cc4e1e6da5ec7"
+        },
+        {
+          "file": "records/dev00108-0.json",
+          "sha256": "7274639717416d0d67567d3fac724b2c7125334c70341041c553d3d50c2826ca"
+        },
+        {
+          "file": "records/dev00108-2.json",
+          "sha256": "eda46e48d324c5095363706910fd2dd546325314b1af6846ce9a066a70f773b2"
+        },
+        {
+          "file": "records/dev00116-0.json",
+          "sha256": "7366cd0f16aabf233e407d3b92a8e875693f8de44f535f01ca6a94b62193eaa8"
+        },
+        {
+          "file": "records/dev00116-1.json",
+          "sha256": "754983afb94ad6ff9be210808e081c2c400ff0c7f7a7590d3c1d0ef575a54c73"
+        },
+        {
+          "file": "records/dev00116-2.json",
+          "sha256": "b6f8927dd3956528b156611d982f6ad3f96b7577b6033b99bffe1b9e22ea380f"
+        },
+        {
+          "file": "records/dev00126-2.json",
+          "sha256": "6e3acfdf463cc822022104f8b4d5fd8459be28476453ea368344c5b92aab23f3"
+        },
+        {
+          "file": "records/dev00137-0.json",
+          "sha256": "da8d892173eea1d5df8903c153da3e6e469cb36912e500ec3127427babd4a2b3"
+        },
+        {
+          "file": "records/dev00137-1.json",
+          "sha256": "256e235f1dc2956c20e04ba48157c3250a23ecda429875b238be8000356844a1"
+        },
+        {
+          "file": "records/dev00156-0.json",
+          "sha256": "93364203720e6862d70b8940199ced924ec95fe74dca0f871610e3e254c4e7d4"
+        },
+        {
+          "file": "records/dev00164-0.json",
+          "sha256": "152b589633cca3cd0446ee52842904f3bba80b46ccb7f228dccd1761d150260c"
+        },
+        {
+          "file": "records/dev00164-1.json",
+          "sha256": "e0489be3e6a29c62ea90575864f77d589b24d1037f7b84d6de791cc778e05b97"
+        },
+        {
+          "file": "records/dev00164-2.json",
+          "sha256": "9d255286793f27ef06e94c4f74b32e625430413b2d7b1e341ed8df51767cf05f"
+        },
+        {
+          "file": "records/dev00217-2.json",
+          "sha256": "0ccb40c87d4a1a1694f4fb7681028605c0144e8d0578d52e464f7d2a55697dc3"
+        },
+        {
+          "file": "records/dev00219-0.json",
+          "sha256": "f4f164ee6e4ef6ded86cad96732fd82ee4bcc1533a0ca3bc00e34d334441b36c"
+        },
+        {
+          "file": "records/dev00224-0.json",
+          "sha256": "ea46098a1c02f9631de48a0c7bbe91fc06e84abc043d6b3ff05e080ea6d1f731"
+        },
+        {
+          "file": "records/dev00224-1.json",
+          "sha256": "ead0bfb9d8081b49e1e93fb48263a32f193fe053a36cb02bc5edd7b7c2662a65"
+        },
+        {
+          "file": "records/dev00279-1.json",
+          "sha256": "dc19b1ef8ea5b4a5866a7c86325f1d299d7790b8cf461b03652729e8e2bbfd93"
+        },
+        {
+          "file": "records/dev00279-2.json",
+          "sha256": "491d43fa4594771b7c131ec0ffdc9b19a58e28795a3e7e31cf4dc413b40b5db6"
+        },
+        {
+          "file": "records/dev00004-0.json",
+          "sha256": "df5d4c15d3c3578b804a207c17eaf8c9f18816128d0018f388b4dfae92a1093b"
+        },
+        {
+          "file": "records/dev00004-2.json",
+          "sha256": "4aea77660ccb04b854e6f4f01298624a5de27af30b750cd589c1de1ef3c981f1"
+        },
+        {
+          "file": "records/dev00016-2.json",
+          "sha256": "57e9a66f53c77f859e44052b00f2f47b2fb3e591775971e7d46cd26493efbcb9"
+        },
+        {
+          "file": "records/dev00025-0.json",
+          "sha256": "39b86b853bd155a6d16c5b6c144e99b40445044a34b336f1cdbd4cb1329bb732"
+        },
+        {
+          "file": "records/dev00030-1.json",
+          "sha256": "2ef86b666179053381881979766bbfcccadbe88f22fc3aa461b233d374fedf21"
+        },
+        {
+          "file": "records/dev00217-0.json",
+          "sha256": "b1b30062ba8283790708835fdb05f170363f396ae15e4a7df3dae476f1fdebaf"
+        },
+        {
+          "file": "records/dev00217-1.json",
+          "sha256": "3eeea7ea926bd3426d937df693bfec8279e510e29b128cd23843fb840fe8958c"
+        },
+        {
+          "file": "records/dev00219-1.json",
+          "sha256": "fb12949798fd2ea6323e0264bb451cb7440df9990cab6ebc56f5aa5c115d5ec6"
+        },
+        {
+          "file": "records/dev00315-1.json",
+          "sha256": "d9f59076df7867b9fe5a27eb43c27581bb0dbbef1d7f94abc173bec58dec9405"
+        },
+        {
+          "file": "records/dev00316-0.json",
+          "sha256": "d3916ef4c9acf094262cf3edb884fb964d5637729c7c09c8b3417564a1c0cb76"
+        },
+        {
+          "file": "records/dev00316-2.json",
+          "sha256": "0bef454cc7eb849699858cf476fef0ef16958f029d90e732a799f194d659174a"
+        },
+        {
+          "file": "records/dev00330-1.json",
+          "sha256": "e88f0e1f467a95702681f74a41a3b84e3544c886d0373d581bf1eb5788018c6f"
+        },
+        {
+          "file": "records/dev00388-1.json",
+          "sha256": "97f1338e92dc02c84c38890696e425091a32f141ba99d223d9e05c8e6157c1a3"
+        },
+        {
+          "file": "records/dev00418-1.json",
+          "sha256": "c7803510b3ada302d92f456d6ae4195adfb10da17b5e84b4af5fc8dd0bbb7de6"
+        },
+        {
+          "file": "records/dev00429-0.json",
+          "sha256": "f60c9654243518a809752c08683b6af24ab9d0e707f2b5faf84d1375db33963e"
+        },
+        {
+          "file": "records/dev00520-0.json",
+          "sha256": "0bbd59ad99e41cca2b55a7c7b74a94d71be6e4800312ca3c66e2b45563dbca15"
+        },
+        {
+          "file": "records/dev00572-0.json",
+          "sha256": "f60c5f0035b585837647118172091312003ac303998a8cb403eebeb7abe16b90"
+        },
+        {
+          "file": "records/dev00003-0.json",
+          "sha256": "c5cacd091c5792618e97ce508e5a10d3a11cf27b8a6456048ad0cd876c4b316b"
+        },
+        {
+          "file": "records/dev00003-1.json",
+          "sha256": "02ecfc346da4625ad44ba30700eb6db1ac72c5a4bb0479255b610693849f2e2f"
+        },
+        {
+          "file": "records/dev00003-2.json",
+          "sha256": "f8a9cff4db6ea74a849d96090d0bc55051a8178ea24ec12c66be3635778f1925"
+        },
+        {
+          "file": "records/dev00005-0.json",
+          "sha256": "06751e9e4bdf1ba61a523b40ac8fc98a2b6089076eb85522775f8489327e1d4d"
+        },
+        {
+          "file": "records/dev00005-1.json",
+          "sha256": "3e285ddd3569393f88b9349fa08bc416cf78d4ebc69e31269bf32d95a00c9aca"
+        },
+        {
+          "file": "records/dev00030-0.json",
+          "sha256": "daa47ef3e001662b96d8461bd5a5d4826db3b9bbb5e1114f4c7f7ad338843aa8"
+        },
+        {
+          "file": "records/dev00068-0.json",
+          "sha256": "7a0f4dc5b2c4e7df50772f1d986c78d8a645dedae741f13946a159330071f77c"
+        },
+        {
+          "file": "records/dev00068-1.json",
+          "sha256": "4bf6a020174cfa51c5bf2156ddf8ae9cd3177eb7ce7ca98d196336d40a32890f"
+        },
+        {
+          "file": "records/dev00068-2.json",
+          "sha256": "c81bfb3889f13afd64974192176f1627c3214234cc9005ea06712a6d90b6d138"
+        },
+        {
+          "file": "records/dev00108-1.json",
+          "sha256": "6052cd49757623e9118ae2a7b4f8ae00bd3e4907ac0d8f1ac0d797e092775c5b"
+        },
+        {
+          "file": "records/dev00126-0.json",
+          "sha256": "6cd6927d5a3a0e7269a699af1fd1acd3019479feb338783a24a9ffffe532664d"
+        },
+        {
+          "file": "records/dev00126-1.json",
+          "sha256": "3e4c1163ae4baf761896aa8651b900f2b92d9857bec4b11e728af2879befdbad"
+        },
+        {
+          "file": "records/dev00131-0.json",
+          "sha256": "43d89cc2f86ae7fcd2f1cec5dc7610cc2b2ff0a01c76e5237f916598726d768b"
+        },
+        {
+          "file": "records/dev00131-1.json",
+          "sha256": "7c82e49cb29de2b67d6d3f5bed986f4a8434f35825dbffc709766c4da58f9c68"
+        },
+        {
+          "file": "records/dev00156-1.json",
+          "sha256": "bd479213472655a3fa5928d97293d35fb23072a3848cb6bca501c0658bcabc15"
+        },
+        {
+          "file": "records/dev00219-2.json",
+          "sha256": "bc4d153acd9c8f3f27c3dff916715259f02c2997d683550a9cff76b6b3779277"
+        },
+        {
+          "file": "records/dev00236-0.json",
+          "sha256": "cc32d71d363f9b0a135938cb353912be7b12d45926087bda0cd1de31d11c7f26"
+        }
+      ]
+    },
+    {
+      "id": "averitec",
+      "repo": "chenxwh/AVeriTeC",
+      "repoType": "model",
+      "revision": "2ca9dee23a2a6fa64c5bd918e0cd28ed0aa09031",
+      "license": "CC-BY-NC-4.0",
+      "vendored": false,
+      "gated": false,
+      "note": "FETCH-ONLY (CC-BY-NC: mutated trap text is dev-only/gitignored in eval/.cache/, NEVER committed -- this manifest carries only uids + remapped labels + the mutation recipe/seed + pinned revision + per-file sha256, D-07/Pitfall 5). chenxwh/AVeriTeC is an UNGATED `model` repo (D-12: gated:false, repoType:model, token-free). Revision + per-file sha256 pinned from the cached revision under eval/.cache/chenxwh__AVeriTeC (Plan 19-03). The OQ-1 leakage probe (lz-eval-traps.mjs leakageProbe) screened the 10 dev-KS seeds CLEAN (date filter + fact_checking_article/cached_original_claim_url exclusion) BEFORE this manifest was locked.",
+      "files": [
+        {
+          "file": "data/dev.json",
+          "sha256": "499793726b4a5406780928a3d9dedc48d6dd53de778f22437d129cacdb08e300"
+        },
+        {
+          "file": "data_store/dev_top_k_sentences.json",
+          "sha256": "a1e949f8f8c928811e180f4ba239bb7be3749c462e493f7d39d01f9f5a9bf785"
+        }
+      ]
+    },
+    {
+      "id": "llm-aggrefact",
+      "repo": "lytang/LLM-AggreFact",
+      "revision": "PENDING_ENUMERATE_AT_EVAL_TIME",
+      "license": "CC-BY-ND-4.0",
+      "vendored": false,
+      "gated": true,
+      "note": "FETCH-ONLY, used VERBATIM only (No-Derivatives). De-duplicate its embedded WiCE subset. Revision + per-file sha256 enumerated at eval time.",
+      "files": []
+    },
+    {
+      "id": "expertqa",
+      "repo": "cmalaviya/expertqa",
+      "revision": "PENDING_ENUMERATE_AT_EVAL_TIME",
+      "license": "MIT",
+      "vendored": false,
+      "gated": false,
+      "note": "SECONDARY trap-augmentation seed only (D-02c/D-03); not a turnkey stratum.",
+      "files": []
+    },
+    {
+      "id": "fever",
+      "repo": "fever/fever",
+      "license": "CC-BY-SA-3.0",
+      "vendored": false,
+      "gated": false,
+      "revision": "PENDING_ENUMERATE_AT_EVAL_TIME",
+      "note": "FETCH-ONLY RE-PLAN-9 entailment-native positive-control source (license CONFIRMED CC-BY-SA-3.0 against the HuggingFace fever/fever dataset card at manifest-authoring time, NO SPEND, W2). SUPPORTS -> positive-control gold (the inverse of the trap remap; NEI/REFUTES are NOT controls); the defensible per-claim PRE-DATE cutoff is the Wikipedia dump revision date. Only ids + remapped labels + pinned revision + sha256 committed, no raw CC-BY-SA text (D-04). The revision + per-file sha256 are enumerated at the Task-10 paid probe (PENDING here). NOT reserved AVeriTeC native seeds.",
+      "files": []
+    },
+    {
+      "id": "vitaminc",
+      "repo": "tals/vitaminc",
+      "license": "CC-BY-SA-3.0",
+      "vendored": false,
+      "gated": false,
+      "revision": "PENDING_ENUMERATE_AT_EVAL_TIME",
+      "note": "FETCH-ONLY RE-PLAN-9 entailment-native positive-control source (license CONFIRMED CC-BY-SA-3.0 against the HuggingFace tals/vitaminc dataset card at manifest-authoring time, NO SPEND, W2). Contrastive design -- the closest construct match, forcing SEMANTIC entailment. SUPPORTS -> positive-control gold; the defensible per-claim PRE-DATE cutoff is the per-example wiki_revision_id. Only ids + remapped labels + pinned revision + sha256 committed, no raw CC-BY-SA text (D-04). The revision + per-file sha256 are enumerated at the Task-10 paid probe (PENDING here). NOT reserved AVeriTeC native seeds.",
+      "files": []
+    }
+  ],
+  "examples": [
+    {
+      "uid": "dev00004-1",
+      "source": "wice",
+      "source_label": "supported",
+      "stratum": "supported",
+      "book": "closed",
+      "expected_verdict": "unrefuted"
+    },
+    {
+      "uid": "dev00016-0",
+      "source": "wice",
+      "source_label": "supported",
+      "stratum": "supported",
+      "book": "closed",
+      "expected_verdict": "unrefuted"
+    },
+    {
+      "uid": "dev00016-1",
+      "source": "wice",
+      "source_label": "supported",
+      "stratum": "supported",
+      "book": "closed",
+      "expected_verdict": "unrefuted"
+    },
+    {
+      "uid": "dev00018-0",
+      "source": "wice",
+      "source_label": "supported",
+      "stratum": "supported",
+      "book": "closed",
+      "expected_verdict": "unrefuted"
+    },
+    {
+      "uid": "dev00018-1",
+      "source": "wice",
+      "source_label": "supported",
+      "stratum": "supported",
+      "book": "closed",
+      "expected_verdict": "unrefuted"
+    },
+    {
+      "uid": "dev00025-1",
+      "source": "wice",
+      "source_label": "supported",
+      "stratum": "supported",
+      "book": "closed",
+      "expected_verdict": "unrefuted"
+    },
+    {
+      "uid": "dev00028-0",
+      "source": "wice",
+      "source_label": "supported",
+      "stratum": "supported",
+      "book": "closed",
+      "expected_verdict": "unrefuted"
+    },
+    {
+      "uid": "dev00028-1",
+      "source": "wice",
+      "source_label": "supported",
+      "stratum": "supported",
+      "book": "closed",
+      "expected_verdict": "unrefuted"
+    },
+    {
+      "uid": "dev00108-0",
+      "source": "wice",
+      "source_label": "supported",
+      "stratum": "supported",
+      "book": "closed",
+      "expected_verdict": "unrefuted"
+    },
+    {
+      "uid": "dev00108-2",
+      "source": "wice",
+      "source_label": "supported",
+      "stratum": "supported",
+      "book": "closed",
+      "expected_verdict": "unrefuted"
+    },
+    {
+      "uid": "dev00116-0",
+      "source": "wice",
+      "source_label": "supported",
+      "stratum": "supported",
+      "book": "closed",
+      "expected_verdict": "unrefuted"
+    },
+    {
+      "uid": "dev00116-1",
+      "source": "wice",
+      "source_label": "supported",
+      "stratum": "supported",
+      "book": "closed",
+      "expected_verdict": "unrefuted"
+    },
+    {
+      "uid": "dev00116-2",
+      "source": "wice",
+      "source_label": "supported",
+      "stratum": "supported",
+      "book": "closed",
+      "expected_verdict": "unrefuted"
+    },
+    {
+      "uid": "dev00126-2",
+      "source": "wice",
+      "source_label": "supported",
+      "stratum": "supported",
+      "book": "closed",
+      "expected_verdict": "unrefuted"
+    },
+    {
+      "uid": "dev00137-0",
+      "source": "wice",
+      "source_label": "supported",
+      "stratum": "supported",
+      "book": "closed",
+      "expected_verdict": "unrefuted"
+    },
+    {
+      "uid": "dev00137-1",
+      "source": "wice",
+      "source_label": "supported",
+      "stratum": "supported",
+      "book": "closed",
+      "expected_verdict": "unrefuted"
+    },
+    {
+      "uid": "dev00156-0",
+      "source": "wice",
+      "source_label": "supported",
+      "stratum": "supported",
+      "book": "closed",
+      "expected_verdict": "unrefuted"
+    },
+    {
+      "uid": "dev00164-0",
+      "source": "wice",
+      "source_label": "supported",
+      "stratum": "supported",
+      "book": "closed",
+      "expected_verdict": "unrefuted"
+    },
+    {
+      "uid": "dev00164-1",
+      "source": "wice",
+      "source_label": "supported",
+      "stratum": "supported",
+      "book": "closed",
+      "expected_verdict": "unrefuted"
+    },
+    {
+      "uid": "dev00164-2",
+      "source": "wice",
+      "source_label": "supported",
+      "stratum": "supported",
+      "book": "closed",
+      "expected_verdict": "unrefuted"
+    },
+    {
+      "uid": "dev00217-2",
+      "source": "wice",
+      "source_label": "supported",
+      "stratum": "supported",
+      "book": "closed",
+      "expected_verdict": "unrefuted"
+    },
+    {
+      "uid": "dev00219-0",
+      "source": "wice",
+      "source_label": "supported",
+      "stratum": "supported",
+      "book": "closed",
+      "expected_verdict": "unrefuted"
+    },
+    {
+      "uid": "dev00224-0",
+      "source": "wice",
+      "source_label": "supported",
+      "stratum": "supported",
+      "book": "closed",
+      "expected_verdict": "unrefuted"
+    },
+    {
+      "uid": "dev00224-1",
+      "source": "wice",
+      "source_label": "supported",
+      "stratum": "supported",
+      "book": "closed",
+      "expected_verdict": "unrefuted"
+    },
+    {
+      "uid": "dev00279-1",
+      "source": "wice",
+      "source_label": "supported",
+      "stratum": "supported",
+      "book": "closed",
+      "expected_verdict": "unrefuted"
+    },
+    {
+      "uid": "dev00279-2",
+      "source": "wice",
+      "source_label": "supported",
+      "stratum": "supported",
+      "book": "closed",
+      "expected_verdict": "unrefuted"
+    },
+    {
+      "uid": "dev00004-0",
+      "source": "wice",
+      "source_label": "partially_supported",
+      "stratum": "subtle",
+      "book": "closed",
+      "expected_verdict": "refuted"
+    },
+    {
+      "uid": "dev00004-2",
+      "source": "wice",
+      "source_label": "partially_supported",
+      "stratum": "subtle",
+      "book": "closed",
+      "expected_verdict": "refuted"
+    },
+    {
+      "uid": "dev00016-2",
+      "source": "wice",
+      "source_label": "partially_supported",
+      "stratum": "subtle",
+      "book": "closed",
+      "expected_verdict": "refuted"
+    },
+    {
+      "uid": "dev00025-0",
+      "source": "wice",
+      "source_label": "partially_supported",
+      "stratum": "subtle",
+      "book": "closed",
+      "expected_verdict": "refuted"
+    },
+    {
+      "uid": "dev00030-1",
+      "source": "wice",
+      "source_label": "partially_supported",
+      "stratum": "subtle",
+      "book": "closed",
+      "expected_verdict": "refuted"
+    },
+    {
+      "uid": "dev00217-0",
+      "source": "wice",
+      "source_label": "partially_supported",
+      "stratum": "subtle",
+      "book": "closed",
+      "expected_verdict": "refuted"
+    },
+    {
+      "uid": "dev00217-1",
+      "source": "wice",
+      "source_label": "partially_supported",
+      "stratum": "subtle",
+      "book": "closed",
+      "expected_verdict": "refuted"
+    },
+    {
+      "uid": "dev00219-1",
+      "source": "wice",
+      "source_label": "partially_supported",
+      "stratum": "subtle",
+      "book": "closed",
+      "expected_verdict": "refuted"
+    },
+    {
+      "uid": "dev00315-1",
+      "source": "wice",
+      "source_label": "partially_supported",
+      "stratum": "subtle",
+      "book": "closed",
+      "expected_verdict": "refuted"
+    },
+    {
+      "uid": "dev00316-0",
+      "source": "wice",
+      "source_label": "partially_supported",
+      "stratum": "subtle",
+      "book": "closed",
+      "expected_verdict": "refuted"
+    },
+    {
+      "uid": "dev00316-2",
+      "source": "wice",
+      "source_label": "partially_supported",
+      "stratum": "subtle",
+      "book": "closed",
+      "expected_verdict": "refuted"
+    },
+    {
+      "uid": "dev00330-1",
+      "source": "wice",
+      "source_label": "partially_supported",
+      "stratum": "subtle",
+      "book": "closed",
+      "expected_verdict": "refuted"
+    },
+    {
+      "uid": "dev00388-1",
+      "source": "wice",
+      "source_label": "partially_supported",
+      "stratum": "subtle",
+      "book": "closed",
+      "expected_verdict": "refuted"
+    },
+    {
+      "uid": "dev00418-1",
+      "source": "wice",
+      "source_label": "partially_supported",
+      "stratum": "subtle",
+      "book": "closed",
+      "expected_verdict": "refuted"
+    },
+    {
+      "uid": "dev00429-0",
+      "source": "wice",
+      "source_label": "partially_supported",
+      "stratum": "subtle",
+      "book": "closed",
+      "expected_verdict": "refuted"
+    },
+    {
+      "uid": "dev00520-0",
+      "source": "wice",
+      "source_label": "partially_supported",
+      "stratum": "subtle",
+      "book": "closed",
+      "expected_verdict": "refuted"
+    },
+    {
+      "uid": "dev00572-0",
+      "source": "wice",
+      "source_label": "partially_supported",
+      "stratum": "subtle",
+      "book": "closed",
+      "expected_verdict": "refuted"
+    },
+    {
+      "uid": "dev00003-0",
+      "source": "wice",
+      "source_label": "not_supported",
+      "stratum": "not-supported",
+      "book": "closed",
+      "expected_verdict": "refuted"
+    },
+    {
+      "uid": "dev00003-1",
+      "source": "wice",
+      "source_label": "not_supported",
+      "stratum": "not-supported",
+      "book": "closed",
+      "expected_verdict": "refuted"
+    },
+    {
+      "uid": "dev00003-2",
+      "source": "wice",
+      "source_label": "not_supported",
+      "stratum": "not-supported",
+      "book": "closed",
+      "expected_verdict": "refuted"
+    },
+    {
+      "uid": "dev00005-0",
+      "source": "wice",
+      "source_label": "not_supported",
+      "stratum": "not-supported",
+      "book": "closed",
+      "expected_verdict": "refuted"
+    },
+    {
+      "uid": "dev00005-1",
+      "source": "wice",
+      "source_label": "not_supported",
+      "stratum": "not-supported",
+      "book": "closed",
+      "expected_verdict": "refuted"
+    },
+    {
+      "uid": "dev00030-0",
+      "source": "wice",
+      "source_label": "not_supported",
+      "stratum": "not-supported",
+      "book": "closed",
+      "expected_verdict": "refuted"
+    },
+    {
+      "uid": "dev00068-0",
+      "source": "wice",
+      "source_label": "not_supported",
+      "stratum": "not-supported",
+      "book": "closed",
+      "expected_verdict": "refuted"
+    },
+    {
+      "uid": "dev00068-1",
+      "source": "wice",
+      "source_label": "not_supported",
+      "stratum": "not-supported",
+      "book": "closed",
+      "expected_verdict": "refuted"
+    },
+    {
+      "uid": "dev00068-2",
+      "source": "wice",
+      "source_label": "not_supported",
+      "stratum": "not-supported",
+      "book": "closed",
+      "expected_verdict": "refuted"
+    },
+    {
+      "uid": "dev00108-1",
+      "source": "wice",
+      "source_label": "not_supported",
+      "stratum": "not-supported",
+      "book": "closed",
+      "expected_verdict": "refuted"
+    },
+    {
+      "uid": "dev00126-0",
+      "source": "wice",
+      "source_label": "not_supported",
+      "stratum": "not-supported",
+      "book": "closed",
+      "expected_verdict": "refuted"
+    },
+    {
+      "uid": "dev00126-1",
+      "source": "wice",
+      "source_label": "not_supported",
+      "stratum": "not-supported",
+      "book": "closed",
+      "expected_verdict": "refuted"
+    },
+    {
+      "uid": "dev00131-0",
+      "source": "wice",
+      "source_label": "not_supported",
+      "stratum": "not-supported",
+      "book": "closed",
+      "expected_verdict": "refuted"
+    },
+    {
+      "uid": "dev00131-1",
+      "source": "wice",
+      "source_label": "not_supported",
+      "stratum": "not-supported",
+      "book": "closed",
+      "expected_verdict": "refuted"
+    },
+    {
+      "uid": "dev00156-1",
+      "source": "wice",
+      "source_label": "not_supported",
+      "stratum": "not-supported",
+      "book": "closed",
+      "expected_verdict": "refuted"
+    },
+    {
+      "uid": "dev00219-2",
+      "source": "wice",
+      "source_label": "not_supported",
+      "stratum": "not-supported",
+      "book": "closed",
+      "expected_verdict": "refuted"
+    },
+    {
+      "uid": "dev00236-0",
+      "source": "wice",
+      "source_label": "not_supported",
+      "stratum": "not-supported",
+      "book": "closed",
+      "expected_verdict": "refuted"
+    },
+    {
+      "uid": "averitec-dev-0006",
+      "source": "averitec",
+      "source_label": "Supported",
+      "stratum": "evidence-absent",
+      "book": "open",
+      "expected_verdict": "refuted",
+      "recipe": {
+        "uid_seed": 6,
+        "transform": "magnitude",
+        "seed": 1,
+        "source_label": "Supported",
+        "generator": "out-of-family (non-voter); recipe-not-text (D-07)"
+      }
+    },
+    {
+      "uid": "averitec-dev-0007",
+      "source": "averitec",
+      "source_label": "Supported",
+      "stratum": "evidence-absent",
+      "book": "open",
+      "expected_verdict": "refuted",
+      "recipe": {
+        "uid_seed": 7,
+        "transform": "scope",
+        "seed": 2,
+        "source_label": "Supported",
+        "generator": "out-of-family (non-voter); recipe-not-text (D-07)"
+      }
+    },
+    {
+      "uid": "averitec-dev-0040",
+      "source": "averitec",
+      "source_label": "Supported",
+      "stratum": "positive-control",
+      "book": "open",
+      "expected_verdict": "unrefuted"
+    },
+    {
+      "uid": "averitec-dev-0041",
+      "source": "averitec",
+      "source_label": "Supported",
+      "stratum": "positive-control",
+      "book": "open",
+      "expected_verdict": "unrefuted"
+    },
+    {
+      "uid": "llm-aggrefact-test-0000",
+      "source": "llm-aggrefact",
+      "source_label": "1",
+      "stratum": "stress",
+      "book": "closed",
+      "expected_verdict": "unrefuted"
+    },
+    {
+      "uid": "llm-aggrefact-test-0001",
+      "source": "llm-aggrefact",
+      "source_label": "1",
+      "stratum": "stress",
+      "book": "closed",
+      "expected_verdict": "unrefuted"
+    },
+    {
+      "uid": "llm-aggrefact-test-0002",
+      "source": "llm-aggrefact",
+      "source_label": "0",
+      "stratum": "stress",
+      "book": "closed",
+      "expected_verdict": "refuted"
+    },
+    {
+      "uid": "llm-aggrefact-test-0003",
+      "source": "llm-aggrefact",
+      "source_label": "0",
+      "stratum": "stress",
+      "book": "closed",
+      "expected_verdict": "refuted"
+    }
+  ]
+}

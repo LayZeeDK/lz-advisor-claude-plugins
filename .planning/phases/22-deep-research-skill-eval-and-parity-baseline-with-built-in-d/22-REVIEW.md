@@ -1,0 +1,545 @@
+---
+phase: 22-deep-research-skill-eval-and-parity-baseline-with-built-in-d
+reviewed: 2026-09-05T00:00:00Z
+depth: deep
+files_reviewed: 23
+files_reviewed_list:
+  - .gitignore
+  - eval/__fixtures__/sliceA-seed.json
+  - eval/lz-eval-baseline-manifest.mjs
+  - eval/lz-eval-baseline-manifest.test.mjs
+  - eval/lz-eval-judge-calibration.mjs
+  - eval/lz-eval-judge-calibration.test.mjs
+  - eval/lz-eval-parity-architecture.md
+  - eval/lz-eval-parity-calibration-dispatch.mjs
+  - eval/lz-eval-parity-calibration-dispatch.test.mjs
+  - eval/lz-eval-parity-calibration-harness.mjs
+  - eval/lz-eval-parity-calibration-harness.test.mjs
+  - eval/lz-eval-parity-calibration-opus4x-record.md
+  - eval/lz-eval-parity-calibration-opus5-record.md
+  - eval/lz-eval-parity-calibration-prompt.md
+  - eval/lz-eval-parity-driver.md
+  - eval/lz-eval-parity-judge.mjs
+  - eval/lz-eval-parity-judge.test.mjs
+  - eval/lz-eval-parity-prereg.md
+  - eval/lz-eval-parity-prereg.test.mjs
+  - eval/lz-eval-parity-verdict.mjs
+  - eval/lz-eval-parity-verdict.test.mjs
+  - eval/lz-eval-sliceA-gold.mjs
+  - eval/lz-eval-sliceA-gold.test.mjs
+findings:
+  critical: 4
+  warning: 18
+  info: 0
+  total: 22
+status: issues_found
+---
+
+# Phase 22: Code Review Report
+
+**Reviewed:** 2026-09-05
+**Depth:** deep
+**Files Reviewed:** 23
+**Status:** issues_found
+
+---
+
+> ## ORCHESTRATOR ADJUDICATION (added 2026-09-05, after the review was committed)
+>
+> The findings below are the reviewer's own text, unaltered in substance, and the frontmatter counts
+> are left as written. One byte-level change was made: the reviewer's CR-01 prose at what is now
+> line 105 itself contained a literal NUL, which made this whole report read as BINARY to ripgrep --
+> the exact harm CR-01 describes. It was rewritten as the visible escape text. No finding, severity,
+> or count was edited.
+>
+> Four findings were re-checked against source before being acted on. **Two of the four BLOCKERs
+> survive as stated; one is overstated and one is a FALSE POSITIVE.** Read this note before acting on
+> CR-02 or CR-04.
+>
+> | ID | Adjudication | Basis |
+> |----|--------------|-------|
+> | CR-01 | **CONFIRMED** | Three literal NUL bytes at exactly the stated offsets (9042, 9896, 13382). Demonstrated live: `rg` on that file returned `binary file matches` and no lines, blinding a real search during this session. **FIXED in `847fc2b`** -- replaced with a named `CELL_KEY_SEP = '\u0000'` constant plus three regression tests, discrimination proven by inverting the fix (under a `' '` separator all three new tests fail and the 14 pre-existing tests still pass). |
+> | CR-02 | **OVERSTATED** | `builtinScores` is not a forgotten push. `eval/lz-eval-parity-judge.mjs:297` documents it: *"builtinScores stays empty unless the harness also lands a builtin-report score; the descriptive builtin mean/SEM are computed over whatever builtin scores were provided (empty -> 0). The pairwise verdict (the load-bearing output) does NOT depend on the builtin score pool."* Deliberate and commented. The narrower real question -- whether emitting `meanScoreBuiltin: 0` rather than `null` is safe for a downstream head-to-head report -- stands, at warning severity. |
+> | CR-03 | **CONFIRMED as a freeze gap, not a wrong number** | `resamples = 2000, seed = 'bca'` are default parameters of `bcaBootstrapLowerCI` (`eval/lz-eval-mcc.mjs:254`), absent from the frozen constants, the prereg NUMBERS table, `antiDriftChecks()` and every test. The values match AMENDMENT RECORD 3, so the 2026-09-05 run was correct; what is missing is enforcement. **Deferred to the successor phase** per the maintainer, logged in `.continue-here.md`. |
+> | CR-04 | **FALSE POSITIVE -- do not act on it** | The claim is that the emphatic no-tools instruction is missing because `eval/lz-eval-parity-calibration-prompt.md` contains no tool prohibition. That file is not the whole dispatched prompt. AMENDMENT RECORD 3 pre-registers the instruction at DISPATCH (`eval/lz-eval-parity-prereg.md:480-482`): *"each dispatch carries an explicit, emphatic instruction to use NO tools -- no file reads, no search -- and to answer solely from the supplied text"*. It lives there deliberately -- the prompt file is sha256-pinned and editing it is the banned prompt revision. The same passage names the prompt's stale "read-only persona" line as the thing it corrects, calls the mitigation "a mitigation, not a guarantee", and requires it be carried into the result artifact, which `22-05-SUMMARY.md` run-property 3 and the Opus 5 record line 72 both do, attributing it correctly. Nothing overstates anything. |
+>
+> Everything the reviewer reports as *holding up* was spot-checked and stands -- in particular the MCC/BCa math, the re-derivation of all 120 committed calibration rows, and both sha256 pins.
+
+---
+
+## Summary
+
+Reviewed the Phase-22 parity-eval tree: four never-exercised scoring/gate modules (parity judge,
+two-layer verdict, Slice-A gold, baseline manifest), two modules that did run (calibration harness,
+dispatch materializer), the judge-calibration gate, eight co-test files, and six prose artifacts that
+drive LLM tasks.
+
+What holds up under checking:
+
+- **The statistics are correct.** `matthewsCorrelation`, `mccFromPairs`, and the BCa lower bound in
+  `eval/lz-eval-mcc.mjs` (the engine both gate modules delegate to) implement the standard formulas;
+  the degenerate-denominator return-0 convention, the `(0,1)` clamp before `jStat.normal.inv`, the
+  `den === 0 -> a = 0` jackknife fallback, and the strict `lowerCI > LOWER_FLOOR` comparison are all
+  right, and the direction of every comparison operator in the two gate predicates is right.
+- **Both calibration records re-derive exactly from disk.** I recomputed the confusion matrices, MCC,
+  and accuracy from all 120 committed rows: Opus 5 `tp=17 fp=7 tn=27 fn=9 mcc=0.4531 acc=0.733`,
+  Opus 4.x `tp=18 fp=7 tn=27 fn=8 mcc=0.4889 acc=0.750` plus both stated subgroups
+  (`subtle n=17 mcc=0` and `clear-cut n=43 mcc=0.5045`). Zero mislabeled outcome cells across both
+  tables, and every `gold`/`subtle` column matches the vendored WiCE label for that uid. Both sha256
+  pins in AMENDMENT RECORD 3 verify byte-for-byte against the working tree.
+- The eval/plugin tree boundary is genuinely one-directional (the single `eval/lz-eval` string in
+  `plugins/` is a comment), and all eight in-scope test files pass.
+
+What does not hold up: four blockers. The parity judge separates its cell key with **raw NUL bytes**
+embedded in the source, which is invisible in every editor, silently unmakes the module if any tool
+normalizes it, and makes the file binary to ripgrep. The same module emits `meanScoreBuiltin` /
+`semBuiltin` as unconditionally-zero fields that will read as measurements in the result artifact. The
+BCa knobs that AMENDMENT RECORD 3 pins as decisive in the near-bar band are unfrozen default parameter
+values with no anti-drift co-test, unlike every other pinned number in the phase. And the anti-leak
+mitigation that both the pre-registration and the Opus 5 record state was applied -- an explicit
+no-tools / no-file-reads instruction in every dispatch -- is not present in the sha256-pinned prompt.
+
+No `<structural_findings>` block was supplied, so this report is narrative findings only.
+
+## Critical Issues
+
+### CR-01: `scoreJudgeCells` separates its cell key with three raw NUL bytes embedded in the source
+
+**File:** `eval/lz-eval-parity-judge.mjs:183`, `:212`, `:294`
+**Issue:** The cell key is built and split on a literal `U+0000` written directly into the file, not as
+the escape `'\0'` or `'\u0000'`:
+
+```
+offset 9042:  const cellKey = rec.question + '<NUL>' + rec.dimension;
+offset 9896:  JSON.stringify(cellKey.replace('<NUL>', ' / ')),
+offset 13382: const [question, dimension] = cellKey.split('<NUL>');
+```
+
+The logic is correct *today* -- I confirmed a real Slice-B question round-trips intact. Three problems
+make it a blocker anyway:
+
+1. **It is invisible and unenforced.** Any tool that normalizes control characters -- an editor save, a
+   Prettier run, a copy-paste through a terminal, a lint `--fix` -- collapses the separator to the empty
+   string. `scoreJudgeCells` then silently emits `question` = the whole concatenation and
+   `dimension` = `undefined` for every cell, and `parityVerdict` receives a `lossByDimension` keyed on
+   `undefined` (which its `ALL_DIMS` check would reject only if a loss existed). No test would notice:
+   every test fixture uses spaceless questions (`'q1'`, `'qA'`), so even the space-separator variant of
+   this bug passes the whole suite.
+2. **The file is binary to ripgrep.** `rg -n "cellKey" eval/lz-eval-parity-judge.mjs` returns
+   `binary file matches` and prints no lines; a plain `rg` over the tree silently skips it. That is the
+   exact false-negative class CLAUDE.md warns about, on the one module that decides win/tie/loss.
+3. It contradicts the file's own header ("strictly ASCII (per CLAUDE.md)"). Nothing tests it -- the
+   ASCII co-test in `lz-eval-parity-prereg.test.mjs:234` covers only the two `.md` files.
+
+**Fix:** Stop encoding structure in a byte. Key the outer map on a JSON tuple and stop parsing the key
+back apart:
+
+```js
+const cellKey = JSON.stringify([rec.question, rec.dimension]);
+// ...
+const [question, dimension] = JSON.parse(cellKey);
+```
+
+and in the error message use the parsed pair rather than `cellKey.replace(...)` (which, being a string
+`replace`, only ever replaced the first separator anyway). Then extend the ASCII/no-control-byte
+assertion in `lz-eval-parity-prereg.test.mjs:234` to cover the four in-scope `.mjs` modules, and add one
+`scoreJudgeCells` fixture whose question contains spaces so the key round-trip is actually exercised.
+
+### CR-02: `meanScoreBuiltin` and `semBuiltin` are structurally always 0 -- a fabricated comparative number
+
+**File:** `eval/lz-eval-parity-judge.mjs:220`, `:288-290`, `:301-303`
+**Issue:** `const builtinScores = [];` is declared at line 220 and **never pushed to anywhere in the
+function**. Every cell therefore returns `meanScoreBuiltin: 0` and `semBuiltin: 0`, unconditionally.
+The comment at 288-290 acknowledges this ("builtinScores stays empty unless the harness also lands a
+builtin-report score") but no such code path exists in the module or is described in the driver.
+
+Driver Stage 5 (`eval/lz-eval-parity-driver.md:227-231`) feeds `scoreJudgeCells` output straight into
+the result artifact. A lz-vs-builtin parity report that prints "builtin mean score 0.00" beside a real
+lz mean is not a missing field -- it is a manufactured comparison in favour of the product under test,
+in an artifact whose entire purpose is a credible head-to-head. The co-test only asserts
+`Number.isFinite(cell.semBuiltin) && cell.semBuiltin >= 0`
+(`eval/lz-eval-parity-judge.test.mjs:132`), which a constant 0 satisfies forever.
+
+**Fix:** Either remove both fields from the returned shape (the pairwise verdict is the load-bearing
+output and does not use them), or make them real by defining and validating a builtin score source.
+Removing is the smaller diff:
+
+```js
+out.push({
+  question,
+  dimension,
+  verdict,
+  meanScoreLz: meanOf(lzScores),
+  semLz: semOf(lzScores),
+  k: cellK,
+});
+```
+
+If they are kept, add a test that fails when the field is a constant -- e.g. two cells with different
+builtin inputs must produce different `meanScoreBuiltin`.
+
+### CR-03: the pre-registered BCa knobs are unfrozen defaults with no anti-drift enforcement
+
+**File:** `eval/lz-eval-judge-calibration.mjs:188`; `eval/lz-eval-parity-prereg.md:361-365`;
+`eval/lz-eval-parity-prereg.test.mjs:69-82`
+**Issue:** AMENDMENT RECORD 3 pre-registers `alpha = 0.05, resamples = 2000, seed = 'bca'` and states
+the reason explicitly: "Measured jitter across plausible alternative seed/resample choices spans
+lowerCI 0.2580-0.2843 -- immaterial at the realized 0.2722, but decisive in exactly the near-bar band,
+which is why it is pinned before the run rather than after."
+
+Only `alpha` is actually pinned. `judgeCalibrationGate` passes `{ alpha: JUDGE_MCC_BAR.ALPHA }` and
+inherits `resamples` and `seed` from the *default parameter values* of `bcaBootstrapLowerCI`
+(`eval/lz-eval-mcc.mjs:254`). Those two numbers are:
+
+- not members of any `Object.freeze`d constant,
+- not present in the prereg's "Frozen NUMBERS" table (rows 27-36),
+- not in `antiDriftChecks()` (`lz-eval-parity-prereg.test.mjs:69-82`), which covers ten values, none of
+  them `resamples` or `seed`,
+- not referenced by any test in the eval tree.
+
+So the one knob the pre-registration itself names as decisive near the bar is the one knob a
+one-character edit can move with a fully green suite. That is precisely the result-shopping surface
+D-20 exists to close, and the next phase inherits it.
+
+**Fix:** Promote them into the frozen contract and the anti-drift table:
+
+```js
+// eval/lz-eval-judge-calibration.mjs
+export const JUDGE_MCC_BAR = Object.freeze({
+  POINT: MCC_BAR_POINT,
+  ALPHA: MCC_CI_ALPHA,
+  LOWER_FLOOR: MCC_CI_LOWER_FLOOR,
+  RESAMPLES: 2000,
+  SEED: 'bca',
+});
+// ...
+const lowerCI = bcaBootstrapLowerCI({
+  verdicts, gold,
+  alpha: JUDGE_MCC_BAR.ALPHA,
+  resamples: JUDGE_MCC_BAR.RESAMPLES,
+  seed: JUDGE_MCC_BAR.SEED,
+});
+```
+
+then add `| \`JUDGE_MCC_BAR.RESAMPLES\` | 2000 |` and `| \`JUDGE_MCC_BAR.SEED\` | bca |` rows to the
+prereg table and to both `antiDriftChecks()` and `wrongNeedleChecks()`.
+
+### CR-04: the pre-registered no-tools anti-leak instruction does not exist in the frozen prompt
+
+**File:** `eval/lz-eval-parity-calibration-prompt.md:52-89`;
+`eval/lz-eval-parity-prereg.md:480-482`; `eval/lz-eval-parity-calibration-opus5-record.md:72-76`;
+`eval/lz-eval-parity-calibration-dispatch.mjs:10-11`
+**Issue:** AMENDMENT RECORD 3 pre-registers two mitigations against a tool-enabled judge reading the
+gold labels off disk:
+
+> "(a) each dispatch carries an explicit, emphatic instruction to use NO tools -- no file reads, no
+> search -- and to answer solely from the supplied text; and (b) the dispatch OMITS the uid"
+
+Mitigation (b) is enforced mechanically in `renderDispatch`. **Mitigation (a) is not in the prompt.**
+The entire frozen block (lines 52-89) contains no occurrence of "tool", "tools", or "file". The
+closest text is line 54: `"This is a CLOSED-BOOK task: do NOT use any outside knowledge, and do NOT
+search."` -- which prohibits outside knowledge and search, not file reads. The one act the mitigation
+exists to prevent (reading `eval/__fixtures__/wice-vendored/records/<uid>.json`) is never named.
+
+Three committed artifacts assert this control was applied:
+- the prereg, as a pre-registered mitigation;
+- `lz-eval-parity-calibration-dispatch.mjs:10` ("Two mitigations were pre-registered: an emphatic
+  no-tools / no-file-reads instruction, and withholding the uid");
+- the Opus 5 record at line 74 ("Mitigations were the emphatic no-tools instruction and uid omission.
+  ... The mitigation held in every case").
+
+The Opus 5 record then credits `tool_uses: 0` across all 60 sub-agents to a mitigation that half
+did not exist. Whatever produced the zero, it was not this instruction. Because the prompt is sha256-
+pinned (`cb3d567a...`, which I verified matches), the pinned artifact cannot be silently corrected --
+the discrepancy has to be resolved in the record, not patched away.
+
+**Fix:** Do not edit the pinned prompt (that breaks the pin and the "byte-identical" claim). Instead:
+
+1. Correct the three assertions to state what was actually dispatched -- mitigation (a) was
+   *pre-registered but not implemented*; only (b) and the closed-book/no-search instruction were in
+   force. The Opus 5 record must not attribute `tool_uses: 0` to it.
+2. If a future phase re-runs the calibration, add the no-tools sentence to the prompt under a new
+   sha256 pin, and add a dispatch-time assertion that the rendered body contains it:
+
+```js
+if (!/no tools|do NOT use any tools|no file reads/i.test(body)) {
+  throw new DispatchError('the dispatch body is missing the pre-registered no-tools instruction');
+}
+```
+
+## Warnings
+
+### WR-01: `meanScoreLz` pools scores from both orderings regardless of which slot lz occupied
+
+**File:** `eval/lz-eval-parity-judge.mjs:276-285`
+**Issue:** The inner loop pushes `r.score` into `lzScores` for every record of both orderings,
+unconditionally -- `orderingMap[ordering]` is computed at line 230 and then never consulted for score
+attribution. Whether that is correct depends on whose score `record.score` holds, and the driver's
+record shape (`eval/lz-eval-parity-driver.md:200-202`) defines exactly one `score` per
+(question, dimension, ordering, sample) for a *pairwise* comparison of two reports -- so the field is
+ambiguous by construction. The 7-line comment at 276-282 argues both readings in the same sentence
+("for the descriptive mean we record the score against the system the judge preferred is NOT how the
+score is attributed") and resolves neither. If the harness lands the slot-A report's score, then in
+ordering `BA` that score is the *builtin's* and `meanScoreLz` silently mixes the two systems.
+**Fix:** Settle the contract in the driver first -- land two scored fields (`scoreA`, `scoreB`) per
+record, then attribute by `orderingMap`:
+```js
+const lzSlot = orderingMap[ordering];
+for (const r of recs) {
+  lzScores.push(lzSlot === 'A' ? r.scoreA : r.scoreB);
+  builtinScores.push(lzSlot === 'A' ? r.scoreB : r.scoreA);
+}
+```
+Delete the 276-282 comment and replace it with one line stating the resolved rule.
+
+### WR-02: reported `k` is the per-ordering sample count while the SEM is computed over 2k values
+
+**File:** `eval/lz-eval-parity-judge.mjs:300-304`
+**Issue:** `k: cellK` is the per-ordering count (3), but `lzScores` accumulates both orderings, so
+`semLz` divides by `sqrt(6)`. A consumer recovering stddev as `semLz * Math.sqrt(k)` gets a wrong
+number. The co-test bakes the mismatch in rather than catching it
+(`lz-eval-parity-judge.test.mjs:150-167` expects `/sqrt(6)` while `k` is 3).
+**Fix:** Return the pool size alongside: `k: cellK, nScores: lzScores.length`, and document that
+`semLz` is over `nScores`.
+
+### WR-03: `parityVerdict` compares floor-dim losses with `===` against a constant named `MAX_LOSS_...`
+
+**File:** `eval/lz-eval-parity-verdict.mjs:151`
+**Issue:** `floorDimLosses === PARITY_BAR.MAX_LOSS_FLOOR_DIMS`. It happens to be right because the
+constant is 0 and counts are non-negative, but the name says "MAX" and the sibling clause on line 152
+correctly uses `<=`. If `MAX_LOSS_FLOOR_DIMS` ever moved to 1, `===` would reject a *clean* zero-loss
+run as non-PARITY -- inverting the bar. The prereg prose already writes it as `==` (line 178), so the
+document propagates the same fragility.
+**Fix:** `floorDimLosses <= PARITY_BAR.MAX_LOSS_FLOOR_DIMS`, and change the prereg line 178 to `<=`.
+Add a test with `MAX_LOSS_FLOOR_DIMS` semantics in mind (zero losses must be PARITY under any
+non-negative bar).
+
+### WR-04: the `> 0` clauses in `sliceAFeasibilityGate` are dead, and a test claims they are load-bearing
+
+**File:** `eval/lz-eval-sliceA-gold.mjs:230-234`; `eval/lz-eval-sliceA-gold.test.mjs:169-176`
+**Issue:** `supportedCount > 0 && refutedCount > 0` can never change the result: `N_SUP_MIN` and
+`N_REF_MIN` are both 8, so `>= 8` already implies `> 0`. The test comment asserts "If the
+supportedCount >= N_SUP_MIN check (**or the > 0 rule**) were dropped, this assertion FAILS" -- the
+parenthetical is false. Deleting both `> 0` clauses leaves the entire suite green. The "both-directions
+populated" rule the prereg names (line 138) is therefore expressed only implicitly, and would silently
+vanish if either `N_*_MIN` were ever set to 0.
+**Fix:** Keep the clauses (they encode the intent) but correct the test comment, and add a test that
+makes them real -- e.g. assert `sliceAFeasibilityGate({ supportedCount: 0, refutedCount: 0 })` is
+`false` *and* document that the rule holds independently of the thresholds.
+
+### WR-05: the Slice-A fixture cannot exercise the `MIN_CHARS` or `MAX_SENTENCE_PUNCT` filter branches
+
+**File:** `eval/__fixtures__/sliceA-seed.json`; `eval/lz-eval-sliceA-gold.mjs:134`, `:141`
+**Issue:** Measured over all 12 fixture claims: lengths are 82-346 chars and every claim carries
+exactly one sentence-ending punctuation mark. So `len < FILTER.MIN_CHARS` (45) and
+`punctCount > FILTER.MAX_SENTENCE_PUNCT` (1) are both unreachable from the co-test. Deleting either
+branch leaves the suite green. Only `MAX_CHARS` is discriminated (by `syn-ref-toolong-06`), and the
+test at line 144 only asserts `<= 220` -- the upper bound -- never the lower.
+**Fix:** Add two fixture rows with `label: "Refuted"`: a 30-char fragment claim, and a two-sentence
+claim. Then tighten the count assertion so both must be dropped:
+```js
+assert.equal(refuted.length, 3, 'fragment + multi-sentence + leaky + pronoun + over-long all dropped');
+```
+
+### WR-06: the prereg "invert-the-fix" test is tautological -- it asserts `String.replace` works
+
+**File:** `eval/lz-eval-parity-prereg.test.mjs:134-151`
+**Issue:** The test reads the real prose, replaces the correct PASS_THRESHOLD row with a tampered one,
+then asserts only that the tampered string no longer contains the correct row. That is guaranteed by
+`String.prototype.replace` semantics and exercises no code from any module under review. It would pass
+against a completely gutted anti-drift check. The header at lines 17-21 advertises it as the
+discrimination proof; the genuine discrimination lives in `wrongNeedleChecks()` (lines 102-126), which
+this test adds nothing to.
+**Fix:** Make the tampered prose flow through the actual predicate:
+```js
+const check = (prose) => antiDriftChecks().every(([needle]) => prose.includes(needle));
+assert.equal(check(realProse), true, 'the real prose passes the anti-drift predicate');
+assert.equal(check(tamperedProse), false, 'a single drifted row flips the predicate RED');
+```
+
+### WR-07: `renderDispatch` uses string `.replace`, so `$&` / `` $` `` / `$'` / `$$` in a claim corrupt the prompt
+
+**File:** `eval/lz-eval-parity-calibration-dispatch.mjs:53-57`
+**Issue:** `String.prototype.replace` interprets `$`-patterns in the *replacement* even when the search
+is a plain string. `$1`-`$9` survive literally (no capture groups), but `$&`, `` $` ``, `$'`, and `$$`
+are always substituted. `` $` `` in an evidence document would inject everything preceding the
+placeholder; `$'` would inject everything after it. I scanned the 60 vendored records: 27 of them
+contain `$N` sequences (dollar amounts), so `$` is common in this corpus; none currently carries a
+hazardous pattern, so this is latent rather than realized -- but it sits inside the frozen-prompt
+anti-leak path, where a silently mangled dispatch is exactly the failure the module exists to prevent.
+**Fix:** Use a replacer function, which disables `$`-interpretation entirely:
+```js
+.replace('<the claim text>', () => payload.claim)
+.replace('<the claim_context, or "(none)">', () => context)
+.replace('<the evidence document>', () => payload.evidence)
+```
+
+### WR-08: the uid anti-leak guard tests a hardcoded regex, not the item's actual uid
+
+**File:** `eval/lz-eval-parity-calibration-dispatch.mjs:28`, `:63-65`
+**Issue:** `UID_PATTERN = /dev\d{5}-\d/` is a guess at the uid shape. `assertSafeUid` in the harness
+accepts anything matching `/^[A-Za-z0-9._-]+$/`, so a re-drawn or differently-named corpus (`dev123-0`,
+`wice-0042`, anything from the AMENDMENT RECORD 2 widening path) would leak straight past the guard
+while `renderDispatch` reports success. The check is available exactly and cheaply.
+**Fix:** Pass the uid in and check for it literally, keeping the pattern as a belt-and-braces second
+check:
+```js
+export function renderDispatch({ frozen, payload } = {}) {
+  // ...
+  if (payload.uid && body.includes(payload.uid)) {
+    throw new DispatchError('the item uid reached the dispatch body');
+  }
+  if (UID_PATTERN.test(body)) { /* ... */ }
+```
+`buildJudgePayload` already returns `uid`, so no plumbing is needed.
+
+### WR-09: the dispatch module claims a "sha256-pinned" prompt but performs no hash verification
+
+**File:** `eval/lz-eval-parity-calibration-dispatch.mjs:13-14`, `:79`
+**Issue:** The header states the prompt is "extracted VERBATIM from the sha256-pinned
+eval/lz-eval-parity-calibration-prompt.md". `generateDispatch` does a plain `fs.readFileSync` with no
+digest check. The pin lives only in prose (`lz-eval-parity-prereg.md:353-359`) and in a manual
+pre-run step. A prompt edit between the pre-run verification and the dispatch is undetected by code.
+(The pin itself is correct -- I verified `cb3d567a7ac0...` matches the working tree.)
+**Fix:** Make the claim true in four lines:
+```js
+const PROMPT_SHA256 = 'cb3d567a7ac099099453834f06db89f84c7b063c0eda317fd541e707747247e6';
+const raw = fs.readFileSync(PROMPT_MD);
+const got = crypto.createHash('sha256').update(raw).digest('hex');
+if (got !== PROMPT_SHA256) throw new DispatchError('prompt sha256 mismatch: ' + got);
+```
+
+### WR-10: the driver still describes the calibration set as WiCE + LLM-AggreFact, contradicting AMENDMENT RECORD 2
+
+**File:** `eval/lz-eval-parity-driver.md:41-42`, `:160-161`
+**Issue:** Stage 2 instructs the session to calibrate over "WiCE incl. `partially_supported` subtle
+items + LLM-AggreFact de-duped vs WiCE", and line 41 names "WiCE / LLM-AggreFact for the judge
+calibration" as the gold. AMENDMENT RECORD 2 (`lz-eval-parity-prereg.md:267-310`) relocated
+LLM-AggreFact out of the gate entirely; the realized set is WiCE-only N=60. The driver is explicitly
+"the file a fresh session follows" (its own line 177), so a fresh session reading Stage 2 would try to
+assemble a set the pre-registration forbids.
+**Fix:** Update both lines to "the 60 vendored WiCE items (AMENDMENT RECORD 2; LLM-AggreFact is
+RELOCATED to a future phase and MUST NOT enter the gate)".
+
+### WR-11: the frozen prompt asserts the judge "has no file tools", which AMENDMENT RECORD 3 documents as false
+
+**File:** `eval/lz-eval-parity-calibration-prompt.md:96`
+**Issue:** "The judge has no file tools (read-only persona); the session writes the verdict file."
+AMENDMENT RECORD 3 (`lz-eval-parity-prereg.md:473-485`) states the opposite as a recorded fidelity
+limit: the Agent tool cannot restrict a spawned agent's tools, so the judge runs on a general-purpose
+persona that DOES possess file tools. The prompt file carries no pointer to that correction, and
+because it is sha256-pinned it cannot be edited without breaking the pin and the "byte-identical"
+claim. A reader of the prompt alone gets a false safety property about the control that protects the
+gold. Related to CR-04 but distinct: this is a false statement, CR-04 is a missing control.
+**Fix:** Do not edit the pinned file. Add the correction where it will be read -- a note in the phase
+record and in `22-PARITY-RESULT.md` stating that the prompt's line 96 is superseded by AMENDMENT
+RECORD 3's TRANSPORT FIDELITY LIMIT ON TOOL ACCESS. Correct the line under a new pin if a future phase
+re-runs.
+
+### WR-12: the Opus 5 record's `tool_uses: 0` claim has no stated provenance, beside a paragraph saying the transcripts are empty
+
+**File:** `eval/lz-eval-parity-calibration-opus5-record.md:72-88`
+**Issue:** Item 2 states "**Measured outcome: all 60 judge sub-agents returned `tool_uses: 0`.** The
+mitigation held in every case -- this is now an observation, not just a hope." Item 3, immediately
+below, states that the independent fidelity check "recovered zero payloads because 62 of the 63 task
+transcript files are 0 bytes and the transport retains no readable copy". The record never names where
+the 60 `tool_uses` values came from, so the two paragraphs read as contradictory. (A plausible source
+exists -- `toolUseResult.usage.tool_uses` in the parent session JSONL is a different artifact from the
+task transcripts -- but the record does not say so, and this is the load-bearing measurement backing
+the anti-leak claim.)
+**Fix:** Name the artifact and the path, e.g. "read from the orchestrating session's own JSONL at
+`~/.claude/projects/<hash>/<session>.jsonl`, field `toolUseResult.usage.tool_uses`, one entry per
+Agent call -- a different artifact from the 0-byte task transcripts in item 3."
+
+### WR-13: "the realized run uses k = 3" is stated as fact in two artifacts, but no grading run occurred
+
+**File:** `eval/lz-eval-parity-prereg.md:188-190`; `eval/lz-eval-parity-driver.md:196-197`
+**Issue:** Both say "the realized run uses k = 3". The phase halted at the Stage-2 gate; Stage 3 never
+ran and no report was graded (`lz-eval-parity-calibration-opus5-record.md:14`). A pre-registration
+stating a realized value for a run that does not exist reads as a measurement.
+**Fix:** Change to "the run WILL use k = 3 (pre-registered within the locked range); no Stage-3 grading
+has been run as of the phase halt."
+
+### WR-14: `dedupAgreFactVsWice` is dead code preserved by its own co-test
+
+**File:** `eval/lz-eval-judge-calibration.mjs:100-138`; `eval/lz-eval-judge-calibration.test.mjs:167-180`
+**Issue:** AMENDMENT RECORD 2 made the calibration set WiCE-only, so LLM-AggreFact never enters the
+pipeline. `dedupAgreFactVsWice` has no caller in `eval/` or `plugins/` -- only its two tests. Its
+39-line docblock still describes the de-dup as "mandatory, never optional", documenting a superseded
+design that a future reader will take as current.
+**Fix:** Either delete the export plus its two tests, or retain it with a one-line header noting it is
+retained for the AMENDMENT RECORD 2 relocation seed and has no caller in this phase.
+
+### WR-15: `generateDispatch` writes the uid map into the dispatch directory, leaves partial output on failure, and has no CLI error handling
+
+**File:** `eval/lz-eval-parity-calibration-dispatch.mjs:82-95`, `:97-107`
+**Issue:** Three smaller defects in one function:
+- `_map.json` (idx -> uid, the orchestrator's key to the gold records) is written into the same
+  directory as the judge-facing `item-NN.txt` files. The comment says the map "stays with the
+  ORCHESTRATOR" but nothing separates them. The header also states "Output goes OUTSIDE the repo (a
+  scratch dir passed as argv[2])" -- nothing validates that, so `node ... eval/` writes the uid map
+  into the tree.
+- The `items.map` writes files one at a time; a `DispatchError` on item 40 leaves 39 dispatch files
+  and no `_map.json` on disk, half-consuming an authorized one-shot run.
+- The CLI (97-107) has no `try`/`catch` and no `process.exit(0)`, unlike all four sibling CLIs which
+  exit 2 with a formatted message on a contract error. A `DispatchError` surfaces as a raw stack trace
+  with exit 1, which a caller distinguishing "bad input" (2) from "gate not cleared" (1) will
+  misinterpret.
+**Fix:** Render all bodies into memory first and write only after every item passes the guards; write
+`_map.json` to `path.dirname(outDir)` or a `map/` subdir; add
+`if (path.resolve(outDir).startsWith(path.resolve(HERE, '..'))) throw new DispatchError('outDir must be outside the repo')`;
+and wrap the CLI in the same `try`/`catch` + `process.exit(2)` shape the siblings use.
+
+### WR-16: the parity-verdict CLI hand-rolls BOM stripping and `JSON.parse` instead of the shared `readJson`
+
+**File:** `eval/lz-eval-parity-verdict.mjs:174-175`
+**Issue:** `JSON.parse(text.charCodeAt(0) === 0xfeff ? text.slice(1) : text)` duplicates
+`eval/lz-eval-readjson.mjs`, whose whole stated purpose (its header) is that "five eval modules each
+carried a byte-identical copy ... this consolidates them into one definition so the fail-closed read
+cannot drift". Every other in-scope CLI uses `readJson`. This copy also produces a bare `SyntaxError`
+rather than a `ContractError` carrying the file path, so the CLI's `err.file` formatting at line 180
+never fires for a malformed input.
+**Fix:** `import { readJson } from './lz-eval-readjson.mjs';` and `const input = readJson(inputPath);`.
+
+### WR-17: `ContractError`'s file/location argument is passed an ordering label and a directory path
+
+**File:** `eval/lz-eval-parity-judge.mjs:87`, `:235`, `:316`
+**Issue:** `ContractError(message, file)` -- the second argument is surfaced by every CLI as
+`' (' + err.file + ')'`. Three call sites pass something else: `resolvePreference` passes the ordering
+label (`'AB'`), the `orderingMap` value check at 235 passes the ordering label, and
+`loadJudgeRecords` passes the directory. Operators see `lz-eval-parity-judge: invalid judge
+preference: "x" (AB)` where every sibling module prints the function name.
+**Fix:** Pass `'resolvePreference'`, `'scoreJudgeCells'`, and `'loadJudgeRecords'` respectively, and
+fold the ordering label / dir into the message text.
+
+### WR-18: `validateRecord` does not validate `score` range, `preferred`, `verdict`, or `sample`
+
+**File:** `eval/lz-eval-parity-judge.mjs:128-148`
+**Issue:** The landed-record contract (module header lines 15-17 and driver line 201) specifies
+`score: 0..1`, `verdict: 'pass'|'fail'|'unknown'`, `preferred: 'A'|'B'|'tie'`, and `sample`.
+`validateRecord` checks only that `score` is a finite number -- `-5` or `1e9` passes and flows straight
+into `meanScoreLz`. `preferred` is validated late and only for the first record of each ordering
+(via the `prefs.size !== 1` set check plus `resolvePreference(recs[0].preferred, ...)`); `verdict` and
+`sample` are never validated at all. For a module whose derived pass/fail is `score >= 0.7`, an
+out-of-range score is a silent wrong answer, not a crash.
+**Fix:** Extend `validateRecord`:
+```js
+if (rec.score < 0 || rec.score > 1) {
+  throw new ContractError('judge record score outside 0..1: ' + rec.score, where);
+}
+if (!VALID_PREFERENCES.includes(rec.preferred)) {
+  throw new ContractError('judge record preferred outside A|B|tie: ' + JSON.stringify(rec.preferred), where);
+}
+```
+
+## Info
+
+_(none -- every finding above is a defect with a behavioral or evidentiary consequence.)_
+
+---
+
+_Reviewed: 2026-09-05_
+_Reviewer: Claude (gsd-code-reviewer)_
+_Depth: deep_
+</content>
+</invoke>

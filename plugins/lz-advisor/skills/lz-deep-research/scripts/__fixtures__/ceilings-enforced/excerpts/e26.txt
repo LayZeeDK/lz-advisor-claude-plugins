@@ -1,0 +1,1 @@
+Reported observation: zulu metric rises 26 units in the controlled run.

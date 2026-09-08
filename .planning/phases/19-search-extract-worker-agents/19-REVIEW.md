@@ -1,0 +1,421 @@
+# Phase 19 -- Code Review (REVIEW.md)
+
+Post-execution code-quality review of the Phase-19 eval modules via the hardened **review gate**
+(Design-B Workflow: Sonnet executor packages verbatim excerpts -> `lz-advisor:reviewer` on Opus/high
+classifies + reports coverage -> loops until no missed surfaces -> Opus/high synth consolidates).
+Run PACED, one coupling group per dispatch.
+
+> METHODOLOGY NOTE: the review-gate reviewer reasons from the executor's PACKAGED EXCERPTS (it does
+> NOT re-read source). Every finding below was independently TRIAGED against the actual source file by
+> the orchestrator; misreads are dismissed with written reasoning. Triage verdicts (CONFIRMED /
+> OVERSTATED / DISMISSED) are the orchestrator's, not the gate's.
+
+## Coverage status
+
+| Group | Coupling chain | Files | Status |
+|-------|----------------|-------|--------|
+| A | search-loop API surface | `lz-eval-search-loop.mjs` + `lz-eval-offline-read.mjs` + `lz-eval-traps.mjs` | REVIEWED + fixed |
+| B | safeId guard + aggregate->offline-read | `lz-eval-aggregate.mjs` + `lz-eval-offline-read.mjs` + `lz-eval-dataset.mjs` | REVIEWED + fixed (F3/F4 deferred to gating-read harness) |
+| C | 19-02 shipped worker agents + round-trip test | `agents/research-extract-worker.md` + `agents/research-search-worker.md` + `lz-deep-research-aggregate.test.mjs` | CLOSED -- reviewed + panel-resolved + fixed (prompts/schema/SSOT-test/round-trip) + re-gated (findings fixed) |
+| C-re | 19-02 worker agents post-fix re-review | `agents/research-extract-worker.md` + `agents/research-search-worker.md` | DONE (wf_c529d5c6-a0a, 1 round): caught stale frontmatter/examples (SHA-256/sources/(capped)); FIXED + SSOT gate strengthened to bar recurrence |
+| D1 | search-loop-surface eval test suites | `lz-eval-search-loop.test.mjs` + `lz-eval-traps.test.mjs` + `lz-eval-offline-read.test.mjs` | REVIEWED + HARDENED (all gaps fixed; D1-17/D1-10 source guards deferred to gating-read author) |
+| D2 | aggregate-surface eval test suites + lock-rule | `lz-eval-aggregate.test.mjs` + `lz-eval-dataset.test.mjs` + `eval/lz-eval-lock-rule.md` | REVIEWED + HARDENED (all gaps fixed; lock-rule doc fixes applied) |
+
+> SCOPE (user directive 2026-06-17): the lz-review gate MUST cover ALL Phase-19 plans/waves implemented,
+> not just the eval-import-coupling source the manifest scoped. Groups A+B covered the eval source;
+> Groups C+D were added to cover the shipped worker agents (19-02), the test suites, and the EVAL-04
+> lock-rule contract. Pure-data fixtures (manifest.json, worker-output-roundtrip/*, __fixtures__ trees)
+> are excluded -- they are exercised by the Group-D test suites. C/D are outside the manifest's coupling
+> scope, so `assertManifestCoverage` does not apply to them (it guards eval imports, satisfied by A+B).
+
+`assertManifestCoverage` over the full partition [A, B] = ok (every coupling chain co-located in one
+group; `offline-read` is the hub, reviewed in both).
+
+---
+
+## Group A -- search-loop API surface (19-01 anchored)
+
+Gate run: `wf_35de4770-bd1`; converged in **1 round**; 3 agents; ~158.6k subagent tokens; 5 tool uses.
+`severityDropDiff(roundLogs, report)`: reviewerHighCount=2 (block-coalesced; the reviewer listed
+findings without blank-line separators so the diff treats each `###` section as one block),
+droppedCount=0, **dropDetected=false** -- the Opus-high synth preserved all findings verbatim
+(orchestrator-verified: synth findings 1-14 are byte-identical to the reviewer's).
+
+### Triaged findings
+
+| # | Gate severity | Triage | Adjusted | Location | Finding (triaged) |
+|---|---------------|--------|----------|----------|-------------------|
+| F1 | Critical | CONFIRMED (latent today / live defect) | Critical | `lz-eval-search-loop.mjs:286-301` | `searchAndStop` evaluates `hasDecisiveEvidence`/`judge` on the CURRENT batch only. Under `staticKsAdapter` every batch is identical so it never bites today, but the line-253 comment commits this core to the Phase-20 `liveWebSearchAdapter` (per-query variance), where an early decisive doc found before the minimums are met is lost -> wrong verdict. Fix: accumulate a running doc pool and judge over the pool, OR contractually constrain the live adapter to stable cumulative returns. F14 resolves in favor of this being a real live-path defect. |
+| F2 | Important | OVERSTATED | Suggestion | `lz-eval-search-loop.mjs:244-248` | `judge`'s `'refuted-default'` fallback is UNREACHABLE: it is only called behind `hasDecisiveEvidence`, whose predicate is identical to `judge`'s `.find`. A dead defensive branch with a confusing value choice (collides with the exhausted-loop verdict for a fixture author). Reviewer self-downgraded. Optional: throw `ContractError` instead of the dead fallback. |
+| F3 | Important | CONFIRMED (= probe-bug #2) | Important | `lz-eval-search-loop.mjs:83-87` | `TRACKING_PARAMS.has(k)` is case-sensitive while the `utm_` arm is case-insensitive; `?FBCLID=`/`?Ref=` survive canonicalization -> divergent SHA-256 dedup keys (breaks the dedup invariant). Fix: `TRACKING_PARAMS.has(k.toLowerCase())`. |
+| F4 | Important | CONFIRMED guard-gap (fix debatable) | Important | `lz-eval-offline-read.mjs:199-201` | `reliableTrials===0` passes the `< 0` guard and feeds a degenerate `clopperPearsonUpper(x,0,alpha)` -> a garbage `subtleOpenBookDeltaUpper` LABEL in the artifact. Weaker than `calibratorGate`'s `>= MIN_K` guard. CANNOT cause a false PASS (`lockRuleVerdict` requires `reliableTrials >= 15`). Minimal fix: reject `< 1`; the reviewer's `< RELIABLE_TRIALS` over-constrains (would block legitimate partial-run reads). |
+| F5 | Important | DISMISSED (misread) | -- | `lz-eval-search-loop.mjs:191-207` | `staticKsAdapter` is a PER-CLAIM factory: `claimId`/`claimDate` are bound at construction by design and `fetchResults(query)` has no claim parameter, so there is no accidental cross-claim "stale cutoff" path. The proposed "bind + verify on fetchResults" fix has nothing to verify against. Optional: a one-line comment stating single-claim lifetime. No code change. |
+| F6 | Important | CONFIRMED (forward-looking) | Important | `lz-eval-offline-read.mjs:356-360` vs `search-loop.mjs:304-314` | Verdict-vocabulary mismatch: `searchAndStop` emits `refuted-default`/`insufficient`/doc-verdict while `persistVote` accepts only `{refuted,unrefuted}`. The normalization is AGENT-SIDE (the D-08 Workflow, not yet written), so no present code does the throwing hand-off -- but it is a real contract to document + enforce at the boundary before the Phase-20/19-04 wiring. |
+| F7 | Important | CONFIRMED | Important | `lz-eval-traps.mjs:230-241` | `normalizeUrlForCompare` (host+path, www/trailing-slash/case) does NOT unwrap an archive-wrapper prefix, so the comment's claim that an "archive-wrapper variant of the SAME URL is matched" is false on the LOAD-BEARING `leakageProbe` screen. An undated archive-wrapped own-fact-check could slip the exact-URL screen (date arm is inert on undated dev KS). Fix the comment (accurate scope) and/or unwrap known archive prefixes. |
+| F8 | Important | OVERSTATED | Suggestion | `lz-eval-traps.mjs:88-121` | `mutateOverreach` validates everything except `seed.claim_id`, so `uid_seed: undefined` can be produced. But it does NOT silently corrupt the manifest -- `writeTrap` fails CLOSED on a non-string `uid` (`typeof trap.uid !== 'string'` throws before `safeId`). Cheap consistency fix: add a `claim_id` presence guard at the source for a clearer error. |
+| F9 | Suggestion | LOW (fix needs adjustment) | Suggestion | `lz-eval-traps.mjs:158-165` | `classifySeed` calls `dateFilter([d], cd)` per doc (singleton allocations + unit-array coupling). The proposed `safeParse(d.date) < cd` inline is not directly available: `safeParse` is module-private to `search-loop.mjs` (only `parseAvtDate`/`dateFilter` are exported). Low priority. |
+| F10 | Suggestion | CONFIRMED | Suggestion | `lz-eval-offline-read.mjs:209-231` | No assertion `sonnetFalseUpholds <= nPooled`; a superset vote dir drives `sonnetCorrect` negative into `passAtK`. Add a post-count `ContractError`. |
+| F11 | Suggestion | DISMISSED | -- | `lz-eval-search-loop.mjs:320-325` | `formulateDisconfirmingQuery` builds a `:`-delimited label, but the query string is stored VERBATIM in the JSON trace and nothing parses it back by `:`/newline. No "trace parsing" corruption exists. Non-issue. |
+| F12 | Suggestion | CONFIRMED | Suggestion | `search-loop.mjs:333-347` (+`offline-read:75-89`, `traps:386-400`) | `readJson` is triplicated (each a deliberate copy of the runtime aggregator shape). DRY: export once from the spine and import in the two consumers. Minor drift risk. |
+| F13 | Suggestion | NON-FINDING | -- | `lz-eval-search-loop.mjs:104-111` | Reviewer confirms `sourceFilename` guard is correct as-is. No action. |
+| F14 | Question | ANSWERED | -- | `lz-eval-search-loop.mjs:253` | Is the live adapter constrained to the static adapter's fixed-return property? NO -- the Phase-20 `liveWebSearchAdapter` returns varying per-query results, so F1 IS a live-path defect (not theoretical). |
+
+### Cross-cutting (reviewer, retained)
+
+Findings 6/7 (and the dismissed-or-downgraded 5/8) cluster as unfenced module-boundary contracts
+(verdict vocabulary, URL-equivalence claim, output-shape promotion). The genuinely actionable core of
+that cluster is F6 (verdict vocab) + F7 (URL-equivalence comment). F1/F2 are the same
+accumulate-vs-slice / verdict-collision theme inside `searchAndStop`.
+
+---
+
+## Known probe-bugs (prior-session analysis) -- gate independent-coverage map
+
+The handoff carried 4 suspected bugs to confirm during the `gsd-code-review` pass. The review gate was
+NOT primed with them (independent discovery preserved). Coverage:
+
+| Probe-bug | Gate surfaced it? | Orchestrator source-check | Disposition |
+|-----------|-------------------|---------------------------|-------------|
+| Case-sensitive tracking-param denylist | YES (F3) | CONFIRMED real | Fix in task 2 (`has(k.toLowerCase())`). |
+| `searchAndStop {minQueries:0,minDocs:0}` floor bypass | NO | CONFIRMED real -- nothing enforces params meet the frozen `SEARCH_DEFAULTS` floor; `q+1>=0 && docsSeen>=0` always true -> mechanical-minimum guard bypassed | Add to task-2 scope: clamp/validate `minQueries`/`minDocs` to the frozen floor (the "tighten-only, never loosen" contract is currently a comment, not enforced). |
+| `parseAvtDate` no value-range check | NO | CONFIRMED real -- `/^\d{2}-\d{2}-\d{4}$/` then `Date.UTC(...)`; `"99-99-2020"` rolls over instead of throwing | Add to task-2 scope: range-check month 1-12 / day 1-31 (and reject `Number.isNaN(getTime())`). |
+| `canonicalizeUrl` trailing-slash strip on the SERIALIZED url | NO | Subtler -- strip runs on `u.toString()` after the root slash is re-added; needs a targeted dedup-key probe | Verify in task 2. |
+
+The gate's value here was the NEW findings outside the probe list (F1 live-path pool defect, F6/F7
+boundary-contract gaps), complementary to the `gsd-code-review` probe pass.
+
+---
+
+## Recommended fix scope (feeds task 2 / the fixer)
+
+CONFIRMED, fix:
+- F3 (case-insensitive tracking match) -- also probe-bug #2.
+- F1 (pool accumulation OR live-adapter return contract) -- highest-value; protects the Phase-20 reuse.
+- F7 (correct the `normalizeUrlForCompare` comment; consider archive unwrap on the leak screen).
+- F4 (reject `reliableTrials < 1`).
+- F10 (`sonnetFalseUpholds <= nPooled` assertion), F12 (de-duplicate `readJson`).
+- Probe-bugs #3 (floor enforcement) + #4 (date range check) -- confirmed real this session.
+
+OPTIONAL / low:
+- F2 (replace dead `'refuted-default'` fallback with a throw), F8 (source-side `claim_id` guard),
+  F9 (micro-perf), F5 (single-claim lifetime comment only).
+
+DISMISSED (no change): F5 (core claim), F11, F13.
+
+---
+
+## Group A -- fix status (landed)
+
+Confirmed Group-A fixes landed on `feat/deep-research` (eval-tree only; shipped plugin tree untouched;
+144 eval tests green, 0 fail; all changed sources strictly ASCII):
+
+| Commit | Findings fixed |
+|--------|----------------|
+| `9827417` fix(19): harden search-loop spine | **F1** decisive-doc pool (judge over accumulated docs, not the batch); **F3** case-insensitive tracking-param match; **probe #3** positive-integer guard on minQueries/minDocs/maxQueries (closes the `{0,0}` bypass without enforcing the frozen floor, which tests legitimately drive below); **probe #4** UTC round-trip range-check in `parseAvtDate`+`safeParse`. +4 tests. |
+| `d532a81` fix(19): harden offline-read guards | **F4** `reliableTrials < 1` guard (degenerate `clopperPearsonUpper(_,0,_)`); **F10** false-uphold-count `> nPooled` fail-closed. +2 tests. |
+| `715528c` fix(19): correct normalizeUrlForCompare comment | **F7** comment corrected to its real scope + named the archive-wrapper limitation (load-bearing `leakageProbe` screen). Comment-only. |
+
+Triage refinements proven against the tests (why source-triage is mandatory):
+- **F4** -- the reviewer's proposed `< RELIABLE_TRIALS` guard would break `offline-read.test.mjs:234` (a deliberate `reliableTrials:10` partial-run read). Implemented `< 1` instead.
+- **Probe #3** -- strict frozen-floor enforcement would break `search-loop.test.mjs` (a deliberate `{minQueries:2,minDocs:3}` sub-floor test). Implemented positive-integer validation; the "tighten-only" floor stays a production-binding contract.
+
+NOT fixed this pass (with rationale):
+- **F12** (readJson de-dup) -- DEFERRED to after Group B. The duplication actually spans 5 modules
+  (incl. the Group-B files `aggregate`+`dataset`), not the 3 the reviewer saw; a partial 3-file de-dup
+  would add coupling without resolving it. De-dup all 5 into a shared eval helper once Group B is in
+  scope.
+- **F2, F8** (OVERSTATED) -- optional consistency tweaks (dead-fallback throw; source-side `claim_id`
+  guard). Not bugs; `writeTrap`/the guard already fail closed. Left as-is.
+- **F9** (LOW) -- micro-perf; the proposed `safeParse` inline isn't importable. Left as-is.
+- **F5, F11, F13** (DISMISSED) -- no change.
+- **F6** (forward-looking) -- verdict-vocabulary boundary; enforce when the agent-side Phase-20/19-04
+  wiring is written (no present code does the throwing hand-off).
+- **Probe #1** (canonicalizeUrl serialized-URL trailing-slash) -- on source inspection this is correct,
+  intended trailing-slash-insensitive dedup behavior (the strip only ever removes a path trailing slash;
+  query/fragment cannot follow). NOT a confirmed defect; no fix.
+
+Remaining Step-1 work: **Group B** review (aggregate + offline-read + dataset), then `gsd-code-review 19`
+as the complementary cheap probe pass, then the 19-04 gating read.
+
+---
+
+## Group B -- safeId guard + aggregate-to-offline-read consumption surface
+
+Gate run: `wf_a3e7a4cb-9ff`; converged in **1 round**; 3 agents; ~168.9k subagent tokens; 7 tool uses.
+`severityDropDiff`: reviewerHighCount=1 (block-coalesced), droppedCount=0, **dropDetected=false** (synth
+preserved all findings; orchestrator-verified). 0 Critical, 6 Important, 7 Suggestions, 2 Questions.
+
+### Triaged findings
+
+| # | Gate severity | Triage | Adjusted | Location | Finding (triaged) |
+|---|---------------|--------|----------|----------|-------------------|
+| F1 | Important | CONFIRMED defensive (unreachable via consumers) | Important | `aggregate.mjs:91-118` | `clopperPearsonUpper`/`wilsonUpper` have no `x > n` guard -> `n-x < 0` feeds `jStat.beta.inv` a negative shape -> silent NaN into a frozen output. NOT reachable via the consumers (`x in {0,1}`, `n >= 1`), but the function's own comment claims it handles degenerate boundaries (`n===0`, `x===n`) -- `x>n` completes that contract. Fix: throw `ContractError` on `x > n`. |
+| F2 | Important | CONFIRMED defensive (unreachable via consumers) | Suggestion | `aggregate.mjs:133-135` | `passAtK` returns `1.0` when `c > n` (`comb(n-c,k)=0`) -- a corrupted "all-correct". NOT reachable via `readDelta` (`c = correct = nPooled - falseUpholds <= nPooled = n`). Cheap guard. Fix: throw on `c > n` in `passAtK`/`passHatK`. |
+| F3 | Important | CONFIRMED integrity (matters for the gating read) | Important | `offline-read.mjs:191-221` | `nPooled` is caller-asserted; only the over-count case is guarded (F10, landed). It is NOT cross-validated against the actual per-seat vote-file count / `goldLabels` cardinality, so a stale/wrong `run.json` mis-scales Pass@k. DESIGN: cross-validate `nPooled` against the realized vote-file count before the 19-04 gating read. |
+| F4 | Important | CONFIRMED integrity (matters for the gating read) | Important | `offline-read.mjs` readDelta/resolveOutcome | `reliableTrials` is caller-asserted, not derived from the vote files; a stale/optimistic value games the `>= 15` reliability gate. Same family as F3. DESIGN: cross-validate `reliableTrials` against the realized vote count, or bind it to the run artifact, before the gating read. |
+| F5 | Important | CONFIRMED real (silent drop) | Important | `dataset.mjs:262-272` | `stratify` buckets only known labels (`if (buckets[item.source_label])`), so an item with a non-null but UNRECOGNIZED `source_label` is SILENTLY dropped -> later surfaces as a misleading "insufficient pool" error instead of a clear schema-drift failure. `remapLabel` already fails closed on unknown; `stratify`'s bucketing does not. Fix: throw fail-closed on an unknown `source_label`. |
+| F6 | Important | CONFIRMED (fix) | Important | `offline-read.mjs:183-205,253` | `passHatK(nPooled,_,k)` returns NaN when `nPooled < k`; `readDelta` only guards `nPooled > 0`, so NaN can land in the frozen read output. Fix: require `nPooled >= k` in `readDelta` (the existing partial-run test uses `nPooled=15 >= 5`, so unaffected). |
+| F7 | Suggestion | CONFIRMED doc | Suggestion | `aggregate.mjs:197-201` | Comment says the `safeId` "return value is discarded", but `const id = safeId(...)` IS used as the `goldLabels[id]` key (line 212). Fix the comment; code is correct. |
+| F8 | Suggestion | CONFIRMED minor doc | Suggestion | `offline-read.mjs:198-201` | `readDelta` permits `reliableTrials` in `1..14` (below `RELIABLE_TRIALS=15`); `lockRuleVerdict` is the `>= 15` backstop (intentional -- partial-run reads must compute). Add a comment noting the backstop (the `< 1` degenerate case is already fixed). |
+| F9 | Suggestion | CONFIRMED defensive | Suggestion | `dataset.mjs:96-108` (+ `traps.mjs:312`) | `verifySha256` does not guard `buf`; `createHash().update(null/undefined)` throws a native `TypeError`, breaking the "every error is a `ContractError` with `.file`" discipline. Fix: guard `buf` is a Buffer/string. (Same gap in `traps.mjs verifySha256`.) |
+| F10 | Suggestion | CONFIRMED defensive | Suggestion | `offline-read.mjs:267-304` | `resolveOutcome` checks `Number.isFinite(escalationFraction)` but not the range `[0,1]`; a negative value silently clears the cost gate (`escalationFraction < 0.5`). Fix: constrain to `[0,1]`. |
+| F11 | Suggestion | CONFIRMED cosmetic | Suggestion | `dataset.mjs:316-321` | `cacheSlug` passes the HuggingFace `repo` id as the `ContractError.file` context -> the error prints a non-path. Cosmetic; pass a path-shaped/labeled context. |
+| F12 | Suggestion | CONFIRMED minor doc | Suggestion | `offline-read.mjs:131-154` | `calibratorGate` returns the `CP(1,trials)` ceiling LABEL in the `saturated` branch; the comment already calls it a label "never re-derived as a clustered CI". Optional: annotate as a hypothetical-single-excess label. Low value. |
+| F13 | Suggestion | CONFIRMED low (no action) | -- | `offline-read.mjs:329-391` | `persistVote` guards the FILENAME via `votePath`/`safeId` but serializes the raw `vote.id` into the JSON body. The read boundary (`countFalseUpholds`) re-routes `rec.id` through `safeId` (aggregate.mjs:201), so the body id is re-validated on read. Low risk; reviewer agrees. No change. |
+| F14 | Question | ANSWERED | -- | `dataset.mjs:117-145` | `resolveHfToken` omits the LEGACY `~/.huggingface/token`. The current order mirrors the documented `huggingface_hub` (`HF_TOKEN` -> `HF_TOKEN_PATH` -> `HF_HOME/token`). Low impact (WiCE ungated; gated sources fetch-only at eval time). Optional: add `~/.huggingface/token` as a legacy fallback. |
+| F15 | Question | ANSWERED | -- | `offline-read.mjs:402-435` | The CLI `--resolve` calls `readDelta` without `k`, defaulting to `MIN_K`, so `passHatK` reflects `k=5` not the run's actual `k`. Optional: thread `cfg.k` from `run.json` through the CLI call. Low impact (5 is the floor and likely the actual). |
+
+### Cross-cutting (reviewer, retained)
+
+The reviewer's root-cause grouping holds: **F1/F2/F6** = degenerate-arithmetic inputs (`x>n`, `c>n`,
+`n<k`) reaching the stats helpers and landing as NaN / wrong-direction values inside frozen output
+instead of throwing (the fail-closed discipline stops at the function boundary, absent in the numeric
+core). **F3/F4** = caller-asserted denominators (`nPooled`, `reliableTrials`) trusted as authoritative
+without cross-validation against the realized vote files -- the integrity seam that matters most for
+the 19-04 gating read. **F9/F11** + the F1/F2/F6 NaN-leaks erode the "every error is a ContractError
+with `.file`" invariant from different angles.
+
+### Recommended Group-B fix set
+
+CONFIRMED, worth landing before the 19-04 gating read (it consumes exactly this code):
+- F5 (stratify fail-closed on unknown label) -- the one real silent-drop bug.
+- F6 (`readDelta` requires `nPooled >= k`); F1 (`x>n` throw); F2 (`c>n` throw); F9 (`verifySha256` buf
+  guard, both copies); F10 (`escalationFraction` in `[0,1]`); F7 (comment fix).
+- F3 + F4 (cross-validate `nPooled`/`reliableTrials` against the realized vote files) -- HIGHEST-judgment
+  integrity items; a design choice (couple `readDelta` to vote-file counts). Land here or as part of the
+  19-04 gating-read harness setup.
+
+OPTIONAL / low: F8 (comment), F11 (cosmetic), F12 (annotation), F14/F15 (CLI/token design). F13: no change.
+
+### Group B -- fix status (landed)
+
+Confirmed Group-B fixes landed on `feat/deep-research` (eval-tree only; shipped plugin tree untouched;
+150 eval tests green, 0 fail; all changed sources strictly ASCII; packaging-boundary 2/2):
+
+| Commit | Findings fixed |
+|--------|----------------|
+| `37ebbef` fix(19): harden aggregate stats helpers | **F1** `clopperPearsonUpper`/`wilsonUpper` throw on `x>n` (after the `n===0` short-circuit, so `CP(x,0)=1` is preserved); **F2** `passAtK`/`passHatK` throw on `c<0||c>n`; **F7** corrected the `countFalseUpholds` safeId comment. +1 test. |
+| `b57c8d0` fix(19): harden offline-read | **F6** `readDelta` requires `nPooled >= k` (no NaN `passHatK`); **F10** `resolveOutcome` range-checks `escalationFraction` to `[0,1]`. +2 tests. |
+| `bad429f` fix(19): harden dataset + traps | **F5** `stratify` fails closed on an unknown `source_label` (was a silent drop); **F9** `verifySha256` guards `buf` is Buffer/string (both the dataset + traps copies). +3 tests. |
+| `ba27c3b` refactor(19): de-duplicate readJson | **F12** consolidated the 5 per-module `readJson` copies into `eval/lz-eval-readjson.mjs`; removed the now-unused `stripBom`/`fs`/void-ref imports; -57 net lines. |
+
+Triage refinements proven against the tests (why source-triage is mandatory):
+- **F1** -- a naive `x>n` guard placed before the `n===0` check would break `aggregate.test.mjs:69`
+  (`CP(3,0)===1` "regardless of x"). Placed the guard AFTER the `n===0` short-circuit.
+- **F4 (Group A)** / **F6** -- the guards were tuned to NOT reject the deliberate partial-run reads the
+  tests exercise (`reliableTrials:10`, `nPooled:15`).
+
+NOT fixed this pass (with rationale):
+- **F3 + F4** (integrity: cross-validate `nPooled`/`reliableTrials` against the realized vote files) --
+  DEFERRED to the 19-04 gating-read harness (where the per-seat vote files actually exist), per the
+  user decision. Highest-judgment item; tracked for the gating read.
+- **F2/F1 were landed as defense-in-depth** though unreachable via current consumers (completing the
+  engine's fail-closed discipline in the numeric core).
+- **F8** (comment), **F11** (cosmetic `ContractError.file`), **F12-annotation** (calibrator ceiling
+  label note), **F13** (no change -- read boundary re-validates), **F14/F15** (HF-token / CLI-`k`
+  design questions) -- left as-is / optional; recorded above.
+
+Group A + B (the eval source) are reviewed + fixed. Groups C + D extend coverage to all plans/waves.
+
+---
+
+## Group C -- 19-02 shipped worker agents + round-trip test
+
+Gate run: `wf_b9c66433-8a0`; **did NOT converge** -- ran all 4 rounds (MAX_ROUNDS), coverage INCOMPLETE
+(the reviewer reported MORE-NEEDED every round; rounds 3-4 largely re-surfaced the same themes, so the
+major findings are captured even though it never formally converged). 9 agents, ~511.6k subagent tokens.
+`severityDropDiff`: reviewerHighCount=7, droppedCount=0, **dropDetected=false** (synth preserved all).
+
+This was the highest-yield group by far -- the shipped agents carry far more latent contract surface than
+the eval modules. **Decisive triage fact (verified against the runtime aggregator):** corroboration/dedup
+is keyed on the `source`/`id` FIELD (`aggregate.mjs:312` `hit.sources.add(c.source)`; survivors index by
+`id`), NOT on the `sources/<sha>.json` filename. So a wrong/hallucinated SHA filename does NOT break
+lookup -- it only risks a rare basename collision. That lowers the SHA-256 finding from "Critical, breaks
+lookup" to a spec-vs-capability mismatch.
+
+The findings consolidate (across the 4 rounds) into two design clusters + clear fixes:
+
+### DESIGN DECISIONS (high-impact; touch the shipped deliverable -- raised to the user, NOT auto-fixed)
+
+**D-CLUSTER-1: the workers are tool-limited LLMs asked to perform DETERMINISTIC mechanics they cannot reliably do or access.** Root cause shared by C-findings 1/2/3 + R2-2/2-3:
+- **No Read tool** (`tools: [WebFetch|WebSearch, Write]`), so every "consult the schema reference"
+  instruction is DEAD at runtime and the inlined contract IS the real contract -- while the prompt also
+  says "do not inline the schema" (self-contradictory). [CONFIRMED]
+- **SHA-256 filename**: the extract worker must write `sources/<sha-256-hex>.json`, but an LLM cannot
+  reliably compute SHA-256. Functionally tolerated (dedup is by `id`, not filename) but the spec is
+  unfulfillable as written + risks collisions. [CONFIRMED, severity lowered per the aggregator fact]
+- **`~50 KB` excerpt cap**: model-directed truncation (byte-vs-char, boundary, `~` all unspecified) makes
+  the quote-recheck determinism goal unguaranteed. [CONFIRMED]
+- Options (per finding): grant a compute/Read tool (breaks least-privilege) | move the mechanics into the
+  harness/aggregator (compute the filename + truncate outside the model) | make the contract
+  LLM-executable (model-producible filename, tolerated-fuzzy truncation) + make the inlined contract
+  authoritative-for-the-worker with a drift test. **Needs a design decision.**
+
+**D-CLUSTER-2: search vs extract canonicalization ownership (C-findings 1/4 + R3-2/3-4/3-6 + Q11).**
+- The extract worker INLINES the 11-key tracking denylist; the search worker only says "tracking
+  parameters stripped" without listing them -> divergent canonical keys between the two workers. Plus the
+  inlined recipe omits the **case-insensitive** stripping (the F3 fix just landed in the eval spine
+  `9827417`) -- so the shipped agents would drift from the corrected behavior. [CONFIRMED]
+- Both write `sources/<sha>.json` for the same key with unspecified write-ordering (search's record lacks
+  `fetched_at`; a late search write could clobber extract's). [CONFIRMED, minor -- typical order is
+  search-then-extract]
+- The open question (Q11): does search compute the FINAL canonical key, or a best-effort dedup key with
+  extract owning final canonicalization? **The answer collapses several findings.** Needs a decision.
+
+### CONFIRMED prompt-fixes (clear; apply once the cluster decisions are made, since they're coupled)
+
+| Finding | Fix |
+|---------|-----|
+| Query floor (R1-10/R4-1) | Hardcode "at least 3 distinct queries" in search-worker (the agent-side analog of the eval probe-#3 floor). |
+| `maxTurns:4` (R1-13/R3-10) | Extract: 1 WebFetch + 3 Writes + synthesis = 5 turns -> raise to 5-6 or instruct batched Writes (else the receipt is cut off -- same maxTurns-exhaustion class as the reviewer-agent bug). |
+| `excerpt_id` (R1-6/R2-1) | Worker treats it required; schema marks it optional->silent `downgraded`. Document the consequence or fail-close. |
+| quote self-check / `quote_fidelity` (R4-2/R4-4) | State the worker verifies the quote vs its Step-1 excerpt; add "the aggregator assigns `quote_fidelity`; do not write it." |
+| dead schema pointers (R1-2/R3-3) | Drop "consult the schema" (unreadable) or mark the inlined block authoritative-for-the-worker. |
+| receipt cap (Sugg 7) | Use the count form, not the full URL, in the extract receipt (long DOIs approach the ~200-char cap). |
+| Suggestions | trailing-slash wording; `model: sonnet` cost-bound annotation; `fetched_at` pre-fetch rationale; drop/relocate the eval-scope forward pointer; `D-13` tag opacity. |
+
+### CONFIRMED test-fixes (the round-trip suite is non-discriminating -- Phase-17 CR-01 class)
+
+- The fixture uses a CLEAN URL (`https://example.org/a/study`, already canonical) -> the entire
+  canonicalization/denylist path has ZERO coverage. Add a DIRTY-URL fixture (mixed case, `utm_*`,
+  `fbclid`, trailing slash, fragment) and assert the stripped canonical key. [CONFIRMED]
+- Fixture `text === quote` is tautological -> can't distinguish a quote-vs-excerpt from a text-vs-excerpt
+  check. Make `text` a paraphrase distinct from the verbatim `quote`. [CONFIRMED]
+- T-19-08 reads `sources/<sha>.json` directly, bypassing `aggregate()`; assert on the aggregator output
+  (`survivors[].sources` contains the canonical key). [CONFIRMED]
+- AGG-03 asserts a hardcoded receipt literal (`claims=3`, inconsistent with the 1-claim fixture) -- label
+  it a format/doc-conformance test, or drive it from real worker emission. [CONFIRMED]
+
+### Questions to resolve (gate them before the coupled fixes)
+
+- Q11: search computes the final canonical key, or best-effort? (collapses D-CLUSTER-2)
+- Q7: is `sources/` read by `aggregate()` for corroboration, or write-only? -- ANSWERED above: dedup is by
+  the `source`/`id` field; `sources/` supplies citation metadata. So divergence mainly hurts search-phase
+  candidate dedup + the search/extract handoff, not the corroboration count.
+- Q17: are receipt `status=` values a closed enum? (then tighten both the prompt and the AGG-03 regex).
+
+COVERAGE: INCOMPLETE (did not converge in 4 rounds; major themes captured; re-run not auto-triggered to
+avoid another ~500k-token pass for diminishing returns -- flagged for the user).
+
+### Group C design clusters -- RESOLVED (3-round advisor panel, unanimous)
+
+The two design clusters were resolved by a 3-round advisor panel (Opus agent + Copilot GPT-5.5 + Copilot
+Gemini 3.1 Pro Preview), executor-driven with neutral facts-only briefs, converging to UNANIMOUS consensus
+(round-1 positions -> round-2 narrowing -> round-3 full accept; transcripts in the gitignored
+`eval/.cache/panel/r{1,2,3}-{gpt,gemini}.txt` + the Opus agent task output). Resolution:
+
+**Cluster 1 (deterministic mechanics vs LLM capability) -- ship PROMPT-ONLY now; no new tool grants:**
+- `sources/` filename: SHA-256 -> **percent-encoding** (`/`->`%2F`, `:`->`%3A`, ...). LLM-executable; the
+  filename is not a lookup key (aggregator dedups by the `id`/`source` field), so a hash buys nothing.
+- Delete the self-contradictory "consult the schema / do not inline" lines from BOTH prompts; the inlined
+  contract IS the runtime contract (no Read tool). REJECT granting Read or Bash.
+- Truncation: store the fetched content **VERBATIM**, drop the LLM `~50 KB` cap; add NO off-model
+  truncator now (WebFetch returns bounded content, so oversize is uncommon). A deterministic truncator
+  arrives later WITH the normalizer.
+
+**Cluster 2 (canonical-key ownership + consistency):**
+- The EXTRACT worker is the **sole `sources/` writer and sole authoritative canonical-key owner**. The
+  SEARCH worker writes no `sources/` and publishes no authoritative ids; it canonicalizes ONLY for its
+  own source-independence dedup (non-authoritative), using the SAME recipe.
+- ONE **case-insensitive** canonicalize recipe (11-key denylist + `utm_` prefix), inlined IDENTICALLY in
+  both prompts.
+- SSOT-sync: a **dev-time build/test** asserts the inlined prompt rules match the schema doc (no runtime
+  Read; lives in the dev-only eval tree, zero-dep). Converts D-12 from convention to a gate.
+- The deterministic **stdlib-Node normalizer** is the agreed eventual home for canonicalization +
+  filename + truncation; it **supersedes** the prompt recipe when it lands WITH the Phase-20 orchestrator
+  (deferred -- the orchestrator does not exist yet; building it now is dead code with no caller). No
+  permanent prompt+Node coexistence.
+- Round-trip test: feed a dirty/mixed-case URL (`?UTM_Source=x&Fbclid=y` + fragment + trailing slash) and
+  assert search writes no `sources/`, the canonical key strips the params, and the quote is checked
+  against the actually-stored excerpt.
+
+**Actionable fix set (now DECIDED, ready to apply on request):** both worker prompts (percent-encoding
+filename; delete schema-consult contradiction; verbatim store / drop the cap; one shared case-insensitive
+canonicalize block; search stops writing `sources/`); + the clear prompt fixes (search query floor,
+extract `maxTurns` 4->5/6, `excerpt_id`/quote-fidelity clarity); + the test fixes (dirty-URL +
+non-tautological round-trip fixture, assert via `aggregate()`, AGG-03 relabel); + a new dev-time
+build/test asserting the inlined recipe matches the schema. DEFERRED to Phase 20: the deterministic
+normalizer.
+
+### Group C re-gate (post-fix, wf_c529d5c6-a0a, 1 round) -- findings fixed
+
+The single-round LLM re-gate on the rewritten prompts caught what the deterministic SSOT test could not:
+the body-rewrite left the frontmatter `description` + `<example>` blocks STALE (SHA-256, `sources/<sha>`,
+"(capped)") -- high-leverage since Claude Code surfaces the description at routing time. FIXED: both
+examples + the description reconciled to `candidates/`/percent-encoding/verbatim; the search stop-criterion
+now DEFINES "covered" (no new distinct candidate); extract Step-2 tag `D-13` -> `D-08/D-13`; dropped the
+dead `${CLAUDE_PLUGIN_ROOT}` reference. The dev-time SSOT gate was STRENGTHENED (10 tests) to reject stale
+`sha-256`/`sources/<sha>`/`(capped)`/write-to-`sources/` references anywhere in the prompts. Group C CLOSED.
+
+---
+
+## Group D1 -- search-loop-surface eval test suites
+
+Gate run: `wf_b0a17790-709`; did NOT converge (3 rounds, INCOMPLETE); 7 agents, ~454.9k tokens.
+`severityDropDiff`: 0 dropped. **0 Critical, 0 source bugs** (the source was already reviewed + fixed in
+Groups A/B). The findings are a large, uniform TEST-QUALITY set -- the "constant-stub-survives" class:
+the suites assert the happy-path verdict/shape but skip (a) fail-closed guard branches and (b) named
+schema/output fields the source explicitly populates, so a regression replacing real logic with a
+hardcoded constant would pass. ~17 Important + ~14 Suggestion coverage gaps across the three suites.
+
+Dispositions:
+- **D1-5 (test-name vs behavior) -- FIXED.** The `canonicalizeUrl` trailing-slash test name claimed the
+  bare-host root slash was preserved, but the source strips it (intended dedup: `https://example.org/`
+  and `https://example.org` collapse). Corrected the name + added the asserting cases. (Resolves the
+  lingering probe-#1 trailing-slash question: stripping IS intended.)
+- **D1-17 + D1-10 (source-coherence guards) -- DEFERRED to the 19-04 gating-read author.** `readDelta`
+  lacks a `nPooled >= reliableTrials` coherence guard (D1-17) and `persistVote` accepts an open
+  `stop_reason` (D1-10). These are `offline-read` input-coherence guards whose semantics live with the
+  gating-read harness + the deferred F3/F4 integrity cross-validation; bundle them there (the
+  `nPooled`/`reliableTrials` invariant is owned by that author). NOT fixed blindly here.
+- **The ~30 TEST-coverage gaps -- recorded; investment decision pending (consolidated with D2).** They
+  are real regression-protection (negative-path + named-field assertions on already-correct source) but
+  high-volume + low-stakes (no bugs). Highest-value subset (load-bearing constant-stub gaps):
+  `liveWebSearchAdapter` throw-on-unbound, `buried_deep`, `validityGate` both gold directions,
+  `mutateOverreach`/`writeTrap` fail-closed guards, `normalizeUrlForCompare` actually-exercised,
+  `formulateDisconfirmingQuery` non-disconfirm/fallback, exhausted-needs-`minQueries`. Lower-value:
+  tolerance tightening, `finally`-cleanup hygiene, decorative-assertion pinning, boundary pairs. Full
+  list + line refs in the gitignored `eval/.cache/review-gate-19/group-d1-*.md`.
+
+---
+
+## Group D2 -- aggregate-surface eval test suites + lock-rule contract
+
+Gate run: `wf_10e09553-f3f` (synth hit the org monthly spend cap on the first attempt; RESUMED via
+`resumeFromRunId` after the cap was raised -- executor+reviewer replayed from cache, only the synth
+re-ran, 49k tokens). CONVERGED (1 round, COMPLETE). `severityDropDiff`: 0 dropped. **0 Critical, 0
+source bugs.** Same class as D1 (boundary / fail-closed-branch test gaps) + 2 doc-clarity items:
+
+- **D2-1 (Important):** `lockRuleVerdict` band edges untested at the discriminators -- `escalationFraction=0.45`
+  (inside the advertised [0.40,0.50] kill band but currently PASSes) and `0.50` (the strict-`<` edge). NOTE:
+  the 0.45 PASS is INTENDED (the engine kills at the HIGH edge `ESCALATION_KILL_HIGH=0.50`; `KILL_LOW=0.40`
+  is carried but NOT enforced), but the lock-rule prose "crosses the 0.40-0.50 band" reads as if 0.40 is the
+  threshold -- a prose/code looseness. Fix: add 0.45->PASS + 0.50->FAIL tests AND tighten the prose to say
+  the kill threshold is the 0.50 high edge.
+- **D2-2 (Important):** `countFalseUpholds` invalid-verdict + missing-gold-label `ContractError` branches untested.
+- **D2-3 (Suggestion):** the AVeriTeC "COVERAGE" loop assert is DECORATIVE (`matched` increments
+  unconditionally -> always holds). Drop/rename; keep the strata-discrimination assert.
+- **D2-4/D2-5 (Suggestion):** `passHatK(15,0,5)===0` symmetry; `reliableTrials=14` boundary-minus-1 FAIL.
+- **D2-6 (Suggestion):** lock-rule.md labels the engine-ENFORCED `DELTA_UPPER_MAX` scalar "legacy" -- misleading
+  (reads as superseded). Rename to "scalar anchor".
+
+---
+
+## Review coverage -- COMPLETE (the all-plans/waves requirement is satisfied)
+
+Every Phase-19 deliverable has now been through the lz-review gate: Groups A+B (eval source) reviewed+fixed;
+Group C (shipped worker agents) reviewed + panel-resolved + fixed + re-gated; Groups D1+D2 (the 5 eval test
+suites + the lock-rule contract) reviewed. **No Critical findings anywhere; no source bugs in D1/D2.**
+
+Outstanding (consolidated):
+- **Test-hardening (D1+D2): DONE (user chose "fix all").** A 5-subagent fan-out added ~35 discriminating
+  assertions closing the whole "constant-stub-survives" class (search-loop 31->35, traps 15->28,
+  offline-read 21->31, aggregate 21->29, dataset's vacuous coverage-assert replaced). 161 eval tests
+  green; aggregate anti-drift intact; no source modules touched; all ASCII.
+- **Quick doc/prose fixes: DONE.** D2-3 (vacuous AVeriTeC coverage assert replaced), D2-6 (lock-rule
+  "legacy" -> "engine-enforced scalar anchor"), D2-1 prose (cost-gate kill threshold = the 0.50 HIGH
+  edge; 0.40 is context-only).
+- **Deferred source-coherence guards -> the 19-04 gating-read author:** F3/F4 (cross-validate
+  nPooled/reliableTrials vs the realized vote files), D1-17 (`nPooled>=reliableTrials`), D1-10 (`persistVote`
+  stop_reason enum).
+- Then: `gsd-code-review 19` -> 19-04 gating read -> verify -> secure -> validate -> extract-learnings -> complete.

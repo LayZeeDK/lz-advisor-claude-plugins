@@ -1,0 +1,1 @@
+Reported observation: hotel metric rises 8 units in the controlled run.

@@ -1,0 +1,12 @@
+{
+  "worker": "w1",
+  "source": "https://example.org/a/study",
+  "claims": [
+    {
+      "id": "c1",
+      "text": "X reduces Y by thirty percent",
+      "quote": "X reduces Y by 30%",
+      "excerpt_id": "e1"
+    }
+  ]
+}

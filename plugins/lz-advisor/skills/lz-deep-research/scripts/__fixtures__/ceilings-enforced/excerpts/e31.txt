@@ -1,0 +1,1 @@
+Reported observation: fig metric rises 31 units in the controlled run.

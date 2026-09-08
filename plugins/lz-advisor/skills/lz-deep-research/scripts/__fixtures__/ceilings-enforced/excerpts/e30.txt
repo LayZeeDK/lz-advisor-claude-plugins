@@ -1,0 +1,1 @@
+Reported observation: date metric rises 30 units in the controlled run.

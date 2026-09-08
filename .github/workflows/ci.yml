@@ -1,0 +1,87 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        with:
+          node-version-file: .node-version
+      - run: >-
+          node --test --experimental-test-coverage
+          --test-coverage-lines=97
+          --test-coverage-branches=89
+          --test-coverage-functions=100
+          "plugins/lz-advisor/skills/**/*.test.mjs"
+      # Eval-tree gate (Plan 18-02): the repo-level eval/ dev tooling has its own pinned
+      # devDependency (jstat). Restore it from the committed lockfile, then run the
+      # eval-tree tests by EXPLICIT file path -- WITHOUT the plugin-tree --test-coverage-*
+      # thresholds (those are calibrated to the plugin tree and would false-fail the eval
+      # scripts). These steps live in the SAME `test` job so test-act's `act -j test` keeps
+      # simulating the whole gate with no act-command change.
+      #
+      # The FILE form is load-bearing, not a style choice: on the maintainer's host
+      # `node --test <dir>` spuriously exits 1 even when every test passes, so a directory
+      # or shell-glob form would diverge between CI and local runs. Add each new test file
+      # here by name, in the same task that creates it.
+      #
+      # Plan 23-01 Task 3 appended the first three entries below the pre-existing four, closing the
+      # Phase-23 share of the recorded Phase-22 CI gap in which 106 of 108 Phase-22 tests never
+      # executed on push. Plan 23-02 Task 3 appended the next three. Plan 23-03 Task 2 appended
+      # lz-eval-p23-resolvability.test.mjs -- the ENV-04 live half, whose whole co-test runs against
+      # stub fetchers and therefore needs no network access on the runner. The citation-audit entry was
+      # already registered by Plan 23-01 and is NOT duplicated here. The remaining unregistered
+      # Phase-22 files are out of scope for Phase 23.
+      #
+      # Plan 23-04 appended lz-eval-p23-prereg.test.mjs in a SEPARATE commit from the artifact it
+      # tests, deliberately deviating from the same-task rule above. The ENV-01 freeze commit had to
+      # contain exactly three files so its timestamp reads unambiguously as the pre-registration
+      # timestamp of record; adding CI churn to it would have muddied what was frozen and when.
+      #
+      # The Phase-23 gap closure appended lz-eval-p23-retain.test.mjs -- the T-23-07 retention path
+      # control, whose co-test touches no filesystem path at all and so needs nothing on the runner.
+      #
+      # The Phase-23 validation gap closure appended lz-eval-p23-sliceA-gate.test.mjs -- the half of
+      # Plan 23-05 Task 2's discrimination proof its SUMMARY recorded as NOT-EXERCISED. It extracts the
+      # Task 2 gate verbatim from the committed plan text and runs it against scratch fixtures in the OS
+      # temp tree, so it needs no network and realizes no path inside eval/.cache/.
+      #
+      # The same gap closure registered the pre-existing lz-eval-sliceA-gold.test.mjs. That module is
+      # not Phase-23 net-new, but ENV-03 depends on it directly: lz-eval-p23-sliceA-draw.mjs imports
+      # `filterSliceA` and lz-eval-p23-sliceA-read.mjs imports `tallyPerDirection` -- the never-pooled
+      # per-direction tally the published ENV-03 read rests on. Its 18 tests were passing locally and
+      # not running on push. The remaining unregistered files are Phase 16-22 debt, out of scope here.
+      - name: Restore eval/ dev dependencies (jstat)
+        run: cd eval && (npm ci || npm install)
+      - name: Run eval-tree tests (explicit file form, no coverage thresholds)
+        run: >-
+          node --test
+          eval/lz-eval-aggregate.test.mjs
+          eval/lz-eval-dataset.test.mjs
+          eval/lz-eval-packaging-boundary.test.mjs
+          eval/lz-eval-worker-contract.test.mjs
+          eval/lz-eval-baseline-manifest.test.mjs
+          eval/lz-eval-baseline-manifest-defects.test.mjs
+          eval/lz-eval-p23-citation-audit.test.mjs
+          eval/lz-eval-p23-resolvability.test.mjs
+          eval/lz-eval-p23-sliceA-draw.test.mjs
+          eval/lz-eval-p23-sliceA-read.test.mjs
+          eval/lz-eval-p23-verify-complete.test.mjs
+          eval/lz-eval-p23-prereg.test.mjs
+          eval/lz-eval-p23-retain.test.mjs
+          eval/lz-eval-p23-sliceA-gate.test.mjs
+          eval/lz-eval-sliceA-gold.test.mjs

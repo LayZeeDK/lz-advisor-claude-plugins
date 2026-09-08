@@ -1,0 +1,1 @@
+Reported observation: xray metric rises 24 units in the controlled run.

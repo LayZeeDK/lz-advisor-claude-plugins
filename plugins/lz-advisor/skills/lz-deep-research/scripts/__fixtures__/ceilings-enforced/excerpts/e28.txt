@@ -1,0 +1,1 @@
+Reported observation: banana metric rises 28 units in the controlled run.
