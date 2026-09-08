@@ -214,6 +214,8 @@ export function writeDispatchRecord({ dir, drawIndex, direction, sent } = {}) {
 // dispatch record by direction + drawIndex, and FAIL CLOSED. This is the cross-check SEED-005 asks
 // for, not an advisory one:
 //   - a verdict with NO dispatch record throws, naming the unmatched drawIndex;
+//   - a SECOND verdict file for a (direction, drawIndex) that already has one throws -- the verdict-side
+//     equivalent of writeDispatchRecord's write-once discipline;
 //   - a dispatch record whose stored sha256 disagrees with its stored string throws;
 //   - a verdict outside the unrefuted|refuted|null enum throws.
 // A `null` verdict is admissible on disk (an abstain) and is carried through; sliceARead is what
@@ -269,6 +271,12 @@ export function readSliceAVerdicts({ dispatchDir, verdictDir } = {}) {
   }
 
   const pairs = [];
+  // The dispatch side is a Map, so a repeated key there is deduplicated by construction and
+  // writeDispatchRecord refuses the second write outright. The verdict side pushes one pair per FILE,
+  // so it needs its own write-once equivalent: two files carrying the same (direction, drawIndex) --
+  // exactly what a partial re-roll leaves behind under a different filename -- would both pair against
+  // the SAME dispatch record and both enter the tally, inventing a cell that never happened.
+  const seen = new Set();
 
   for (const name of fs.readdirSync(verdictDir).sort()) {
     if (!name.endsWith('.verdict.json')) {
@@ -289,6 +297,23 @@ export function readSliceAVerdicts({ dispatchDir, verdictDir } = {}) {
     }
 
     const key = recordKey(verdictRecord.direction, verdictRecord.drawIndex);
+
+    if (seen.has(key)) {
+      throw new ContractError(
+        'readSliceAVerdicts found TWO verdict files for direction ' +
+          verdictRecord.direction +
+          ' drawIndex ' +
+          verdictRecord.drawIndex +
+          ', the second being ' +
+          JSON.stringify(name) +
+          ' (a duplicate is a re-roll artifact, not a resume -- it would double-count a cell and ' +
+          'inflate n past the pre-registered 40)',
+        'readSliceAVerdicts',
+      );
+    }
+
+    seen.add(key);
+
     const record = dispatch.get(key);
 
     if (record === undefined) {

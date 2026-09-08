@@ -18,8 +18,9 @@
 //     drawIndex, and REFUSES to overwrite an existing record (the write-once discipline that makes a
 //     partial re-roll distinguishable from a resume).
 //   - readSliceAVerdicts pairs every verdict with its dispatch record and FAILS CLOSED: an unmatched
-//     verdict throws naming the drawIndex, and a stored digest that disagrees with the stored string
-//     throws too.
+//     verdict throws naming the drawIndex, a SECOND verdict file for an already-seen (direction,
+//     drawIndex) throws (23-REVIEW.md CR-02 -- the verdict-side equivalent of writeDispatchRecord's
+//     write-once discipline), and a stored digest that disagrees with the stored string throws too.
 //   - sliceARead's output key set is EXACTLY ['drawSeed', 'n', 'provisionalLimits', 'refuted',
 //     'unrefuted'] -- no pooled rate, no accuracy, no interval, no pass/fail field.
 //   - sliceARead carries the three PROVISIONAL limit strings, the first two owned by the frozen gold
@@ -318,6 +319,41 @@ test('T-23-09 DISCRIMINATION: a dispatch record whose stored sha256 disagrees wi
       assert.ok(err instanceof ContractError);
       assert.equal(err.file, 'readSliceAVerdicts');
       assert.match(err.message, /sha256|digest/i, 'the message names the digest mismatch');
+
+      return true;
+    },
+  );
+});
+
+test('CR-02 DISCRIMINATION: a SECOND verdict file for one (direction, drawIndex) is refused -- a re-roll leftover would double-count a cell', () => {
+  // DISCRIMINATION: readSliceAVerdicts pushed one pair per FILE with no key check, while the dispatch
+  // side is a keyed Map and writeDispatchRecord refuses a second write. One stray retry file under a
+  // different filename therefore paired twice against the SAME dispatch record: a clean 20+20 pool read
+  // n=41 with unrefuted {"tp":20,"fn":1} -- an fn that never happened, and an n past the
+  // pre-registered 40 (23-REVIEW.md CR-02).
+  const dirs = tempDirs();
+  materializeRun({ ...dirs, verdictFor: ({ direction }) => direction });
+
+  const retry = path.join(dirs.verdictDir, 'unrefuted-0.retry.verdict.json');
+  fs.writeFileSync(
+    retry,
+    JSON.stringify({ direction: 'unrefuted', drawIndex: 0, verdict: 'refuted' }, null, 2) + '\n',
+    'utf8',
+  );
+  assert.ok(
+    fs.existsSync(path.join(dirs.verdictDir, 'unrefuted-0.verdict.json')),
+    'the fixture must be a DUPLICATE: the original verdict file for that key still has to be there',
+  );
+
+  assert.throws(
+    () => readSliceAVerdicts({ dispatchDir: dirs.dispatchDir, verdictDir: dirs.verdictDir }),
+    (err) => {
+      assert.ok(err instanceof ContractError);
+      assert.equal(err.file, 'readSliceAVerdicts');
+      assert.match(err.message, /TWO verdict files/, 'the message names the duplication');
+      assert.match(err.message, /drawIndex 0\b/, 'and the key that was repeated');
+      // Which of the pair is "second" depends on readdir sort order, so pin the SHAPE of the name.
+      assert.match(err.message, /"unrefuted-0[^"]*\.verdict\.json"/, 'and the file it refused');
 
       return true;
     },
